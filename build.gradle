@@ -1,0 +1,18 @@
+plugins {
+    id 'java'
+}
+
+group = 'de.craftsblock'
+version = '2.1.1-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+    maven { url "https://repo.craftsblock.de/releases" }
+}
+
+dependencies {
+    implementation 'de.craftsblock.craftscore:CraftsCore:3.7.23-SNAPSHOT'
+    implementation 'com.mysql:mysql-connector-j:8.0.33'
+    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    implementation 'com.google.code.gson:gson:2.10'
+}
