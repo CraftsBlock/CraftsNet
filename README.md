@@ -2,10 +2,10 @@
 ### Easy creation of HTTP routes and WebSocket endpoints in Java.
 
 ![Latest Release on Maven](https://repo.craftsblock.de/api/badge/latest/releases/de/craftsblock/craftsnet?color=40c14a&name=CraftsNet&prefix=v)
-![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/CrAfTsArMy/CraftsNet)
-![GitHub](https://img.shields.io/github/license/CrAfTsArMy/CraftsNet)
-![GitHub all releases](https://img.shields.io/github/downloads/CrAfTsArMy/CraftsNet/total)
-![GitHub issues](https://img.shields.io/github/issues-raw/CrAfTsArMy/CraftsNet)
+![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/CraftsBlock/CraftsNet)
+![GitHub](https://img.shields.io/github/license/CraftsBlock/CraftsNet)
+![GitHub all releases](https://img.shields.io/github/downloads/CraftsBlock/CraftsNet/total)
+![GitHub issues](https://img.shields.io/github/issues-raw/CraftsBlock/CraftsNet)
 
 ---
 
@@ -62,12 +62,12 @@ dependencies {
 
 1. Create an `addon.json` in your project in which you specify where your main class is located and what your addon is called.
 ```json
-{"name": "My Addon","main": "de.craftsarmy.myaddon.MyAddon"}
+{"name": "My Addon","main": "de.craftsblock.myaddon.MyAddon"}
 ```
 
 2. HTTP endpoints can be created as shown in the following example.
 ```java
-package de.craftsarmy.myaddon
+package de.craftsblock.myaddon
 
 import de.craftsblock.backend.api.http.Exchange;
 import de.craftsblock.backend.api.http.RequestHandler;
@@ -85,7 +85,7 @@ public class MyRoute implements RequestHandler {
 
 3. The following source code shows you how to create a WebSocket endpoint.
 ```java
-package de.craftsarmy.myaddon
+package de.craftsblock.myaddon
 
 import de.craftsblock.backend.api.websocket.MessageReceiver;
 import de.craftsblock.backend.api.websocket.Socket;
@@ -105,7 +105,7 @@ public class MySocket implements SocketHandler {
 
 4. Last but not least, you need the heart of your application, the Addon class. This is where all routes and endpoints are registered.
 ```java
-package de.craftsarmy.myaddon
+package de.craftsblock.myaddon
 
 import de.craftsblock.craftsnet.addon.Addon
 
@@ -123,7 +123,7 @@ public class MyAddon extends Addon {
 }
 ```
 
-Please visit our [Wiki](https://github.com/CrAfTsArMy/CraftsNet/wiki) for a more detailed description.
+Please visit our [Wiki](https://github.com/CraftsBlock/CraftsNet/wiki) for a more detailed description.
 
 ## Enable SSL
 To enable SSL and enable a secure connection, you can simply add your SSL certificates. Currently only certificates issued by LetsEncrypt are accepted. You need the `fullchain.pem` and the `privkey.pem` which you have to put in the folder `certificates` so that CraftsNet recognizes them.
@@ -131,7 +131,7 @@ To enable SSL and enable a secure connection, you can simply add your SSL certif
 You can then enable SSL by appending `--ssl CHOOSE_A_PASSWORD` to your startup command, replacing `CHOOSE_A_PASSWORD` with a password of your choosing.
 
 ## Support and contribution
-If you have any questions or have found a bug, please feel free to let us know in our [issue tracker](https://github.com/CrAfTsArMy/CraftsNet/issues). We appreciate any help and welcome your contributions to improve the CraftsNet project.
+If you have any questions or have found a bug, please feel free to let us know in our [issue tracker](https://github.com/CraftsBlock/CraftsNet/issues). We appreciate any help and welcome your contributions to improve the CraftsNet project.
 
 ---
 
