@@ -1,5 +1,5 @@
 # CraftsNet 
-### Einfach zu benutzende Java-Bibliothek für HTTP-Routen und WebSocket-Endpunkte
+### Easy creation of HTTP routes and WebSocket endpoints in Java.
 
 ![Latest Release on Maven](https://repo.craftsblock.de/api/badge/latest/releases/de/craftsblock/craftsnet?color=40c14a&name=CraftsNet&prefix=v)
 ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/CrAfTsArMy/CraftsNet)
@@ -9,14 +9,15 @@
 
 ---
 
-CraftsNet ist eine benutzerfreundliche Java-Bibliothek, die es Entwicklern ermöglicht, mühelos HTTP-Routen und WebSocket-Endpunkte in ihren Serveranwendungen zu erstellen und zu verwalten. Diese Bibliothek vereinfacht die Serverentwicklung erheblich, sodass sich Entwickler auf die eigentliche Funktionalität ihrer Anwendung konzentrieren können, ohne sich mit komplexen Serverdetails herumschlagen zu müssen.
+CraftsNet is an easy-to-use Java library that enables developers to effortlessly create and manage HTTP routes and WebSocket endpoints in their server applications. This library greatly simplifies server development, allowing developers to focus on the actual functionality of their application without having to deal with complex server details.
 
 ## Funktionen
 
-- Definieren und Verwalten von HTTP-Routen für verschiedene Endpunkte der Anwendung.
-- Unterstützung für dynamische Parameter in den HTTP-Routen für flexiblere Funktionalität.
-- Mühelose Erstellung von WebSocket-Endpunkten für Echtzeit-Kommunikation zwischen Server und Client.
-- SSL-Unterstützung für sichere und verschlüsselte Kommunikation mit den Benutzern.
+- Define and manage HTTP routes for different endpoints of the application.
+- Support for dynamic parameters in HTTP routes for more flexible functionality.
+- Effortless creation of WebSocket endpoints for real-time communication between server and client.
+- SSL support for secure and encrypted communication with users.
+- Addon based for easy expansion and maintenance
 
 ## Installation
 
@@ -59,12 +60,12 @@ dependencies {
 
 ## Quick Start
 
-1. Erstellen Sie in ihrem 
+1. Create an `addon.json` in your project in which you specify where your main class is located and what your addon is called.
 ```json
 {"name": "My Addon","main": "de.craftsarmy.myaddon.MyAddon"}
 ```
 
-2. HTTP Endpoints können wie im folgenden Beispiel gezeigt erstellt werden.
+2. HTTP endpoints can be created as shown in the following example.
 ```java
 package de.craftsarmy.myaddon
 
@@ -82,7 +83,7 @@ public class MyRoute implements RequestHandler {
 }
 ```
 
-3. Der nachfolgende Source Code zeigt Ihnen wie Sie einen WebSocket endpoint erstellen können.
+3. The following source code shows you how to create a WebSocket endpoint.
 ```java
 package de.craftsarmy.myaddon
 
@@ -102,7 +103,7 @@ public class MySocket implements SocketHandler {
 }
 ```
 
-4. Zu guter letzt brauchen Sie noch das Herzstück Ihrer Anwendung, die Addon Klasse. Dort werden auch alle Routen und Endpoints registriert.
+4. Last but not least, you need the heart of your application, the Addon class. This is where all routes and endpoints are registered.
 ```java
 package de.craftsarmy.myaddon
 
@@ -122,16 +123,16 @@ public class MyAddon extends Addon {
 }
 ```
 
-Bitte suchen Sie für eine detaliertere Beschreibung uns [Wiki]() auf.
+Please visit our [Wiki](https://github.com/CrAfTsArMy/CraftsNet/wiki) for a more detailed description.
 
-## SSL aktivieren
-Um SSL zu aktivieren und eine sichere Verbindung zu ermöglichen, können Sie einfach Ihre SSL-Zertifikate hinzufügen. Momentan werden nur von LetsEncrypt ausgestelle Zertifikate akzeptiert. Sie benötigen die `fullchain.pem` und die `privkey.pem` welche sie in dem Ordner `certificates` ablegen müssen, damit CraftsNet diese erkennt.
+## Enable SSL
+To enable SSL and enable a secure connection, you can simply add your SSL certificates. Currently only certificates issued by LetsEncrypt are accepted. You need the `fullchain.pem` and the `privkey.pem` which you have to put in the folder `certificates` so that CraftsNet recognizes them.
 
-Anschließend können Sie SSL aktivieren, indem Sie an Ihren startup Befehl `--ssl CHOOSE_A_PASSWORD` anhängen, wobei Sie `CHOOSE_A_PASSWORD` durch eines von Ihnen gewähltes Passwort ersetzen.
+You can then enable SSL by appending `--ssl CHOOSE_A_PASSWORD` to your startup command, replacing `CHOOSE_A_PASSWORD` with a password of your choosing.
 
-## Unterstützung und Beitrag
-Wenn Sie Fragen haben oder einen Fehler gefunden haben, können Sie uns gerne in unserem [Issue-Tracker](https://github.com/CrAfTsArMy/CraftsNet/issues) informieren. Wir schätzen jede Hilfe und begrüßen Ihre Beiträge zur Verbesserung des CraftsNet-Projekts.
+## Support and contribution
+If you have any questions or have found a bug, please feel free to let us know in our [issue tracker](https://github.com/CrAfTsArMy/CraftsNet/issues). We appreciate any help and welcome your contributions to improve the CraftsNet project.
 
 ---
 
-Vielen Dank, dass Sie sich für CraftsNet interessieren! Wir hoffen, dass Sie von dieser benutzerfreundlichen Java-Bibliothek profitieren und damit leistungsfähige Serveranwendungen erstellen können. Bei Fragen oder Anregungen stehen wir Ihnen gerne [hier](https://dc.craftsblock.de) zur Verfügung! 
+Thank you for your interest in CraftsNet! We hope that you will benefit from this user-friendly Java library and use it to create powerful server applications. If you have any questions or suggestions, please feel free to contact us [here](https://dc.craftsblock.de)! 
