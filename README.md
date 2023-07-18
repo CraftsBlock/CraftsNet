@@ -11,7 +11,7 @@
 
 CraftsNet is an easy-to-use Java library that enables developers to effortlessly create and manage HTTP routes and WebSocket endpoints in their server applications. This library greatly simplifies server development, allowing developers to focus on the actual functionality of their application without having to deal with complex server details.
 
-## Funktionen
+## Functions
 
 - Define and manage HTTP routes for different endpoints of the application.
 - Support for dynamic parameters in HTTP routes for more flexible functionality.
