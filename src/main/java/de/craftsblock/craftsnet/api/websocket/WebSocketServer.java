@@ -17,17 +17,42 @@ import java.security.cert.CertificateException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+/**
+ * The WebSocketServer class represents a simple WebSocket server implementation. It allows WebSocket clients to connect,
+ * manages their connections, and enables sending messages to connected clients.
+ * The server can be configured to use SSL encryption by providing the necessary SSL key file.
+ * It uses a ServerSocket to listen for incoming connections on the specified port.
+ *
+ * @author CraftsBlock
+ * @see WebSocketClient
+ * @since 2.1.1
+ */
 public class WebSocketServer {
 
     private ConcurrentLinkedQueue<WebSocketClient> clients;
-    private ConcurrentHashMap<RouteRegistry.SocketMapping, ConcurrentLinkedQueue<WebSocketClient>> connected;
+    private ConcurrentHashMap<String, ConcurrentLinkedQueue<WebSocketClient>> connected;
     private ServerSocket serverSocket;
     private boolean running;
 
+    /**
+     * Constructs a WebSocketServer instance with the specified port number.
+     *
+     * @param port    The port number on which the server will listen for incoming connections.
+     * @param ssl     A boolean flag indicating whether SSL encryption should be used (true for HTTPS, false for HTTP).
+     * @param ssl_key The key which is used to secure the private key while running (applicable only when ssl is true).
+     */
     public WebSocketServer(int port, boolean ssl, String ssl_key) {
         this(port, 0, ssl, ssl_key);
     }
 
+    /**
+     * Constructs a WebSocketServer instance with the specified port number and backlog size.
+     *
+     * @param port    The port number on which the server will listen for incoming connections.
+     * @param backlog The size of the backlog for the server socket.
+     * @param ssl     A boolean flag indicating whether SSL encryption should be used.
+     * @param ssl_key The key which is used to secure the private key while running.
+     */
     public WebSocketServer(int port, int backlog, boolean ssl, String ssl_key) {
         Logger logger = Main.logger;
         try {
@@ -47,6 +72,9 @@ public class WebSocketServer {
         }
     }
 
+    /**
+     * Starts the WebSocket server and waits for incoming connections.
+     */
     public void start() {
         Thread connector = new Thread(() -> {
             int i = 0;
@@ -72,6 +100,9 @@ public class WebSocketServer {
         }));
     }
 
+    /**
+     * Stops the WebSocket server and closes all connections.
+     */
     public void stop() {
         running = false;
         try {
@@ -85,19 +116,41 @@ public class WebSocketServer {
         }
     }
 
+    /**
+     * Sends a message to all connected WebSocket clients.
+     *
+     * @param data The message to be sent.
+     */
     public void broadcast(String data) {
         clients.forEach(client -> client.sendMessage(data));
     }
 
-    public void broadcast(RouteRegistry.SocketMapping mapping, String data) {
-        if (connected.containsKey(mapping)) connected.get(mapping).forEach(client -> client.sendMessage(data));
+    /**
+     * Sends a message to all connected WebSocket clients with a specified path.
+     *
+     * @param path The path to which the clients are assigned.
+     * @param data The message to be sent.
+     */
+    public void broadcast(String path, String data) {
+        if (connected.containsKey(path)) connected.get(path).forEach(client -> client.sendMessage(data));
     }
 
-    protected void add(RouteRegistry.SocketMapping mapping, WebSocketClient client) {
-        if (!connected.containsKey(mapping)) connected.put(mapping, new ConcurrentLinkedQueue<>());
-        connected.get(mapping).add(client);
+    /**
+     * Adds a WebSocket client to a specified path.
+     *
+     * @param path   The path to which the client will be assigned.
+     * @param client The WebSocket client that will be added.
+     */
+    protected void add(String path, WebSocketClient client) {
+        if (!connected.containsKey(path)) connected.put(path, new ConcurrentLinkedQueue<>());
+        connected.get(path).add(client);
     }
 
+    /**
+     * Removes a WebSocket client from the server and the associated path.
+     *
+     * @param client The WebSocket client that will be removed.
+     */
     protected void remove(WebSocketClient client) {
         clients.remove(client);
         connected.values().stream()

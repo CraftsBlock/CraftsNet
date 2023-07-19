@@ -1,5 +1,7 @@
 package de.craftsblock.craftsnet.utils;
 
+import com.google.gson.Gson;
+
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -13,8 +15,31 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
 
+/**
+ * The SSL class provides utility methods to set up an SSL context based on the provided SSL certificate and private key.
+ * It allows for secure connections using the TLS protocol. The class supports loading X.509 certificates and RSA private keys
+ * from files and initializes the SSL context using these credentials. Additionally, the class provides helper methods for
+ * file handling and private key extraction.
+ *
+ * @author CraftsBlock
+ * @since 2.1.1
+ */
 public class SSL {
 
+    /**
+     * Loads an SSL context based on the provided SSL certificate and private key files.
+     *
+     * @param fullchain The path to the file containing the SSL certificate (X.509 format).
+     * @param privkey   The path to the file containing the private key (RSA format).
+     * @param key       The key which is used to secure the private key while running.
+     * @return SSLContext An initialized SSLContext object for secure connections.
+     * @throws CertificateException      If there is an error with the certificate.
+     * @throws IOException               If there is an I/O related error.
+     * @throws NoSuchAlgorithmException  If a required cryptographic algorithm is not available.
+     * @throws KeyStoreException         If there is an error with the KeyStore.
+     * @throws KeyManagementException    If there is an error with SSL context initialization.
+     * @throws UnrecoverableKeyException If the private key cannot be recovered.
+     */
     public static SSLContext load(String fullchain, String privkey, String key) throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, UnrecoverableKeyException {
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         keyStore.load(null);
@@ -35,6 +60,13 @@ public class SSL {
         return sslContext;
     }
 
+    /**
+     * Helper method to get a File object from the given path and create parent directories if necessary.
+     *
+     * @param path The path to the file.
+     * @return File A File object representing the file specified by the path.
+     * @throws FileNotFoundException If the specified file is not found.
+     */
     private static File file(String path) throws FileNotFoundException {
         File file = new File(path);
         file.getParentFile().mkdirs();
@@ -43,6 +75,13 @@ public class SSL {
         return file;
     }
 
+    /**
+     * Helper method to read the private key from an InputStream and convert it to a PrivateKey object.
+     *
+     * @param privateKeyStream The InputStream containing the private key data.
+     * @return PrivateKey A PrivateKey object representing the private key.
+     * @throws IOException If there is an I/O related error.
+     */
     private static PrivateKey getPrivateKey(InputStream privateKeyStream) throws IOException {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(privateKeyStream))) {
             String line;

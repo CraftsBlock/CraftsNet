@@ -5,10 +5,24 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * Custom annotation used to mark classes as WebSocket handlers.
+ *
+ * @author CraftsBlock
+ * @see MessageReceiver
+ * @see SocketHandler
+ * @since 2.1.1
+ */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Socket {
 
+    /**
+     * Specifies the WebSocket path to which this handler is associated.
+     * This path is used to identify which WebSocket endpoint the handler is responsible for.
+     *
+     * @return The WebSocket path associated with this handler.
+     */
     String path();
 
 
