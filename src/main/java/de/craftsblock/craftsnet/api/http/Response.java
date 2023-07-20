@@ -158,7 +158,7 @@ public class Response implements AutoCloseable {
      *
      * @return The HttpExchange object representing the HTTP request-response exchange.
      */
-    protected HttpExchange getExchange() {
+    public HttpExchange unsafe() {
         return exchange;
     }
 

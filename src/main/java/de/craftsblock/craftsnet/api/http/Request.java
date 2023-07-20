@@ -124,13 +124,7 @@ public class Request {
      * @return True if the request has a valid JSON body, false otherwise.
      */
     public boolean hasBody() {
-        try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody()));
-            return (body = reader.readLine()) != null && Validator.isJsonValid(body);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return false;
+        return getBody() != null;
     }
 
     /**
@@ -140,7 +134,15 @@ public class Request {
      */
     @Nullable
     public Json getBody() {
-        return (hasBody() ? JsonParser.parse(body) : null);
+        if (body != null)
+            return JsonParser.parse(body);
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody()));
+            body = reader.readLine();
+            if (Validator.isJsonValid(body)) return JsonParser.parse(body);
+        } catch (Exception ignored) {
+        }
+        return null;
     }
 
     /**
@@ -187,7 +189,7 @@ public class Request {
      *
      * @return The HttpExchange object.
      */
-    protected HttpExchange getExchange() {
+    public HttpExchange unsafe() {
         return exchange;
     }
 

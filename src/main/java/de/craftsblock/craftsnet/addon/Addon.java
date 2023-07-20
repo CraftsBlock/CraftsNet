@@ -86,7 +86,7 @@ public abstract class Addon {
 
     /**
      * Get the logger instance used by the addon.
-     * This method is marked as final to prevent subclasses from modifying the registry directly.
+     * This method is marked as final to prevent subclasses from modifying the logger directly.
      *
      * @return The logger instance used by the addon.
      */
@@ -96,7 +96,6 @@ public abstract class Addon {
 
     /**
      * Get the data folder for the addon.
-     * This method is marked as final to prevent subclasses from modifying the registry directly.
      * The data folder is a directory specific to each addon where it can store any files or data it needs.
      * If the data folder does not exist, it will be created.
      * If the data folder exists but is not a directory, it will be deleted, and a new one will be created.
