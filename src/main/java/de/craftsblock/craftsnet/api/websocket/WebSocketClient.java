@@ -321,7 +321,16 @@ public class WebSocketClient extends Thread {
             byte[] rawData = data.getBytes(StandardCharsets.UTF_8);
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             outputStream.write((byte) 0x81);
-            outputStream.write((byte) rawData.length);
+            int length = rawData.length;
+            if (length <= 125) outputStream.write((byte) length);
+            else if (length <= 65535) {
+                outputStream.write((byte) 126);
+                outputStream.write((byte) (length >> 8));
+                outputStream.write((byte) length);
+            } else {
+                outputStream.write((byte) 127);
+                for (int i = 7; i >= 0; i--) outputStream.write((byte) (length >> (8 * i)));
+            }
             outputStream.write(rawData);
             OutputStream socketOutputStream = socket.getOutputStream();
             socketOutputStream.write(outputStream.toByteArray());
