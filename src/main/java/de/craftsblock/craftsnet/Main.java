@@ -63,11 +63,13 @@ public class Main {
         routeRegistry = new RouteRegistry();
         addonManager = new AddonManager();
 
-        // Set up and start the HTTP server
-        logger.debug("Aufsetzen des Web Servers");
-        webServer = new WebServer(port, ssl, ssl_key);
+        // Check if http routes are registered and start the web server if needed
+        if (routeRegistry.hasRoutes()) {
+            logger.debug("Aufsetzen des Web Servers");
+            webServer = new WebServer(port, ssl, ssl_key);
+        }
 
-        // Check if WebSocket routes are registered and start the WebSocket server if needed
+        // Check if webSocket routes are registered and start the websocket server if needed
         if (routeRegistry.hasWebsockets()) {
             logger.debug("Starten des Websocket Servers");
             webSocketServer = new WebSocketServer(socketport, ssl, ssl_key);

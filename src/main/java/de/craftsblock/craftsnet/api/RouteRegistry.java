@@ -191,7 +191,17 @@ public class RouteRegistry {
      * @since 2.1.1
      */
     public boolean hasWebsockets() {
-        return sockets.size() != 0;
+        return !sockets.isEmpty();
+    }
+
+    /**
+     * Checks if the registry has any registered route handlers.
+     *
+     * @return true if the registry has registered route handlers, false otherwise.
+     * @since 2.1.1
+     */
+    public boolean hasRoutes() {
+        return !routes.isEmpty();
     }
 
     /**
