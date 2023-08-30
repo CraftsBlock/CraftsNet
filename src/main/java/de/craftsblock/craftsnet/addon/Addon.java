@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.addon;
 
 import de.craftsblock.craftscore.event.ListenerRegistry;
 import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.utils.Logger;
 
 import java.io.File;
@@ -31,8 +32,9 @@ import java.io.File;
 public abstract class Addon {
 
     private String name;
+    private CommandRegistry commandRegistry;
+    private ListenerRegistry listenerRegistry;
     private RouteRegistry handler;
-    private ListenerRegistry registry;
     private Logger logger;
 
     /**
@@ -65,13 +67,13 @@ public abstract class Addon {
     }
 
     /**
-     * Get the RouteRegistry instance used by the addon.
-     * This method is marked as final to prevent subclasses from modifying the handler directly.
+     * Get the CommandRegistry instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the registry directly.
      *
-     * @return The RouteRegistry instance used by the addon.
+     * @return The CommandRegistry instance used by the addon.
      */
-    public final RouteRegistry routeRegistry() {
-        return handler;
+    public final CommandRegistry commandRegistry() {
+        return commandRegistry;
     }
 
     /**
@@ -81,7 +83,17 @@ public abstract class Addon {
      * @return The ListenerRegistry instance used by the addon.
      */
     public final ListenerRegistry listenerRegistry() {
-        return registry;
+        return listenerRegistry;
+    }
+
+    /**
+     * Get the RouteRegistry instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the handler directly.
+     *
+     * @return The RouteRegistry instance used by the addon.
+     */
+    public final RouteRegistry routeRegistry() {
+        return handler;
     }
 
     /**

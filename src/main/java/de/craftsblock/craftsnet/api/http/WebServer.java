@@ -3,7 +3,7 @@ package de.craftsblock.craftsnet.api.http;
 import com.sun.net.httpserver.*;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
-import de.craftsblock.craftsnet.Main;
+import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.events.RequestEvent;
 import de.craftsblock.craftsnet.utils.Logger;
@@ -44,7 +44,7 @@ public class WebServer {
      * @throws IOException If an I/O error occurs while creating the server.
      */
     public WebServer(int port, boolean ssl, String ssl_key) throws IOException {
-        logger = Main.logger;
+        logger = CraftsNet.logger;
 
         // Add a JVM shutdown hook to gracefully stop the server when the JVM exits.
         logger.debug("Web Server JVM Shutdown Hook wird eingebunden");
@@ -100,26 +100,26 @@ public class WebServer {
                 }
 
                 String requestMethod = exchange.getRequestMethod(); // Get the HTTP request method (e.g., GET, POST).
-                RouteRegistry.RouteMapping route = Main.routeRegistry.getRoute(url, requestMethod); // Find the registered route mapping based on the URL and request method.
-
-                // Create a RequestEvent and call listeners before invoking the API handler method.
-                RequestEvent event = new RequestEvent(new Exchange(request, response), route);
-                Main.listenerRegistry.call(event);
-                if (event.isCancelled()) {
-                    logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[ABORTED]");
-                    return;
-                }
-                logger.info(requestMethod + " " + url + " from " + ip);
+                RouteRegistry.RouteMapping route = CraftsNet.routeRegistry.getRoute(url, requestMethod); // Find the registered route mapping based on the URL and request method.
 
                 // If no matching route is found, return an error response.
                 if (route == null) {
                     Json config = JsonParser.parse("{}");
                     config.set("error", "Path do not match any API endpoint!");
                     response.print(config.asString());
+                    logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[NOT FOUND]");
                     return;
                 }
-
                 request.setRoute(route); // Associate the matched route with the Request object.
+
+                // Create a RequestEvent and call listeners before invoking the API handler method.
+                RequestEvent event = new RequestEvent(new Exchange(request, response), route);
+                CraftsNet.listenerRegistry.call(event);
+                if (event.isCancelled()) {
+                    logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[ABORTED]");
+                    return;
+                }
+                logger.info(requestMethod + " " + url + " from " + ip);
 
                 // Use a regular expression matcher to extract path parameters from the URL.
                 Matcher matcher = route.validator().matcher(url);

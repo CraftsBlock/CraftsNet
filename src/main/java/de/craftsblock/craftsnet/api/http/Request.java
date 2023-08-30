@@ -5,10 +5,13 @@ import com.sun.net.httpserver.HttpExchange;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftscore.utils.Validator;
+import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.api.http.body.*;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 
@@ -31,7 +34,7 @@ public class Request {
     private final Json cookies = JsonParser.parse("{}");
     private final String ip;
 
-    private String body;
+    private Body body;
     private RouteRegistry.RouteMapping route;
 
     /**
@@ -119,30 +122,39 @@ public class Request {
     }
 
     /**
-     * Checks if the request has a valid JSON-formatted body.
+     * Checks if the HTTP request has a request body.
      *
-     * @return True if the request has a valid JSON body, false otherwise.
+     * @return {@code true} if a request body exists, otherwise {@code false}.
      */
     public boolean hasBody() {
         return getBody() != null;
     }
 
     /**
-     * Retrieves the JSON object from the request body.
+     * Retrieves the HTTP request body, if it exists.
      *
-     * @return The JSON object parsed from the request body, or null if the request body is not a valid JSON.
+     * @return The HTTP request body as a {@code Body} object, or {@code null} if no body exists or an error occurs.
      */
     @Nullable
-    public Json getBody() {
+    public Body getBody() {
+        // Check if the body has already been obtained
         if (body != null)
-            return JsonParser.parse(body);
+            return body;
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(exchange.getRequestBody()));
-            body = reader.readLine();
-            if (Validator.isJsonValid(body)) return JsonParser.parse(body);
+            // Check the Content-Type header to determine the type of request body
+            if (headers.getFirst("Content-Type").startsWith("multipart/form-data")) {
+                // If it's a multipart/form-data request, extract the boundary
+                String[] boundary = headers.getFirst("Content-Type").split("=");
+                if (boundary.length != 2) return null; // Ensure that the Content-Type header contains a valid boundary
+                body = new MultipartFormBody(boundary[1], exchange.getRequestBody()); // Create a new MultipartFormBody using the boundary and the request body
+            } else if (headers.getFirst("Content-Type").startsWith("application/x-www-form-urlencoded"))
+                // If it's an application/x-www-form-urlencoded request, create a StandardFormBody
+                body = new StandardFormBody(exchange.getRequestBody());
+            else body = JsonBody.parseOrNull(exchange.getRequestBody()); // If it's neither multipart nor form data, attempt to parse it as JSON
+            return body; // Return the obtained body
         } catch (Exception ignored) {
         }
-        return null;
+        return null; // Return null if no body exists or an error occurred
     }
 
     /**

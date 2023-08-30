@@ -1,7 +1,6 @@
 package de.craftsblock.craftsnet.api.websocket;
 
-import de.craftsblock.craftsnet.Main;
-import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.utils.Logger;
 import de.craftsblock.craftsnet.utils.SSL;
 
@@ -9,6 +8,7 @@ import javax.net.ssl.SSLServerSocketFactory;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class WebSocketServer {
 
+    private Thread connector;
     private ConcurrentLinkedQueue<WebSocketClient> clients;
     private ConcurrentHashMap<String, ConcurrentLinkedQueue<WebSocketClient>> connected;
     private ServerSocket serverSocket;
@@ -54,7 +55,7 @@ public class WebSocketServer {
      * @param ssl_key The key which is used to secure the private key while running.
      */
     public WebSocketServer(int port, int backlog, boolean ssl, String ssl_key) {
-        Logger logger = Main.logger;
+        Logger logger = CraftsNet.logger;
         try {
             logger.info("Websocket Server wird auf Port " + port + " gestartet");
             if (!ssl) serverSocket = new ServerSocket(port, backlog);
@@ -76,7 +77,7 @@ public class WebSocketServer {
      * Starts the WebSocket server and waits for incoming connections.
      */
     public void start() {
-        Thread connector = new Thread(() -> {
+        connector = new Thread(() -> {
             int i = 0;
             while (!Thread.currentThread().isInterrupted() && running) {
                 try {
@@ -85,6 +86,7 @@ public class WebSocketServer {
                     clients.add(client);
                     client.setName("Websocket#" + i++);
                     client.start();
+                } catch (SocketException ignored) {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -92,12 +94,8 @@ public class WebSocketServer {
         });
         connector.setName("Websocket Server - Connector");
         connector.start();
-        Main.logger.debug("Websocket Server JVM Shutdown Hook wird initialisiert");
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            stop();
-            connector.interrupt();
-            clients.forEach(WebSocketClient::interrupt);
-        }));
+        CraftsNet.logger.debug("Websocket Server JVM Shutdown Hook wird initialisiert");
+        Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
 
     /**
@@ -111,6 +109,9 @@ public class WebSocketServer {
             connected.forEach((useless, client) -> client.forEach(WebSocketClient::disconnect));
             connected.clear();
             serverSocket.close();
+            if (connector != null)
+                connector.interrupt();
+            clients.forEach(WebSocketClient::interrupt);
         } catch (IOException e) {
             e.printStackTrace();
         }

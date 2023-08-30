@@ -6,12 +6,14 @@ import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.WebServer;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
+import de.craftsblock.craftsnet.command.CommandRegistry;
+import de.craftsblock.craftsnet.command.commands.ShutdownCommand;
 import de.craftsblock.craftsnet.events.ConsoleMessageEvent;
+import de.craftsblock.craftsnet.listeners.ConsoleListener;
 import de.craftsblock.craftsnet.utils.Logger;
+import org.jetbrains.annotations.NotNull;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 
 /**
@@ -21,16 +23,17 @@ import java.lang.reflect.InvocationTargetException;
  * @author CraftsBlock
  * @since 1.0.0
  */
-public class Main {
+public class CraftsNet {
 
     // Manager instances
     public static AddonManager addonManager;
+    public static CommandRegistry commandRegistry;
     public static ListenerRegistry listenerRegistry;
+    public static RouteRegistry routeRegistry;
 
     // Server instances
     public static WebServer webServer;
     public static WebSocketServer webSocketServer;
-    public static RouteRegistry routeRegistry;
 
     // Logger instance
     public static Logger logger;
@@ -61,6 +64,7 @@ public class Main {
         logger.debug("Initialisierung von System Variablen");
         listenerRegistry = new ListenerRegistry();
         routeRegistry = new RouteRegistry();
+        commandRegistry = new CommandRegistry();
         addonManager = new AddonManager();
 
         // Check if http routes are registered and start the web server if needed
@@ -76,8 +80,24 @@ public class Main {
             webSocketServer.start();
         }
 
+        // Register build in commands / listeners
+        listenerRegistry.register(new ConsoleListener());
+        commandRegistry.getCommand("shutdown").setExecutor(new ShutdownCommand());
+        commandRegistry.getCommand("quit").setExecutor(new ShutdownCommand());
+
         // Set up and start the console listener
         logger.debug("Konsolen Listener wird gestartet");
+        Thread console = getConsoleReader();
+
+        // Register a shutdown hook for the console listener
+        logger.debug("Console Listener JVM Shutdown Hook wird implementiert");
+        Runtime.getRuntime().addShutdownHook(new Thread(console::interrupt));
+
+        logger.info("Backend wurde erfolgreich nach " + (System.currentTimeMillis() - start) + "ms gestartet"); // Log successful startup message with elapsed time
+    }
+
+    @NotNull
+    private static Thread getConsoleReader() {
         Thread console = new Thread(() -> {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             String line;
@@ -91,12 +111,7 @@ public class Main {
             }
         }, "Console Reader");
         console.start();
-
-        // Register a shutdown hook for the console listener
-        logger.debug("Console Listener JVM Shutdown Hook wird implementiert");
-        Runtime.getRuntime().addShutdownHook(new Thread(console::interrupt));
-
-        logger.info("Backend wurde erfolgreich nach " + (System.currentTimeMillis() - start) + "ms gestartet"); // Log successful startup message with elapsed time
+        return console;
     }
 
 }

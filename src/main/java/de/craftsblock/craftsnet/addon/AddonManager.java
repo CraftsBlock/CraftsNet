@@ -37,16 +37,16 @@ public class AddonManager {
             folder.mkdirs();
         }
         for (File file : Objects.requireNonNull(folder.listFiles()))
-            addonLoader.add(file);
-        addonLoader.load();
+            if (file.getName().endsWith(".jar")) addonLoader.add(file);
+        addonLoader.load(this);
     }
 
     /**
      * Method to stop the AddonManager. It is called during application shutdown.
-     * Currently, it doesn't have any specific actions.
      */
     public void stop() {
-        // TODO: Implement necessary cleanup or shutdown actions, if required.
+        addons.values().forEach(Addon::onDisable);
+        addons.values().forEach(this::unregister);
     }
 
     /**

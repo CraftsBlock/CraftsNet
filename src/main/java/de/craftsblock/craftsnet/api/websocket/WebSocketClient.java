@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import de.craftsblock.craftscore.json.JsonParser;
-import de.craftsblock.craftsnet.Main;
+import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.events.sockets.ClientConnectEvent;
 import de.craftsblock.craftsnet.events.sockets.ClientDisconnectEvent;
@@ -75,7 +75,7 @@ public class WebSocketClient extends Thread {
 
         SocketExchange exchange = new SocketExchange(server, this); // Create a SocketExchange object to handle communication with the server
         active = true;
-        Logger logger = Main.logger;
+        Logger logger = CraftsNet.logger;
         try {
             // Setup input and output streams for communication with the client
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -96,7 +96,7 @@ public class WebSocketClient extends Thread {
 
                 // Trigger the ClientConnectEvent to handle the client connection
                 ClientConnectEvent event = new ClientConnectEvent(exchange, mapping);
-                Main.listenerRegistry.call(event);
+                CraftsNet.listenerRegistry.call(event);
 
                 // If the event is cancelled, disconnect the client
                 if (event.isCancelled()) {
@@ -135,7 +135,7 @@ public class WebSocketClient extends Thread {
                     args[1] = message;
                     for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
                     IncomingSocketMessageEvent event2 = new IncomingSocketMessageEvent(exchange, message);
-                    Main.listenerRegistry.call(event2);
+                    CraftsNet.listenerRegistry.call(event2);
                     if (event2.isCancelled())
                         continue;
 
@@ -176,7 +176,7 @@ public class WebSocketClient extends Thread {
      */
     @Nullable
     private RouteRegistry.SocketMapping getEndpoint(String header) {
-        return Main.routeRegistry.getSocket(header);
+        return CraftsNet.routeRegistry.getSocket(header);
     }
 
     /**
@@ -314,7 +314,7 @@ public class WebSocketClient extends Thread {
     public void sendMessage(String data) {
         try {
             OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(new SocketExchange(server, this), data);
-            Main.listenerRegistry.call(event);
+            CraftsNet.listenerRegistry.call(event);
             if (event.isCancelled())
                 return;
             data = event.getData();
@@ -350,12 +350,12 @@ public class WebSocketClient extends Thread {
      */
     public void disconnect() {
         try {
-            Main.listenerRegistry.call(new ClientDisconnectEvent(new SocketExchange(server, this), mapping));
+            CraftsNet.listenerRegistry.call(new ClientDisconnectEvent(new SocketExchange(server, this), mapping));
             if (reader != null) reader.close();
             if (writer != null) writer.close();
             if (socket != null) socket.close();
             server.remove(this);
-            Main.logger.debug(ip + " disconnected");
+            CraftsNet.logger.debug(ip + " disconnected");
         } catch (IOException e) {
             e.printStackTrace();
         } catch (InvocationTargetException | IllegalAccessException e) {

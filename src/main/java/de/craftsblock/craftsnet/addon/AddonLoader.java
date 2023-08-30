@@ -1,9 +1,10 @@
 package de.craftsblock.craftsnet.addon;
 
+import com.sun.tools.javac.Main;
 import de.craftsblock.craftscore.actions.CompleteAbleActionImpl;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
-import de.craftsblock.craftsnet.Main;
+import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.utils.Logger;
 
 import java.io.BufferedReader;
@@ -59,9 +60,9 @@ public class AddonLoader {
      *
      * @throws IOException if there is an I/O error while loading the addons.
      */
-    public void load() throws IOException {
+    public void load(AddonManager manager) throws IOException {
         long start = System.currentTimeMillis();
-        Logger logger = Main.logger;
+        Logger logger = CraftsNet.logger;
         logger.info("Addons werden geladen");
 
         // Create an array of URLs containing the addon file locations
@@ -93,17 +94,21 @@ public class AddonLoader {
                     throw new IllegalStateException("Die zuladene Main Klasse (" + className + ") ist keine instance von Addon!");
 
                 // Create an instance of the main class and inject dependencies using reflection
-                Object obj = clazz.getDeclaredConstructor().newInstance();
+                Addon obj = (Addon) clazz.getDeclaredConstructor().newInstance();
                 setField("name", obj, name);
                 setField("logger", obj, logger);
-                setField("handler", obj, Main.routeRegistry);
-                setField("registry", obj, Main.listenerRegistry);
+                setField("handler", obj, CraftsNet.routeRegistry);
+                setField("listenerRegistry", obj, CraftsNet.listenerRegistry);
+                setField("commandRegistry", obj, CraftsNet.commandRegistry);
 
                 // Call the 'onLoad' method of the addon instance
-                obj.getClass().getMethod("onLoad").invoke(obj);
+                obj.onLoad();
+//                obj.getClass().getMethod("onLoad").invoke(obj);
                 tasks.add(new CompleteAbleActionImpl<>(() -> {
                     // Call the 'onEnable' method of the addon instance asynchronously
-                    obj.getClass().getMethod("onEnable").invoke(obj);
+                    obj.onEnable();
+                    manager.register(obj);
+//                    obj.getClass().getMethod("onEnable").invoke(obj);
                     return null;
                 }));
             } catch (Exception e) {
@@ -155,7 +160,12 @@ public class AddonLoader {
                 // Check if the entry is a class file and attempt to load the class
                 if (entryName.endsWith(".class")) {
                     String className = entryName.substring(0, entryName.length() - 6).replace('/', '.');
-                    Class<?> clazz = classLoader.loadClass(className);
+                    try {
+                        Class<?> clazz = classLoader.loadClass(className);
+                    } catch (ClassNotFoundException | NoClassDefFoundError e) {
+                        CraftsNet.logger.error("Die Klasse " + className + " konnte nicht gefunden werden.");
+                        continue;
+                    }
                     continue;
                 }
 
