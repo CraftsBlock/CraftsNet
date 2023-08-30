@@ -77,7 +77,7 @@ public class MyRoute implements RequestHandler {
     
   @Route(path = "/v1/route")
   public void handleRoute(Exchange exchange) {
-    // Den request verarbeiten
+    // Process the request
   }
     
 }
@@ -97,7 +97,7 @@ public class MySocket implements SocketHandler {
     
   @MessageReceiver
   public void handleSocketMessage(SocketExchange exchange, String data) {
-    // Die Socket message verarbeiten
+    // Process the socket message
   }
     
 }
