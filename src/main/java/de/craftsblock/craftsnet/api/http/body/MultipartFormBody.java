@@ -170,7 +170,7 @@ public class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData>
      * @author CraftsBlock
      * @see MultipartFormBody
      * @see MultipartItem
-     * @since 2.1.0
+     * @since 2.2.0
      */
     public record MultipartData(String name, List<MultipartItem> items) {
 
@@ -211,7 +211,7 @@ public class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData>
      * @author CraftsBlock
      * @see MultipartFormBody
      * @see MultipartData
-     * @since 2.1.0
+     * @since 2.2.0
      */
     public record MultipartItem(List<byte[]> data, String contentType) {
 
