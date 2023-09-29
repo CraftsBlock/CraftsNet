@@ -5,6 +5,7 @@ package de.craftsblock.craftsnet.api.websocket;
  * WebSocket server handlers must implement this interface to define their behavior.
  *
  * @author CraftsBlock
+ * @version 1.0
  * @see Socket
  * @since 2.1.1
  */

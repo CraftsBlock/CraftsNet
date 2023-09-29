@@ -25,10 +25,9 @@ public class AddonManager {
      * Constructor for the AddonManager class. It loads and initializes the addons present in the "./addons/" folder.
      * It also adds a shutdown hook to handle cleanup when the application is shut down.
      *
-     * @throws IOException            if there is an I/O error while accessing the addons folder.
-     * @throws ClassNotFoundException if a class required for addon loading is not found.
+     * @throws IOException if there is an I/O error while accessing the addons folder.
      */
-    public AddonManager() throws IOException, ClassNotFoundException {
+    public AddonManager() throws IOException {
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
 
         File folder = new File("./addons/");
@@ -47,6 +46,7 @@ public class AddonManager {
     public void stop() {
         addons.values().forEach(Addon::onDisable);
         addons.values().forEach(this::unregister);
+        addons.clear();
     }
 
     /**
@@ -73,7 +73,7 @@ public class AddonManager {
      * @return A read-only ConcurrentHashMap containing the registered addons.
      */
     public ConcurrentHashMap<String, Addon> getAddons() {
-        return (ConcurrentHashMap<String, Addon>) Map.copyOf(addons);
+        return new ConcurrentHashMap<>(addons);
     }
 
 }

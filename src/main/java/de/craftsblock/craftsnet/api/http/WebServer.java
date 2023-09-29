@@ -5,6 +5,7 @@ import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.events.RequestEvent;
 import de.craftsblock.craftsnet.utils.Logger;
 import de.craftsblock.craftsnet.utils.SSL;
@@ -18,6 +19,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 
 /**
@@ -25,6 +27,7 @@ import java.util.regex.Matcher;
  * them based on registered API endpoints using the provided RouteRegistry.
  *
  * @author CraftsBlock
+ * @version 1.3
  * @see Exchange
  * @see RequestHandler
  * @see Route
@@ -76,6 +79,7 @@ public class WebServer {
         server.createContext("/").setHandler(exchange -> {
             try (exchange; Response response = new Response(exchange)) {
                 // Extract relevant information from the incoming request.
+                String domain = exchange.getRequestHeaders().getFirst("Host");
                 String url = exchange.getRequestURI().toString();
                 String[] stripped = url.split("\\?");
                 String query = (stripped.length == 2 ? stripped[1] : "");
@@ -100,7 +104,7 @@ public class WebServer {
                 }
 
                 String requestMethod = exchange.getRequestMethod(); // Get the HTTP request method (e.g., GET, POST).
-                RouteRegistry.RouteMapping route = CraftsNet.routeRegistry.getRoute(url, requestMethod); // Find the registered route mapping based on the URL and request method.
+                RouteRegistry.RouteMapping route = CraftsNet.routeRegistry.getRoute(url, domain, requestMethod); // Find the registered route mapping based on the URL and request method.
 
                 // If no matching route is found, return an error response.
                 if (route == null) {
@@ -138,12 +142,12 @@ public class WebServer {
 
                 route.method().invoke(route.handler(), args); // Invoke the API handler method with the extracted path parameters.
             } catch (IllegalAccessException | InvocationTargetException e) {
-                e.printStackTrace();
+                logger.error(e);
             }
         });
 
         logger.debug("Web Server wird gestartet");
-        server.setExecutor(null);
+        server.setExecutor(Executors.newFixedThreadPool(15));
         server.start();
     }
 

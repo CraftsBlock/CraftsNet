@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
  * It provides methods to parse and access JSON data.
  *
  * @author CraftsBlock
+ * @version 1.0
  * @see Body
  * @since 2.2.0
  */
@@ -53,6 +54,7 @@ public final class JsonBody extends Body {
         String line;
         while ((line = reader.readLine()) != null)
             lines.append(line).append("\n");
+        reader.close();
         if (Validator.isJsonValid(lines.toString())) return new JsonBody(lines.toString());
         return null;
     }

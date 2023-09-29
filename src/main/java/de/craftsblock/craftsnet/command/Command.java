@@ -1,10 +1,14 @@
 package de.craftsblock.craftsnet.command;
 
+import java.util.Arrays;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 /**
  * The {@code Command} class represents a command that can be executed.
  * It contains information about the command's name and its associated executor.
  *
  * @author CraftsBlock
+ * @version 1.1
  * @see CommandExecutor
  * @see CommandRegistry
  * @since 2.2.0
@@ -12,6 +16,7 @@ package de.craftsblock.craftsnet.command;
 public class Command {
 
     private final String name;
+    private final ConcurrentLinkedQueue<String> aliases = new ConcurrentLinkedQueue<>();
     private CommandExecutor executor;
 
     /**
@@ -57,6 +62,14 @@ public class Command {
      */
     public CommandExecutor getExecutor() {
         return executor;
+    }
+
+    public void addAlias(String... alias) {
+        aliases.addAll(Arrays.asList(alias));
+    }
+
+    public boolean isAlias(String alias) {
+        return aliases.contains(alias);
     }
 
 }

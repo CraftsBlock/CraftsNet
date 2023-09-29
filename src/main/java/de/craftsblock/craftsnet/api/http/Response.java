@@ -3,8 +3,7 @@ package de.craftsblock.craftsnet.api.http;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -15,6 +14,7 @@ import java.nio.charset.StandardCharsets;
  * Developers should not create instances of this class directly but use the provided methods in the WebServer class.
  *
  * @author CraftsBlock
+ * @version 1.0
  * @see Exchange
  * @see WebServer
  * @since 1.0.0
@@ -35,7 +35,7 @@ public class Response implements AutoCloseable {
      */
     protected Response(HttpExchange exchange) {
         this.exchange = exchange;
-        stream = exchange.getResponseBody();
+        stream = new BufferedOutputStream(exchange.getResponseBody(), 4096);
         headers = exchange.getResponseHeaders();
         setContentType("application/json");
     }
@@ -71,7 +71,23 @@ public class Response implements AutoCloseable {
             exchange.sendResponseHeaders(code, 0);
         bodySend = true;
         stream.write(bytes);
-        stream.flush();
+    }
+
+    /**
+     * Sends the provided file as the response body.
+     *
+     * @param file The file to be sent as the response body.
+     * @throws IOException if an I/O error occurs.
+     */
+    public void print(File file) throws IOException {
+        if (bodySend) return;
+        bodySend = true;
+        exchange.sendResponseHeaders(code, file.length());
+        FileInputStream input = new FileInputStream(file);
+        byte[] buffer = new byte[4096];
+        int read;
+        while ((read = input.read(buffer)) != -1) stream.write(buffer, 0, read);
+        input.close();
     }
 
     /**

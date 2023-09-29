@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * requests.
  *
  * @author CraftsBlock
+ * @version 1.0
  * @see FormBody
  * @since 2.2.0
  */
@@ -97,6 +98,7 @@ public class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData>
                     item.getKey(),
                     s -> new MultipartData(name.get(), List.copyOf(item.getValue()))
             );
+        storage.clear();
     }
 
     /**
@@ -253,7 +255,7 @@ public class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData>
          * @throws MimeTypeException If the content type is not recognized.
          * @throws IOException       If an error occurs while creating the file or writing data to it.
          */
-        public File getAsFile() throws MimeTypeException, IOException {
+        public File getAsFile() throws Exception {
             return getAsFile(null);
         }
 
@@ -265,7 +267,7 @@ public class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData>
          * @throws IOException       If an error occurs while creating the file or writing data to it.
          * @throws MimeTypeException If the content type is not recognized.
          */
-        public File getAsFile(String extension) throws IOException, MimeTypeException {
+        public File getAsFile(String extension) throws Exception {
             File file = File.createTempFile("craftsnet", extension == null ? getFileExtension() : (extension.startsWith(".") ? "" : ".") + extension);
             file.deleteOnExit();
 
@@ -284,7 +286,7 @@ public class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData>
          * @throws MimeTypeException If the content type is not recognized.
          * @throws IOException       If an error occurs while reading the file.
          */
-        public boolean validateContentType() throws MimeTypeException, IOException {
+        public boolean validateContentType() throws Exception {
             try (FileInputStream stream = new FileInputStream(getAsFile())) {
                 MimeTypes types = MimeTypes.getDefaultMimeTypes();
                 return types.forName(contentType).matches(stream.readAllBytes());

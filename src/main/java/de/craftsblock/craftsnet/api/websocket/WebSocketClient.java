@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.api.websocket;
 
+import com.sun.net.httpserver.Headers;
 import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
@@ -18,13 +19,14 @@ import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.Base64;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.stream.IntStream;
 
 /**
- * The WebSocketClient class represents a WebSocket client that connects to the WebSocketServer. It extends {@link Thread}
- * to handle incoming and outgoing messages in a separate thread.
+ * The WebSocketClient class represents a WebSocket client that connects to the WebSocketServer.
  * <p>
  * When a WebSocket client connects, the server creates a new instance of this class to manage the client's connection.
  * The client sends a handshake request, and if the server validates it, the client is assigned to a specific endpoint
@@ -34,20 +36,23 @@ import java.util.stream.IntStream;
  * The class also handles the disconnection of the client, sending messages, and reading headers and messages from the socket.
  *
  * @author CraftsBlock
+ * @version 1.6
  * @see WebSocketServer
  * @since 2.1.1
  */
-public class WebSocketClient extends Thread {
+public class WebSocketClient implements Runnable {
 
     private final WebSocketServer server;
     private final Socket socket;
-    private List<String> headers;
+    private Headers headers;
     private String ip;
     private RouteRegistry.SocketMapping mapping;
     private String path;
 
     private BufferedReader reader;
     private PrintWriter writer;
+
+    private final Logger logger = CraftsNet.logger;
 
     private boolean active = false;
 
@@ -75,12 +80,11 @@ public class WebSocketClient extends Thread {
 
         SocketExchange exchange = new SocketExchange(server, this); // Create a SocketExchange object to handle communication with the server
         active = true;
-        Logger logger = CraftsNet.logger;
         try {
             // Setup input and output streams for communication with the client
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             writer = new PrintWriter(socket.getOutputStream(), true);
-            headers = Collections.unmodifiableList(readHeaders()); // Read and store the client's headers for later use
+            headers = readHeaders(); // Read and store the client's headers for later use
 
             // Determine the client's IP address from headers, taking into account any proxy headers
             ip = socket.getInetAddress().getHostAddress();
@@ -90,7 +94,6 @@ public class WebSocketClient extends Thread {
                 ip = getHeader("Cf-connecting-ip");
 
             sendHandshake(); // Send a WebSocket handshake to establish the connection
-            path = headers.get(0).split(" ")[1]; // Extract the requested path from the headers
             if (getEndpoint(path) != null) { // Check if the requested path has a corresponding endpoint registered in the server
                 mapping = getEndpoint(path);
 
@@ -114,14 +117,14 @@ public class WebSocketClient extends Thread {
                 server.add(path, this); // Add this WebSocket client to the server's collection
 
                 String message;
-                while ((message = readMessage()) != null) {
+                while (!Thread.currentThread().isInterrupted() && (message = readMessage()) != null) {
                     // Process incoming messages from the client
                     byte[] data = message.getBytes(StandardCharsets.UTF_8);
                     if (IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) break;
                     if (message.isEmpty() || message.isBlank()) break;
 
                     // Validate the incoming message against the endpoint's validator
-                    Matcher matcher = mapping.validator().matcher(headers.get(0).split(" ")[1]);
+                    Matcher matcher = mapping.validator().matcher(path);
                     if (!matcher.matches()) {
                         sendMessage(JsonParser.parse("{}")
                                 .set("error", "There was an unexpected error while matching!")
@@ -149,7 +152,7 @@ public class WebSocketClient extends Thread {
             }
         } catch (SocketException ignored) {
         } catch (IOException | InvocationTargetException | IllegalAccessException e) {
-            e.printStackTrace();
+            logger.error(e);
         } finally {
             disconnect();
         }
@@ -161,10 +164,17 @@ public class WebSocketClient extends Thread {
      * @return A List of Strings containing the headers from the client's request.
      * @throws IOException If an I/O error occurs while reading the headers.
      */
-    private List<String> readHeaders() throws IOException {
-        List<String> headers = new ArrayList<>();
+    private Headers readHeaders() throws IOException {
+        Headers headers = new Headers();
         String line;
-        while ((line = reader.readLine()) != null && !line.isEmpty()) headers.add(line);
+        while ((line = reader.readLine()) != null && !line.isEmpty()) {
+            if (path == null) {
+                path = line.split(" ")[1].trim();
+                continue;
+            }
+            if (line.split(":").length <= 1) continue;
+            headers.add(line.split(":")[0].trim().toLowerCase(), line.substring(line.indexOf(":") + 2).trim());
+        }
         return headers;
     }
 
@@ -196,7 +206,7 @@ public class WebSocketClient extends Thread {
             writer.write(response);
             writer.flush();
         } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
+            logger.error(e);
         }
     }
 
@@ -207,6 +217,7 @@ public class WebSocketClient extends Thread {
      * @throws IOException If an I/O error occurs while reading the message.
      */
     private String readMessage() throws IOException {
+        if (socket.isClosed()) return null;
         InputStream inputStream = socket.getInputStream(); // Read the input stream from the socket.
         byte[] frame = new byte[10]; // Create a 10-byte buffer to store the received message.
         inputStream.read(frame, 0, 2); // Read the first two bytes of the frame (header) from the input stream.
@@ -282,10 +293,7 @@ public class WebSocketClient extends Thread {
      * @return The value of the header if found, or null if the header is not present.
      */
     public String getHeader(String key) {
-        for (String header : headers)
-            if (header.toLowerCase().startsWith(key.toLowerCase() + ":"))
-                return header.substring(header.indexOf(":") + 2).trim();
-        return null;
+        return headers.getFirst(key);
     }
 
     /**
@@ -302,7 +310,7 @@ public class WebSocketClient extends Thread {
      *
      * @return A List of Strings representing the headers from the client.
      */
-    public List<String> getHeaders() {
+    public Headers getHeaders() {
         return headers;
     }
 
@@ -337,30 +345,38 @@ public class WebSocketClient extends Thread {
             socketOutputStream.flush();
         } catch (SocketException ignored) {
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e);
             disconnect();
         } catch (InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException(e);
+            logger.error(e);
         }
     }
 
     /**
      * Disconnects the WebSocket client and performs necessary cleanup operations.
      * This method triggers the ClientDisconnectEvent before closing the socket and removing the client from the server.
+     *
+     * @return The Thread the client is running from
      */
-    public void disconnect() {
+    public Thread disconnect() {
         try {
+            if (reader == null || writer == null) return Thread.currentThread();
             CraftsNet.listenerRegistry.call(new ClientDisconnectEvent(new SocketExchange(server, this), mapping));
             if (reader != null) reader.close();
+            reader = null;
             if (writer != null) writer.close();
+            writer = null;
             if (socket != null) socket.close();
+            logger.debug(ip + " disconnected");
+            ip = null;
+            headers = null;
+            mapping = null;
+            path = null;
             server.remove(this);
-            CraftsNet.logger.debug(ip + " disconnected");
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException(e);
+        } catch (InvocationTargetException | IllegalAccessException | IOException e) {
+            logger.error(e);
         }
+        return Thread.currentThread();
     }
 
 }

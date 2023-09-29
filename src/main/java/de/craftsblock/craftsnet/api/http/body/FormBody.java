@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @param <T> The type of data that each field in the form body holds.
  * @author CraftsBlock
+ * @version 1.0
  * @see Body
  * @see MultipartFormBody
  * @see StandardFormBody
@@ -40,6 +41,15 @@ public abstract class FormBody<T> extends Body {
      * @throws IOException If an error occurs while reading or parsing the form data.
      */
     protected abstract void deserialize() throws IOException;
+
+    /**
+     * Clears the internal data map when the form body is closed. This is important to release resources
+     * and ensure that the form body is in a clean state after processing.
+     */
+    @Override
+    public void close() {
+        data.clear();
+    }
 
     /**
      * Checks if a specific field exists in the form data.

@@ -4,15 +4,10 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
-import de.craftsblock.craftscore.utils.Validator;
-import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.body.*;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedReader;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.Arrays;
 
 /**
@@ -23,10 +18,11 @@ import java.util.Arrays;
  * request handlers to process and respond to the incoming requests.
  *
  * @author CraftsBlock
+ * @version 1.4
  * @see Exchange
  * @since 1.0.0
  */
-public class Request {
+public class Request implements AutoCloseable {
 
     private final HttpExchange exchange;
     private final Headers headers;
@@ -63,6 +59,19 @@ public class Request {
                     return;
                 cookies.set(stripped[0], stripped[1]);
             });
+    }
+
+    /**
+     * Closes the Request object, releasing associated resources such as the HttpExchange and request headers.
+     * If a request body is present, it is also closed to free any related resources.
+     *
+     * @throws Exception If an error occurs while closing the Request object or its associated resources.
+     */
+    @Override
+    public void close() throws Exception {
+        exchange.close();
+        headers.clear();
+        if(body != null) body.close();
     }
 
     /**
@@ -138,8 +147,7 @@ public class Request {
     @Nullable
     public Body getBody() {
         // Check if the body has already been obtained
-        if (body != null)
-            return body;
+        if (body != null) return body;
         try {
             // Check the Content-Type header to determine the type of request body
             if (headers.getFirst("Content-Type").startsWith("multipart/form-data")) {
@@ -150,7 +158,8 @@ public class Request {
             } else if (headers.getFirst("Content-Type").startsWith("application/x-www-form-urlencoded"))
                 // If it's an application/x-www-form-urlencoded request, create a StandardFormBody
                 body = new StandardFormBody(exchange.getRequestBody());
-            else body = JsonBody.parseOrNull(exchange.getRequestBody()); // If it's neither multipart nor form data, attempt to parse it as JSON
+            else
+                body = JsonBody.parseOrNull(exchange.getRequestBody()); // If it's neither multipart nor form data, attempt to parse it as JSON
             return body; // Return the obtained body
         } catch (Exception ignored) {
         }
@@ -192,8 +201,8 @@ public class Request {
      *
      * @return The RequestMethod enum representing the request method.
      */
-    public RequestMethod getRequestMethod() {
-        return RequestMethod.parse(exchange.getRequestMethod());
+    public HttpMethod getRequestMethod() {
+        return HttpMethod.parse(exchange.getRequestMethod());
     }
 
     /**

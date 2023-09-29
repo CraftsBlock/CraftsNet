@@ -13,6 +13,7 @@ package de.craftsblock.craftsnet.api.http;
  * identify request handling components within a system or framework.
  *
  * @author CraftsBlock
+ * @version 1.0
  * @since 1.0.0
  */
 public interface RequestHandler {

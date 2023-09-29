@@ -1,5 +1,7 @@
 package de.craftsblock.craftsnet.utils;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 
@@ -11,6 +13,7 @@ import java.time.format.DateTimeFormatter;
  * actual log text to help with debugging and tracking application behavior.
  *
  * @author CraftsBlock
+ * @version 1.1
  * @since 1.0.0
  */
 public class Logger {
@@ -32,7 +35,7 @@ public class Logger {
      * @param text The message to be logged.
      */
     public void info(String text) {
-        log("\u001b[34;1mINFO ", text);
+        log("\u001b[34;1mINFO\u001b[0m ", text);
     }
 
     /**
@@ -41,7 +44,7 @@ public class Logger {
      * @param text The warning message to be logged.
      */
     public void warning(String text) {
-        log("\u001b[33mWARN ", text);
+        log("\u001b[33mWARN\u001b[0m ", text);
     }
 
     /**
@@ -50,7 +53,7 @@ public class Logger {
      * @param text The error message to be logged.
      */
     public void error(String text) {
-        log("\u001b[31;1mERROR", text);
+        log("\u001b[31;1mERROR\u001b[0m", text);
     }
 
     /**
@@ -59,8 +62,12 @@ public class Logger {
      * @param exception The exception to be logged.
      */
     public void error(Exception exception) {
-        log("\u001b[31;1mERROR", exception.getMessage());
-        exception.printStackTrace();
+        log("\u001b[31;1mERROR\u001b[0m", exception.getMessage());
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        exception.printStackTrace(pw);
+        for (String line : sw.toString().split("\n"))
+            error(line);
     }
 
     /**
@@ -70,8 +77,12 @@ public class Logger {
      * @param comment   An additional comment to be logged.
      */
     public void error(Exception exception, String comment) {
-        log("\u001b[31;1mERROR", comment + " > " + exception.getMessage());
-        exception.printStackTrace();
+        log("\u001b[31;1mERROR\u001b[0m", comment + " > " + exception.getMessage());
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        exception.printStackTrace(pw);
+        for (String line : sw.toString().split("\n"))
+            error(line);
     }
 
     /**
@@ -81,7 +92,7 @@ public class Logger {
      */
     public void debug(String text) {
         if (debug)
-            log("\u001b[38;5;147mDEBUG", text);
+            log("\u001b[38;5;147mDEBUG\u001b[0m", text);
     }
 
     /**
@@ -91,7 +102,7 @@ public class Logger {
      * @param text   The log message to be printed.
      */
     private void log(String prefix, String text) {
-        System.out.println("\u001b[38;5;228m" + OffsetDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + " " + prefix + " \u001b[38;5;219m| \u001b[36m" + Thread.currentThread().getName() + "\u001b[38;5;252m: " + text + "\u001b[0m");
+        System.out.println("\u001b[38;5;228m" + OffsetDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "\u001b[0m " + prefix + " \u001b[38;5;219m|\u001b[0m \u001b[36m" + Thread.currentThread().getName() + "\u001b[0m\u001b[38;5;252m: " + text + "\u001b[0m");
     }
 
 }

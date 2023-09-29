@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * It allows commands to be retrieved, checked for existence, and executed.
  *
  * @author CraftsBlock
+ * @version 1.0
  * @see Command
  * @since 2.2.0
  */
@@ -47,11 +48,16 @@ public class CommandRegistry {
      */
     public void perform(String name, String[] args) {
         Logger logger = CraftsNet.logger;
-        if (!hasCommand(name)) {
-            logger.error("Dieser Command existiert nicht!");
+        Command command = null;
+        for (Command tmp : commands.values())
+            if (tmp.getName().equalsIgnoreCase(name) || tmp.isAlias(name)) {
+                command = tmp;
+                break;
+            }
+        if (command == null) {
+            logger.warning("Dieser Command existiert nicht!");
             return;
         }
-        Command command = getCommand(name);
         command.getExecutor().onCommand(command, args, logger);
     }
 

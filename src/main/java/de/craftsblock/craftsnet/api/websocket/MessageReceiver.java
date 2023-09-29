@@ -9,6 +9,7 @@ import java.lang.annotation.Target;
  * Custom annotation used to mark methods as message receivers in WebSocket handler classes.
  *
  * @author CraftsBlock
+ * @version 1.0
  * @see Socket
  * @since 2.1.1
  */

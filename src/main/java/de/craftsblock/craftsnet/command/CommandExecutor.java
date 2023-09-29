@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
  * Classes that implement this interface can define custom logic for handling commands.
  *
  * @author CraftsBlock
+ * @version 1.0
  * @see Command
  * @since 2.2.0
  */

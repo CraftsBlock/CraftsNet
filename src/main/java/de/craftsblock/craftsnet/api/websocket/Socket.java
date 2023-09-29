@@ -12,6 +12,7 @@ import java.lang.annotation.Target;
  * @see MessageReceiver
  * @see SocketHandler
  * @since 2.1.1
+ * @version 1.0
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

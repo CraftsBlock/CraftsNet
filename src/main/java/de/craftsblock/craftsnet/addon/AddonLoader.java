@@ -1,6 +1,5 @@
 package de.craftsblock.craftsnet.addon;
 
-import com.sun.tools.javac.Main;
 import de.craftsblock.craftscore.actions.CompleteAbleActionImpl;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
@@ -117,9 +116,11 @@ public class AddonLoader {
 
         // Complete the 'onEnable' method calls for all addons
         tasks.forEach(CompleteAbleActionImpl::complete);
+        tasks.clear();
         if (addons.isEmpty())
             logger.debug("Keine Addons zum laden gefunden");
         logger.info("Alle Addons wurde innerhalb von " + (System.currentTimeMillis() - start) + "ms geladen");
+        addons.clear();
     }
 
     /**
@@ -143,9 +144,8 @@ public class AddonLoader {
      * @param file The addon JAR file to load.
      * @return The addon configuration if found, otherwise null.
      * @throws IOException            if there is an I/O error while loading the JAR file.
-     * @throws ClassNotFoundException if a class required for addon loading is not found.
      */
-    public Configuration loadJar(File file) throws IOException, ClassNotFoundException {
+    public Configuration loadJar(File file) throws IOException {
         Configuration configuration = null;
         if (file.isDirectory())
             return new Configuration(JsonParser.parse("{\"isfolder\":[]}"));
@@ -161,7 +161,7 @@ public class AddonLoader {
                 if (entryName.endsWith(".class")) {
                     String className = entryName.substring(0, entryName.length() - 6).replace('/', '.');
                     try {
-                        Class<?> clazz = classLoader.loadClass(className);
+                        classLoader.loadClass(className);
                     } catch (ClassNotFoundException | NoClassDefFoundError e) {
                         CraftsNet.logger.error("Die Klasse " + className + " konnte nicht gefunden werden.");
                         continue;

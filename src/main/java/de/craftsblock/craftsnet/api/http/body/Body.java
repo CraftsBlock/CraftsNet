@@ -9,11 +9,31 @@ package de.craftsblock.craftsnet.api.http.body;
  * request bodies.
  *
  * @author CraftsBlock
+ * @version 1.0
  * @see FormBody
  * @see JsonBody
  * @since 2.2.0
  */
-public abstract class Body {
+public abstract class Body implements AutoCloseable {
+
+    private boolean closed = false;
+
+    /**
+     * Closes the request body.
+     */
+    @Override
+    public void close() {
+        closed = true;
+    }
+
+    /**
+     * Checks if this request body is already closed.
+     *
+     * @return {@code true} if it is closed, otherwise {@code false}.
+     */
+    public final boolean isClosed() {
+        return closed;
+    }
 
     /**
      * Checks if this request body is a JSON request body.

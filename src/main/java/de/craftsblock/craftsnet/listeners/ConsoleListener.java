@@ -14,6 +14,7 @@ import static de.craftsblock.craftscore.event.EventPriority.MONITOR;
  * It listens for the {@code ConsoleMessageEvent} and processes console input into commands.
  *
  * @author CraftsBlock
+ * @version 1.0
  * @see de.craftsblock.craftsnet.command.CommandRegistry
  * @since 2.2.0
  */

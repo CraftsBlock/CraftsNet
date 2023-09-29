@@ -24,14 +24,16 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * It uses a ServerSocket to listen for incoming connections on the specified port.
  *
  * @author CraftsBlock
+ * @version 1.1
  * @see WebSocketClient
  * @since 2.1.1
  */
 public class WebSocketServer {
 
+    private final Logger logger = CraftsNet.logger;
     private Thread connector;
-    private ConcurrentLinkedQueue<WebSocketClient> clients;
     private ConcurrentHashMap<String, ConcurrentLinkedQueue<WebSocketClient>> connected;
+    private final ConcurrentLinkedQueue<Thread> clients = new ConcurrentLinkedQueue<>();
     private ServerSocket serverSocket;
     private boolean running;
 
@@ -55,7 +57,6 @@ public class WebSocketServer {
      * @param ssl_key The key which is used to secure the private key while running.
      */
     public WebSocketServer(int port, int backlog, boolean ssl, String ssl_key) {
-        Logger logger = CraftsNet.logger;
         try {
             logger.info("Websocket Server wird auf Port " + port + " gestartet");
             if (!ssl) serverSocket = new ServerSocket(port, backlog);
@@ -64,12 +65,11 @@ public class WebSocketServer {
                         .getServerSocketFactory();
                 serverSocket = sslServerSocketFactory.createServerSocket(port, backlog);
             }
-            clients = new ConcurrentLinkedQueue<>();
             connected = new ConcurrentHashMap<>();
             running = true;
         } catch (IOException | UnrecoverableKeyException | KeyManagementException | NoSuchAlgorithmException |
                  KeyStoreException | CertificateException e) {
-            e.printStackTrace();
+            logger.error(e);
         }
     }
 
@@ -82,19 +82,19 @@ public class WebSocketServer {
             while (!Thread.currentThread().isInterrupted() && running) {
                 try {
                     Socket socket = serverSocket.accept();
-                    WebSocketClient client = new WebSocketClient(socket, this);
-                    clients.add(client);
+                    Thread client = new Thread(new WebSocketClient(socket, this));
                     client.setName("Websocket#" + i++);
                     client.start();
+                    clients.add(client);
                 } catch (SocketException ignored) {
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
             }
         });
         connector.setName("Websocket Server - Connector");
         connector.start();
-        CraftsNet.logger.debug("Websocket Server JVM Shutdown Hook wird initialisiert");
+        logger.debug("Websocket Server JVM Shutdown Hook wird initialisiert");
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
     }
 
@@ -104,16 +104,15 @@ public class WebSocketServer {
     public void stop() {
         running = false;
         try {
-            clients.forEach(WebSocketClient::disconnect);
-            clients.clear();
             connected.forEach((useless, client) -> client.forEach(WebSocketClient::disconnect));
+            clients.forEach(Thread::interrupt);
             connected.clear();
+            clients.clear();
             serverSocket.close();
             if (connector != null)
                 connector.interrupt();
-            clients.forEach(WebSocketClient::interrupt);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e);
         }
     }
 
@@ -123,7 +122,7 @@ public class WebSocketServer {
      * @param data The message to be sent.
      */
     public void broadcast(String data) {
-        clients.forEach(client -> client.sendMessage(data));
+        connected.forEach((useless, clients) -> clients.forEach(client -> client.sendMessage(data)));
     }
 
     /**
@@ -143,8 +142,7 @@ public class WebSocketServer {
      * @param client The WebSocket client that will be added.
      */
     protected void add(String path, WebSocketClient client) {
-        if (!connected.containsKey(path)) connected.put(path, new ConcurrentLinkedQueue<>());
-        connected.get(path).add(client);
+        connected.computeIfAbsent(path, s -> new ConcurrentLinkedQueue<>()).add(client);
     }
 
     /**
@@ -153,11 +151,19 @@ public class WebSocketServer {
      * @param client The WebSocket client that will be removed.
      */
     protected void remove(WebSocketClient client) {
-        clients.remove(client);
-        connected.values().stream()
-                .filter(webSocketClients -> webSocketClients.contains(client))
+        connected.entrySet().stream()
+                .filter(entry -> entry.getValue().contains(client))
                 .toList()
-                .forEach(list -> list.removeIf(client::equals));
+                .forEach(entry -> {
+                    try {
+                        entry.getValue().removeIf(client::equals);
+                        Thread thread = client.disconnect();
+                        thread.interrupt();
+                        thread.join(500);
+                        if (entry.getValue().isEmpty()) connected.remove(entry.getKey());
+                    } catch (InterruptedException ignored) {
+                    }
+                });
     }
 
 }

@@ -10,6 +10,7 @@ package de.craftsblock.craftsnet.api.http;
  * @param request  The {@link Request} object containing the incoming data from the client.
  * @param response The {@link Response} object used to send data back to the client.
  * @author CraftsBlock
+ * @version 1.0
  * @see Request
  * @see Response
  * @since 1.0.0

@@ -6,6 +6,7 @@ package de.craftsblock.craftsnet.api.websocket;
  * It allows sending broadcast messages to all clients connected to the same WebSocket path.
  *
  * @author CraftsBlock
+ * @version 1.0
  * @see Socket
  * @see SocketHandler
  * @see MessageReceiver

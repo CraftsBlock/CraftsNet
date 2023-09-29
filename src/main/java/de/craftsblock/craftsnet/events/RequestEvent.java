@@ -11,13 +11,14 @@ import de.craftsblock.craftsnet.api.http.Exchange;
  * involved in the request event.
  *
  * @author CraftsBlock
+ * @version 1.0
  * @since 1.0.0
  */
 public class RequestEvent extends Event implements Cancelable {
 
     private final Exchange exchange;
 
-    private final RouteRegistry.RouteMapping mapping;
+    private RouteRegistry.RouteMapping mapping;
     private boolean cancelled = false;
 
     /**

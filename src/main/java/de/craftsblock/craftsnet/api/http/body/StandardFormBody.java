@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
  * from an input stream and access individual form fields.
  *
  * @author CraftsBlock
+ * @version 1.0
  * @see FormBody
  * @since 2.2.0
  */
@@ -57,6 +58,7 @@ public class StandardFormBody extends FormBody<String> {
             String decodedValue = URLDecoder.decode(fieldData[1], StandardCharsets.UTF_8).substring(0, fieldData[1].length() - 2);
             data.put(fieldData[0], decodedValue); // Store the field name and its decoded value in the data map
         }
+        reader.close();
     }
 
     /**
