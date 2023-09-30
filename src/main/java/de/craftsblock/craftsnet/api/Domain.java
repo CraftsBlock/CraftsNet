@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.api.http.annotations;
+package de.craftsblock.craftsnet.api;
 
 import de.craftsblock.craftsnet.api.http.WebServer;
 
@@ -25,6 +25,6 @@ public @interface Domain {
      *
      * @return The domain as a string.
      */
-    String[] value() default {"*"};
+    String[] value();
 
 }

@@ -79,7 +79,7 @@ public class WebServer {
         server.createContext("/").setHandler(exchange -> {
             try (exchange; Response response = new Response(exchange)) {
                 // Extract relevant information from the incoming request.
-                String domain = exchange.getRequestHeaders().getFirst("Host");
+                String domain = exchange.getRequestHeaders().getFirst("Host").split(":")[0];
                 String url = exchange.getRequestURI().toString();
                 String[] stripped = url.split("\\?");
                 String query = (stripped.length == 2 ? stripped[1] : "");

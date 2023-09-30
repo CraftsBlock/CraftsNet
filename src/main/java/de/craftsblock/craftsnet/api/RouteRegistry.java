@@ -5,7 +5,6 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.http.Exchange;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.http.RequestHandler;
-import de.craftsblock.craftsnet.api.http.annotations.Domain;
 import de.craftsblock.craftsnet.api.http.annotations.RequestMethod;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.api.websocket.MessageReceiver;
@@ -18,9 +17,7 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -35,7 +32,7 @@ import java.util.regex.Pattern;
  */
 public class RouteRegistry {
 
-    private static Logger logger = CraftsNet.logger;
+    private static final Logger logger = CraftsNet.logger;
     private final ConcurrentHashMap<Pattern, RouteMapping> routes = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Pattern, SocketMapping> sockets = new ConcurrentHashMap<>();
 
@@ -162,12 +159,18 @@ public class RouteRegistry {
                     try {
                         Method tmp = entry.getValue().method();
                         HttpMethod[] methods = annotation(tmp, RequestMethod.class, HttpMethod[].class);
-                        List<String> domains = Arrays.asList(annotation(tmp, Domain.class, String[].class));
+                        List<String> domains = new ArrayList<>();
+                        addArray(annotation(tmp, Domain.class, String[].class), domains);
+                        addArray(annotation(entry.getValue().handler, Domain.class, String[].class), domains);
+                        removeDuplicates(domains);
+                        if (domains.isEmpty()) domains.add("*");
+
                         return entry.getKey().matcher(url(url)).matches() &&
                                 (methods == null || HttpMethod.asString(methods).toUpperCase().contains(method.toUpperCase())) &&
                                 (domain == null || domains.contains("*") || domains.contains(domain));
-                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                        logger.error(e, "Error whilst loading socket route");
+                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException |
+                             InstantiationException e) {
+                        logger.error(e, "Error whilst loading http route");
                     }
                     return false;
                 })
@@ -212,10 +215,16 @@ public class RouteRegistry {
         return sockets.entrySet().stream()
                 .filter(entry -> {
                     try {
-                        List<String> domains = Arrays.asList(annotation(entry.getValue(), Domain.class, String[].class));
+                        List<String> domains = new ArrayList<>();
+                        addArray(annotation(entry.getValue(), Domain.class, String[].class), domains);
+                        addArray(annotation(entry.getValue().handler, Domain.class, String[].class), domains);
+                        removeDuplicates(domains);
+                        if (domains.isEmpty()) domains.add("*");
+
                         return entry.getKey().matcher(url(url)).matches() &&
                                 (domain == null || domains.contains("*") || domains.contains(domain));
-                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException |
+                             InstantiationException e) {
                         logger.error(e, "Error whilst loading socket route");
                     }
                     return false;
@@ -266,8 +275,13 @@ public class RouteRegistry {
      * @throws InvocationTargetException If there is an issue invoking the getter method.
      * @throws IllegalAccessException    If there is an access issue with the getter method.
      */
-    private <A extends Annotation, R> R annotation(Object o, Class<A> clazz, Class<R> type) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+    private <A extends Annotation, R> R annotation(Object o, Class<A> clazz, Class<R> type) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
         A annotation = annotation(o, clazz);
+        if (annotation == null) {
+            Method method = clazz.getDeclaredMethod("value");
+            if(method.getDefaultValue() == null) return null;
+            return (R) method.getDefaultValue();
+        }
         Method method = annotation.getClass().getDeclaredMethod("value");
         R value = (R) method.invoke(annotation);
         if (value == null) value = (R) method.getDefaultValue();
@@ -320,6 +334,17 @@ public class RouteRegistry {
      */
     private String url(String url) {
         return (!url.trim().startsWith("/") ? "/" : "") + url.trim();
+    }
+
+    private <T> void removeDuplicates(List<T> list) {
+        HashSet<T> unique = new HashSet<>(list);
+        list.clear();
+        list.addAll(unique);
+    }
+
+    private <T> void addArray(T[] t, List<T> list) {
+        if(t == null) return;
+        list.addAll(Arrays.asList(t));
     }
 
     /**
