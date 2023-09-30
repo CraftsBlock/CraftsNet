@@ -9,7 +9,7 @@ java {
 }
 
 group = 'de.craftsblock'
-version = '2.3.0-PRERELEASE'
+version = '2.3.1-PRERELEASE'
 
 repositories {
     mavenCentral()
