@@ -75,7 +75,7 @@ import de.craftsblock.backend.api.http.Route;
 
 public class MyRoute implements RequestHandler {
     
-  @Route(path = "/v1/route")
+  @Route("/v1/route")
   public void handleRoute(Exchange exchange) {
     // Process the request
   }
