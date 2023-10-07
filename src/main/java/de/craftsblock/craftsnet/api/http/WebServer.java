@@ -7,13 +7,19 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.events.RequestEvent;
+import de.craftsblock.craftsnet.events.shares.ShareFileLoadedEvent;
+import de.craftsblock.craftsnet.events.shares.ShareRequestEvent;
 import de.craftsblock.craftsnet.utils.Logger;
 import de.craftsblock.craftsnet.utils.SSL;
+import org.apache.tika.Tika;
 
 import javax.net.ssl.SSLContext;
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
+import java.net.URL;
+import java.net.URLConnection;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -27,7 +33,7 @@ import java.util.regex.Matcher;
  * them based on registered API endpoints using the provided RouteRegistry.
  *
  * @author CraftsBlock
- * @version 1.3
+ * @version 1.4
  * @see Exchange
  * @see RequestHandler
  * @see Route
@@ -37,6 +43,7 @@ public class WebServer {
 
     private final HttpServer server;
     private final Logger logger;
+    private final Tika tika = new Tika();
 
     /**
      * Constructs a WebServer with the specified port and SSL settings.
@@ -77,9 +84,11 @@ public class WebServer {
         // Create a context for the root path ("/") and set its handler to process incoming requests.
         logger.debug("Erstellen des API Handlers");
         server.createContext("/").setHandler(exchange -> {
+            RouteRegistry registry = CraftsNet.routeRegistry;
             try (exchange; Response response = new Response(exchange)) {
                 // Extract relevant information from the incoming request.
                 String domain = exchange.getRequestHeaders().getFirst("Host").split(":")[0];
+                String requestMethod = exchange.getRequestMethod();
                 String url = exchange.getRequestURI().toString();
                 String[] stripped = url.split("\\?");
                 String query = (stripped.length == 2 ? stripped[1] : "");
@@ -89,6 +98,47 @@ public class WebServer {
                     ip = headers.getFirst("X-forwarded-for").split(", ")[0];
                 if (headers.containsKey("Cf-connecting-ip"))
                     ip = headers.getFirst("Cf-connecting-ip");
+
+                if (registry.isShare(url) && HttpMethod.parse(requestMethod) == HttpMethod.GET) {
+                    File folder = registry.getShareFolder(url);
+                    Matcher matcher = registry.getSharePattern(url).matcher(url);
+                    if(!matcher.matches()) {
+                        Json config = JsonParser.parse("{}");
+                        config.set("error", "There was an unexpected error while matching!");
+                        response.print(config.asString());
+                        return;
+                    }
+
+                    String path = matcher.group(1);
+                    ShareRequestEvent event = new ShareRequestEvent(path);
+                    CraftsNet.listenerRegistry.call(event);
+                    if(event.isCancelled()) {
+                        logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[SHARE ABORTED]");
+                        return;
+                    }
+                    path = event.getPath();
+                    logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;205m[SHARED]");
+
+                    File share = new File(folder, (path.isBlank() ? "index.html" : path));
+                    ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(share, tika);
+                    CraftsNet.listenerRegistry.call(fileLoadedEvent);
+                    share = fileLoadedEvent.getFile();
+
+                    if (!share.getCanonicalPath().startsWith(folder.getCanonicalPath() + File.separator)) {
+                        response.setCode(403);
+                        response.setContentType("text/html; charset=utf-8");
+                        response.print(DefaultPages.notallowed(domain, exchange.getLocalAddress().getPort()));
+                        return;
+                    } else if (!share.exists()) {
+                        response.setCode(404);
+                        response.setContentType("text/html; charset=utf-8");
+                        response.print(DefaultPages.notfound(domain, exchange.getLocalAddress().getPort()));
+                        return;
+                    }
+                    response.setContentType(fileLoadedEvent.getContentType());
+                    response.print(share);
+                    return;
+                }
 
                 // Create a Request object to encapsulate the incoming request information.
                 Request request = new Request(exchange, query, ip);
@@ -103,8 +153,7 @@ public class WebServer {
                     return;
                 }
 
-                String requestMethod = exchange.getRequestMethod(); // Get the HTTP request method (e.g., GET, POST).
-                RouteRegistry.RouteMapping route = CraftsNet.routeRegistry.getRoute(url, domain, requestMethod); // Find the registered route mapping based on the URL and request method.
+                RouteRegistry.RouteMapping route = registry.getRoute(url, domain, requestMethod); // Find the registered route mapping based on the URL and request method.
 
                 // If no matching route is found, return an error response.
                 if (route == null) {
@@ -147,7 +196,7 @@ public class WebServer {
         });
 
         logger.debug("Web Server wird gestartet");
-        server.setExecutor(Executors.newFixedThreadPool(15));
+        server.setExecutor(Executors.newFixedThreadPool(25));
         server.start();
     }
 

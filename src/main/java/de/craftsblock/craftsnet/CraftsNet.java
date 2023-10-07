@@ -15,6 +15,7 @@ import de.craftsblock.craftsnet.utils.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
@@ -28,6 +29,9 @@ import java.lang.reflect.InvocationTargetException;
  * @since 1.0.0
  */
 public class CraftsNet {
+
+    // Information variables
+    public static final String version = "2.3.2-PRERELEASE";
 
     // Manager instances
     public static AddonManager addonManager;
@@ -76,6 +80,10 @@ public class CraftsNet {
     private static void start(boolean debug, boolean ssl, String ssl_key, int port, int socketport, boolean forceHttp, boolean forceWebsocket) throws IOException {
         long start = System.currentTimeMillis(); // Start measuring the startup time
         logger = new Logger(debug); // Create and initialize the logger
+        // Setup default uncaught exception handler
+        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
+            if (e instanceof Exception exception) logger.error(exception);
+        });
         logger.info("Backend wird gestartet"); // Log startup message
 
         // Initialize listener and route registries, and addon manager
@@ -112,9 +120,6 @@ public class CraftsNet {
         // Register a shutdown hook for the console listener
         logger.debug("Console Listener JVM Shutdown Hook wird implementiert");
         Runtime.getRuntime().addShutdownHook(new Thread(console::interrupt));
-        Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-            if (e instanceof Exception exception) logger.error(exception);
-        });
 
         logger.info("Backend wurde erfolgreich nach " + (System.currentTimeMillis() - start) + "ms gestartet"); // Log successful startup message with elapsed time
     }

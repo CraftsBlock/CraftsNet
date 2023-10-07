@@ -151,7 +151,7 @@ public class WebSocketServer {
      * @param client The WebSocket client that will be removed.
      */
     protected void remove(WebSocketClient client) {
-        connected.entrySet().stream()
+        connected.entrySet().parallelStream()
                 .filter(entry -> entry.getValue().contains(client))
                 .toList()
                 .forEach(entry -> {

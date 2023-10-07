@@ -14,6 +14,7 @@ import de.craftsblock.craftsnet.utils.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -35,6 +36,7 @@ public class RouteRegistry {
     private static final Logger logger = CraftsNet.logger;
     private final ConcurrentHashMap<Pattern, RouteMapping> routes = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Pattern, SocketMapping> sockets = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Pattern, File> shares = new ConcurrentHashMap<>();
 
     /**
      * Registers a request handler (route) by inspecting its annotated methods and adding it to the registry.
@@ -44,14 +46,14 @@ public class RouteRegistry {
      * @since 1.0.0
      */
     public void register(RequestHandler handler) {
-        Route parent = annotation(handler, Route.class);
+        Route parent = rawAnnotation(handler, Route.class);
         for (Method method : Utils.getMethodByAnnotation(handler.getClass(), Route.class))
             try {
                 if (method.getParameterCount() <= 0)
                     throw new IllegalStateException("Die Methode " + method.getName() + " ist mit " + Route.class.getName() + " versehen, hat aber nicht " + Exchange.class.getName() + " als erstes argument!");
                 if (!Exchange.class.isAssignableFrom(method.getParameters()[0].getType()))
                     throw new IllegalStateException("Die Methode " + method.getName() + " ist mit " + Route.class.getName() + " versehen, hat aber nicht " + Exchange.class.getName() + " als erstes argument!");
-                Route route = annotation(method, Route.class);
+                Route route = rawAnnotation(method, Route.class);
                 Pattern validator = createValidator(url(parent != null ? parent.value() : "", route.value()));
                 routes.put(
                         validator,
@@ -71,12 +73,26 @@ public class RouteRegistry {
      * @since 2.1.1
      */
     public <T extends SocketHandler> void register(T t) {
-        Socket socket = annotation(t, Socket.class);
+        Socket socket = rawAnnotation(t, Socket.class);
         Pattern validator = createValidator(socket.path());
         sockets.put(
                 validator,
                 new SocketMapping(t, socket, validator, Utils.getMethodByAnnotation(t.getClass(), MessageReceiver.class).toArray(new Method[0]))
         );
+    }
+
+    /**
+     * Shares a folder for a specified path.
+     *
+     * @param path   The path pattern to share.
+     * @param folder The folder to be shared.
+     * @throws IllegalArgumentException If the provided "folder" is not a directory.
+     */
+    public void share(String path, File folder) {
+        if (!folder.isDirectory())
+            throw new IllegalArgumentException("\"folder\" must be a folder!");
+        Pattern pattern = Pattern.compile(path.trim() + (path.trim().endsWith("/") ? "" : "/") + "?(.*)");
+        shares.put(pattern, folder);
     }
 
     /**
@@ -86,10 +102,10 @@ public class RouteRegistry {
      * @since 1.0.0
      */
     public void unregister(RequestHandler handler) {
-        Route parent = annotation(handler, Route.class);
+        Route parent = rawAnnotation(handler, Route.class);
         for (Method method : Utils.getMethodByAnnotation(handler.getClass(), Route.class))
             try {
-                Route route = annotation(method, Route.class);
+                Route route = rawAnnotation(method, Route.class);
                 routes.entrySet().removeIf(validator -> validator.getKey().matcher(url(parent != null ? parent.value() : "", route.value())).matches());
             } catch (Exception e) {
                 logger.error(e);
@@ -104,8 +120,58 @@ public class RouteRegistry {
      * @since 2.1.1
      */
     public <T extends SocketHandler> void unregister(T t) {
-        Socket socket = annotation(t, Socket.class);
+        Socket socket = rawAnnotation(t, Socket.class);
         sockets.entrySet().removeIf(validator -> validator.getKey().matcher(url(socket.path())).matches());
+    }
+
+    /**
+     * Returns an immutable copy of the shared folders and patterns.
+     *
+     * @return An immutable copy of the shared folders and patterns.
+     * @since 2.3.2
+     */
+    public ConcurrentHashMap<Pattern, File> getShares() {
+        return (ConcurrentHashMap<Pattern, File>) Map.copyOf(shares);
+    }
+
+    /**
+     * Gets the shared folder associated with the given URL.
+     *
+     * @param url The URL for which to retrieve the associated shared folder.
+     * @return The shared folder or null if no match is found.
+     * @since 2.3.2
+     */
+    public File getShareFolder(String url) {
+        return shares.entrySet().parallelStream()
+                .filter(entry -> entry.getKey().matcher(url(url)).matches())
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Gets the pattern associated with the shared folder that matches the given URL.
+     *
+     * @param url The URL for which to retrieve the associated pattern.
+     * @return The pattern or null if no match is found.
+     * @since 2.3.2
+     */
+    public Pattern getSharePattern(String url) {
+        return shares.keySet().parallelStream()
+                .filter(file -> file.matcher(url(url)).matches())
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Checks if a URL corresponds to a shared folder by verifying if both a shared folder and its pattern exist for the URL.
+     *
+     * @param url The URL to check.
+     * @return True if the URL corresponds to a shared folder, false otherwise.
+     * @since 2.3.2
+     */
+    public boolean isShare(String url) {
+        return getShareFolder(url) != null && getSharePattern(url) != null;
     }
 
     /**
@@ -154,14 +220,14 @@ public class RouteRegistry {
      */
     @Nullable
     public RouteMapping getRoute(String url, String domain, String method) {
-        return routes.entrySet().stream()
+        return routes.entrySet().parallelStream()
                 .filter(entry -> {
                     try {
                         Method tmp = entry.getValue().method();
-                        HttpMethod[] methods = annotation(tmp, RequestMethod.class, HttpMethod[].class);
+                        HttpMethod[] methods = annotation(tmp, RequestMethod.class);
                         List<String> domains = new ArrayList<>();
-                        addArray(annotation(tmp, Domain.class, String[].class), domains);
-                        addArray(annotation(entry.getValue().handler, Domain.class, String[].class), domains);
+                        addArray(annotation(tmp, Domain.class), domains);
+                        addArray(annotation(entry.getValue().handler, Domain.class), domains);
                         removeDuplicates(domains);
                         if (domains.isEmpty()) domains.add("*");
 
@@ -212,12 +278,12 @@ public class RouteRegistry {
      */
     @Nullable
     public SocketMapping getSocket(String url, String domain) {
-        return sockets.entrySet().stream()
+        return sockets.entrySet().parallelStream()
                 .filter(entry -> {
                     try {
                         List<String> domains = new ArrayList<>();
-                        addArray(annotation(entry.getValue(), Domain.class, String[].class), domains);
-                        addArray(annotation(entry.getValue().handler, Domain.class, String[].class), domains);
+                        addArray(annotation(entry.getValue(), Domain.class), domains);
+                        addArray(annotation(entry.getValue().handler, Domain.class), domains);
                         removeDuplicates(domains);
                         if (domains.isEmpty()) domains.add("*");
 
@@ -257,7 +323,7 @@ public class RouteRegistry {
      * @return The found annotation or null if none is found.
      * @since 2.3.0
      */
-    private <A extends Annotation> A annotation(Object o, Class<A> clazz) {
+    private <A extends Annotation> A rawAnnotation(Object o, Class<A> clazz) {
         if (o instanceof Method method) return method.getAnnotation(clazz);
         return o.getClass().getAnnotation(clazz);
     }
@@ -269,17 +335,16 @@ public class RouteRegistry {
      * @param <R>   The type of the attribute value.
      * @param o     The object containing the annotation.
      * @param clazz The class of the annotation.
-     * @param type  The class of the attribute value.
      * @return The value of the specified annotation attribute.
      * @throws NoSuchMethodException     If the attribute's getter method is not found.
      * @throws InvocationTargetException If there is an issue invoking the getter method.
      * @throws IllegalAccessException    If there is an access issue with the getter method.
      */
-    private <A extends Annotation, R> R annotation(Object o, Class<A> clazz, Class<R> type) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
+    private <A extends Annotation, R> R annotation(Object o, Class<A> clazz) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
         A annotation = annotation(o, clazz);
         if (annotation == null) {
             Method method = clazz.getDeclaredMethod("value");
-            if(method.getDefaultValue() == null) return null;
+            if (method.getDefaultValue() == null) return null;
             return (R) method.getDefaultValue();
         }
         Method method = annotation.getClass().getDeclaredMethod("value");
@@ -316,13 +381,23 @@ public class RouteRegistry {
     }
 
     /**
-     * Checks if the registry has any registered route handlers.
+     * Checks if the registry has any registered route handlers or shares.
      *
-     * @return true if the registry has registered route handlers, false otherwise.
+     * @return true if the registry has registered route handlers or shares, false otherwise.
      * @since 2.1.1
      */
     public boolean hasRoutes() {
-        return !routes.isEmpty();
+        return !routes.isEmpty() || hasShares();
+    }
+
+    /**
+     * Checks if the registry has any registered shares.
+     *
+     * @return true if the registry has registered shares, false otherwise.
+     * @since 2.3.2
+     */
+    public boolean hasShares() {
+        return !shares.isEmpty();
     }
 
     /**
@@ -336,14 +411,27 @@ public class RouteRegistry {
         return (!url.trim().startsWith("/") ? "/" : "") + url.trim();
     }
 
+    /**
+     * Removes duplicates from a list by converting it to a set and then back to a list.
+     *
+     * @param <T>  The type of elements in the list.
+     * @param list The list from which duplicates will be removed.
+     */
     private <T> void removeDuplicates(List<T> list) {
         HashSet<T> unique = new HashSet<>(list);
         list.clear();
         list.addAll(unique);
     }
 
+    /**
+     * Adds elements from an array to a list.
+     *
+     * @param <T>  The type of elements in the array and list.
+     * @param t    The array containing elements to add.
+     * @param list The list to which elements will be added.
+     */
     private <T> void addArray(T[] t, List<T> list) {
-        if(t == null) return;
+        if (t == null) return;
         list.addAll(Arrays.asList(t));
     }
 

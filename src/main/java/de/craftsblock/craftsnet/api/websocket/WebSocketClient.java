@@ -21,7 +21,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.stream.IntStream;
 
@@ -120,7 +119,7 @@ public class WebSocketClient implements Runnable {
                 while (!Thread.currentThread().isInterrupted() && (message = readMessage()) != null) {
                     // Process incoming messages from the client
                     byte[] data = message.getBytes(StandardCharsets.UTF_8);
-                    if (IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) break;
+                    if (IntStream.range(0, data.length).parallel().map(i -> data[i]).anyMatch(tmp -> tmp < 0)) break;
                     if (message.isEmpty() || message.isBlank()) break;
 
                     // Validate the incoming message against the endpoint's validator
