@@ -17,7 +17,7 @@ repositories {
 }
 
 dependencies {
-    implementation 'de.craftsblock.craftscore:CraftsCore:3.7.27-SNAPSHOT'
+    implementation 'de.craftsblock.craftscore:CraftsCore:3.7.29-SNAPSHOT'
     implementation 'com.mysql:mysql-connector-j:8.0.33'
     implementation 'com.squareup.okhttp3:okhttp:4.10.0'
     implementation 'com.google.code.gson:gson:2.10'
