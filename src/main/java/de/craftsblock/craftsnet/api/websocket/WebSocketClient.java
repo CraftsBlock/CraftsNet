@@ -85,6 +85,9 @@ public class WebSocketClient implements Runnable {
             writer = new PrintWriter(socket.getOutputStream(), true);
             headers = readHeaders(); // Read and store the client's headers for later use
 
+            // Determine the host domain from headers
+            String host = getHeader("Host").split(":")[0];
+
             // Determine the client's IP address from headers, taking into account any proxy headers
             ip = socket.getInetAddress().getHostAddress();
             if (getHeader("X-forwarded-for") != null)
@@ -93,8 +96,8 @@ public class WebSocketClient implements Runnable {
                 ip = getHeader("Cf-connecting-ip");
 
             sendHandshake(); // Send a WebSocket handshake to establish the connection
-            if (getEndpoint(path) != null) { // Check if the requested path has a corresponding endpoint registered in the server
-                mapping = getEndpoint(path);
+            if (getEndpoint(path, host) != null) { // Check if the requested path has a corresponding endpoint registered in the server
+                mapping = getEndpoint(path, host);
 
                 // Trigger the ClientConnectEvent to handle the client connection
                 ClientConnectEvent event = new ClientConnectEvent(exchange, mapping);
@@ -119,7 +122,7 @@ public class WebSocketClient implements Runnable {
                 while (!Thread.currentThread().isInterrupted() && (message = readMessage()) != null) {
                     // Process incoming messages from the client
                     byte[] data = message.getBytes(StandardCharsets.UTF_8);
-                    if (IntStream.range(0, data.length).parallel().map(i -> data[i]).anyMatch(tmp -> tmp < 0)) break;
+                    if (IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) break;
                     if (message.isEmpty() || message.isBlank()) break;
 
                     // Validate the incoming message against the endpoint's validator
@@ -180,12 +183,13 @@ public class WebSocketClient implements Runnable {
     /**
      * Retrieves the registered endpoint corresponding to the given header.
      *
-     * @param header The path to find the endpoint for.
+     * @param path The path to find the endpoint for.
+     * @param host The domain used to connect the endpoint.
      * @return The corresponding SocketMapping if found, or null if not found.
      */
     @Nullable
-    private RouteRegistry.SocketMapping getEndpoint(String header) {
-        return CraftsNet.routeRegistry.getSocket(header);
+    private RouteRegistry.SocketMapping getEndpoint(String path, String host) {
+        return CraftsNet.routeRegistry.getSocket(path, host);
     }
 
     /**

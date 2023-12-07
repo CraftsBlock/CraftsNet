@@ -99,6 +99,7 @@ public class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData>
                     s -> new MultipartData(name.get(), List.copyOf(item.getValue()))
             );
         storage.clear();
+        body.close();
     }
 
     /**
@@ -243,7 +244,7 @@ public class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData>
          * @return The file extension.
          * @throws MimeTypeException If the content type is not recognized.
          */
-        public String getFileExtension() throws MimeTypeException {
+        public String getFileExtension() throws Exception {
             MimeTypes types = MimeTypes.getDefaultMimeTypes();
             return types.forName(contentType).getExtension();
         }

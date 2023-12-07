@@ -18,7 +18,7 @@ public class RequestEvent extends Event implements Cancelable {
 
     private final Exchange exchange;
 
-    private RouteRegistry.RouteMapping mapping;
+    private final RouteRegistry.RouteMapping mapping;
     private boolean cancelled = false;
 
     /**
@@ -46,7 +46,7 @@ public class RequestEvent extends Event implements Cancelable {
      *
      * @return The RouteMapping object representing the mapping for the request route.
      */
-    public RouteRegistry.RouteMapping getRoute() {
+    public RouteRegistry.RouteMapping getMapping() {
         return mapping;
     }
 
@@ -55,7 +55,7 @@ public class RequestEvent extends Event implements Cancelable {
      *
      * @return true if the event has a valid RouteMapping, false otherwise.
      */
-    public boolean hasRoute() {
+    public boolean hasMapping() {
         return mapping != null;
     }
 

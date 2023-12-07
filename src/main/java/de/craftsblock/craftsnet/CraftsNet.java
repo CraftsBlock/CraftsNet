@@ -5,6 +5,7 @@ import de.craftsblock.craftscore.utils.ArgumentParser;
 import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.WebServer;
+import de.craftsblock.craftsnet.api.http.annotations.RequireHeader;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.command.commands.PluginCommand;
@@ -31,7 +32,7 @@ import java.lang.reflect.InvocationTargetException;
 public class CraftsNet {
 
     // Information variables
-    public static final String version = "2.3.2-PRERELEASE";
+    public static final String version = "2.3.4-PRERELEASE";
 
     // Manager instances
     public static AddonManager addonManager;
@@ -84,10 +85,11 @@ public class CraftsNet {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             if (e instanceof Exception exception) logger.error(exception);
         });
-        logger.info("Backend wird gestartet"); // Log startup message
+        // Log startup message
+        logger.info("CraftsNet v" + version + " boots up");
 
         // Initialize listener and route registries, and addon manager
-        logger.debug("Initialisierung von System Variablen");
+        logger.debug("Initialization of system variables");
         listenerRegistry = new ListenerRegistry();
         routeRegistry = new RouteRegistry();
         commandRegistry = new CommandRegistry();
@@ -95,13 +97,13 @@ public class CraftsNet {
 
         // Check if http routes are registered and start the web server if needed
         if (routeRegistry.hasRoutes() || forceHttp) {
-            logger.debug("Aufsetzen des Web Servers");
+            logger.debug("Setting up the web server");
             webServer = new WebServer(port, ssl, ssl_key);
         }
 
         // Check if webSocket routes are registered and start the websocket server if needed
         if (routeRegistry.hasWebsockets() || forceWebsocket) {
-            logger.debug("Starten des Websocket Servers");
+            logger.debug("Starting the websocket server");
             webSocketServer = new WebSocketServer(socketport, ssl, ssl_key);
             webSocketServer.start();
         }
@@ -114,14 +116,15 @@ public class CraftsNet {
         commandRegistry.getCommand("pl").addAlias("plugin", "addons");
 
         // Set up and start the console listener
-        logger.debug("Konsolen Listener wird gestartet");
         Thread console = getConsoleReader();
+        logger.debug("Console listener is started");
 
         // Register a shutdown hook for the console listener
-        logger.debug("Console Listener JVM Shutdown Hook wird implementiert");
         Runtime.getRuntime().addShutdownHook(new Thread(console::interrupt));
+        logger.debug("Console Listener JVM Shutdown Hook is implemented");
 
-        logger.info("Backend wurde erfolgreich nach " + (System.currentTimeMillis() - start) + "ms gestartet"); // Log successful startup message with elapsed time
+        // Log successful startup message with elapsed time
+        logger.info("Backend was successfully started after " + (System.currentTimeMillis() - start) + "ms");
     }
 
     @NotNull

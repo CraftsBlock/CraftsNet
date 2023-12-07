@@ -15,9 +15,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Enumeration;
 import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.regex.Pattern;
 
 /**
  * The AddonLoader class is responsible for loading and managing addons in the application.
@@ -49,7 +51,7 @@ public class AddonLoader {
      */
     protected void add(File file) {
         if (!file.getParentFile().exists()) file.getParentFile().mkdirs();
-        if (!file.exists()) throw new NullPointerException("Datei (" + file.getPath() + ") existiert nicht!");
+        if (!file.exists()) throw new NullPointerException("The file (" + file.getPath() + ") does not exist!");
         if (!addons.contains(file))
             addons.push(file);
     }
@@ -70,7 +72,7 @@ public class AddonLoader {
         for (File file : addons)
             urls[curr++] = file.toURI().toURL();
         classLoader = new URLClassLoader(urls, getClass().getClassLoader());
-        ConcurrentLinkedQueue<CompleteAbleActionImpl<Void>> tasks = new ConcurrentLinkedQueue<>();
+        ConcurrentHashMap<String, CompleteAbleActionImpl<Void>> tasks = new ConcurrentHashMap<>();
 
         // Loop through each addon file and load its configuration and main class
         for (File file : addons)
@@ -82,15 +84,20 @@ public class AddonLoader {
                 if (configuration.json.contains("isfolder"))
                     continue;
                 String name = configuration.json.getString("name");
+                Pattern pattern = Pattern.compile("^[a-zA-Z0-9]$");
+                if (!pattern.matcher(name).matches())
+                    throw new IllegalArgumentException("Plugin names must not contain special characters / spaces! Plugin name: \"" + name + "\"");
+                if (tasks.containsKey(name))
+                    throw new IllegalStateException("There are two plugins with the same name: \"" + name + "\"!");
                 logger.debug("Addon " + name + " wird geladen");
 
                 // Load the main class of the addon using the class loader
                 String className = configuration.json.getString("main");
                 Class<?> clazz = classLoader.loadClass(className);
                 if (clazz == null)
-                    throw new NullPointerException("Die Main Klasse konnte nicht gefunden werden!");
+                    throw new NullPointerException("The main class could not be found!");
                 if (!Addon.class.isAssignableFrom(clazz))
-                    throw new IllegalStateException("Die zuladene Main Klasse (" + className + ") ist keine instance von Addon!");
+                    throw new IllegalArgumentException("The loaded main class (" + className + ") is not an instance of Addon!");
 
                 // Create an instance of the main class and inject dependencies using reflection
                 Addon obj = (Addon) clazz.getDeclaredConstructor().newInstance();
@@ -100,10 +107,16 @@ public class AddonLoader {
                 setField("listenerRegistry", obj, CraftsNet.listenerRegistry);
                 setField("commandRegistry", obj, CraftsNet.commandRegistry);
 
-                // Call the 'onLoad' method of the addon instance
-                obj.onLoad();
-//                obj.getClass().getMethod("onLoad").invoke(obj);
-                tasks.add(new CompleteAbleActionImpl<>(() -> {
+                tasks.put(name.toLowerCase(), new CompleteAbleActionImpl<>(() -> {
+                    Json addon = configuration.json;
+//                    if(addon.contains("loadbefore"))
+                    // Call the 'onLoad' method of the addon instance
+                    obj.onLoad();
+
+                    if (addon.contains("depends"))
+                        for (String depended : addon.getStringList("depends"))
+                            if (tasks.containsKey(depended)) tasks.remove(depended).complete();
+
                     // Call the 'onEnable' method of the addon instance asynchronously
                     obj.onEnable();
                     manager.register(obj);
@@ -115,11 +128,11 @@ public class AddonLoader {
             }
 
         // Complete the 'onEnable' method calls for all addons
-        tasks.forEach(CompleteAbleActionImpl::complete);
+        tasks.keySet().forEach(name -> tasks.remove(name).complete());
         tasks.clear();
         if (addons.isEmpty())
-            logger.debug("Keine Addons zum laden gefunden");
-        logger.info("Alle Addons wurde innerhalb von " + (System.currentTimeMillis() - start) + "ms geladen");
+            logger.debug("No addons found to load");
+        logger.info("All addons were loaded within " + (System.currentTimeMillis() - start) + "ms");
         addons.clear();
     }
 
@@ -143,7 +156,7 @@ public class AddonLoader {
      *
      * @param file The addon JAR file to load.
      * @return The addon configuration if found, otherwise null.
-     * @throws IOException            if there is an I/O error while loading the JAR file.
+     * @throws IOException if there is an I/O error while loading the JAR file.
      */
     public Configuration loadJar(File file) throws IOException {
         Configuration configuration = null;
@@ -163,7 +176,7 @@ public class AddonLoader {
                     try {
                         classLoader.loadClass(className);
                     } catch (ClassNotFoundException | NoClassDefFoundError e) {
-                        CraftsNet.logger.error("Die Klasse " + className + " konnte nicht gefunden werden.");
+                        CraftsNet.logger.error("The class " + className + " could not be found");
                         continue;
                     }
                     continue;
@@ -172,7 +185,9 @@ public class AddonLoader {
                 // Check if the entry is 'addon.json' and read the configuration data
                 if (entryName.equalsIgnoreCase("addon.json")) {
                     try (BufferedReader reader = new BufferedReader(new InputStreamReader(jarFile.getInputStream(entry)))) {
-                        configuration = new Configuration(JsonParser.parse(reader.readLine()));
+                        StringBuilder json = new StringBuilder();
+                        reader.lines().forEach(json::append);
+                        configuration = new Configuration(JsonParser.parse(json.toString()));
                     }
                 }
             }

@@ -58,7 +58,7 @@ public class WebSocketServer {
      */
     public WebSocketServer(int port, int backlog, boolean ssl, String ssl_key) {
         try {
-            logger.info("Websocket Server wird auf Port " + port + " gestartet");
+            logger.info("Websocket server will be started on port " + port);
             if (!ssl) serverSocket = new ServerSocket(port, backlog);
             else {
                 SSLServerSocketFactory sslServerSocketFactory = SSL.load("./certificates/fullchain.pem", "./certificates/privkey.pem", ssl_key)
@@ -94,8 +94,8 @@ public class WebSocketServer {
         });
         connector.setName("Websocket Server - Connector");
         connector.start();
-        logger.debug("Websocket Server JVM Shutdown Hook wird initialisiert");
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
+        logger.debug("Websocket Server JVM Shutdown Hook is initialized");
     }
 
     /**

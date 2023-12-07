@@ -55,7 +55,7 @@ public class CommandRegistry {
                 break;
             }
         if (command == null) {
-            logger.warning("Dieser Command existiert nicht!");
+            logger.warning("This command was not found!");
             return;
         }
         command.getExecutor().onCommand(command, args, logger);

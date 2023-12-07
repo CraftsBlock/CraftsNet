@@ -24,7 +24,7 @@ public @interface Socket {
      *
      * @return The WebSocket path associated with this handler.
      */
-    String path();
+    String value();
 
 
 }

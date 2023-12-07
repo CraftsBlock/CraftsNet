@@ -1,8 +1,11 @@
 package de.craftsblock.craftsnet.events.shares;
 
+import com.sun.net.httpserver.Headers;
 import de.craftsblock.craftscore.event.Cancelable;
 import de.craftsblock.craftscore.event.Event;
 import org.jetbrains.annotations.NotNull;
+
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Represents an event that is triggered when a share request is made.
@@ -16,6 +19,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ShareRequestEvent extends Event implements Cancelable {
 
+    private Headers headers = new Headers();
     private String path;
     private boolean cancelled;
 
@@ -45,6 +49,15 @@ public class ShareRequestEvent extends Event implements Cancelable {
      */
     public void setPath(@NotNull String path) {
         this.path = path;
+    }
+
+    /**
+     * Gets the headers for this Request.
+     *
+     * @return Returns the header object
+     */
+    public Headers getHeaders() {
+        return headers;
     }
 
     /**

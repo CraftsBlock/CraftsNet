@@ -18,8 +18,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
-import java.net.URL;
-import java.net.URLConnection;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -57,11 +55,11 @@ public class WebServer {
         logger = CraftsNet.logger;
 
         // Add a JVM shutdown hook to gracefully stop the server when the JVM exits.
-        logger.debug("Web Server JVM Shutdown Hook wird eingebunden");
+        logger.debug("Web server jvm shutdown hook is integrated");
         Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
 
         // Create the HttpServer or HttpsServer based on the SSL flag.
-        logger.info("Web Server wird auf Port " + port + " gestartet");
+        logger.info("Web server will be started on port " + port);
         if (!ssl) server = HttpServer.create(new InetSocketAddress(port), 0);
         else {
             server = HttpsServer.create(new InetSocketAddress(port), 0);
@@ -82,7 +80,7 @@ public class WebServer {
         }
 
         // Create a context for the root path ("/") and set its handler to process incoming requests.
-        logger.debug("Erstellen des API Handlers");
+        logger.debug("Creating the API handler");
         server.createContext("/").setHandler(exchange -> {
             RouteRegistry registry = CraftsNet.routeRegistry;
             try (exchange; Response response = new Response(exchange)) {
@@ -102,7 +100,7 @@ public class WebServer {
                 if (registry.isShare(url) && HttpMethod.parse(requestMethod) == HttpMethod.GET) {
                     File folder = registry.getShareFolder(url);
                     Matcher matcher = registry.getSharePattern(url).matcher(url);
-                    if(!matcher.matches()) {
+                    if (!matcher.matches()) {
                         Json config = JsonParser.parse("{}");
                         config.set("error", "There was an unexpected error while matching!");
                         response.print(config.asString());
@@ -112,7 +110,9 @@ public class WebServer {
                     String path = matcher.group(1);
                     ShareRequestEvent event = new ShareRequestEvent(path);
                     CraftsNet.listenerRegistry.call(event);
-                    if(event.isCancelled()) {
+                    for (String key : event.getHeaders().keySet())
+                        response.setHeader(key, event.getHeaders().getFirst(key));
+                    if (event.isCancelled()) {
                         logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[SHARE ABORTED]");
                         return;
                     }
@@ -153,7 +153,8 @@ public class WebServer {
                     return;
                 }
 
-                RouteRegistry.RouteMapping route = registry.getRoute(url, domain, requestMethod); // Find the registered route mapping based on the URL and request method.
+                // Find the registered route mapping based on the URL and request method.
+                RouteRegistry.RouteMapping route = registry.getRoute(url, domain, headers.keySet(), requestMethod);
 
                 // If no matching route is found, return an error response.
                 if (route == null) {
@@ -163,10 +164,11 @@ public class WebServer {
                     logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[NOT FOUND]");
                     return;
                 }
-                request.setRoute(route); // Associate the matched route with the Request object.
+                // Associate the matched route with the Request object.
+                request.setRoute(route);
 
                 // Create a RequestEvent and call listeners before invoking the API handler method.
-                RequestEvent event = new RequestEvent(new Exchange(request, response), route);
+                RequestEvent event = new RequestEvent(new Exchange(url, request, response), route);
                 CraftsNet.listenerRegistry.call(event);
                 if (event.isCancelled()) {
                     logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[ABORTED]");
@@ -185,26 +187,28 @@ public class WebServer {
 
                 // Prepare the argument array to be passed to the API handler method.
                 Object[] args = new Object[matcher.groupCount()];
-                args[0] = new Exchange(request, response);
+                args[0] = new Exchange(url, request, response);
                 for (int i = 2; i <= matcher.groupCount(); i++)
                     args[i - 1] = matcher.group(i);
 
-                route.method().invoke(route.handler(), args); // Invoke the API handler method with the extracted path parameters.
+                // Invoke the API handler method with the extracted path parameters.
+                route.method().invoke(route.handler(), args);
             } catch (IllegalAccessException | InvocationTargetException e) {
                 logger.error(e);
             }
         });
 
-        logger.debug("Web Server wird gestartet");
+        logger.debug("Setting up the executor and starting the web server");
         server.setExecutor(Executors.newFixedThreadPool(25));
         server.start();
+        logger.debug("Web server has been started");
     }
 
     /**
      * Stops the web server.
      */
     public void stop() {
-        logger.debug("Web Server wird gestoppt");
+        logger.debug("Web server will be stopped");
         server.stop(0);
     }
 

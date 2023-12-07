@@ -59,6 +59,7 @@ public class StandardFormBody extends FormBody<String> {
             data.put(fieldData[0], decodedValue); // Store the field name and its decoded value in the data map
         }
         reader.close();
+        body.close();
     }
 
     /**

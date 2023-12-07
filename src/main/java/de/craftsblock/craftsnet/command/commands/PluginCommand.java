@@ -14,7 +14,7 @@ public class PluginCommand implements CommandExecutor {
     public void onCommand(@NotNull Command command, @NotNull String[] args, @NotNull Logger logger) {
         AddonManager addonManager = CraftsNet.addonManager;
         if (CraftsNet.addonManager.getAddons().isEmpty()) {
-            logger.info("Es sind keine Addons installiert");
+            logger.info("Currently there are no addons installed!");
             return;
         }
         logger.info(

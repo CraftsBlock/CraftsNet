@@ -6,6 +6,7 @@ import de.craftsblock.craftsnet.api.http.Exchange;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.http.RequestHandler;
 import de.craftsblock.craftsnet.api.http.annotations.RequestMethod;
+import de.craftsblock.craftsnet.api.http.annotations.RequireHeader;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.api.websocket.MessageReceiver;
 import de.craftsblock.craftsnet.api.websocket.Socket;
@@ -20,6 +21,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -74,7 +76,7 @@ public class RouteRegistry {
      */
     public <T extends SocketHandler> void register(T t) {
         Socket socket = rawAnnotation(t, Socket.class);
-        Pattern validator = createValidator(socket.path());
+        Pattern validator = createValidator(socket.value());
         sockets.put(
                 validator,
                 new SocketMapping(t, socket, validator, Utils.getMethodByAnnotation(t.getClass(), MessageReceiver.class).toArray(new Method[0]))
@@ -121,7 +123,7 @@ public class RouteRegistry {
      */
     public <T extends SocketHandler> void unregister(T t) {
         Socket socket = rawAnnotation(t, Socket.class);
-        sockets.entrySet().removeIf(validator -> validator.getKey().matcher(url(socket.path())).matches());
+        sockets.entrySet().removeIf(validator -> validator.getKey().matcher(url(socket.value())).matches());
     }
 
     /**
@@ -194,7 +196,7 @@ public class RouteRegistry {
      */
     @Nullable
     public RouteMapping getRoute(String url) {
-        return getRoute(url, null, null);
+        return getRoute(url, null, null, null);
     }
 
     /**
@@ -206,34 +208,78 @@ public class RouteRegistry {
      */
     @Nullable
     public RouteMapping getRoute(String url, String method) {
-        return getRoute(url, null, method);
+        return getRoute(url, null, null, method);
+    }
+
+    /**
+     * Gets the route mapping associated with a specific URL and HTTP method.
+     *
+     * @param url    The URL for which the route mapping is sought.
+     * @param domain The domain for which the route mapping is sought.
+     * @param method The HTTP method (GET, POST, etc.) for which the route mapping is sought.
+     * @return The RouteMapping object associated with the URL, or null if no mapping is found.
+     * @since 2.1.1
+     */
+    @Nullable
+    public RouteMapping getRoute(String url, String domain, String method) {
+        return getRoute(url, domain, null, method);
+    }
+
+    /**
+     * Gets the route mapping associated with a specific URL and HTTP method.
+     *
+     * @param url     The URL for which the route mapping is sought.
+     * @param headers The headers for which the route mapping is sought.
+     * @param method  The HTTP method (GET, POST, etc.) for which the route mapping is sought.
+     * @return The RouteMapping object associated with the URL, or null if no mapping is found.
+     * @since 2.1.1
+     */
+    @Nullable
+    public RouteMapping getRoute(String url, Collection<String> headers, String method) {
+        return getRoute(url, null, headers, method);
     }
 
     /**
      * Gets the route mapping associated with a specific URL, domain and HTTP method.
      *
-     * @param url    The URL for which the route mapping is sought.
-     * @param domain The domain for which the route mapping is sought.
-     * @param method The HTTP method (GET, POST, etc.) for which the route mapping is sought.
+     * @param url     The URL for which the route mapping is sought.
+     * @param domain  The domain for which the route mapping is sought.
+     * @param headers The headers for which the route mapping is sought.
+     * @param method  The HTTP method (GET, POST, etc.) for which the route mapping is sought.
      * @return The RouteMapping object associated with the URL and HTTP method, or null if no mapping is found.
      * @since 2.3.0
      */
     @Nullable
-    public RouteMapping getRoute(String url, String domain, String method) {
+    public RouteMapping getRoute(String url, String domain, Collection<String> headers, String method) {
         return routes.entrySet().parallelStream()
                 .filter(entry -> {
                     try {
+                        boolean suitable = true;
                         Method tmp = entry.getValue().method();
-                        HttpMethod[] methods = annotation(tmp, RequestMethod.class);
-                        List<String> domains = new ArrayList<>();
-                        addArray(annotation(tmp, Domain.class), domains);
-                        addArray(annotation(entry.getValue().handler, Domain.class), domains);
-                        removeDuplicates(domains);
-                        if (domains.isEmpty()) domains.add("*");
+                        if (method != null) {
+                            HttpMethod[] methods = annotation(tmp, RequestMethod.class);
+                            suitable = HttpMethod.asString(methods).toUpperCase().contains(method.toUpperCase());
+                        }
 
-                        return entry.getKey().matcher(url(url)).matches() &&
-                                (methods == null || HttpMethod.asString(methods).toUpperCase().contains(method.toUpperCase())) &&
-                                (domain == null || domains.contains("*") || domains.contains(domain));
+                        if (domain != null && suitable) {
+                            List<String> domains = new ArrayList<>();
+                            addArray(annotation(tmp, Domain.class), domains);
+                            addArray(annotation(entry.getValue().handler, Domain.class), domains);
+                            removeDuplicates(domains);
+                            if (domains.isEmpty()) domains.add("*");
+                            suitable = domains.contains("*") || domains.contains(domain);
+                        }
+
+                        if (headers == null && suitable) {
+                            List<String> requiredHeaders = new ArrayList<>();
+                            addArray(annotation(tmp, RequireHeader.class), requiredHeaders);
+                            addArray(annotation(entry.getValue().handler, RequireHeader.class), requiredHeaders);
+                            removeDuplicates(requiredHeaders);
+                            suitable = requiredHeaders.isEmpty() || requiredHeaders.contains(domain);
+                        }
+
+                        if (suitable) return entry.getKey().matcher(url(url)).matches();
+                        return false;
                     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException |
                              InstantiationException e) {
                         logger.error(e, "Error whilst loading http route");
@@ -282,7 +328,8 @@ public class RouteRegistry {
                 .filter(entry -> {
                     try {
                         List<String> domains = new ArrayList<>();
-                        addArray(annotation(entry.getValue(), Domain.class), domains);
+//                        for(Method method : entry.getValue().receiver())
+//                            addArray(annotation(method, Domain.class), domains);
                         addArray(annotation(entry.getValue().handler, Domain.class), domains);
                         removeDuplicates(domains);
                         if (domains.isEmpty()) domains.add("*");
@@ -341,7 +388,7 @@ public class RouteRegistry {
      * @throws IllegalAccessException    If there is an access issue with the getter method.
      */
     private <A extends Annotation, R> R annotation(Object o, Class<A> clazz) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
-        A annotation = annotation(o, clazz);
+        A annotation = rawAnnotation(o, clazz);
         if (annotation == null) {
             Method method = clazz.getDeclaredMethod("value");
             if (method.getDefaultValue() == null) return null;
