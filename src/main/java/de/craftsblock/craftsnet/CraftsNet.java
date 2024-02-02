@@ -3,20 +3,20 @@ package de.craftsblock.craftsnet;
 import de.craftsblock.craftscore.event.ListenerRegistry;
 import de.craftsblock.craftscore.utils.ArgumentParser;
 import de.craftsblock.craftsnet.addon.AddonManager;
+import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.WebServer;
-import de.craftsblock.craftsnet.api.http.annotations.RequireHeader;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.command.commands.PluginCommand;
 import de.craftsblock.craftsnet.command.commands.ShutdownCommand;
+import de.craftsblock.craftsnet.command.commands.VersionCommand;
 import de.craftsblock.craftsnet.events.ConsoleMessageEvent;
 import de.craftsblock.craftsnet.listeners.ConsoleListener;
 import de.craftsblock.craftsnet.utils.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
@@ -32,20 +32,21 @@ import java.lang.reflect.InvocationTargetException;
 public class CraftsNet {
 
     // Information variables
-    public static final String version = "2.3.4-PRERELEASE";
+    public static final String version = "3.0.0-SNAPSHOT";
 
     // Manager instances
-    public static AddonManager addonManager;
-    public static CommandRegistry commandRegistry;
-    public static ListenerRegistry listenerRegistry;
-    public static RouteRegistry routeRegistry;
+    private static AddonManager addonManager;
+    private static CommandRegistry commandRegistry;
+    private static ListenerRegistry listenerRegistry;
+    private static RouteRegistry routeRegistry;
+    private static ServiceManager serviceManager;
 
     // Server instances
-    public static WebServer webServer;
-    public static WebSocketServer webSocketServer;
+    private static WebServer webServer;
+    private static WebSocketServer webSocketServer;
 
     // Logger instance
-    public static Logger logger;
+    private static Logger logger;
 
     /**
      * The main method is the entry point of the application. It parses command-line arguments, initializes the
@@ -93,6 +94,7 @@ public class CraftsNet {
         listenerRegistry = new ListenerRegistry();
         routeRegistry = new RouteRegistry();
         commandRegistry = new CommandRegistry();
+        serviceManager = new ServiceManager();
         addonManager = new AddonManager();
 
         // Check if http routes are registered and start the web server if needed
@@ -110,10 +112,12 @@ public class CraftsNet {
 
         // Register build in commands / listeners
         listenerRegistry.register(new ConsoleListener());
+        commandRegistry.getCommand("pl").setExecutor(new PluginCommand());
+        commandRegistry.getCommand("pl").addAlias("plugin", "plugins", "addons");
         commandRegistry.getCommand("shutdown").setExecutor(new ShutdownCommand());
         commandRegistry.getCommand("shutdown").addAlias("quit", "exit");
-        commandRegistry.getCommand("pl").setExecutor(new PluginCommand());
-        commandRegistry.getCommand("pl").addAlias("plugin", "addons");
+        commandRegistry.getCommand("ver").setExecutor(new VersionCommand());
+        commandRegistry.getCommand("ver").addAlias("version", "v");
 
         // Set up and start the console listener
         Thread console = getConsoleReader();
@@ -141,6 +145,38 @@ public class CraftsNet {
         }, "Console Reader");
         console.start();
         return console;
+    }
+
+    public static AddonManager addonManager() {
+        return addonManager;
+    }
+
+    public static CommandRegistry commandRegistry() {
+        return commandRegistry;
+    }
+
+    public static ListenerRegistry listenerRegistry() {
+        return listenerRegistry;
+    }
+
+    public static RouteRegistry routeRegistry() {
+        return routeRegistry;
+    }
+
+    public static ServiceManager serviceManager() {
+        return serviceManager;
+    }
+
+    public static WebServer webServer() {
+        return webServer;
+    }
+
+    public static WebSocketServer webSocketServer() {
+        return webSocketServer;
+    }
+
+    public static Logger logger() {
+        return logger;
     }
 
 }

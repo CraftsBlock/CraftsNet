@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 public class WebSocketServer {
 
-    private final Logger logger = CraftsNet.logger;
+    private final Logger logger = CraftsNet.logger();
     private Thread connector;
     private ConcurrentHashMap<String, ConcurrentLinkedQueue<WebSocketClient>> connected;
     private final ConcurrentLinkedQueue<Thread> clients = new ConcurrentLinkedQueue<>();

@@ -1,5 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket;
 
+import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
+
 /**
  * Represents a contract for classes that handle WebSocket connections in a server application.
  * WebSocket server handlers must implement this interface to define their behavior.

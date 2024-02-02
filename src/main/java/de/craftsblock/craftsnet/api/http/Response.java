@@ -3,8 +3,12 @@ package de.craftsblock.craftsnet.api.http;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 /**
  * The Response class represents an HTTP response sent by the web server to the client.
@@ -35,7 +39,7 @@ public class Response implements AutoCloseable {
      */
     protected Response(HttpExchange exchange) {
         this.exchange = exchange;
-        stream = new BufferedOutputStream(exchange.getResponseBody(), 4096);
+        stream = exchange.getResponseBody();
         headers = exchange.getResponseHeaders();
         setContentType("application/json");
     }
@@ -83,11 +87,12 @@ public class Response implements AutoCloseable {
         if (bodySend) return;
         bodySend = true;
         exchange.sendResponseHeaders(code, file.length());
-        FileInputStream input = new FileInputStream(file);
-        byte[] buffer = new byte[4096];
-        int read;
-        while ((read = input.read(buffer)) != -1) stream.write(buffer, 0, read);
-        input.close();
+        try (FileInputStream input = new FileInputStream(file)) {
+            byte[] buffer = new byte[2048];
+            int read;
+            while ((read = input.read(buffer)) != -1) stream.write(buffer, 0, read);
+            Arrays.fill(buffer, (byte) 0);
+        }
     }
 
     /**
@@ -99,7 +104,7 @@ public class Response implements AutoCloseable {
     public void close() throws IOException {
         if (!bodySend)
             exchange.sendResponseHeaders(code, 0);
-        stream.close();
+        exchange.close();
     }
 
     /**

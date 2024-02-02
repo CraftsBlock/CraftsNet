@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.addon;
 
 import de.craftsblock.craftscore.event.ListenerRegistry;
+import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.utils.Logger;
@@ -18,7 +19,7 @@ import java.io.File;
  *
  * <p>Each addon has access to a {@link RouteRegistry} instance for handling routes and a {@link ListenerRegistry}
  * instance for registering listeners within the addon. It also has a {@link Logger} instance for logging messages
- * specific to the addon.</p>
+ * specific to the addon and a {@link ServiceManager} for registering service loaders.</p>
  *
  * <p>The {@code Addon} class provides a convenient way to extend the application's capabilities through custom
  * functionality, making it easy to add new features or modify existing ones without directly altering the application's
@@ -35,6 +36,7 @@ public abstract class Addon {
     private CommandRegistry commandRegistry;
     private ListenerRegistry listenerRegistry;
     private RouteRegistry handler;
+    private ServiceManager serviceManager;
     private Logger logger;
 
     /**
@@ -62,7 +64,7 @@ public abstract class Addon {
      *
      * @return The name of the addon.
      */
-    public String getName() {
+    public final String getName() {
         return name;
     }
 
@@ -97,12 +99,22 @@ public abstract class Addon {
     }
 
     /**
+     * Get the ServiceManager instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the handler directly.
+     *
+     * @return The ServiceManager instance used by the addon.
+     */
+    public final ServiceManager serviceManager() {
+        return serviceManager;
+    }
+
+    /**
      * Get the logger instance used by the addon.
      * This method is marked as final to prevent subclasses from modifying the logger directly.
      *
      * @return The logger instance used by the addon.
      */
-    public Logger logger() {
+    public final Logger logger() {
         return logger;
     }
 

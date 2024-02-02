@@ -47,7 +47,7 @@ public class CommandRegistry {
      * @param args The arguments to pass to the command executor.
      */
     public void perform(String name, String[] args) {
-        Logger logger = CraftsNet.logger;
+        Logger logger = CraftsNet.logger();
         Command command = null;
         for (Command tmp : commands.values())
             if (tmp.getName().equalsIgnoreCase(name) || tmp.isAlias(name)) {

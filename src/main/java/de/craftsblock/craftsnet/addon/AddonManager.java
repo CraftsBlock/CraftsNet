@@ -1,5 +1,7 @@
 package de.craftsblock.craftsnet.addon;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -12,13 +14,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * Addons can be registered and unregistered through this class.
  *
  * @author CraftsBlock
+ * @version 1.0.1
  * @see Addon
  * @see AddonLoader
  * @since 1.0.0
  */
 public class AddonManager {
 
-    private final AddonLoader addonLoader = new AddonLoader();
     private final ConcurrentHashMap<String, Addon> addons = new ConcurrentHashMap<>();
 
     /**
@@ -35,6 +37,7 @@ public class AddonManager {
             folder.delete();
             folder.mkdirs();
         }
+        AddonLoader addonLoader = new AddonLoader();
         for (File file : Objects.requireNonNull(folder.listFiles()))
             if (file.getName().endsWith(".jar")) addonLoader.add(file);
         addonLoader.load(this);
@@ -74,6 +77,23 @@ public class AddonManager {
      */
     public ConcurrentHashMap<String, Addon> getAddons() {
         return new ConcurrentHashMap<>(addons);
+    }
+
+    /**
+     * Retrieves an addon of the specified type from the loaded addons.
+     *
+     * @param <T>   The type of the addon to retrieve, extending the Addon class.
+     * @param addon The class object representing the type of the addon to be retrieved.
+     * @return An instance of the specified addon type if found, or {@code null} if not present.
+     */
+    @Nullable
+    public <T extends Addon> T getAddon(Class<T> addon) {
+        return addons.entrySet().parallelStream()
+                .map(Map.Entry::getValue)
+                .filter(addon::isInstance)
+                .map(addon::cast)
+                .findFirst()
+                .orElse(null);
     }
 
 }

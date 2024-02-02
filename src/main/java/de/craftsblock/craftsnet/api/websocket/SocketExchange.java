@@ -1,5 +1,8 @@
 package de.craftsblock.craftsnet.api.websocket;
 
+import de.craftsblock.craftsnet.api.websocket.annotations.MessageReceiver;
+import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
+
 /**
  * The SocketExchange record represents an exchange object that provides a way to interact
  * with the WebSocket server and client within the context of a WebSocket connection.

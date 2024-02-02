@@ -21,6 +21,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.stream.IntStream;
 
@@ -51,7 +52,7 @@ public class WebSocketClient implements Runnable {
     private BufferedReader reader;
     private PrintWriter writer;
 
-    private final Logger logger = CraftsNet.logger;
+    private final Logger logger = CraftsNet.logger();
 
     private boolean active = false;
 
@@ -86,7 +87,9 @@ public class WebSocketClient implements Runnable {
             headers = readHeaders(); // Read and store the client's headers for later use
 
             // Determine the host domain from headers
-            String host = getHeader("Host").split(":")[0];
+            AtomicReference<String> host = new AtomicReference<>(getHeader("Host"));
+            if (host.get() == null || host.get().isBlank()) return;
+            host.set(host.get().split(":")[0]);
 
             // Determine the client's IP address from headers, taking into account any proxy headers
             ip = socket.getInetAddress().getHostAddress();
@@ -96,12 +99,12 @@ public class WebSocketClient implements Runnable {
                 ip = getHeader("Cf-connecting-ip");
 
             sendHandshake(); // Send a WebSocket handshake to establish the connection
-            if (getEndpoint(path, host) != null) { // Check if the requested path has a corresponding endpoint registered in the server
-                mapping = getEndpoint(path, host);
+            if (getEndpoint(path, host.get()) != null) { // Check if the requested path has a corresponding endpoint registered in the server
+                mapping = getEndpoint(path, host.get());
 
                 // Trigger the ClientConnectEvent to handle the client connection
                 ClientConnectEvent event = new ClientConnectEvent(exchange, mapping);
-                CraftsNet.listenerRegistry.call(event);
+                CraftsNet.listenerRegistry().call(event);
 
                 // If the event is cancelled, disconnect the client
                 if (event.isCancelled()) {
@@ -140,7 +143,7 @@ public class WebSocketClient implements Runnable {
                     args[1] = message;
                     for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
                     IncomingSocketMessageEvent event2 = new IncomingSocketMessageEvent(exchange, message);
-                    CraftsNet.listenerRegistry.call(event2);
+                    CraftsNet.listenerRegistry().call(event2);
                     if (event2.isCancelled())
                         continue;
 
@@ -189,7 +192,7 @@ public class WebSocketClient implements Runnable {
      */
     @Nullable
     private RouteRegistry.SocketMapping getEndpoint(String path, String host) {
-        return CraftsNet.routeRegistry.getSocket(path, host);
+        return CraftsNet.routeRegistry().getSocket(path, host);
     }
 
     /**
@@ -325,7 +328,7 @@ public class WebSocketClient implements Runnable {
     public void sendMessage(String data) {
         try {
             OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(new SocketExchange(server, this), data);
-            CraftsNet.listenerRegistry.call(event);
+            CraftsNet.listenerRegistry().call(event);
             if (event.isCancelled())
                 return;
             data = event.getData();
@@ -364,7 +367,7 @@ public class WebSocketClient implements Runnable {
     public Thread disconnect() {
         try {
             if (reader == null || writer == null) return Thread.currentThread();
-            CraftsNet.listenerRegistry.call(new ClientDisconnectEvent(new SocketExchange(server, this), mapping));
+            CraftsNet.listenerRegistry().call(new ClientDisconnectEvent(new SocketExchange(server, this), mapping));
             if (reader != null) reader.close();
             reader = null;
             if (writer != null) writer.close();

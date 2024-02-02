@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.api.websocket;
+package de.craftsblock.craftsnet.api.websocket.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

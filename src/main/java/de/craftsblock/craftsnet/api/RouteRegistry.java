@@ -8,9 +8,9 @@ import de.craftsblock.craftsnet.api.http.RequestHandler;
 import de.craftsblock.craftsnet.api.http.annotations.RequestMethod;
 import de.craftsblock.craftsnet.api.http.annotations.RequireHeader;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
-import de.craftsblock.craftsnet.api.websocket.MessageReceiver;
-import de.craftsblock.craftsnet.api.websocket.Socket;
 import de.craftsblock.craftsnet.api.websocket.SocketHandler;
+import de.craftsblock.craftsnet.api.websocket.annotations.MessageReceiver;
+import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 import de.craftsblock.craftsnet.utils.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,7 +21,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,7 +34,7 @@ import java.util.regex.Pattern;
  */
 public class RouteRegistry {
 
-    private static final Logger logger = CraftsNet.logger;
+    private static final Logger logger = CraftsNet.logger();
     private final ConcurrentHashMap<Pattern, RouteMapping> routes = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Pattern, SocketMapping> sockets = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Pattern, File> shares = new ConcurrentHashMap<>();

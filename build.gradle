@@ -1,6 +1,5 @@
 plugins {
     id 'java'
-    id 'maven-publish'
 }
 
 java {
@@ -9,7 +8,7 @@ java {
 }
 
 group = 'de.craftsblock'
-version = '2.3.4-PRERELEASE'
+version = '3.0.0-SNAPSHOT'
 
 repositories {
     mavenCentral()
@@ -17,10 +16,19 @@ repositories {
 }
 
 dependencies {
-    implementation 'de.craftsblock.craftscore:CraftsCore:3.7.29-SNAPSHOT'
-    implementation 'com.mysql:mysql-connector-j:8.0.33'
-    implementation 'com.squareup.okhttp3:okhttp:4.10.0'
+    // CraftsBlock related dependencies
+    implementation 'de.craftsblock.craftscore:CraftsCore:3.7.31-SNAPSHOT'
+
+    // Third party needed dependencies
+    implementation 'com.mysql:mysql-connector-j:8.2.0'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
     implementation 'com.google.code.gson:gson:2.10'
 
     implementation 'org.apache.tika:tika-core:2.9.0'
+    implementation 'org.jetbrains:annotations:24.1.0'
+
+    // Artifact resolving dependencies
+    implementation 'org.apache.maven:maven-resolver-provider:3.9.6'
+    implementation 'org.apache.maven.resolver:maven-resolver-connector-basic:1.9.18'
+    implementation 'org.apache.maven.resolver:maven-resolver-transport-http:1.9.18'
 }

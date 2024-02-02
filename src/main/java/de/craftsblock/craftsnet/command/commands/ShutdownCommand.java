@@ -27,10 +27,10 @@ public class ShutdownCommand implements CommandExecutor {
     @Override
     public void onCommand(@NotNull Command command, @NotNull String[] args, @NotNull Logger logger) {
         logger.info("Shutdown anfrage wurde gesendet!");
-        CraftsNet.addonManager.stop(); // Stop any registered addons
-        if (CraftsNet.webServer != null) CraftsNet.webServer.stop(); // Stop the web server if it exists
-        if (CraftsNet.webSocketServer != null)
-            CraftsNet.webSocketServer.stop(); // Stop the WebSocket server if it exists
+        CraftsNet.addonManager().stop(); // Stop any registered addons
+        if (CraftsNet.webServer() != null) CraftsNet.webServer().stop(); // Stop the web server if it exists
+        if (CraftsNet.webSocketServer() != null)
+            CraftsNet.webSocketServer().stop(); // Stop the WebSocket server if it exists
         // Interrupt the console reader thread if it exists
         Thread thread = Utils.getThreadByName("Console Reader");
         if (thread != null) thread.interrupt();

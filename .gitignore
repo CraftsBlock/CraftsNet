@@ -17,6 +17,7 @@ build/
 out/
 !**/src/main/**/out/
 !**/src/test/**/out/
+META-INF/
 
 ### Eclipse ###
 .apt_generated
@@ -42,6 +43,7 @@ bin/
 
 ### Addons ###
 addons/
+libraries/
 
 ### Mac OS ###
 .DS_Store

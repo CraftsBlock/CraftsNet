@@ -1,6 +1,5 @@
 package de.craftsblock.craftsnet.utils;
 
-import com.google.gson.Gson;
 import de.craftsblock.craftsnet.CraftsNet;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -94,7 +93,7 @@ public class SSL {
                 KeyFactory keyFactory = KeyFactory.getInstance("RSA");
                 return keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decodedKey));
             } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-                CraftsNet.logger.error(e);
+                CraftsNet.logger().error(e);
             }
         }
         return null;

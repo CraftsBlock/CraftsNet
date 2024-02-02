@@ -45,12 +45,32 @@ public abstract class Body implements AutoCloseable {
     }
 
     /**
+     * Returns this object as a {@link JsonBody} if the body is a json object.
+     *
+     * @return This object as a {@link JsonBody} if the body is a json object otherwise, null.
+     */
+    public final JsonBody getAsJsonBody() {
+        if (!isJsonBody()) return null;
+        return (JsonBody) this;
+    }
+
+    /**
      * Checks if this request body is a form request body.
      *
      * @return {@code true} if it is a form request body, otherwise {@code false}.
      */
     public final boolean isFormBody() {
         return this instanceof FormBody<?>;
+    }
+
+    /**
+     * Returns this object as a {@link FormBody} if the body is a form body.
+     *
+     * @return This object as a {@link FormBody} if the body is a form body otherwise, null.
+     */
+    public final FormBody<?> getAsFormBody() {
+        if (!isFormBody()) return null;
+        return (FormBody<?>) this;
     }
 
     /**
@@ -63,12 +83,32 @@ public abstract class Body implements AutoCloseable {
     }
 
     /**
+     * Returns this object as a {@link StandardFormBody} if the body is a standard form body.
+     *
+     * @return This object as a {@link StandardFormBody} if the body is a standard form body otherwise, null.
+     */
+    public final StandardFormBody getAsStandardFormBody() {
+        if (!isStandardFormBody()) return null;
+        return (StandardFormBody) this;
+    }
+
+    /**
      * Checks if this request body is a multipart form request body.
      *
      * @return {@code true} if it is a multipart form request body, otherwise {@code false}.
      */
     public final boolean isMultipartFormBody() {
         return this instanceof MultipartFormBody;
+    }
+
+    /**
+     * Returns this object as a {@link MultipartFormBody} if the body is a multipart form body.
+     *
+     * @return This object as a {@link MultipartFormBody} if the body is a multipart form body otherwise, null.
+     */
+    public final MultipartFormBody getAsMultipartFormBody() {
+        if (!isMultipartFormBody()) return null;
+        return (MultipartFormBody) this;
     }
 
 }

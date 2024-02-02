@@ -27,7 +27,7 @@ public class ConsoleListener implements ListenerAdapter {
         String[] args = event.getMessage().split(" ");
         String command = args[0];
         args = Arrays.stream(args).skip(1).toArray(String[]::new);
-        CraftsNet.commandRegistry.perform(command, args);
+        CraftsNet.commandRegistry().perform(command, args);
     }
 
 }

@@ -5,8 +5,6 @@ import de.craftsblock.craftscore.event.Cancelable;
 import de.craftsblock.craftscore.event.Event;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  * Represents an event that is triggered when a share request is made.
  * This event can be canceled to prevent the share request from being processed.

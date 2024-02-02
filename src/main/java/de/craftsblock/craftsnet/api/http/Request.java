@@ -5,7 +5,10 @@ import com.sun.net.httpserver.HttpExchange;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.api.RouteRegistry;
-import de.craftsblock.craftsnet.api.http.body.*;
+import de.craftsblock.craftsnet.api.http.body.Body;
+import de.craftsblock.craftsnet.api.http.body.JsonBody;
+import de.craftsblock.craftsnet.api.http.body.MultipartFormBody;
+import de.craftsblock.craftsnet.api.http.body.StandardFormBody;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -71,7 +74,7 @@ public class Request implements AutoCloseable {
     public void close() throws Exception {
         exchange.close();
         headers.clear();
-        if(body != null) body.close();
+        if (body != null) body.close();
     }
 
     /**

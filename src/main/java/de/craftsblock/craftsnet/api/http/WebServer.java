@@ -1,6 +1,9 @@
 package de.craftsblock.craftsnet.api.http;
 
-import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.Headers;
+import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsServer;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
@@ -11,7 +14,6 @@ import de.craftsblock.craftsnet.events.shares.ShareFileLoadedEvent;
 import de.craftsblock.craftsnet.events.shares.ShareRequestEvent;
 import de.craftsblock.craftsnet.utils.Logger;
 import de.craftsblock.craftsnet.utils.SSL;
-import org.apache.tika.Tika;
 
 import javax.net.ssl.SSLContext;
 import java.io.File;
@@ -41,7 +43,6 @@ public class WebServer {
 
     private final HttpServer server;
     private final Logger logger;
-    private final Tika tika = new Tika();
 
     /**
      * Constructs a WebServer with the specified port and SSL settings.
@@ -52,7 +53,7 @@ public class WebServer {
      * @throws IOException If an I/O error occurs while creating the server.
      */
     public WebServer(int port, boolean ssl, String ssl_key) throws IOException {
-        logger = CraftsNet.logger;
+        logger = CraftsNet.logger();
 
         // Add a JVM shutdown hook to gracefully stop the server when the JVM exits.
         logger.debug("Web server jvm shutdown hook is integrated");
@@ -67,12 +68,7 @@ public class WebServer {
                 // Load the SSL context using the provided SSL key files.
                 SSLContext sslContext = SSL.load("./certificates/fullchain.pem", "./certificates/privkey.pem", ssl_key);
                 // Configure the HttpsServer with the SSL context.
-                ((HttpsServer) server).setHttpsConfigurator(new HttpsConfigurator(sslContext) {
-                    @Override
-                    public void configure(HttpsParameters params) {
-                        params.setSSLParameters(getSSLContext().getDefaultSSLParameters());
-                    }
-                });
+                ((HttpsServer) server).setHttpsConfigurator(new HttpsConfigurator(sslContext));
             } catch (UnrecoverableKeyException | KeyManagementException | KeyStoreException | NoSuchAlgorithmException |
                      CertificateException e) {
                 e.printStackTrace();
@@ -82,8 +78,8 @@ public class WebServer {
         // Create a context for the root path ("/") and set its handler to process incoming requests.
         logger.debug("Creating the API handler");
         server.createContext("/").setHandler(exchange -> {
-            RouteRegistry registry = CraftsNet.routeRegistry;
-            try (exchange; Response response = new Response(exchange)) {
+            RouteRegistry registry = CraftsNet.routeRegistry();
+            try (Response response = new Response(exchange)) {
                 // Extract relevant information from the incoming request.
                 String domain = exchange.getRequestHeaders().getFirst("Host").split(":")[0];
                 String requestMethod = exchange.getRequestMethod();
@@ -109,7 +105,7 @@ public class WebServer {
 
                     String path = matcher.group(1);
                     ShareRequestEvent event = new ShareRequestEvent(path);
-                    CraftsNet.listenerRegistry.call(event);
+                    CraftsNet.listenerRegistry().call(event);
                     for (String key : event.getHeaders().keySet())
                         response.setHeader(key, event.getHeaders().getFirst(key));
                     if (event.isCancelled()) {
@@ -120,10 +116,11 @@ public class WebServer {
                     logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;205m[SHARED]");
 
                     File share = new File(folder, (path.isBlank() ? "index.html" : path));
-                    ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(share, tika);
-                    CraftsNet.listenerRegistry.call(fileLoadedEvent);
+                    ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(share);
+                    CraftsNet.listenerRegistry().call(fileLoadedEvent);
                     share = fileLoadedEvent.getFile();
 
+                    assert share != null;
                     if (!share.getCanonicalPath().startsWith(folder.getCanonicalPath() + File.separator)) {
                         response.setCode(403);
                         response.setContentType("text/html; charset=utf-8");
@@ -169,7 +166,7 @@ public class WebServer {
 
                 // Create a RequestEvent and call listeners before invoking the API handler method.
                 RequestEvent event = new RequestEvent(new Exchange(url, request, response), route);
-                CraftsNet.listenerRegistry.call(event);
+                CraftsNet.listenerRegistry().call(event);
                 if (event.isCancelled()) {
                     logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[ABORTED]");
                     return;

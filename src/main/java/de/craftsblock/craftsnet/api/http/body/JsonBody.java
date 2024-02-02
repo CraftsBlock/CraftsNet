@@ -20,7 +20,7 @@ import java.io.InputStreamReader;
  */
 public final class JsonBody extends Body {
 
-    private Json body;
+    private final Json body;
 
     /**
      * Constructs a new {@code JsonBody} object by parsing a JSON-formatted string.
