@@ -5,6 +5,8 @@ import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.Exchange;
 
+import java.util.List;
+
 /**
  * The RequestEvent class represents an event related to a request. It extends the base Event class and implements the Cancelable interface.
  * Events can be triggered during various stages of request processing. This class provides information about the Exchange and the RouteMapping
@@ -18,18 +20,18 @@ public class RequestEvent extends Event implements Cancelable {
 
     private final Exchange exchange;
 
-    private final RouteRegistry.RouteMapping mapping;
+    private final List<RouteRegistry.RouteMapping> mappings;
     private boolean cancelled = false;
 
     /**
-     * Constructs a new RequestEvent with the specified Exchange and RouteMapping.
+     * Constructs a new RequestEvent with the specified Exchange and RouteMappings.
      *
      * @param exchange The Exchange object representing the request and its associated data.
-     * @param mapping  The RouteMapping object associated with the request, can be null if not applicable.
+     * @param mappings  The RouteMapping objects associated with the request, can be null if not applicable.
      */
-    public RequestEvent(Exchange exchange, RouteRegistry.RouteMapping mapping) {
+    public RequestEvent(Exchange exchange, List<RouteRegistry.RouteMapping> mappings) {
         this.exchange = exchange;
-        this.mapping = mapping;
+        this.mappings = mappings;
     }
 
     /**
@@ -42,21 +44,21 @@ public class RequestEvent extends Event implements Cancelable {
     }
 
     /**
-     * Gets the RouteMapping associated with the request event.
+     * Get the RouteMappings associated with the request event.
      *
-     * @return The RouteMapping object representing the mapping for the request route.
+     * @return The RouteMapping objects representing the mapping for the request route.
      */
-    public RouteRegistry.RouteMapping getMapping() {
-        return mapping;
+    public List<RouteRegistry.RouteMapping> getMappings() {
+        return mappings;
     }
 
     /**
-     * Checks if the request event has a valid RouteMapping associated with it.
+     * Checks if the request event has valid RouteMappings associated with it.
      *
-     * @return true if the event has a valid RouteMapping, false otherwise.
+     * @return true if the event has valid RouteMappings, false otherwise.
      */
-    public boolean hasMapping() {
-        return mapping != null;
+    public boolean hasMappings() {
+        return mappings != null && !mappings.isEmpty();
     }
 
     /**

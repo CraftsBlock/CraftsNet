@@ -60,11 +60,10 @@ public class CraftsNet {
         ArgumentParser parser = new ArgumentParser(args);
         boolean debug = parser.isPresent("debug");
         boolean ssl = parser.isPresent("ssl");
-        String ssl_key = (ssl ? parser.getAsString("ssl") : null);
         int port = (parser.isPresent("http-port") ? parser.getAsInt("http-port") : 5000);
         int socketport = (parser.isPresent("socket-port") ? parser.getAsInt("socket-port") : 5001);
 
-        start(debug, ssl, ssl_key, port, socketport, false, false);
+        start(debug, ssl, port, socketport, false, false);
     }
 
     /**
@@ -72,14 +71,13 @@ public class CraftsNet {
      *
      * @param debug          Set to true for debug mode.
      * @param ssl            Set to true to enable SSL.
-     * @param ssl_key        The SSL key if SSL is enabled.
      * @param port           The HTTP port to listen on.
      * @param socketport     The WebSocket port to listen on.
      * @param forceHttp      Set to true to force HTTP server start.
      * @param forceWebsocket Set to true to force WebSocket server start.
      * @throws IOException If an I/O error occurs during startup.
      */
-    private static void start(boolean debug, boolean ssl, String ssl_key, int port, int socketport, boolean forceHttp, boolean forceWebsocket) throws IOException {
+    private static void start(boolean debug, boolean ssl, int port, int socketport, boolean forceHttp, boolean forceWebsocket) throws IOException {
         long start = System.currentTimeMillis(); // Start measuring the startup time
         logger = new Logger(debug); // Create and initialize the logger
         // Setup default uncaught exception handler
@@ -100,13 +98,13 @@ public class CraftsNet {
         // Check if http routes are registered and start the web server if needed
         if (routeRegistry.hasRoutes() || forceHttp) {
             logger.debug("Setting up the web server");
-            webServer = new WebServer(port, ssl, ssl_key);
+            webServer = new WebServer(port, ssl);
         }
 
         // Check if webSocket routes are registered and start the websocket server if needed
         if (routeRegistry.hasWebsockets() || forceWebsocket) {
             logger.debug("Starting the websocket server");
-            webSocketServer = new WebSocketServer(socketport, ssl, ssl_key);
+            webSocketServer = new WebSocketServer(socketport, ssl);
             webSocketServer.start();
         }
 

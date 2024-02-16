@@ -40,12 +40,11 @@ public class WebSocketServer {
     /**
      * Constructs a WebSocketServer instance with the specified port number.
      *
-     * @param port    The port number on which the server will listen for incoming connections.
-     * @param ssl     A boolean flag indicating whether SSL encryption should be used (true for HTTPS, false for HTTP).
-     * @param ssl_key The key which is used to secure the private key while running (applicable only when ssl is true).
+     * @param port The port number on which the server will listen for incoming connections.
+     * @param ssl  A boolean flag indicating whether SSL encryption should be used (true for HTTPS, false for HTTP).
      */
-    public WebSocketServer(int port, boolean ssl, String ssl_key) {
-        this(port, 0, ssl, ssl_key);
+    public WebSocketServer(int port, boolean ssl) {
+        this(port, 0, ssl);
     }
 
     /**
@@ -54,14 +53,13 @@ public class WebSocketServer {
      * @param port    The port number on which the server will listen for incoming connections.
      * @param backlog The size of the backlog for the server socket.
      * @param ssl     A boolean flag indicating whether SSL encryption should be used.
-     * @param ssl_key The key which is used to secure the private key while running.
      */
-    public WebSocketServer(int port, int backlog, boolean ssl, String ssl_key) {
+    public WebSocketServer(int port, int backlog, boolean ssl) {
         try {
             logger.info("Websocket server will be started on port " + port);
             if (!ssl) serverSocket = new ServerSocket(port, backlog);
             else {
-                SSLServerSocketFactory sslServerSocketFactory = SSL.load("./certificates/fullchain.pem", "./certificates/privkey.pem", ssl_key)
+                SSLServerSocketFactory sslServerSocketFactory = SSL.load("./certificates/fullchain.pem", "./certificates/privkey.pem")
                         .getServerSocketFactory();
                 serverSocket = sslServerSocketFactory.createServerSocket(port, backlog);
             }

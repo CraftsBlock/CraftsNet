@@ -9,6 +9,8 @@ import java.lang.annotation.Target;
 @Target({ElementType.METHOD, ElementType.TYPE})
 public @interface RequireHeader {
 
+    // Paused due to the fact that the transform annotation could be added only once to a method.
+
     String value();
 
 }

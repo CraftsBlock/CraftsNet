@@ -2,7 +2,7 @@ package de.craftsblock.craftsnet.api.http;
 
 import de.craftsblock.craftsnet.CraftsNet;
 
-public class DefaultPages {
+class DefaultPages {
     protected static String notfound(String domain, int port) {
         return "<!DOCTYPE>\n" +
                 "<html><head>\n" +

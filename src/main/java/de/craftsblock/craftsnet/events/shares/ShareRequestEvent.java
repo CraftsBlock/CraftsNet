@@ -5,6 +5,8 @@ import de.craftsblock.craftscore.event.Cancelable;
 import de.craftsblock.craftscore.event.Event;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.List;
+
 /**
  * Represents an event that is triggered when a share request is made.
  * This event can be canceled to prevent the share request from being processed.
@@ -17,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class ShareRequestEvent extends Event implements Cancelable {
 
-    private Headers headers = new Headers();
+    private final Headers headers = new Headers();
     private String path;
     private boolean cancelled;
 
@@ -50,12 +52,44 @@ public class ShareRequestEvent extends Event implements Cancelable {
     }
 
     /**
-     * Gets the headers for this Request.
+     * Gets the headers for this response.
      *
      * @return Returns the header object
      */
     public Headers getHeaders() {
         return headers;
+    }
+
+    /**
+     * Adds a value for the specified header to the response.
+     */
+    public void addHeader(String key, String value) {
+        headers.add(key, value);
+    }
+
+    /**
+     * Set the header with the specified key and value to this Request.
+     */
+    public void setHeader(String key, String value) {
+        headers.set(key, value);
+    }
+
+    /**
+     * Get all the values from the response headers for the specified header name.
+     *
+     * @return A list of alle the values
+     */
+    public List<String> getHeader(String key) {
+        return headers.get(key);
+    }
+
+    /**
+     * Checks if a response header was set
+     *
+     * @return true if the header is set, false otherwise
+     */
+    public boolean hasHeader(String key) {
+        return headers.containsKey(key);
     }
 
     /**

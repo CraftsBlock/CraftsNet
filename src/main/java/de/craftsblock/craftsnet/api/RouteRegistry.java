@@ -2,6 +2,8 @@ package de.craftsblock.craftsnet.api;
 
 import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.api.annotations.Domain;
+import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.http.Exchange;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.http.RequestHandler;
@@ -23,6 +25,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * The RouteRegistry class manages the registration and unregistration of request handlers (routes) and socket handlers.
@@ -35,9 +38,9 @@ import java.util.regex.Pattern;
 public class RouteRegistry {
 
     private static final Logger logger = CraftsNet.logger();
-    private final ConcurrentHashMap<Pattern, RouteMapping> routes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Pattern, List<RouteMapping>> routes = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Pattern, SocketMapping> sockets = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Pattern, File> shares = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Pattern, String> shares = new ConcurrentHashMap<>();
 
     /**
      * Registers a request handler (route) by inspecting its annotated methods and adding it to the registry.
@@ -51,15 +54,21 @@ public class RouteRegistry {
         for (Method method : Utils.getMethodByAnnotation(handler.getClass(), Route.class))
             try {
                 if (method.getParameterCount() <= 0)
-                    throw new IllegalStateException("Die Methode " + method.getName() + " ist mit " + Route.class.getName() + " versehen, hat aber nicht " + Exchange.class.getName() + " als erstes argument!");
+                    throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + Route.class.getName() + " but does not require " + Exchange.class.getName() + " as the first parameter!");
                 if (!Exchange.class.isAssignableFrom(method.getParameters()[0].getType()))
-                    throw new IllegalStateException("Die Methode " + method.getName() + " ist mit " + Route.class.getName() + " versehen, hat aber nicht " + Exchange.class.getName() + " als erstes argument!");
+                    throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + Route.class.getName() + " but does not require " + Exchange.class.getName() + " as the first parameter!");
+
                 Route route = rawAnnotation(method, Route.class);
-                Pattern validator = createValidator(url(parent != null ? parent.value() : "", route.value()));
-                routes.put(
-                        validator,
-                        new RouteMapping(method, handler, validator)
-                );
+                ProcessPriority priority = rawAnnotation(method, ProcessPriority.class);
+                Pattern validator = createOrGetValidator(url(parent != null ? parent.value() : "", route.value()), routes);
+
+                List<RouteMapping> mappings = routes.computeIfAbsent(validator, pattern -> new ArrayList<>());
+                mappings.add(new RouteMapping(
+                        priority != null ? priority.value() : ProcessPriority.Priority.NORMAL,
+                        method,
+                        handler,
+                        validator
+                ));
             } catch (Exception e) {
                 logger.error(e);
             }
@@ -93,7 +102,7 @@ public class RouteRegistry {
         if (!folder.isDirectory())
             throw new IllegalArgumentException("\"folder\" must be a folder!");
         Pattern pattern = Pattern.compile(path.trim() + (path.trim().endsWith("/") ? "" : "/") + "?(.*)");
-        shares.put(pattern, folder);
+        shares.put(pattern, folder.getAbsolutePath());
     }
 
     /**
@@ -132,7 +141,9 @@ public class RouteRegistry {
      * @since 2.3.2
      */
     public ConcurrentHashMap<Pattern, File> getShares() {
-        return (ConcurrentHashMap<Pattern, File>) Map.copyOf(shares);
+        ConcurrentHashMap<Pattern, File> result = new ConcurrentHashMap<>();
+        shares.forEach((pattern, filePath) -> result.put(pattern, new File(filePath)));
+        return result;
     }
 
     /**
@@ -146,6 +157,7 @@ public class RouteRegistry {
         return shares.entrySet().parallelStream()
                 .filter(entry -> entry.getKey().matcher(url(url)).matches())
                 .map(Map.Entry::getValue)
+                .map(File::new)
                 .findFirst()
                 .orElse(null);
     }
@@ -182,8 +194,8 @@ public class RouteRegistry {
      * @since 1.0.0
      */
     @NotNull
-    public ConcurrentHashMap<Pattern, RouteMapping> getRoutes() {
-        return (ConcurrentHashMap<Pattern, RouteMapping>) Map.copyOf(routes);
+    public ConcurrentHashMap<Pattern, List<RouteMapping>> getRoutes() {
+        return (ConcurrentHashMap<Pattern, List<RouteMapping>>) Map.copyOf(routes);
     }
 
     /**
@@ -194,7 +206,7 @@ public class RouteRegistry {
      * @since 1.0.0
      */
     @Nullable
-    public RouteMapping getRoute(String url) {
+    public List<RouteMapping> getRoute(String url) {
         return getRoute(url, null, null, null);
     }
 
@@ -206,7 +218,7 @@ public class RouteRegistry {
      * @since 2.1.1
      */
     @Nullable
-    public RouteMapping getRoute(String url, String method) {
+    public List<RouteMapping> getRoute(String url, String method) {
         return getRoute(url, null, null, method);
     }
 
@@ -220,7 +232,7 @@ public class RouteRegistry {
      * @since 2.1.1
      */
     @Nullable
-    public RouteMapping getRoute(String url, String domain, String method) {
+    public List<RouteMapping> getRoute(String url, String domain, String method) {
         return getRoute(url, domain, null, method);
     }
 
@@ -234,7 +246,7 @@ public class RouteRegistry {
      * @since 2.1.1
      */
     @Nullable
-    public RouteMapping getRoute(String url, Collection<String> headers, String method) {
+    public List<RouteMapping> getRoute(String url, Collection<String> headers, String method) {
         return getRoute(url, null, headers, method);
     }
 
@@ -249,12 +261,14 @@ public class RouteRegistry {
      * @since 2.3.0
      */
     @Nullable
-    public RouteMapping getRoute(String url, String domain, Collection<String> headers, String method) {
+    public List<RouteMapping> getRoute(String url, String domain, Collection<String> headers, String method) {
         return routes.entrySet().parallelStream()
+                .map(Map.Entry::getValue)
+                .flatMap(Collection::parallelStream)
                 .filter(entry -> {
                     try {
                         boolean suitable = true;
-                        Method tmp = entry.getValue().method();
+                        Method tmp = entry.method();
                         if (method != null) {
                             HttpMethod[] methods = annotation(tmp, RequestMethod.class);
                             suitable = HttpMethod.asString(methods).toUpperCase().contains(method.toUpperCase());
@@ -263,7 +277,7 @@ public class RouteRegistry {
                         if (domain != null && suitable) {
                             List<String> domains = new ArrayList<>();
                             addArray(annotation(tmp, Domain.class), domains);
-                            addArray(annotation(entry.getValue().handler, Domain.class), domains);
+                            addArray(annotation(entry.handler, Domain.class), domains);
                             removeDuplicates(domains);
                             if (domains.isEmpty()) domains.add("*");
                             suitable = domains.contains("*") || domains.contains(domain);
@@ -272,12 +286,12 @@ public class RouteRegistry {
                         if (headers == null && suitable) {
                             List<String> requiredHeaders = new ArrayList<>();
                             addArray(annotation(tmp, RequireHeader.class), requiredHeaders);
-                            addArray(annotation(entry.getValue().handler, RequireHeader.class), requiredHeaders);
+                            addArray(annotation(entry.handler, RequireHeader.class), requiredHeaders);
                             removeDuplicates(requiredHeaders);
                             suitable = requiredHeaders.isEmpty() || requiredHeaders.contains(domain);
                         }
 
-                        if (suitable) return entry.getKey().matcher(url(url)).matches();
+                        if (suitable) return entry.validator().matcher(url(url)).matches();
                         return false;
                     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException |
                              InstantiationException e) {
@@ -285,9 +299,7 @@ public class RouteRegistry {
                     }
                     return false;
                 })
-                .map(Map.Entry::getValue)
-                .findFirst()
-                .orElse(null);
+                .collect(Collectors.toList());
     }
 
     /**
@@ -358,6 +370,14 @@ public class RouteRegistry {
         Pattern pattern = Pattern.compile("\\{(.*?[^/]+)\\}", Pattern.DOTALL | Pattern.MULTILINE);
         Matcher matcher = pattern.matcher(url(url));
         return Pattern.compile("^(" + matcher.replaceAll("(?<$1>[^/]+)") + ")/?", Pattern.CASE_INSENSITIVE);
+    }
+
+    @NotNull
+    private Pattern createOrGetValidator(String url, ConcurrentHashMap<Pattern, ?> mappings) {
+        Pattern created = createValidator(url);
+        return mappings.keySet().parallelStream()
+                .filter(pattern -> pattern.pattern().equalsIgnoreCase(created.pattern()))
+                .findFirst().orElse(created);
     }
 
     /**
@@ -488,7 +508,8 @@ public class RouteRegistry {
      * @version 1.1
      * @since 1.0.0
      */
-    public record RouteMapping(@NotNull Method method, @NotNull Object handler, @NotNull Pattern validator) {
+    public record RouteMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull Object handler,
+                               @NotNull Pattern validator) {
     }
 
     /**

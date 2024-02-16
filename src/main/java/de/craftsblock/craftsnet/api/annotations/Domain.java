@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.api;
+package de.craftsblock.craftsnet.api.annotations;
 
 import de.craftsblock.craftsnet.api.http.WebServer;
 

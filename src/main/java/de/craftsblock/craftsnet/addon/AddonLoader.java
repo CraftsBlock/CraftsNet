@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
  * @see AddonManager
  * @since 1.0.0
  */
-public class AddonLoader {
+class AddonLoader {
 
     /**
      * TODO: Add a way to define a load order of the plugins / addons
@@ -69,7 +69,7 @@ public class AddonLoader {
     public void load(AddonManager manager) throws IOException {
         long start = System.currentTimeMillis();
         Logger logger = CraftsNet.logger();
-        logger.info("All addons are loaded");
+        logger.info("Load all available addons");
 
         // Load all the dependencies and repositories from the addons
         ConcurrentHashMap<File, Configuration> configurations = new ConcurrentHashMap<>();

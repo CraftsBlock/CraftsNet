@@ -88,8 +88,8 @@ public class WebSocketClient implements Runnable {
 
             // Determine the host domain from headers
             AtomicReference<String> host = new AtomicReference<>(getHeader("Host"));
-            if (host.get() == null || host.get().isBlank()) return;
-            host.set(host.get().split(":")[0]);
+            if (host.get() == null || host.get().isBlank()) host.set(null);
+            else host.set(host.get().split(":")[0]);
 
             // Determine the client's IP address from headers, taking into account any proxy headers
             ip = socket.getInetAddress().getHostAddress();
@@ -98,9 +98,20 @@ public class WebSocketClient implements Runnable {
             if (getHeader("Cf-connecting-ip") != null)
                 ip = getHeader("Cf-connecting-ip");
 
-            sendHandshake(); // Send a WebSocket handshake to establish the connection
-            if (getEndpoint(path, host.get()) != null) { // Check if the requested path has a corresponding endpoint registered in the server
-                mapping = getEndpoint(path, host.get());
+            // Send a WebSocket handshake to establish the connection
+            sendHandshake();
+
+            // Check if the requested path has a corresponding endpoint registered in the server
+            mapping = getEndpoint(path, host.get());
+            if (mapping != null) {
+                // Validate the incoming message against the endpoint's validator
+                Matcher matcher = mapping.validator().matcher(path);
+                if (!matcher.matches()) {
+                    sendMessage(JsonParser.parse("{}")
+                            .set("error", "There was an unexpected error while matching!")
+                            .asString());
+                    return;
+                }
 
                 // Trigger the ClientConnectEvent to handle the client connection
                 ClientConnectEvent event = new ClientConnectEvent(exchange, mapping);
@@ -119,7 +130,8 @@ public class WebSocketClient implements Runnable {
                 assert mapping != null;
                 logger.info(ip + " connected to " + path);
 
-                server.add(path, this); // Add this WebSocket client to the server's collection
+                // Add this WebSocket client to the server's collection
+                server.add(path, this);
 
                 String message;
                 while (!Thread.currentThread().isInterrupted() && (message = readMessage()) != null) {
@@ -128,24 +140,17 @@ public class WebSocketClient implements Runnable {
                     if (IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) break;
                     if (message.isEmpty() || message.isBlank()) break;
 
-                    // Validate the incoming message against the endpoint's validator
-                    Matcher matcher = mapping.validator().matcher(path);
-                    if (!matcher.matches()) {
-                        sendMessage(JsonParser.parse("{}")
-                                .set("error", "There was an unexpected error while matching!")
-                                .asString());
-                        break;
-                    }
+                    // Fire an incoming socket message event and continue if it was cancelled
+                    IncomingSocketMessageEvent event2 = new IncomingSocketMessageEvent(exchange, message);
+                    CraftsNet.listenerRegistry().call(event2);
+                    if (event2.isCancelled())
+                        continue;
 
                     // Extract and pass the message parameters to the endpoint handler
                     Object[] args = new Object[matcher.groupCount() + 1];
                     args[0] = exchange;
                     args[1] = message;
                     for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
-                    IncomingSocketMessageEvent event2 = new IncomingSocketMessageEvent(exchange, message);
-                    CraftsNet.listenerRegistry().call(event2);
-                    if (event2.isCancelled())
-                        continue;
 
                     // Invoke the registered handler method for the incoming message
                     for (Method method : mapping.receiver()) method.invoke(mapping.handler(), args);
@@ -172,14 +177,24 @@ public class WebSocketClient implements Runnable {
     private Headers readHeaders() throws IOException {
         Headers headers = new Headers();
         String line;
+
         while ((line = reader.readLine()) != null && !line.isEmpty()) {
-            if (path == null) {
+            line = line.trim();
+
+            if (path == null && line.startsWith("GET")) {
                 path = line.split(" ")[1].trim();
                 continue;
             }
-            if (line.split(":").length <= 1) continue;
-            headers.add(line.split(":")[0].trim().toLowerCase(), line.substring(line.indexOf(":") + 2).trim());
+
+            int colonIndex = line.indexOf(':');
+            if (colonIndex <= 0) continue;
+
+            String key = line.substring(0, colonIndex).toLowerCase().trim();
+            String value = line.substring(colonIndex + 1).trim();
+
+            headers.add(key, value);
         }
+
         return headers;
     }
 
@@ -224,20 +239,33 @@ public class WebSocketClient implements Runnable {
      */
     private String readMessage() throws IOException {
         if (socket.isClosed()) return null;
-        InputStream inputStream = socket.getInputStream(); // Read the input stream from the socket.
-        byte[] frame = new byte[10]; // Create a 10-byte buffer to store the received message.
-        inputStream.read(frame, 0, 2); // Read the first two bytes of the frame (header) from the input stream.
-        byte payloadLength = (byte) (frame[1] & 0x7F); // Extract the payload length from the second byte of the header.
-        if (payloadLength == 126)
-            inputStream.read(frame, 2, 2); // If the payload length is 126, read an additional 2 bytes for the actual length.
-        else if (payloadLength == 127)
-            inputStream.read(frame, 2, 8); // If the payload length is 127, read an additional 8 bytes for the actual length.
-        long payloadLengthValue = getPayloadLengthValue(frame, payloadLength); // Calculate the actual value of the payload length based on the read bytes.
 
-        byte[] masks = new byte[4]; // Read the 4 bytes of the masking key (masks) from the input stream.
+        // Read the input stream from the socket.
+        InputStream inputStream = socket.getInputStream();
+
+        // Create a 10-byte buffer to store the received message.
+        byte[] frame = new byte[10];
+        // Read the first two bytes of the frame (header) from the input stream.
+        inputStream.read(frame, 0, 2);
+
+        // Extract the payload length from the second byte of the header.
+        byte payloadLength = (byte) (frame[1] & 0x7F);
+        if (payloadLength == 126)
+            // If the payload length is 126, read an additional 2 bytes for the actual length.
+            inputStream.read(frame, 2, 2);
+        else if (payloadLength == 127)
+            // If the payload length is 127, read an additional 8 bytes for the actual length.
+            inputStream.read(frame, 2, 8);
+
+        // Calculate the actual value of the payload length based on the read bytes
+        long payloadLengthValue = getPayloadLengthValue(frame, payloadLength);
+
+        // Read the 4 bytes of the masking key (masks) from the input stream.
+        byte[] masks = new byte[4];
         inputStream.read(masks);
 
-        ByteArrayOutputStream payloadBuilder = new ByteArrayOutputStream(); // Create a ByteArrayOutputStream to store the payload data.
+        // Create a ByteArrayOutputStream to store the payload data.
+        ByteArrayOutputStream payloadBuilder = new ByteArrayOutputStream();
 
         // Initialize variables to track the number of bytes read and the remaining bytes to read.
         long bytesRead = 0;
@@ -257,7 +285,9 @@ public class WebSocketClient implements Runnable {
             bytesRead += chunkSize;
             bytesToRead -= chunkSize;
         }
-        return payloadBuilder.toString(StandardCharsets.UTF_8); // Convert the read payload data to a string using UTF-8 encoding and return it.
+
+        // Convert the read payload data to a string using UTF-8 encoding and return it.
+        return payloadBuilder.toString(StandardCharsets.UTF_8);
     }
 
     /**
@@ -268,9 +298,11 @@ public class WebSocketClient implements Runnable {
      * @return The actual payload length value.
      */
     private long getPayloadLengthValue(byte[] frame, byte payloadLength) {
-        if (payloadLength == 126) // If the payload length is 126, combine the 3rd and 4th bytes to get the actual length.
+        if (payloadLength == 126)
+            // If the payload length is 126, combine the 3rd and 4th bytes to get the actual length.
             return ((frame[2] & 0xFF) << 8) | (frame[3] & 0xFF);
-        else if (payloadLength == 127) // If the payload length is 127, combine the 3rd to 10th bytes to get the actual length.
+        else if (payloadLength == 127)
+            // If the payload length is 127, combine the 3rd to 10th bytes to get the actual length.
             return ((frame[2] & 0xFFL) << 56)
                     | ((frame[3] & 0xFFL) << 48)
                     | ((frame[4] & 0xFFL) << 40)
@@ -279,7 +311,8 @@ public class WebSocketClient implements Runnable {
                     | ((frame[7] & 0xFFL) << 16)
                     | ((frame[8] & 0xFFL) << 8)
                     | (frame[9] & 0xFFL);
-        else // For payload lengths less than 126, the payloadLength itself represents the actual length.
+        else
+            // For payload lengths less than 126, the payloadLength itself represents the actual length.
             return payloadLength;
     }
 
@@ -331,12 +364,16 @@ public class WebSocketClient implements Runnable {
             CraftsNet.listenerRegistry().call(event);
             if (event.isCancelled())
                 return;
+
             data = event.getData();
             byte[] rawData = data.getBytes(StandardCharsets.UTF_8);
+
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             outputStream.write((byte) 0x81);
+
             int length = rawData.length;
-            if (length <= 125) outputStream.write((byte) length);
+            if (length <= 125)
+                outputStream.write((byte) length);
             else if (length <= 65535) {
                 outputStream.write((byte) 126);
                 outputStream.write((byte) (length >> 8));
@@ -345,6 +382,7 @@ public class WebSocketClient implements Runnable {
                 outputStream.write((byte) 127);
                 for (int i = 7; i >= 0; i--) outputStream.write((byte) (length >> (8 * i)));
             }
+
             outputStream.write(rawData);
             OutputStream socketOutputStream = socket.getOutputStream();
             socketOutputStream.write(outputStream.toByteArray());

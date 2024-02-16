@@ -128,7 +128,7 @@ Please visit our [Wiki](https://github.com/CraftsBlock/CraftsNet/wiki) for a mor
 ## Enable SSL
 To enable SSL and enable a secure connection, you can simply add your SSL certificates. Currently only certificates issued by LetsEncrypt are accepted. You need the `fullchain.pem` and the `privkey.pem` which you have to put in the folder `certificates` so that CraftsNet recognizes them.
 
-You can then enable SSL by appending `--ssl CHOOSE_A_PASSWORD` to your startup command, replacing `CHOOSE_A_PASSWORD` with a password of your choosing.
+You can then enable SSL by appending `--ssl` to your startup command.
 
 ## Support and contribution
 If you have any questions or have found a bug, please feel free to let us know in our [issue tracker](https://github.com/CraftsBlock/CraftsNet/issues). We appreciate any help and welcome your contributions to improve the CraftsNet project.

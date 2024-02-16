@@ -32,7 +32,6 @@ public class SSL {
      *
      * @param fullchain The path to the file containing the SSL certificate (X.509 format).
      * @param privkey   The path to the file containing the private key (RSA format).
-     * @param key       The key which is used to secure the private key while running.
      * @return SSLContext An initialized SSLContext object for secure connections.
      * @throws CertificateException      If there is an error with the certificate.
      * @throws IOException               If there is an I/O related error.
@@ -41,9 +40,10 @@ public class SSL {
      * @throws KeyManagementException    If there is an error with SSL context initialization.
      * @throws UnrecoverableKeyException If the private key cannot be recovered.
      */
-    public static SSLContext load(String fullchain, String privkey, String key) throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, UnrecoverableKeyException {
+    public static SSLContext load(String fullchain, String privkey) throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, UnrecoverableKeyException {
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         keyStore.load(null);
+        String key = secureRandomPassphrase();
         try (InputStream fullchainStream = new FileInputStream(file(fullchain));
              InputStream privateKeyStream = new FileInputStream(file(privkey))) {
             CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
@@ -97,6 +97,32 @@ public class SSL {
             }
         }
         return null;
+    }
+
+    /**
+     * Generates a secure random passphrase composed of alphanumeric characters and special symbols.
+     * The length of the passphrase is determined by the result of the secureRandomPassphraseLength method.
+     *
+     * @return A randomly generated secure passphrase.
+     * @throws NoSuchAlgorithmException If a secure random number generator algorithm is not available.
+     */
+    private static String secureRandomPassphrase() throws NoSuchAlgorithmException {
+        String chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ#!$&_-#";
+        return SecureRandom.getInstanceStrong()
+                .ints(secureRandomPassphraseLength(), 0, chars.length())
+                .mapToObj(chars::charAt)
+                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+                .toString();
+    }
+
+    /**
+     * Generates a secure random passphrase length within the range [64, 256].
+     *
+     * @return The length of the secure random passphrase.
+     * @throws NoSuchAlgorithmException If a secure random number generator algorithm is not available.
+     */
+    private static int secureRandomPassphraseLength() throws NoSuchAlgorithmException {
+        return SecureRandom.getInstanceStrong().nextInt(64, 257);
     }
 
 }

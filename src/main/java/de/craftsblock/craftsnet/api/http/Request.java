@@ -12,6 +12,7 @@ import de.craftsblock.craftsnet.api.http.body.StandardFormBody;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * The Request class represents an incoming HTTP request received by the web server.
@@ -34,7 +35,7 @@ public class Request implements AutoCloseable {
     private final String ip;
 
     private Body body;
-    private RouteRegistry.RouteMapping route;
+    private List<RouteRegistry.RouteMapping> routes;
 
     /**
      * Constructs a new Request object.
@@ -124,13 +125,13 @@ public class Request implements AutoCloseable {
     }
 
     /**
-     * Retrieves the matched route mapping for the request.
+     * Retrieves the matched routes mapping for the request.
      *
-     * @return The RouteMapping object representing the matched route, or null if no route is matched.
+     * @return The RouteMapping objects representing the matched route, or null if no route is matched.
      */
     @Nullable
-    public RouteRegistry.RouteMapping getRoute() {
-        return route;
+    public List<RouteRegistry.RouteMapping> getRoutes() {
+        return routes;
     }
 
     /**
@@ -218,12 +219,12 @@ public class Request implements AutoCloseable {
     }
 
     /**
-     * Sets the matched route mapping for the request.
+     * Sets the matched routes mapping for the request.
      *
-     * @param route The RouteMapping object representing the matched route.
+     * @param routes The RouteMapping objects representing the matched route.
      */
-    protected void setRoute(RouteRegistry.RouteMapping route) {
-        this.route = route;
+    protected void setRoutes(List<RouteRegistry.RouteMapping> routes) {
+        this.routes = routes;
     }
 
 }
