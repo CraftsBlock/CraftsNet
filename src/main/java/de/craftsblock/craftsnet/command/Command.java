@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * It contains information about the command's name and its associated executor.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.1
  * @see CommandExecutor
  * @see CommandRegistry

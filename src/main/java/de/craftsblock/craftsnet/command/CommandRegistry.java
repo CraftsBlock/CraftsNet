@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.command;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.utils.Logger;
+import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * It allows commands to be retrieved, checked for existence, and executed.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @see Command
  * @since 2.2.0

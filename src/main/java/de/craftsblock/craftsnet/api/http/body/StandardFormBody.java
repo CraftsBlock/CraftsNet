@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
  * from an input stream and access individual form fields.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @see FormBody
  * @since 2.2.0
@@ -40,26 +41,34 @@ public class StandardFormBody extends FormBody<String> {
      */
     @Override
     protected void deserialize() throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(body)); // Create a buffered reader to read the input streamline by line
-        StringBuilder lines = new StringBuilder(); // Create a StringBuilder to accumulate lines from the input stream
-        String line;
+        // Create a buffered reader to read the input streamline by line
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(body))) {
+            // Create a StringBuilder to accumulate lines from the input stream
+            StringBuilder lines = new StringBuilder();
+            String line;
 
-        // Read the input streamline by line and append it to the StringBuilder
-        while ((line = reader.readLine()) != null)
-            lines.append(line).append("\n");
+            // Read the input streamline by line and append it to the StringBuilder
+            while ((line = reader.readLine()) != null)
+                lines.append(line).append("\n");
 
-        String[] fields = lines.toString().split("&"); // Split the accumulated lines into individual form fields
+            // Split the accumulated lines into individual form fields
+            String[] fields = lines.toString().split("&");
 
-        // Iterate through each form field and parse its name and value
-        for (String field : fields) {
-            String[] fieldData = field.split("="); // Split the field into its name and value based on the "=" character
-            if (fieldData.length != 2) continue; // Check if the field has both a name and a value
-            // Decode the URL-encoded value using UTF-8 encoding and remove the last 2 characters (typically newline characters)
-            String decodedValue = URLDecoder.decode(fieldData[1], StandardCharsets.UTF_8).substring(0, fieldData[1].length() - 2);
-            data.put(fieldData[0], decodedValue); // Store the field name and its decoded value in the data map
+            // Iterate through each form field and parse its name and value
+            for (String field : fields) {
+                // Split the field into its name and value based on the "=" character
+                String[] fieldData = field.split("=");
+                // Check if the field has both a name and a value
+                if (fieldData.length != 2) continue;
+
+                // Decode and trim the URL-encoded value using UTF-8 encoding
+                String decodedValue = URLDecoder.decode(fieldData[1], StandardCharsets.UTF_8).trim();
+                // Store the field name and its decoded value in the data map
+                data.put(fieldData[0], decodedValue);
+            }
+        } finally {
+            body.close();
         }
-        reader.close();
-        body.close();
     }
 
     /**

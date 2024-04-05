@@ -16,6 +16,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * It manages the registration, unregistration, and loading of service providers through the use of ServiceLoader instances.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0.0
  * @since 3.0.0
  */

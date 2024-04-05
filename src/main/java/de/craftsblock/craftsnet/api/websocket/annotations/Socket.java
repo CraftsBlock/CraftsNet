@@ -11,6 +11,7 @@ import java.lang.annotation.Target;
  * Custom annotation used to mark classes as WebSocket handlers.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @see MessageReceiver
  * @see SocketHandler
@@ -26,7 +27,7 @@ public @interface Socket {
      *
      * @return The WebSocket path associated with this handler.
      */
-    String value();
+    String value() default "/";
 
 
 }

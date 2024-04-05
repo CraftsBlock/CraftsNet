@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Addons can be registered and unregistered through this class.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0.1
  * @see Addon
  * @see AddonLoader

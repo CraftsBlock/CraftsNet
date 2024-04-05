@@ -18,6 +18,7 @@ import java.util.Arrays;
  * Developers should not create instances of this class directly but use the provided methods in the WebServer class.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @see Exchange
  * @see WebServer

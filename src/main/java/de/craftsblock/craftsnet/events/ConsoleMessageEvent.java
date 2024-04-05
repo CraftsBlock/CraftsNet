@@ -8,6 +8,7 @@ import de.craftsblock.craftscore.event.Event;
  * allowing it to be used within an event-driven system.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @since 1.0.0
  */

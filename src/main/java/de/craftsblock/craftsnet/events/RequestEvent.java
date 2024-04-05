@@ -13,6 +13,7 @@ import java.util.List;
  * involved in the request event.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @since 1.0.0
  */
@@ -27,7 +28,7 @@ public class RequestEvent extends Event implements Cancelable {
      * Constructs a new RequestEvent with the specified Exchange and RouteMappings.
      *
      * @param exchange The Exchange object representing the request and its associated data.
-     * @param mappings  The RouteMapping objects associated with the request, can be null if not applicable.
+     * @param mappings The RouteMapping objects associated with the request, can be null if not applicable.
      */
     public RequestEvent(Exchange exchange, List<RouteRegistry.RouteMapping> mappings) {
         this.exchange = exchange;

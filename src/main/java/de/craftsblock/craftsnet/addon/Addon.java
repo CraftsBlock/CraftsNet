@@ -1,10 +1,11 @@
 package de.craftsblock.craftsnet.addon;
 
 import de.craftsblock.craftscore.event.ListenerRegistry;
+import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.command.CommandRegistry;
-import de.craftsblock.craftsnet.utils.Logger;
+import de.craftsblock.craftsnet.logging.Logger;
 
 import java.io.File;
 
@@ -26,6 +27,7 @@ import java.io.File;
  * core code.</p>
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @see AddonLoader
  * @see AddonManager
  * @since 1.0.0
@@ -135,6 +137,17 @@ public abstract class Addon {
             folder = getDataFolder();
         }
         return folder;
+    }
+
+    /**
+     * Retrieves an addon of the specified type from the loaded addons.
+     *
+     * @param <T>   The type of the addon to retrieve, extending the Addon class.
+     * @param addon The class object representing the type of the addon to be retrieved.
+     * @return An instance of the specified addon type if found, or {@code null} if not present.
+     */
+    public static <T extends Addon> T getAddon(Class<T> addon) {
+        return CraftsNet.addonManager().getAddon(addon);
     }
 
 }

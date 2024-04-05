@@ -3,7 +3,7 @@ package de.craftsblock.craftsnet.command.commands;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.command.Command;
 import de.craftsblock.craftsnet.command.CommandExecutor;
-import de.craftsblock.craftsnet.utils.Logger;
+import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
@@ -13,12 +13,14 @@ import org.jetbrains.annotations.NotNull;
  * This command is used to gracefully shut down the CraftsNet program.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
+ * @version 1.0.0
  * @since 2.2.0
  */
 public class ShutdownCommand implements CommandExecutor {
 
     /**
-     * Executes the "shutdown" command, initiating the shutdown process for the CraftsNet program.
+     * Executes the "shutdown" command, initiating the shutdown process for CraftsNet.
      *
      * @param command The {@code Command} object representing the "shutdown" command.
      * @param args    The arguments passed with the command (not used in this command).

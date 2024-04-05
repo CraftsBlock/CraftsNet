@@ -13,7 +13,8 @@ import de.craftsblock.craftsnet.command.commands.ShutdownCommand;
 import de.craftsblock.craftsnet.command.commands.VersionCommand;
 import de.craftsblock.craftsnet.events.ConsoleMessageEvent;
 import de.craftsblock.craftsnet.listeners.ConsoleListener;
-import de.craftsblock.craftsnet.utils.Logger;
+import de.craftsblock.craftsnet.logging.FileLogger;
+import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
@@ -26,13 +27,14 @@ import java.lang.reflect.InvocationTargetException;
  * the HTTP and WebSocket servers, as well as manages addons and console listeners.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 2.0
  * @since 1.0.0
  */
 public class CraftsNet {
 
     // Information variables
-    public static final String version = "3.0.0-SNAPSHOT";
+    public static final String version = "3.0.2-SNAPSHOT";
 
     // Manager instances
     private static AddonManager addonManager;
@@ -78,11 +80,19 @@ public class CraftsNet {
      * @throws IOException If an I/O error occurs during startup.
      */
     private static void start(boolean debug, boolean ssl, int port, int socketport, boolean forceHttp, boolean forceWebsocket) throws IOException {
-        long start = System.currentTimeMillis(); // Start measuring the startup time
-        logger = new Logger(debug); // Create and initialize the logger
-        // Setup default uncaught exception handler
+        // Start measuring the startup time
+        long start = System.currentTimeMillis();
+
+        // Create and initialize the logger & filelogger
+        logger = new Logger(debug);
+        FileLogger.start();
+        //   Setup default uncaught exception handler
+
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-            if (e instanceof Exception exception) logger.error(exception);
+            if (e instanceof Exception exception) {
+                long identifier = FileLogger.createErrorLog(exception);
+                logger.error(exception, "Exception: " + identifier);
+            }
         });
         // Log startup message
         logger.info("CraftsNet v" + version + " boots up");

@@ -9,6 +9,7 @@ import de.craftsblock.craftsnet.api.websocket.SocketExchange;
  * It extends the base Event class and implements the Cancelable interface to support event cancellation.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @since 2.1.1
  */

@@ -9,6 +9,7 @@ import de.craftsblock.craftsnet.api.websocket.SocketExchange;
  * It extends the base Event class and provides information about the SocketExchange and the SocketMapping associated with the disconnection event.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @since 2.1.1
  */

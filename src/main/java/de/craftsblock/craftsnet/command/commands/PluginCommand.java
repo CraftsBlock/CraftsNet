@@ -5,11 +5,28 @@ import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.command.Command;
 import de.craftsblock.craftsnet.command.CommandExecutor;
-import de.craftsblock.craftsnet.utils.Logger;
+import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Command executor for the plugin command.
+ * This class implements the {@link CommandExecutor} interface and provides functionality to handle the "plugin" command.
+ *
+ * @author CraftsBlock
+ * @author Philipp Maywald
+ * @version 1.0.0
+ * @since 3.0.2
+ */
 public class PluginCommand implements CommandExecutor {
 
+    /**
+     * Executes the plugin command.
+     * This method retrieves the {@link AddonManager} from CraftsNet and logs information about installed addons to the provided logger.
+     *
+     * @param command The command that was executed.
+     * @param args    The arguments passed with the command (not used in this implementation).
+     * @param logger  The logger used to log messages.
+     */
     @Override
     public void onCommand(@NotNull Command command, @NotNull String[] args, @NotNull Logger logger) {
         AddonManager addonManager = CraftsNet.addonManager();

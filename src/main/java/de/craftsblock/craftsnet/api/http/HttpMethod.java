@@ -10,6 +10,7 @@ import java.util.Arrays;
  * The enum provides methods to parse and convert these methods to strings and arrays for use in HTTP request handling.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.1
  * @see Route
  * @since 1.0.0

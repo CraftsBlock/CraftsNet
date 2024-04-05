@@ -1,4 +1,7 @@
-package de.craftsblock.craftsnet.utils;
+package de.craftsblock.craftsnet.logging;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -13,11 +16,13 @@ import java.time.format.DateTimeFormatter;
  * actual log text to help with debugging and tracking application behavior.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.1
  * @since 1.0.0
  */
 public class Logger {
 
+    private final String name;
     private boolean debug;
 
     /**
@@ -26,7 +31,18 @@ public class Logger {
      * @param debug If set to true, debug messages will be printed; otherwise, they will be ignored.
      */
     public Logger(boolean debug) {
+        this(debug, null);
+    }
+
+    /**
+     * Constructs a Logger with the specified debug mode and name.
+     *
+     * @param debug If set to true, debug messages will be printed; otherwise, they will be ignored.
+     * @param name  The name of the logger, null if no name set
+     */
+    public Logger(boolean debug, @Nullable String name) {
         this.debug = debug;
+        this.name = name;
     }
 
     /**
@@ -34,7 +50,7 @@ public class Logger {
      *
      * @param text The message to be logged.
      */
-    public void info(String text) {
+    public void info(@Nullable String text) {
         log("\u001b[34;1mINFO\u001b[0m ", text);
     }
 
@@ -43,7 +59,7 @@ public class Logger {
      *
      * @param text The warning message to be logged.
      */
-    public void warning(String text) {
+    public void warning(@Nullable String text) {
         log("\u001b[33mWARN\u001b[0m ", text);
     }
 
@@ -52,7 +68,7 @@ public class Logger {
      *
      * @param text The error message to be logged.
      */
-    public void error(String text) {
+    public void error(@Nullable String text) {
         log("\u001b[31;1mERROR\u001b[0m", text);
     }
 
@@ -61,7 +77,7 @@ public class Logger {
      *
      * @param exception The exception to be logged.
      */
-    public void error(Exception exception) {
+    public void error(@NotNull Exception exception) {
         log("\u001b[31;1mERROR\u001b[0m", exception.getMessage());
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
@@ -76,7 +92,7 @@ public class Logger {
      * @param exception The exception to be logged.
      * @param comment   An additional comment to be logged.
      */
-    public void error(Exception exception, String comment) {
+    public void error(@NotNull Exception exception, @Nullable String comment) {
         log("\u001b[31;1mERROR\u001b[0m", comment + " > " + exception.getMessage());
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
@@ -90,9 +106,19 @@ public class Logger {
      *
      * @param text The debug message to be logged.
      */
-    public void debug(String text) {
+    public void debug(@Nullable String text) {
         if (debug)
             log("\u001b[38;5;147mDEBUG\u001b[0m", text);
+    }
+
+    /**
+     * Clone this instance of the {@link Logger} and set a custom name
+     *
+     * @param name The new name which should be used
+     * @return A new instance of {@link Logger} with the new name set
+     */
+    public Logger cloneWithName(String name) {
+        return new Logger(this.debug, name);
     }
 
     /**
@@ -101,8 +127,13 @@ public class Logger {
      * @param prefix The log level prefix (e.g., INFO, WARN, ERROR, DEBUG).
      * @param text   The log message to be printed.
      */
-    private void log(String prefix, String text) {
-        System.out.println("\u001b[38;5;228m" + OffsetDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "\u001b[0m " + prefix + " \u001b[38;5;219m|\u001b[0m \u001b[36m" + Thread.currentThread().getName() + "\u001b[0m\u001b[38;5;252m: " + text + "\u001b[0m");
+    private void log(@NotNull String prefix, @Nullable String text) {
+        System.out.println(
+                "\u001b[38;5;228m" + OffsetDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "\u001b[0m " +
+                        prefix + " \u001b[38;5;219m|\u001b[0m " +
+                        "\u001b[36m" + (name != null ? name : Thread.currentThread().getName()) + "\u001b[0m" +
+                        "\u001b[38;5;252m: " + text + "\u001b[0m"
+        );
     }
 
 }

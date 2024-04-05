@@ -2,7 +2,24 @@ package de.craftsblock.craftsnet.api.http;
 
 import de.craftsblock.craftsnet.CraftsNet;
 
+/**
+ * Default pages for HTTP error responses.
+ * This class provides static methods to generate HTML content for common HTTP error responses such as 404 Not Found and 403 Forbidden.
+ *
+ * @author CraftsBlock
+ * @author Philipp Maywald
+ * @version 1.0.0
+ * @since 2.3.3
+ */
 class DefaultPages {
+
+    /**
+     * Generates HTML content for a 404 Not Found response.
+     *
+     * @param domain The domain where the request was made.
+     * @param port   The port where the request was made.
+     * @return HTML content for the 404 Not Found response.
+     */
     protected static String notfound(String domain, int port) {
         return "<!DOCTYPE>\n" +
                 "<html><head>\n" +
@@ -15,6 +32,13 @@ class DefaultPages {
                 "</body></html>";
     }
 
+    /**
+     * Generates HTML content for a 403 Forbidden response.
+     *
+     * @param domain The domain where the request was made.
+     * @param port   The port where the request was made.
+     * @return HTML content for the 403 Forbidden response.
+     */
     protected static String notallowed(String domain, int port) {
         return "<!DOCTYPE>\n" +
                 "<html><head>\n" +

@@ -11,6 +11,7 @@ import javax.imageio.spi.IIOServiceProvider;
  * {@link IIORegistry}.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0.0
  * @since 3.0.0
  */

@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.command;
 
-import de.craftsblock.craftsnet.utils.Logger;
+import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -8,6 +8,7 @@ import org.jetbrains.annotations.NotNull;
  * Classes that implement this interface can define custom logic for handling commands.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @see Command
  * @since 2.2.0

@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.utils.Logger;
+import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.SSL;
 
 import javax.net.ssl.SSLServerSocketFactory;
@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * It uses a ServerSocket to listen for incoming connections on the specified port.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.1
  * @see WebSocketClient
  * @since 2.1.1
@@ -33,7 +34,6 @@ public class WebSocketServer {
     private final Logger logger = CraftsNet.logger();
     private Thread connector;
     private ConcurrentHashMap<String, ConcurrentLinkedQueue<WebSocketClient>> connected;
-    private final ConcurrentLinkedQueue<Thread> clients = new ConcurrentLinkedQueue<>();
     private ServerSocket serverSocket;
     private boolean running;
 
@@ -83,7 +83,6 @@ public class WebSocketServer {
                     Thread client = new Thread(new WebSocketClient(socket, this));
                     client.setName("Websocket#" + i++);
                     client.start();
-                    clients.add(client);
                 } catch (SocketException ignored) {
                 } catch (IOException e) {
                     logger.error(e);
@@ -102,10 +101,8 @@ public class WebSocketServer {
     public void stop() {
         running = false;
         try {
-            connected.forEach((useless, client) -> client.forEach(WebSocketClient::disconnect));
-            clients.forEach(Thread::interrupt);
+            connected.forEach((useless, client) -> client.forEach(webSocketClient -> webSocketClient.disconnect().interrupt()));
             connected.clear();
-            clients.clear();
             serverSocket.close();
             if (connector != null)
                 connector.interrupt();

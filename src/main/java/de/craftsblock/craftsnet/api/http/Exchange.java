@@ -13,6 +13,7 @@ import org.jetbrains.annotations.NotNull;
  * @param request  The {@link Request} object containing the incoming data from the client.
  * @param response The {@link Response} object used to send data back to the client.
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @see Request
  * @see Response

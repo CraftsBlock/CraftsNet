@@ -2,15 +2,20 @@ package de.craftsblock.craftsnet.utils;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.regex.Pattern;
+
 /**
  * This utility class provides helper methods for thread-related operations.
  * It includes functionality to retrieve threads by their names.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0.0
  * @since 2.1.1
  */
 public class Utils {
+
+    public static final Pattern patternGroupNameExtractPattern = Pattern.compile("\\(\\?<([a-zA-Z][a-zA-Z0-9]*)>");
 
     /**
      * Retrieves a thread by its name from the currently running threads.

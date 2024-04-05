@@ -1,16 +1,12 @@
 package de.craftsblock.craftsnet.addon;
 
-import de.craftsblock.craftscore.actions.CompleteAbleActionImpl;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
-import de.craftsblock.craftsnet.utils.Logger;
+import de.craftsblock.craftsnet.logging.Logger;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -26,6 +22,7 @@ import java.util.regex.Pattern;
  * It loads addon JAR files, extracts necessary information, and initializes addon instances.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0.2
  * @see Addon
  * @see AddonManager
@@ -76,6 +73,10 @@ class AddonLoader {
         ConcurrentLinkedQueue<URL> urls = new ConcurrentLinkedQueue<>();
         for (File file : addons) {
             Configuration configuration = loadConfig(file);
+            if (configuration == null) {
+                logger.error(new FileNotFoundException("Could not locate the addon.json within " + file.getPath() + "!"));
+                continue;
+            }
             Json addon = configuration.json();
             String name = addon.getString("name");
 
@@ -97,7 +98,7 @@ class AddonLoader {
             urls.add(file.toURI().toURL());
         classLoader = new URLClassLoader(urls.toArray(URL[]::new), ClassLoader.getSystemClassLoader());
 
-        ConcurrentHashMap<String, CompleteAbleActionImpl<Void>> tasks = new ConcurrentHashMap<>();
+        AddonLoadOrder loadOrder = new AddonLoadOrder();
 
         // Loop through each addon file and load its configuration and main class
         for (File file : addons)
@@ -115,10 +116,10 @@ class AddonLoader {
                 Pattern pattern = Pattern.compile("^[a-zA-Z0-9]*$");
                 if (!pattern.matcher(name).matches())
                     throw new IllegalArgumentException("Plugin names must not contain special characters / spaces! Plugin name: \"" + name + "\"");
-                if (tasks.containsKey(name))
+                if (loadOrder.contains(name))
                     throw new IllegalStateException("There are two plugins with the same name: \"" + name + "\"!");
 
-                logger.debug("Addon " + name + " is loaded");
+                logger.debug("Found addon " + name + ", add it to load order");
 
                 // Load the main class of the addon using the class loader
                 String className = configuration.json.getString("main");
@@ -133,33 +134,35 @@ class AddonLoader {
                 setField("commandRegistry", obj, CraftsNet.commandRegistry());
                 setField("handler", obj, CraftsNet.routeRegistry());
                 setField("listenerRegistry", obj, CraftsNet.listenerRegistry());
-                setField("logger", obj, logger);
+                setField("logger", obj, logger.cloneWithName(name));
                 setField("name", obj, name);
                 setField("serviceManager", obj, CraftsNet.serviceManager());
 
-                tasks.put(name.toLowerCase(), new CompleteAbleActionImpl<>(() -> {
-                    Json addon = configuration.json;
-                    obj.onLoad();
-
-                    if (addon.contains("depends"))
-                        for (String depended : addon.getStringList("depends"))
-                            if (tasks.containsKey(depended)) tasks.remove(depended).complete();
-
-                    // Call the 'onEnable' method of the addon instance asynchronously
-                    obj.onEnable();
-                    manager.register(obj);
-                    return null;
-                }));
+                loadOrder.addAddon(obj);
+                Json addon = configuration.json;
+                if (addon.contains("depends"))
+                    for (String depended : addon.getStringList("depends"))
+                        loadOrder.depends(obj, depended);
+                manager.register(obj);
             } catch (Exception e) {
                 logger.error(e);
             }
 
-        // Complete the 'onEnable' method calls for all addons
-        tasks.keySet().forEach(name -> tasks.remove(name).complete());
-        tasks.clear();
-        if (addons.isEmpty())
-            logger.debug("No addons found to load");
-        logger.info("All addons were loaded within " + (System.currentTimeMillis() - start) + "ms");
+        // Loading all addons
+        Collection<Addon> orderedLoad = loadOrder.getLoadOrder();
+        for (Addon addon : orderedLoad) {
+            logger.info("Loading addon " + addon.getName() + "...");
+            addon.onLoad();
+        }
+
+        // Enabling all addons
+        for (Addon addon : orderedLoad) {
+            logger.info("Enabling addon " + addon.getName() + "...");
+            addon.onEnable();
+        }
+
+        if (addons.isEmpty()) logger.info("No addons found to load");
+        else logger.info("All addons were loaded within " + (System.currentTimeMillis() - start) + "ms");
         addons.clear();
 
         // Load all the registrable services

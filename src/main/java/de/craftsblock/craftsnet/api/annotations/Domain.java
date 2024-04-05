@@ -12,6 +12,7 @@ import java.lang.annotation.Target;
  * This annotation can be applied to methods or classes.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @see WebServer
  * @since 2.3.0

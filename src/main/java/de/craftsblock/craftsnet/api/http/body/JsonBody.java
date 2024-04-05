@@ -14,6 +14,7 @@ import java.io.InputStreamReader;
  * It provides methods to parse and access JSON data.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @see Body
  * @since 2.2.0

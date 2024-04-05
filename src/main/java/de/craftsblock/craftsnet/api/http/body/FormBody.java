@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @param <T> The type of data that each field in the form body holds.
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @see Body
  * @see MultipartFormBody

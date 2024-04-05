@@ -9,6 +9,11 @@ import java.lang.annotation.Target;
  * Annotation to define the processing priority of a method.
  * Methods annotated with this annotation can specify a priority level
  * to influence their execution order in a prioritized processing system.
+ *
+ * @author CraftsBlock
+ * @author Philipp Maywald
+ * @version 1.0.0
+ * @since 3.0.1
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})

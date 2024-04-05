@@ -9,6 +9,7 @@ import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
  * It allows sending broadcast messages to all clients connected to the same WebSocket path.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @see Socket
  * @see SocketHandler

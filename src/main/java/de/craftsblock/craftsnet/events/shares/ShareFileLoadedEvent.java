@@ -12,6 +12,7 @@ import java.net.URLConnection;
  * This event provides information about the loaded file.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.1
  * @see de.craftsblock.craftscore.event.Event
  * @since 2.3.2

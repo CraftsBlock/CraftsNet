@@ -8,12 +8,12 @@ import de.craftsblock.craftsnet.api.http.Exchange;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.http.RequestHandler;
 import de.craftsblock.craftsnet.api.http.annotations.RequestMethod;
-import de.craftsblock.craftsnet.api.http.annotations.RequireHeader;
+import de.craftsblock.craftsnet.api.http.annotations.RequireHeaders;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.api.websocket.SocketHandler;
 import de.craftsblock.craftsnet.api.websocket.annotations.MessageReceiver;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
-import de.craftsblock.craftsnet.utils.Logger;
+import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
  * It stores and maps the registered routes and sockets based on their patterns, allowing for efficient handling of incoming requests.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 2.4
  * @since 1.0.0
  */
@@ -51,7 +52,7 @@ public class RouteRegistry {
      */
     public void register(RequestHandler handler) {
         Route parent = rawAnnotation(handler, Route.class);
-        for (Method method : Utils.getMethodByAnnotation(handler.getClass(), Route.class))
+        for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), Route.class))
             try {
                 if (method.getParameterCount() <= 0)
                     throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + Route.class.getName() + " but does not require " + Exchange.class.getName() + " as the first parameter!");
@@ -84,10 +85,10 @@ public class RouteRegistry {
      */
     public <T extends SocketHandler> void register(T t) {
         Socket socket = rawAnnotation(t, Socket.class);
-        Pattern validator = createValidator(socket.value());
+        Pattern validator = createOrGetValidator(socket.value(), sockets);
         sockets.put(
                 validator,
-                new SocketMapping(t, socket, validator, Utils.getMethodByAnnotation(t.getClass(), MessageReceiver.class).toArray(new Method[0]))
+                new SocketMapping(t, socket, validator, Utils.getMethodsByAnnotation(t.getClass(), MessageReceiver.class).toArray(new Method[0]))
         );
     }
 
@@ -101,7 +102,7 @@ public class RouteRegistry {
     public void share(String path, File folder) {
         if (!folder.isDirectory())
             throw new IllegalArgumentException("\"folder\" must be a folder!");
-        Pattern pattern = Pattern.compile(path.trim() + (path.trim().endsWith("/") ? "" : "/") + "?(.*)");
+        Pattern pattern = Pattern.compile(url(path) + (path.trim().endsWith("/") ? "" : "/") + "?(.*)");
         shares.put(pattern, folder.getAbsolutePath());
     }
 
@@ -113,7 +114,7 @@ public class RouteRegistry {
      */
     public void unregister(RequestHandler handler) {
         Route parent = rawAnnotation(handler, Route.class);
-        for (Method method : Utils.getMethodByAnnotation(handler.getClass(), Route.class))
+        for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), Route.class))
             try {
                 Route route = rawAnnotation(method, Route.class);
                 routes.entrySet().removeIf(validator -> validator.getKey().matcher(url(parent != null ? parent.value() : "", route.value())).matches());
@@ -283,12 +284,13 @@ public class RouteRegistry {
                             suitable = domains.contains("*") || domains.contains(domain);
                         }
 
-                        if (headers == null && suitable) {
+                        if (headers != null && suitable) {
                             List<String> requiredHeaders = new ArrayList<>();
-                            addArray(annotation(tmp, RequireHeader.class), requiredHeaders);
-                            addArray(annotation(entry.handler, RequireHeader.class), requiredHeaders);
+                            addArray(annotation(tmp, RequireHeaders.class), requiredHeaders);
+                            addArray(annotation(entry.handler, RequireHeaders.class), requiredHeaders);
                             removeDuplicates(requiredHeaders);
-                            suitable = requiredHeaders.isEmpty() || requiredHeaders.contains(domain);
+                            if (!headers.isEmpty()) suitable = headers.containsAll(requiredHeaders);
+                            else suitable = requiredHeaders.isEmpty();
                         }
 
                         if (suitable) return entry.validator().matcher(url(url)).matches();
@@ -432,8 +434,9 @@ public class RouteRegistry {
 
         String result = (!parent.startsWith("/") && !parent.isBlank() ? "/" : "") + parent;
         if (!parent.endsWith("/")) result += "/";
-        result += (child.startsWith("/") ? child.substring(1) : child);
-        return result;
+        result += child;
+
+        return url(result);
     }
 
     /**
@@ -467,14 +470,18 @@ public class RouteRegistry {
     }
 
     /**
-     * Formats the URL by ensuring it starts with a slash.
+     * Formats the URL by ensuring it starts and does not end with a slash.
+     * It also removes duplicate slashes from the url.
      *
      * @param url The URL to be formatted.
      * @return The formatted URL.
      * @since 1.0.0
      */
     private String url(String url) {
-        return (!url.trim().startsWith("/") ? "/" : "") + url.trim();
+        String result = (!url.trim().startsWith("/") ? "/" : "") + url.trim();
+        return result
+                .replaceAll("/+", "/")
+                .replaceAll("/+$", "");
     }
 
     /**

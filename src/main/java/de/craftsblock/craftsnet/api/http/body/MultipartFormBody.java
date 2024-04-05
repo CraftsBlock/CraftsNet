@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * requests.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @see FormBody
  * @since 2.2.0
@@ -98,7 +99,7 @@ public class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData>
         for (Map.Entry<String, ConcurrentLinkedQueue<MultipartItem>> item : storage.entrySet())
             data.computeIfAbsent(
                     item.getKey(),
-                    s -> new MultipartData(name.get(), List.copyOf(item.getValue()))
+                    s -> new MultipartData(item.getKey(), List.copyOf(item.getValue()))
             );
         storage.clear();
         body.close();

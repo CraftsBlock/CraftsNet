@@ -7,6 +7,7 @@ import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
  * WebSocket server handlers must implement this interface to define their behavior.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @see Socket
  * @since 2.1.1

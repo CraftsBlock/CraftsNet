@@ -9,6 +9,7 @@ package de.craftsblock.craftsnet.api.http.body;
  * request bodies.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @see FormBody
  * @see JsonBody

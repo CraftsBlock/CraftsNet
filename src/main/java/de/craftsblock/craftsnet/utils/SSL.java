@@ -22,6 +22,7 @@ import java.util.Base64;
  * file handling and private key extraction.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0
  * @since 2.1.1
  */

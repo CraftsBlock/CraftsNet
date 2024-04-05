@@ -12,7 +12,8 @@ import java.util.List;
  * This event can be canceled to prevent the share request from being processed.
  *
  * @author CraftsBlock
- * @version 1.0
+ * @author Philipp Maywald
+ * @version 1.0.1
  * @see de.craftsblock.craftscore.event.Event
  * @see de.craftsblock.craftscore.event.Cancelable
  * @since 2.3.2
@@ -20,35 +21,48 @@ import java.util.List;
 public class ShareRequestEvent extends Event implements Cancelable {
 
     private final Headers headers = new Headers();
-    private String path;
+    private final String httpPath;
+    private String filePath;
     private boolean cancelled;
 
     /**
      * Creates a new ShareRequestEvent with the specified path.
      *
-     * @param path The path for the share request.
+     * @param httpPath The url used to access the share
+     * @param filePath The relativ path on the file system
      */
-    public ShareRequestEvent(@NotNull String path) {
-        this.path = path;
+    public ShareRequestEvent(@NotNull String httpPath, @NotNull String filePath) {
+        this.httpPath = httpPath;
+        this.filePath = filePath;
     }
 
     /**
-     * Gets the path associated with the share request.
+     * Gets the relativ path on the file system associated with the share request.
      *
-     * @return The path for the share request.
+     * @return The relativ path on file system the  for the share request.
      */
     @NotNull
-    public String getPath() {
-        return path;
+    public String getFilePath() {
+        return filePath;
     }
 
     /**
-     * Sets the path associated with the share request.
+     * Sets the relativ path on the file system associated with the share request.
      *
      * @param path The new path for the share request.
      */
-    public void setPath(@NotNull String path) {
-        this.path = path;
+    public void setFilePath(@NotNull String path) {
+        this.filePath = path;
+    }
+
+    /**
+     * Gets the url that is used to access the share
+     *
+     * @return The url which is used to access the share
+     */
+    @NotNull
+    public String getHttpPath() {
+        return httpPath;
     }
 
     /**

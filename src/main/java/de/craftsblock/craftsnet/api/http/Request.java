@@ -22,6 +22,7 @@ import java.util.List;
  * request handlers to process and respond to the incoming requests.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.4
  * @see Exchange
  * @since 1.0.0

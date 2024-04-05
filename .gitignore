@@ -44,6 +44,7 @@ bin/
 ### Addons ###
 addons/
 libraries/
+logs/
 
 ### Mac OS ###
 .DS_Store

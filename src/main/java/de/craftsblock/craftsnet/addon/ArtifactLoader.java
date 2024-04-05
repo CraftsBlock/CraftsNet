@@ -2,7 +2,7 @@ package de.craftsblock.craftsnet.addon;
 
 import de.craftsblock.craftscore.id.Snowflake;
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.utils.Logger;
+import de.craftsblock.craftsnet.logging.Logger;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * for addons in a modular system.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.0.0
  * @apiNote It utilizes the Eclipse Aether library for handling dependency resolution and management.
  * @see <a href="https://maven.apache.org/resolver/index.html">Eclipse Aether</a>

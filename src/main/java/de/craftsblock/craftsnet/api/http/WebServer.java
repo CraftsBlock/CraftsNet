@@ -1,11 +1,12 @@
 package de.craftsblock.craftsnet.api.http;
 
+import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsServer;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
-import de.craftsblock.craftsnet.utils.Logger;
+import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.SSL;
 
 import javax.net.ssl.SSLContext;
@@ -23,10 +24,12 @@ import java.util.concurrent.Executors;
  * them based on registered API endpoints using the provided RouteRegistry.
  *
  * @author CraftsBlock
+ * @author Philipp Maywald
  * @version 1.4
  * @see Exchange
  * @see RequestHandler
  * @see Route
+ * @see WebHandler
  * @since 1.0.0
  */
 public class WebServer {
@@ -66,7 +69,14 @@ public class WebServer {
 
         // Create a context for the root path ("/") and set its handler to process incoming requests.
         logger.debug("Creating the API handler");
-        server.createContext("/").setHandler(new WebHandler());
+        HttpContext context = server.createContext("/");
+        context.setHandler(new WebHandler());
+//        context.setAuthenticator(new Authenticator() {
+//            @Override
+//            public Result authenticate(HttpExchange exch) {
+//                return null;
+//            }
+//        });
 
         logger.debug("Setting up the executor and starting the web server");
         server.setExecutor(Executors.newFixedThreadPool(25));

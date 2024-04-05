@@ -8,7 +8,7 @@ import de.craftsblock.craftsnet.events.sockets.ClientConnectEvent;
 import de.craftsblock.craftsnet.events.sockets.ClientDisconnectEvent;
 import de.craftsblock.craftsnet.events.sockets.IncomingSocketMessageEvent;
 import de.craftsblock.craftsnet.events.sockets.OutgoingSocketMessageEvent;
-import de.craftsblock.craftsnet.utils.Logger;
+import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -36,7 +36,8 @@ import java.util.stream.IntStream;
  * The class also handles the disconnection of the client, sending messages, and reading headers and messages from the socket.
  *
  * @author CraftsBlock
- * @version 1.6
+ * @author Philipp Maywald
+ * @version 1.7
  * @see WebSocketServer
  * @since 2.1.1
  */
@@ -44,17 +45,19 @@ public class WebSocketClient implements Runnable {
 
     private final WebSocketServer server;
     private final Socket socket;
+    private SocketExchange exchange;
     private Headers headers;
     private String ip;
     private RouteRegistry.SocketMapping mapping;
     private String path;
 
     private BufferedReader reader;
-    private PrintWriter writer;
+    private OutputStream writer;
 
     private final Logger logger = CraftsNet.logger();
 
     private boolean active = false;
+    private boolean connected = false;
 
     /**
      * Creates a new WebSocketClient with the provided socket and server.
@@ -75,15 +78,15 @@ public class WebSocketClient implements Runnable {
     @Override
     public void run() {
         // Ensure that the client is not already active
-        if (active)
+        if (this.active)
             throw new IllegalStateException("This websocket client is already running!");
 
-        SocketExchange exchange = new SocketExchange(server, this); // Create a SocketExchange object to handle communication with the server
-        active = true;
+        this.exchange = new SocketExchange(server, this); // Create a SocketExchange object to handle communication with the server
+        this.active = true;
         try {
             // Setup input and output streams for communication with the client
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            writer = new PrintWriter(socket.getOutputStream(), true);
+            writer = socket.getOutputStream();
             headers = readHeaders(); // Read and store the client's headers for later use
 
             // Determine the host domain from headers
@@ -104,7 +107,6 @@ public class WebSocketClient implements Runnable {
             // Check if the requested path has a corresponding endpoint registered in the server
             mapping = getEndpoint(path, host.get());
             if (mapping != null) {
-                // Validate the incoming message against the endpoint's validator
                 Matcher matcher = mapping.validator().matcher(path);
                 if (!matcher.matches()) {
                     sendMessage(JsonParser.parse("{}")
@@ -127,12 +129,12 @@ public class WebSocketClient implements Runnable {
                 }
 
                 // If the event is not cancelled, process incoming messages from the client
-                assert mapping != null;
                 logger.info(ip + " connected to " + path);
 
                 // Add this WebSocket client to the server's collection
                 server.add(path, this);
 
+                connected = true;
                 String message;
                 while (!Thread.currentThread().isInterrupted() && (message = readMessage()) != null) {
                     // Process incoming messages from the client
@@ -153,7 +155,11 @@ public class WebSocketClient implements Runnable {
                     for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
 
                     // Invoke the registered handler method for the incoming message
-                    for (Method method : mapping.receiver()) method.invoke(mapping.handler(), args);
+                    for (Method method : mapping.receiver()) {
+                        // Todo: Load and use the @Transformers of the Method
+                        //       Important: Cache results to faster reply on the next method!
+                        method.invoke(mapping.handler(), args);
+                    }
                 }
             } else {
                 // If the requested path has no corresponding endpoint, send an error message
@@ -179,17 +185,15 @@ public class WebSocketClient implements Runnable {
         String line;
 
         while ((line = reader.readLine()) != null && !line.isEmpty()) {
-            line = line.trim();
-
             if (path == null && line.startsWith("GET")) {
-                path = line.split(" ")[1].trim();
+                path = line.split(" ")[1];
                 continue;
             }
 
             int colonIndex = line.indexOf(':');
             if (colonIndex <= 0) continue;
 
-            String key = line.substring(0, colonIndex).toLowerCase().trim();
+            String key = line.substring(0, colonIndex);
             String value = line.substring(colonIndex + 1).trim();
 
             headers.add(key, value);
@@ -217,16 +221,17 @@ public class WebSocketClient implements Runnable {
     private void sendHandshake() {
         try {
             String concatenated = getHeader("Sec-WebSocket-Key") + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+
             MessageDigest digest = MessageDigest.getInstance("SHA-1");
             byte[] hash = digest.digest(concatenated.getBytes(StandardCharsets.UTF_8));
+
             String response = "HTTP/1.1 101 Switching Protocols\r\n"
                     + "Upgrade: websocket\r\n"
                     + "Connection: Upgrade\r\n"
                     + "Sec-WebSocket-Accept: " + Base64.getEncoder().encodeToString(hash) + "\r\n"
                     + "\r\n";
-            writer.write(response);
-            writer.flush();
-        } catch (NoSuchAlgorithmException e) {
+            writer.write(response.getBytes(StandardCharsets.UTF_8));
+        } catch (NoSuchAlgorithmException | IOException e) {
             logger.error(e);
         }
     }
@@ -380,13 +385,12 @@ public class WebSocketClient implements Runnable {
                 outputStream.write((byte) length);
             } else {
                 outputStream.write((byte) 127);
-                for (int i = 7; i >= 0; i--) outputStream.write((byte) (length >> (8 * i)));
+                for (int i = 7; i >= 0; i--)
+                    outputStream.write((byte) (length >> (8 * i)));
             }
 
             outputStream.write(rawData);
-            OutputStream socketOutputStream = socket.getOutputStream();
-            socketOutputStream.write(outputStream.toByteArray());
-            socketOutputStream.flush();
+            writer.write(outputStream.toByteArray());
         } catch (SocketException ignored) {
         } catch (IOException e) {
             logger.error(e);
@@ -394,6 +398,24 @@ public class WebSocketClient implements Runnable {
         } catch (InvocationTargetException | IllegalAccessException e) {
             logger.error(e);
         }
+    }
+
+    /**
+     * Returns whether the websocket runnable has been started.
+     *
+     * @return True if the websocket runnable was started, false otherwise
+     */
+    public boolean isActive() {
+        return active;
+    }
+
+    /**
+     * Returns whether the web socket is still connected or the connection has been closed / failed.
+     *
+     * @return True if the websocket is connected, false otherwise or if the connection failed
+     */
+    public boolean isConnected() {
+        return connected;
     }
 
     /**
@@ -417,6 +439,7 @@ public class WebSocketClient implements Runnable {
             mapping = null;
             path = null;
             server.remove(this);
+            connected = false;
         } catch (InvocationTargetException | IllegalAccessException | IOException e) {
             logger.error(e);
         }
