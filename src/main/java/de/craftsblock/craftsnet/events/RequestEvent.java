@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.events;
 
-import de.craftsblock.craftscore.event.Cancelable;
+import de.craftsblock.craftscore.event.Cancellable;
 import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.Exchange;
@@ -8,20 +8,22 @@ import de.craftsblock.craftsnet.api.http.Exchange;
 import java.util.List;
 
 /**
- * The RequestEvent class represents an event related to a request. It extends the base Event class and implements the Cancelable interface.
+ * The RequestEvent class represents an event related to a request. It extends the base Event class and implements the Cancellable interface.
  * Events can be triggered during various stages of request processing. This class provides information about the Exchange and the RouteMapping
  * involved in the request event.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 1.0.1
  * @since 1.0.0
  */
-public class RequestEvent extends Event implements Cancelable {
+public class RequestEvent extends Event implements Cancellable {
 
     private final Exchange exchange;
 
     private final List<RouteRegistry.RouteMapping> mappings;
+
+    private String cancelReason;
     private boolean cancelled = false;
 
     /**
@@ -80,6 +82,33 @@ public class RequestEvent extends Event implements Cancelable {
     @Override
     public boolean isCancelled() {
         return cancelled;
+    }
+
+    /**
+     * Sets a custom cancel reason which is printed to the console
+     *
+     * @param cancelReason The cancel reason which is printed to the console
+     */
+    public void setCancelReason(String cancelReason) {
+        this.cancelReason = cancelReason;
+    }
+
+    /**
+     * Gets the custom cancel reason which was set by one of the listeners.
+     *
+     * @return The cancel reason
+     */
+    public String getCancelReason() {
+        return cancelReason;
+    }
+
+    /**
+     * Checks and returns whether a custom cancel reason was set by one of the listeners.
+     *
+     * @return true if a custom cancel reason was set, false otherwise.
+     */
+    public boolean hasCancelReason() {
+        return this.cancelReason != null;
     }
 
 }

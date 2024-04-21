@@ -1,23 +1,24 @@
 package de.craftsblock.craftsnet.events.sockets;
 
-import de.craftsblock.craftscore.event.Cancelable;
+import de.craftsblock.craftscore.event.Cancellable;
 import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * The IncomingSocketMessageEvent class represents an event related to an incoming message on a websocket connection.
- * It extends the base Event class and implements the Cancelable interface to support event cancellation.
+ * It extends the base Event class and implements the Cancellable interface to support event cancellation.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0
  * @since 2.1.1
  */
-public class IncomingSocketMessageEvent extends Event implements Cancelable {
+public class IncomingSocketMessageEvent extends Event implements Cancellable {
 
     private final SocketExchange exchange;
 
-    private final String data;
+    private final byte @NotNull [] data;
     private boolean cancelled = false;
 
     /**
@@ -26,7 +27,7 @@ public class IncomingSocketMessageEvent extends Event implements Cancelable {
      * @param exchange The SocketExchange object representing the socket connection and its associated data.
      * @param data     The incoming message data for this event.
      */
-    public IncomingSocketMessageEvent(SocketExchange exchange, String data) {
+    public IncomingSocketMessageEvent(SocketExchange exchange, byte @NotNull [] data) {
         this.exchange = exchange;
         this.data = data;
     }
@@ -45,7 +46,7 @@ public class IncomingSocketMessageEvent extends Event implements Cancelable {
      *
      * @return The incoming message data.
      */
-    public String getData() {
+    public byte @NotNull [] getData() {
         return data;
     }
 

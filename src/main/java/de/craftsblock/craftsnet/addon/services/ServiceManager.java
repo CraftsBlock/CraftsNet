@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.addon.services;
 
-import de.craftsblock.craftsnet.addon.services.buildin.IIOServiceLoader;
+import de.craftsblock.craftsnet.addon.services.builtin.IIOServiceLoader;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;

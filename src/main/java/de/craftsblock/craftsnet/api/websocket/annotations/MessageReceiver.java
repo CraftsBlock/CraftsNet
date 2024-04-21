@@ -13,9 +13,12 @@ import java.lang.annotation.Target;
  * @version 1.0
  * @see Socket
  * @since 2.1.1
+ * @deprecated Does not affect anything in the future, it was replaced by the {@link Socket} annotation,
+ * which now works like the {@link de.craftsblock.craftsnet.api.http.annotations.Route} annotation.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
+@Deprecated(since = "3.0.3", forRemoval = true)
 public @interface MessageReceiver {
 
     // This annotation does not define any elements as it only serves as a marker annotation.

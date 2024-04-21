@@ -35,10 +35,14 @@ import java.io.File;
 public abstract class Addon {
 
     private String name;
+
     private CommandRegistry commandRegistry;
     private ListenerRegistry listenerRegistry;
-    private RouteRegistry handler;
+    private RouteRegistry routeRegistry;
+
     private ServiceManager serviceManager;
+    private AddonClassLoader classLoader;
+
     private Logger logger;
 
     /**
@@ -97,7 +101,7 @@ public abstract class Addon {
      * @return The RouteRegistry instance used by the addon.
      */
     public final RouteRegistry routeRegistry() {
-        return handler;
+        return routeRegistry;
     }
 
     /**
@@ -108,6 +112,16 @@ public abstract class Addon {
      */
     public final ServiceManager serviceManager() {
         return serviceManager;
+    }
+
+    /**
+     * Get the class loader instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the handler directly.
+     *
+     * @return The class loader used by this addon.
+     */
+    public final ClassLoader getClassLoader() {
+        return classLoader;
     }
 
     /**
@@ -147,7 +161,7 @@ public abstract class Addon {
      * @return An instance of the specified addon type if found, or {@code null} if not present.
      */
     public static <T extends Addon> T getAddon(Class<T> addon) {
-        return CraftsNet.addonManager().getAddon(addon);
+        return CraftsNet.instance().addonManager().getAddon(addon);
     }
 
 }

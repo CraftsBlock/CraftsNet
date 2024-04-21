@@ -23,7 +23,7 @@ import java.time.format.DateTimeFormatter;
 public class Logger {
 
     private final String name;
-    private boolean debug;
+    private final boolean debug;
 
     /**
      * Constructs a Logger with the specified debug mode.
@@ -75,13 +75,13 @@ public class Logger {
     /**
      * Logs an error message along with the stack trace of an exception.
      *
-     * @param exception The exception to be logged.
+     * @param throwable The throwable to be logged.
      */
-    public void error(@NotNull Exception exception) {
-        log("\u001b[31;1mERROR\u001b[0m", exception.getMessage());
+    public void error(@NotNull Throwable throwable) {
+        log("\u001b[31;1mERROR\u001b[0m", throwable.getMessage());
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
-        exception.printStackTrace(pw);
+        throwable.printStackTrace(pw);
         for (String line : sw.toString().split("\n"))
             error(line);
     }
@@ -89,14 +89,14 @@ public class Logger {
     /**
      * Logs an error message along with the stack trace of an exception and an additional comment.
      *
-     * @param exception The exception to be logged.
+     * @param throwable The exception to be logged.
      * @param comment   An additional comment to be logged.
      */
-    public void error(@NotNull Exception exception, @Nullable String comment) {
-        log("\u001b[31;1mERROR\u001b[0m", comment + " > " + exception.getMessage());
+    public void error(@NotNull Throwable throwable, @Nullable String comment) {
+        log("\u001b[31;1mERROR\u001b[0m", comment + " > " + throwable.getMessage());
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
-        exception.printStackTrace(pw);
+        throwable.printStackTrace(pw);
         for (String line : sw.toString().split("\n"))
             error(line);
     }

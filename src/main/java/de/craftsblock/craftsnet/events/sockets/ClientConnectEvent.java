@@ -1,23 +1,25 @@
 package de.craftsblock.craftsnet.events.sockets;
 
-import de.craftsblock.craftscore.event.Cancelable;
+import de.craftsblock.craftscore.event.Cancellable;
 import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
 
+import java.util.List;
+
 /**
  * The ClientConnectEvent class represents an event related to a client connection to a socket.
- * It extends the base Event class and implements the Cancelable interface to support event cancellation.
+ * It extends the base Event class and implements the Cancellable interface to support event cancellation.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0
  * @since 2.1.1
  */
-public class ClientConnectEvent extends Event implements Cancelable {
+public class ClientConnectEvent extends Event implements Cancellable {
 
     private final SocketExchange exchange;
-    private final RouteRegistry.SocketMapping mapping;
+    private final List<RouteRegistry.SocketMapping> mappings;
     private boolean cancelled = false;
     private String reason;
 
@@ -25,11 +27,11 @@ public class ClientConnectEvent extends Event implements Cancelable {
      * Constructs a new ClientConnectEvent with the specified SocketExchange and SocketMapping.
      *
      * @param exchange The SocketExchange object representing the socket connection and its associated data.
-     * @param mapping  The SocketMapping object associated with the client connection event.
+     * @param mappings  A list of SocketMapping objects associated with the client connection event.
      */
-    public ClientConnectEvent(SocketExchange exchange, RouteRegistry.SocketMapping mapping) {
+    public ClientConnectEvent(SocketExchange exchange, List<RouteRegistry.SocketMapping> mappings) {
         this.exchange = exchange;
-        this.mapping = mapping;
+        this.mappings = mappings;
     }
 
     /**
@@ -42,21 +44,21 @@ public class ClientConnectEvent extends Event implements Cancelable {
     }
 
     /**
-     * Gets the SocketMapping associated with the client connection event.
+     * Gets a list of all SocketMappings associated with the client connection event.
      *
-     * @return The SocketMapping object representing the mapping for the socket connection.
+     * @return A list of SocketMapping objects representing the mapping for the socket connection.
      */
-    public RouteRegistry.SocketMapping getMapping() {
-        return mapping;
+    public List<RouteRegistry.SocketMapping> getMappings() {
+        return mappings;
     }
 
     /**
-     * Checks if the client connection event has a valid SocketMapping associated with it.
+     * Checks if the client connection event has at least one valid SocketMapping associated with it.
      *
-     * @return true if the event has a valid SocketMapping, false otherwise.
+     * @return true if the event has at least one valid SocketMapping, false otherwise.
      */
-    public boolean hasMapping() {
-        return mapping != null;
+    public boolean hasMappings() {
+        return mappings != null && !mappings.isEmpty();
     }
 
     /**

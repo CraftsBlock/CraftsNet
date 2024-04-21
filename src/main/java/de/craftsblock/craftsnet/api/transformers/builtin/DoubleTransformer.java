@@ -1,7 +1,7 @@
-package de.craftsblock.craftsnet.api.transformers;
+package de.craftsblock.craftsnet.api.transformers.builtin;
 
-import de.craftsblock.craftsnet.api.exceptions.NotTransformableException;
-import de.craftsblock.craftsnet.api.interfaces.Transformable;
+import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableException;
+import de.craftsblock.craftsnet.api.transformers.Transformable;
 
 /**
  * A transformer class for converting a string representation of a double value to a Double object.

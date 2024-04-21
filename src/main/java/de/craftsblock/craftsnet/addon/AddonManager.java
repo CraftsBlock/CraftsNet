@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see AddonLoader
  * @since 1.0.0
  */
-public class AddonManager {
+public final class AddonManager {
 
     private final ConcurrentHashMap<String, Addon> addons = new ConcurrentHashMap<>();
 
@@ -31,8 +31,6 @@ public class AddonManager {
      * @throws IOException if there is an I/O error while accessing the addons folder.
      */
     public AddonManager() throws IOException {
-        Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
-
         File folder = new File("./addons/");
         if (!folder.isDirectory()) {
             folder.delete();

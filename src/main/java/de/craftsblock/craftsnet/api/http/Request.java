@@ -9,10 +9,14 @@ import de.craftsblock.craftsnet.api.http.body.Body;
 import de.craftsblock.craftsnet.api.http.body.JsonBody;
 import de.craftsblock.craftsnet.api.http.body.MultipartFormBody;
 import de.craftsblock.craftsnet.api.http.body.StandardFormBody;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The Request class represents an incoming HTTP request received by the web server.
@@ -23,7 +27,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.4
+ * @version 1.5.0
  * @see Exchange
  * @since 1.0.0
  */
@@ -31,6 +35,10 @@ public class Request implements AutoCloseable {
 
     private final HttpExchange exchange;
     private final Headers headers;
+    private final String domain;
+    private final HttpMethod httpMethod;
+    private final String rawUrl;
+    private final String url;
     private final Json queryParams = JsonParser.parse("{}");
     private final Json cookies = JsonParser.parse("{}");
     private final String ip;
@@ -41,21 +49,31 @@ public class Request implements AutoCloseable {
     /**
      * Constructs a new Request object.
      *
-     * @param exchange The HttpExchange object representing the incoming HTTP request.
-     * @param query    The query string extracted from the request URI.
-     * @param ip       The IP address of the client sending the request.
+     * @param exchange   The HttpExchange object representing the incoming HTTP request.
+     * @param headers    The headers object representing the headers of the incoming http request.
+     * @param url        The query string extracted from the request URI.
+     * @param ip         The IP address of the client sending the request.
+     * @param domain     The domain used to make the http request.
+     * @param httpMethod The http method used to access the route.
      */
-    public Request(HttpExchange exchange, String query, String ip) {
+    public Request(HttpExchange exchange, Headers headers, String url, String ip, String domain, HttpMethod httpMethod) {
         this.exchange = exchange;
-        this.headers = exchange.getRequestHeaders();
+        this.headers = headers;
+        this.rawUrl = url;
         this.ip = ip;
+        this.domain = domain;
+        this.httpMethod = httpMethod;
 
+        // Extract relevant information from the incoming request.
+        String[] urlStripped = url.split("\\?");
+        String query = (urlStripped.length == 2 ? urlStripped[1] : "");
         Arrays.stream(query.split("&")).forEach(pair -> {
             String[] stripped = pair.split("=");
             if (stripped.length != 2)
                 return;
             queryParams.set(stripped[0], stripped[1]);
         });
+        this.url = urlStripped[0];
 
         if (headers.containsKey("cookie"))
             Arrays.stream(headers.getFirst("cookie").split("; ")).forEach(pair -> {
@@ -80,6 +98,53 @@ public class Request implements AutoCloseable {
     }
 
     /**
+     * Gets the domain through which the route was accessed.
+     *
+     * @return The domain which is used.
+     */
+    public String getDomain() {
+        return domain;
+    }
+
+    /**
+     * Gets the http method which is used to access this route.
+     *
+     * @return The http method which is used.
+     */
+    public HttpMethod getHttpMethod() {
+        return httpMethod;
+    }
+
+    /**
+     * Gets the raw url which is not trimmed and therefore contains anything except the domain
+     *
+     * @return The raw url of the request.
+     */
+    public String getRawUrl() {
+        return rawUrl;
+    }
+
+    /**
+     * Gets the trimmed url which only includes the location of the resource.
+     *
+     * @return The trimmed url of the request.
+     */
+    public String getUrl() {
+        return url;
+    }
+
+    /**
+     * Gets all query parameters stored in a map of the request.
+     *
+     * @return The mapped query parameters.
+     */
+    public Map<String, String> getQueryParams() {
+        ConcurrentHashMap<String, String> queryParams = new ConcurrentHashMap<>();
+        this.queryParams.getObject().keySet().forEach(key -> queryParams.put(key, this.queryParams.getString(key)));
+        return queryParams;
+    }
+
+    /**
      * Checks if the request contains the specified query parameter.
      *
      * @param key The key of the query parameter to check.
@@ -96,10 +161,33 @@ public class Request implements AutoCloseable {
      * @return The value of the specified query parameter, or null if the parameter is not found.
      */
     @Nullable
-    public String retrieveParam(String key) {
+    public String retrieveParam(@NotNull String key) {
         if (hasParam(key))
             return queryParams.getString(key);
         return null;
+    }
+
+    /**
+     * Retrieves the value of the specified query parameter from the request or return a fallback value if it is not present on this request.
+     *
+     * @param key      The key of the query parameter to retrieve.
+     * @param fallback The fallback value, if the desired query parameter is not present.
+     * @return The value of the specified query parameter, or null if the parameter is not found.
+     */
+    @NotNull
+    public String retrieveParam(@NotNull String key, @NotNull String fallback) {
+        return hasParam(key) ? Objects.requireNonNull(retrieveParam(key)) : fallback;
+    }
+
+    /**
+     * Gets all cookies stored in a map of the request.
+     *
+     * @return The mapped view of all cookies.
+     */
+    public Map<String, String> getCookies() {
+        ConcurrentHashMap<String, String> cookies = new ConcurrentHashMap<>();
+        this.cookies.getObject().keySet().forEach(key -> cookies.put(key, this.cookies.getString(key)));
+        return cookies;
     }
 
     /**
@@ -119,10 +207,22 @@ public class Request implements AutoCloseable {
      * @return The value of the specified cookie, or null if the cookie is not found.
      */
     @Nullable
-    public String retrieveCookie(String key) {
+    public String retrieveCookie(@NotNull String key) {
         if (hasCookie(key))
             return cookies.getString(key);
         return null;
+    }
+
+    /**
+     * Retrieves the value of the specified cookie from the request or return a fallback value if it is not present on this request.
+     *
+     * @param key      The name of the cookie to retrieve.
+     * @param fallback The fallback value, if the desired cookie is not present.
+     * @return The value of the specified cookie, or null if the cookie is not found.
+     */
+    @NotNull
+    public String retrieveCookie(@NotNull String key, @NotNull String fallback) {
+        return hasCookie(key) ? Objects.requireNonNull(retrieveCookie(key)) : fallback;
     }
 
     /**
@@ -169,6 +269,15 @@ public class Request implements AutoCloseable {
         } catch (Exception ignored) {
         }
         return null; // Return null if no body exists or an error occurred
+    }
+
+    /**
+     * Gets all the headers which are present on the request.
+     *
+     * @return The headers object including the headers.
+     */
+    public Headers getHeaders() {
+        return headers;
     }
 
     /**

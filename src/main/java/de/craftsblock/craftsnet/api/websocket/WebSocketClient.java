@@ -1,16 +1,22 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import com.sun.net.httpserver.Headers;
+import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
+import de.craftsblock.craftsnet.api.http.HttpMethod;
+import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.events.sockets.ClientConnectEvent;
 import de.craftsblock.craftsnet.events.sockets.ClientDisconnectEvent;
 import de.craftsblock.craftsnet.events.sockets.IncomingSocketMessageEvent;
 import de.craftsblock.craftsnet.events.sockets.OutgoingSocketMessageEvent;
 import de.craftsblock.craftsnet.logging.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import javax.net.ssl.SSLSocket;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -19,10 +25,10 @@ import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Base64;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 /**
@@ -48,13 +54,14 @@ public class WebSocketClient implements Runnable {
     private SocketExchange exchange;
     private Headers headers;
     private String ip;
-    private RouteRegistry.SocketMapping mapping;
+    private List<RouteRegistry.SocketMapping> mappings;
     private String path;
 
     private BufferedReader reader;
     private OutputStream writer;
 
-    private final Logger logger = CraftsNet.logger();
+    private final CraftsNet craftsNet;
+    private final Logger logger;
 
     private boolean active = false;
     private boolean connected = false;
@@ -68,6 +75,9 @@ public class WebSocketClient implements Runnable {
     public WebSocketClient(Socket socket, WebSocketServer server) {
         this.socket = socket;
         this.server = server;
+
+        this.craftsNet = CraftsNet.instance();
+        this.logger = this.craftsNet.logger();
     }
 
     /**
@@ -89,6 +99,13 @@ public class WebSocketClient implements Runnable {
             writer = socket.getOutputStream();
             headers = readHeaders(); // Read and store the client's headers for later use
 
+            // Abort if the path was not found on the request
+            if (path == null) {
+                logger.warning("The path could not be loaded. (Maybe an unsupported request method?)");
+                disconnect();
+                return;
+            }
+
             // Determine the host domain from headers
             AtomicReference<String> host = new AtomicReference<>(getHeader("Host"));
             if (host.get() == null || host.get().isBlank()) host.set(null);
@@ -105,9 +122,10 @@ public class WebSocketClient implements Runnable {
             sendHandshake();
 
             // Check if the requested path has a corresponding endpoint registered in the server
-            mapping = getEndpoint(path, host.get());
-            if (mapping != null) {
-                Matcher matcher = mapping.validator().matcher(path);
+            mappings = getEndpoint(path, host.get());
+            if (mappings != null && !mappings.isEmpty()) {
+                Pattern validator = mappings.get(0).validator();
+                Matcher matcher = validator.matcher(path);
                 if (!matcher.matches()) {
                     sendMessage(JsonParser.parse("{}")
                             .set("error", "There was an unexpected error while matching!")
@@ -116,8 +134,8 @@ public class WebSocketClient implements Runnable {
                 }
 
                 // Trigger the ClientConnectEvent to handle the client connection
-                ClientConnectEvent event = new ClientConnectEvent(exchange, mapping);
-                CraftsNet.listenerRegistry().call(event);
+                ClientConnectEvent event = new ClientConnectEvent(exchange, mappings);
+                craftsNet.listenerRegistry().call(event);
 
                 // If the event is cancelled, disconnect the client
                 if (event.isCancelled()) {
@@ -134,40 +152,75 @@ public class WebSocketClient implements Runnable {
                 // Add this WebSocket client to the server's collection
                 server.add(path, this);
 
+                // Create a transformer performer which handles all transformers
+                TransformerPerformer transformerPerformer = new TransformerPerformer(validator, 2, e -> {
+                    sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).asString());
+                    disconnect();
+                });
+
                 connected = true;
-                String message;
+                byte[] message;
                 while (!Thread.currentThread().isInterrupted() && (message = readMessage()) != null) {
                     // Process incoming messages from the client
-                    byte[] data = message.getBytes(StandardCharsets.UTF_8);
+                    byte[] data = message;
                     if (IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) break;
-                    if (message.isEmpty() || message.isBlank()) break;
 
                     // Fire an incoming socket message event and continue if it was cancelled
-                    IncomingSocketMessageEvent event2 = new IncomingSocketMessageEvent(exchange, message);
-                    CraftsNet.listenerRegistry().call(event2);
+                    IncomingSocketMessageEvent event2 = new IncomingSocketMessageEvent(exchange, data);
+                    craftsNet.listenerRegistry().call(event2);
                     if (event2.isCancelled())
                         continue;
 
                     // Extract and pass the message parameters to the endpoint handler
                     Object[] args = new Object[matcher.groupCount() + 1];
                     args[0] = exchange;
-                    args[1] = message;
+                    args[1] = data;
                     for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
 
-                    // Invoke the registered handler method for the incoming message
-                    for (Method method : mapping.receiver()) {
-                        // Todo: Load and use the @Transformers of the Method
-                        //       Important: Cache results to faster reply on the next method!
-                        method.invoke(mapping.handler(), args);
+                    // Loop through all priorities
+                    ProcessPriority.Priority priority = ProcessPriority.Priority.LOWEST;
+                    while (priority != null) {
+                        if (mappings.isEmpty()) break;
+
+                        // Loop through all registered routes
+                        Iterator<RouteRegistry.SocketMapping> iterator = mappings.iterator();
+                        while (iterator.hasNext()) {
+                            RouteRegistry.SocketMapping mapping = iterator.next();
+                            if (!mapping.priority().equals(priority)) continue;
+                            iterator.remove();
+
+                            SocketHandler handler = mapping.handler();
+                            Method method = mapping.method();
+
+                            // Perform all transformers and continue if passingArgs is null
+                            Object[] passingArgs = transformerPerformer.perform(method, args);
+                            if (passingArgs == null)
+                                continue;
+
+                            // Check if the second parameter is a string and converts the message data if so
+                            if (method.getParameterCount() >= 2 && method.getParameterTypes()[1].equals(String.class))
+                                passingArgs[1] = new String(data, StandardCharsets.UTF_8);
+
+                            // Invoke the handler method
+                            method.invoke(handler, passingArgs);
+                        }
+
+                        // Update the current process priority
+                        priority = priority.next();
                     }
+
+                    mappings = getEndpoint(path, host.get());
                 }
+
+                // Clear up transformer cache to free up memory
+                transformerPerformer.clearCache();
             } else {
                 // If the requested path has no corresponding endpoint, send an error message
                 logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[NOT FOUND]");
                 sendMessage(JsonParser.parse("{}").set("error", "Path do not match any API endpoint!").asString());
             }
         } catch (SocketException ignored) {
-        } catch (IOException | InvocationTargetException | IllegalAccessException e) {
+        } catch (Exception e) {
             logger.error(e);
         } finally {
             disconnect();
@@ -184,11 +237,14 @@ public class WebSocketClient implements Runnable {
         Headers headers = new Headers();
         String line;
 
+        headerReader:
         while ((line = reader.readLine()) != null && !line.isEmpty()) {
-            if (path == null && line.startsWith("GET")) {
-                path = line.split(" ")[1];
-                continue;
-            }
+            if (path == null)
+                for (String method : HttpMethod.ALL.getMethods())
+                    if (line.startsWith(method)) {
+                        path = line.split(" ")[1];
+                        continue headerReader;
+                    }
 
             int colonIndex = line.indexOf(':');
             if (colonIndex <= 0) continue;
@@ -207,11 +263,11 @@ public class WebSocketClient implements Runnable {
      *
      * @param path The path to find the endpoint for.
      * @param host The domain used to connect the endpoint.
-     * @return The corresponding SocketMapping if found, or null if not found.
+     * @return The corresponding list of SocketMappings if found, or null if not found.
      */
     @Nullable
-    private RouteRegistry.SocketMapping getEndpoint(String path, String host) {
-        return CraftsNet.routeRegistry().getSocket(path, host);
+    private List<RouteRegistry.SocketMapping> getEndpoint(String path, String host) {
+        return craftsNet.routeRegistry().getSocket(path, host);
     }
 
     /**
@@ -239,10 +295,10 @@ public class WebSocketClient implements Runnable {
     /**
      * Reads a WebSocket message from the client.
      *
-     * @return The message as a String, or null if the client has disconnected.
+     * @return The message as a byte array, or null if the client has disconnected.
      * @throws IOException If an I/O error occurs while reading the message.
      */
-    private String readMessage() throws IOException {
+    private byte[] readMessage() throws IOException {
         if (socket.isClosed()) return null;
 
         // Read the input stream from the socket.
@@ -292,7 +348,7 @@ public class WebSocketClient implements Runnable {
         }
 
         // Convert the read payload data to a string using UTF-8 encoding and return it.
-        return payloadBuilder.toString(StandardCharsets.UTF_8);
+        return payloadBuilder.toByteArray();
     }
 
     /**
@@ -361,22 +417,39 @@ public class WebSocketClient implements Runnable {
     /**
      * Sends a message to the connected WebSocket client.
      *
-     * @param data The message to be sent, as a String.
+     * @param data The message to be sent, as it's json representation.
+     */
+    public void sendMessage(Json data) {
+        sendMessage(data.toString());
+    }
+
+    /**
+     * Sends a message to the connected WebSocket client.
+     *
+     * @param data The message to be sent, as it's string representation.
      */
     public void sendMessage(String data) {
+        sendMessage(data.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Sends a message to the connected WebSocket client.
+     *
+     * @param data The message to be sent, as a byte array.
+     */
+    public void sendMessage(byte[] data) {
         try {
             OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(new SocketExchange(server, this), data);
-            CraftsNet.listenerRegistry().call(event);
+            craftsNet.listenerRegistry().call(event);
             if (event.isCancelled())
                 return;
 
-            data = event.getData();
-            byte[] rawData = data.getBytes(StandardCharsets.UTF_8);
+            byte @NotNull [] bytes = event.getData();
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             outputStream.write((byte) 0x81);
 
-            int length = rawData.length;
+            int length = bytes.length;
             if (length <= 125)
                 outputStream.write((byte) length);
             else if (length <= 65535) {
@@ -389,7 +462,7 @@ public class WebSocketClient implements Runnable {
                     outputStream.write((byte) (length >> (8 * i)));
             }
 
-            outputStream.write(rawData);
+            outputStream.write(bytes);
             writer.write(outputStream.toByteArray());
         } catch (SocketException ignored) {
         } catch (IOException e) {
@@ -427,7 +500,7 @@ public class WebSocketClient implements Runnable {
     public Thread disconnect() {
         try {
             if (reader == null || writer == null) return Thread.currentThread();
-            CraftsNet.listenerRegistry().call(new ClientDisconnectEvent(new SocketExchange(server, this), mapping));
+            craftsNet.listenerRegistry().call(new ClientDisconnectEvent(new SocketExchange(server, this), mappings));
             if (reader != null) reader.close();
             reader = null;
             if (writer != null) writer.close();
@@ -436,7 +509,7 @@ public class WebSocketClient implements Runnable {
             logger.debug(ip + " disconnected");
             ip = null;
             headers = null;
-            mapping = null;
+            mappings = null;
             path = null;
             server.remove(this);
             connected = false;

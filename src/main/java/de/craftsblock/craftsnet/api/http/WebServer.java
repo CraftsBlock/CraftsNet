@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsServer;
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.SSL;
@@ -32,42 +33,71 @@ import java.util.concurrent.Executors;
  * @see WebHandler
  * @since 1.0.0
  */
-public class WebServer {
+public class WebServer extends Server {
 
-    private final HttpServer server;
+    private final CraftsNet craftsNet;
     private final Logger logger;
+    private HttpServer server;
 
     /**
      * Constructs a WebServer with the specified port and SSL settings.
      *
      * @param port The port number to listen on.
      * @param ssl  A boolean flag indicating whether SSL encryption should be used (true for HTTPS, false for HTTP).
-     * @throws IOException If an I/O error occurs while creating the server.
      */
-    public WebServer(int port, boolean ssl) throws IOException {
-        logger = CraftsNet.logger();
+    public WebServer(int port, boolean ssl) {
+        super(port, ssl);
+        this.craftsNet = CraftsNet.instance();
+        this.logger = this.craftsNet.logger();
+    }
 
-        // Add a JVM shutdown hook to gracefully stop the server when the JVM exits.
-        logger.debug("Web server jvm shutdown hook is integrated");
-        Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
+    @Override
+    public void bind(int port, int backlog) {
+        super.bind(port, backlog);
+        if (logger != null) logger.info("Web server bound to port " + port);
+    }
 
-        // Create the HttpServer or HttpsServer based on the SSL flag.
-        logger.info("Web server will be started on port " + port);
-        if (!ssl) server = HttpServer.create(new InetSocketAddress(port), 0);
-        else {
-            server = HttpsServer.create(new InetSocketAddress(port), 0);
-            try {
+    /**
+     * Starts the web server.
+     */
+    @Override
+    public void start() {
+        if (running) return;
+        HttpServer httpServer = null;
+
+        logger.info("Starting web server on port " + port);
+        try {
+            // Create the HttpServer or HttpsServer based on the SSL flag.
+            if (ssl) {
                 // Load the SSL context using the provided SSL key files.
-                SSLContext sslContext = SSL.load("./certificates/fullchain.pem", "./certificates/privkey.pem");
-                // Configure the HttpsServer with the SSL context.
-                ((HttpsServer) server).setHttpsConfigurator(new HttpsConfigurator(sslContext));
-            } catch (UnrecoverableKeyException | KeyManagementException | KeyStoreException | NoSuchAlgorithmException |
-                     CertificateException e) {
-                e.printStackTrace();
+                SSLContext sslContext = SSL.load();
+                if (sslContext != null) {
+                    // Configure the HttpsServer with the SSL context.
+                    httpServer = HttpsServer.create(new InetSocketAddress(port), 0);
+                    ((HttpsServer) httpServer).setHttpsConfigurator(new HttpsConfigurator(sslContext));
+                }
+            }
+        } catch (UnrecoverableKeyException | KeyManagementException | KeyStoreException | NoSuchAlgorithmException | CertificateException |
+                 IOException e) {
+            logger.error(e);
+        } finally {
+            if (httpServer == null) {
+                if (ssl)
+                    logger.warning("SSl was not activated properly, using an http server as fallback!");
+
+                try {
+                    httpServer = HttpServer.create(new InetSocketAddress(port), 0);
+                } catch (IOException e) {
+                    logger.error("Error while creating the " + (ssl ? "fallback" : "") + " http server.");
+                    logger.error(e);
+                }
             }
         }
 
         // Create a context for the root path ("/") and set its handler to process incoming requests.
+        server = httpServer;
+        if (server == null) return;
+
         logger.debug("Creating the API handler");
         HttpContext context = server.createContext("/");
         context.setHandler(new WebHandler());
@@ -81,15 +111,44 @@ public class WebServer {
         logger.debug("Setting up the executor and starting the web server");
         server.setExecutor(Executors.newFixedThreadPool(25));
         server.start();
+        super.start();
         logger.debug("Web server has been started");
     }
 
     /**
      * Stops the web server.
      */
+    @Override
     public void stop() {
+        if (!running) return;
         logger.debug("Web server will be stopped");
         server.stop(0);
+        super.stop();
+    }
+
+    @Override
+    public void awakeOrWarn() {
+        if (!isRunning() && isEnabled())
+            // Start the web server as it is needed and currently not running
+            this.craftsNet.webServer().start();
+        else
+            // Print a warning if the web server is disabled and routes has been registered
+            logger.warning("A route has been registered, but the web server is disabled!");
+    }
+
+    @Override
+    public void sleepIfNotNeeded() {
+        if (isRunning() && !craftsNet.routeRegistry().hasRoutes() && isStatus(CraftsNet.ActivateType.DYNAMIC))
+            stop();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return !isStatus(CraftsNet.ActivateType.DISABLED);
+    }
+
+    private boolean isStatus(CraftsNet.ActivateType type) {
+        return craftsNet.getBuilder().isWebServer(type);
     }
 
 }

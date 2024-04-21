@@ -4,22 +4,20 @@ import de.craftsblock.craftscore.id.Snowflake;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
+import org.apache.maven.repository.internal.MavenSessionBuilderSupplier;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
-import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.graph.Dependency;
-import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
-import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
-import org.eclipse.aether.spi.connector.transport.TransporterFactory;
-import org.eclipse.aether.transport.http.HttpTransporterFactory;
+import org.eclipse.aether.supplier.RepositorySystemSupplier;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +27,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.jar.JarFile;
+import java.util.zip.ZipFile;
 
 /**
  * The {@code ArtifactLoader} class provides functionality for resolving and loading libraries (artifacts)
@@ -36,27 +36,29 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 2.0.0
  * @apiNote It utilizes the Eclipse Aether library for handling dependency resolution and management.
  * @see <a href="https://maven.apache.org/resolver/index.html">Eclipse Aether</a>
  * @since 3.0.0
  */
-class ArtifactLoader {
-
-    private static final Logger logger = CraftsNet.logger();
+final class ArtifactLoader {
 
     private static final RepositorySystem repository;
     private static final DefaultRepositorySystemSession session;
     private static final List<RemoteRepository> repositories;
+    private static final RemoteRepository defaultRepo;
 
     static {
-        DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
-        locator.addService(RepositoryConnectorFactory.class, BasicRepositoryConnectorFactory.class);
-        locator.addService(TransporterFactory.class, HttpTransporterFactory.class);
+        RepositorySystemSupplier repositorySupplier = new RepositorySystemSupplier();
+        repository = repositorySupplier.get();
 
-        repository = locator.getService(RepositorySystem.class);
+        // TODO: Find a better solution / work around to create a RepositorySystemSession
+        //       Update during / before 4.0.0 release of CraftsNet
+//        MavenSessionBuilderSupplier sessionSupplier = new MavenSessionBuilderSupplier(repository);
+//        RepositorySystemSession.CloseableSession closeableSession = sessionSupplier.get().build();
+//        session = new DefaultRepositorySystemSession(closeableSession);
+
         session = MavenRepositorySystemUtils.newSession();
-
         session.setChecksumPolicy(RepositoryPolicy.CHECKSUM_POLICY_FAIL);
         session.setLocalRepositoryManager(repository.newLocalRepositoryManager(session, new LocalRepository("libraries")));
         session.setReadOnly();
@@ -64,7 +66,7 @@ class ArtifactLoader {
         repositories = repository.newResolutionRepositories(
                 session,
                 Collections.singletonList(
-                        new RemoteRepository.Builder(
+                        defaultRepo = new RemoteRepository.Builder(
                                 "central",
                                 "default",
                                 "https://repo.maven.apache.org/maven2"
@@ -74,11 +76,28 @@ class ArtifactLoader {
     }
 
     /**
+     * Cleanup internal repository cache
+     */
+    static void cleanup() {
+        repositories.parallelStream()
+                .filter(remoteRepository -> !remoteRepository.equals(defaultRepo))
+                .forEach(repositories::remove);
+    }
+
+    /**
+     * Cleanup and shutdown of the internal repository resolver
+     */
+    static void stop() {
+        cleanup();
+        repository.shutdown();
+    }
+
+    /**
      * Adds a remote repository to the list of repositories used for dependency resolution.
      *
      * @param repo The URL of the remote repository to be added.
      */
-    protected static void addRepository(String repo) {
+    static void addRepository(String repo) {
         if (repositories.stream().anyMatch(repository -> Objects.equals(repository.getUrl(), repo))) return;
         RemoteRepository remoteRepository = new RemoteRepository.Builder(
                 Snowflake.generate() + "",
@@ -97,7 +116,8 @@ class ArtifactLoader {
      * @param libraries     The coordinates of the libraries to be loaded.
      * @return An array of URLs representing the loaded libraries.
      */
-    protected static URL[] loadLibraries(AddonLoader addonLoader, AddonLoader.Configuration configuration, String addon, String... libraries) {
+    static URL[] loadLibraries(AddonLoader addonLoader, AddonLoader.Configuration configuration, String addon, String... libraries) {
+        Logger logger = CraftsNet.instance().logger();
         logger.debug("Loading " + libraries.length + " libraries for " + addon + "...");
         List<Dependency> dependencies = new ArrayList<>();
         for (String library : libraries) {
@@ -117,9 +137,9 @@ class ArtifactLoader {
         ConcurrentLinkedQueue<URL> urls = new ConcurrentLinkedQueue<>();
         result.getArtifactResults().forEach(artifact -> {
             File file = artifact.getArtifact().getFile();
-            try {
+            try (JarFile jarFile = new JarFile(file, true, ZipFile.OPEN_READ, Runtime.version())) {
                 urls.add(file.toURI().toURL());
-                configuration.services().addAll(addonLoader.loadServices(file));
+                configuration.services().addAll(addonLoader.loadServices(jarFile));
             } catch (IOException e) {
                 logger.error(e, "Error while loading libraries for " + addon);
                 return;

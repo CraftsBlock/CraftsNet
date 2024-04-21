@@ -15,6 +15,10 @@ import java.util.regex.Pattern;
  */
 public class Utils {
 
+    /**
+     * A regular expression pattern used to extract group names from a regular expression pattern string.
+     * This pattern matches named capturing groups defined in regular expression patterns.
+     */
     public static final Pattern patternGroupNameExtractPattern = Pattern.compile("\\(\\?<([a-zA-Z][a-zA-Z0-9]*)>");
 
     /**

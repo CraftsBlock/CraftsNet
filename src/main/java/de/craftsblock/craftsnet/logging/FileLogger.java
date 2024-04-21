@@ -10,6 +10,7 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
@@ -69,6 +70,7 @@ public class FileLogger {
      */
     public static void addLine(String line) {
         if (stream == null) return;
+        if (line != null && line.contains("SLF4J")) return;
         try {
             stream.write((LoggerPrintStream.removeAsciiColors(line) + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
             stream.flush();
@@ -91,25 +93,25 @@ public class FileLogger {
     }
 
     /**
-     * Creates an error log file for the given exception.
-     * This method creates an error log file containing the stack trace of the given exception.
+     * Creates an error log file for the given throwable.
+     * This method creates an error log file containing the stack trace of the given throwable.
      *
-     * @param exception The exception for which to create the error log file.
+     * @param throwable The throwable for which to create the error log file.
      * @return The identifier of the error log file.
      */
-    public static long createErrorLog(Exception exception) {
-        return createErrorLog(exception, Collections.emptyMap());
+    public static long createErrorLog(Throwable throwable) {
+        return createErrorLog(throwable, Collections.emptyMap());
     }
 
     /**
-     * Creates an error log file for the given exception.
-     * This method creates an error log file containing the stack trace of the given exception, along with additional information.
+     * Creates an error log file for the given throwable.
+     * This method creates an error log file containing the stack trace of the given throwable, along with additional information.
      *
-     * @param exception  The exception for which to create the error log file.
+     * @param throwable  The throwable for which to create the error log file.
      * @param additional Additional information to include in the error log file.
      * @return The identifier of the error log file.
      */
-    public static long createErrorLog(Exception exception, Map<String, String> additional) {
+    public static long createErrorLog(Throwable throwable, Map<String, String> additional) {
         File errors = new File(folder, "errors");
         ensureParentFolder(errors);
         if (!errors.exists()) errors.mkdirs();
@@ -134,9 +136,9 @@ public class FileLogger {
 
             stream.flush();
 
-            exception.printStackTrace(stream);
+            throwable.printStackTrace(stream);
         } catch (FileNotFoundException e) {
-            CraftsNet.logger().error(e, "Failed to create error log file");
+            CraftsNet.instance().logger().error(e, "Failed to create error log file");
         }
 
         return identifier;
@@ -198,6 +200,7 @@ public class FileLogger {
          */
         @Override
         public void println(@Nullable String x) {
+            if (x != null && x.contains("SLF4J")) return;
             super.println(x);
             try {
                 stream.write(System.lineSeparator().getBytes(StandardCharsets.UTF_8));
@@ -228,7 +231,7 @@ public class FileLogger {
          * @return The input string with ASCII color codes removed.
          */
         protected static String removeAsciiColors(String input) {
-            return pattern.matcher(input).replaceAll("");
+            return input == null ? "null" : pattern.matcher(input).replaceAll("");
         }
 
     }

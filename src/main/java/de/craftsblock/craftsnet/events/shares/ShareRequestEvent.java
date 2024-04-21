@@ -1,8 +1,10 @@
 package de.craftsblock.craftsnet.events.shares;
 
 import com.sun.net.httpserver.Headers;
-import de.craftsblock.craftscore.event.Cancelable;
+import de.craftsblock.craftscore.event.Cancellable;
 import de.craftsblock.craftscore.event.Event;
+import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.api.http.Exchange;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -13,16 +15,21 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.0.2
  * @see de.craftsblock.craftscore.event.Event
- * @see de.craftsblock.craftscore.event.Cancelable
+ * @see de.craftsblock.craftscore.event.Cancellable
  * @since 2.3.2
  */
-public class ShareRequestEvent extends Event implements Cancelable {
+public class ShareRequestEvent extends Event implements Cancellable {
 
     private final Headers headers = new Headers();
     private final String httpPath;
+    private final Exchange exchange;
+    private final RouteRegistry.ShareMapping mapping;
+
     private String filePath;
+
+    private String cancelReason;
     private boolean cancelled;
 
     /**
@@ -30,10 +37,32 @@ public class ShareRequestEvent extends Event implements Cancelable {
      *
      * @param httpPath The url used to access the share
      * @param filePath The relativ path on the file system
+     * @param exchange The exchange used by the share to handle its connection
+     * @param mapping  The share mapping of the request
      */
-    public ShareRequestEvent(@NotNull String httpPath, @NotNull String filePath) {
+    public ShareRequestEvent(@NotNull String httpPath, @NotNull String filePath, @NotNull Exchange exchange, @NotNull RouteRegistry.ShareMapping mapping) {
         this.httpPath = httpPath;
         this.filePath = filePath;
+        this.exchange = exchange;
+        this.mapping = mapping;
+    }
+
+    /**
+     * Gets the exchange which holds all http information about the connection with the shared location.
+     *
+     * @return The exchange object storing important information
+     */
+    public Exchange getExchange() {
+        return exchange;
+    }
+
+    /**
+     * Gets the share mapping, which includes some basic information about the share.
+     *
+     * @return The mapping of the share
+     */
+    public RouteRegistry.ShareMapping getMapping() {
+        return mapping;
     }
 
     /**
@@ -76,6 +105,9 @@ public class ShareRequestEvent extends Event implements Cancelable {
 
     /**
      * Adds a value for the specified header to the response.
+     *
+     * @param key   The "name" of the header
+     * @param value The value of the header
      */
     public void addHeader(String key, String value) {
         headers.add(key, value);
@@ -83,6 +115,9 @@ public class ShareRequestEvent extends Event implements Cancelable {
 
     /**
      * Set the header with the specified key and value to this Request.
+     *
+     * @param key   The "name" of the header
+     * @param value The value which should override the value of the header if it exists already, otherwise just adds the value to the header.
      */
     public void setHeader(String key, String value) {
         headers.set(key, value);
@@ -91,6 +126,7 @@ public class ShareRequestEvent extends Event implements Cancelable {
     /**
      * Get all the values from the response headers for the specified header name.
      *
+     * @param key The "name" of the header used to find the header
      * @return A list of alle the values
      */
     public List<String> getHeader(String key) {
@@ -100,6 +136,7 @@ public class ShareRequestEvent extends Event implements Cancelable {
     /**
      * Checks if a response header was set
      *
+     * @param key The "name" of the header which should be checked if it is present
      * @return true if the header is set, false otherwise
      */
     public boolean hasHeader(String key) {
@@ -124,6 +161,33 @@ public class ShareRequestEvent extends Event implements Cancelable {
     @Override
     public boolean isCancelled() {
         return cancelled;
+    }
+
+    /**
+     * Sets a custom cancel reason which is printed to the console
+     *
+     * @param cancelReason The cancel reason which is printed to the console
+     */
+    public void setCancelReason(String cancelReason) {
+        this.cancelReason = cancelReason;
+    }
+
+    /**
+     * Gets the custom cancel reason which was set by one of the listeners.
+     *
+     * @return The cancel reason
+     */
+    public String getCancelReason() {
+        return cancelReason;
+    }
+
+    /**
+     * Checks and returns whether a custom cancel reason was set by one of the listeners.
+     *
+     * @return true if a custom cancel reason was set, false otherwise.
+     */
+    public boolean hasCancelReason() {
+        return this.cancelReason != null;
     }
 
 }

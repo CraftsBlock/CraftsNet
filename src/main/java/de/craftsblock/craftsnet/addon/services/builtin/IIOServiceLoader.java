@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.addon.services.buildin;
+package de.craftsblock.craftsnet.addon.services.builtin;
 
 import de.craftsblock.craftsnet.addon.services.ServiceLoader;
 

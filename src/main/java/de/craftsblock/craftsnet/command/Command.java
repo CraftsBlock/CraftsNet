@@ -65,10 +65,21 @@ public class Command {
         return executor;
     }
 
+    /**
+     * Adds an alias to this command
+     *
+     * @param alias The alias which should be added
+     */
     public void addAlias(String... alias) {
         aliases.addAll(Arrays.asList(alias));
     }
 
+    /**
+     * Checks if an alias is already present.
+     *
+     * @param alias The name of the alias which should be checked.
+     * @return true if the alias is already present, false otherwise.
+     */
     public boolean isAlias(String alias) {
         return aliases.contains(alias);
     }

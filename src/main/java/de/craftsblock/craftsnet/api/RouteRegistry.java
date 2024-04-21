@@ -10,10 +10,13 @@ import de.craftsblock.craftsnet.api.http.RequestHandler;
 import de.craftsblock.craftsnet.api.http.annotations.RequestMethod;
 import de.craftsblock.craftsnet.api.http.annotations.RequireHeaders;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
+import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
+import de.craftsblock.craftsnet.api.websocket.SocketExchange;
 import de.craftsblock.craftsnet.api.websocket.SocketHandler;
 import de.craftsblock.craftsnet.api.websocket.annotations.MessageReceiver;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 import de.craftsblock.craftsnet.logging.Logger;
+import kotlin.random.Random;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -33,19 +36,29 @@ import java.util.stream.Collectors;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.4
+ * @version 3.0.0
  * @since 1.0.0
  */
 public class RouteRegistry {
 
-    private static final Logger logger = CraftsNet.logger();
+    private final CraftsNet craftsNet;
+    private final Logger logger;
+
     private final ConcurrentHashMap<Pattern, List<RouteMapping>> routes = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Pattern, SocketMapping> sockets = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Pattern, String> shares = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Pattern, List<SocketMapping>> sockets = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Pattern, ShareMapping> shares = new ConcurrentHashMap<>();
+
+    /**
+     * Constructs a new instance of the RouteRegistry
+     */
+    public RouteRegistry() {
+        this.craftsNet = CraftsNet.instance();
+        this.logger = this.craftsNet.logger();
+    }
 
     /**
      * Registers a request handler (route) by inspecting its annotated methods and adding it to the registry.
-     * The method should have Exchange as its first argument and be annotated with @Route.
+     * The method should have Exchange as its first argument and be annotated with {@link Route}.
      *
      * @param handler The RequestHandler to be registered.
      * @since 1.0.0
@@ -56,7 +69,7 @@ public class RouteRegistry {
             try {
                 if (method.getParameterCount() <= 0)
                     throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + Route.class.getName() + " but does not require " + Exchange.class.getName() + " as the first parameter!");
-                if (!Exchange.class.isAssignableFrom(method.getParameters()[0].getType()))
+                if (!Exchange.class.isAssignableFrom(method.getParameterTypes()[0]))
                     throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + Route.class.getName() + " but does not require " + Exchange.class.getName() + " as the first parameter!");
 
                 Route route = rawAnnotation(method, Route.class);
@@ -73,23 +86,75 @@ public class RouteRegistry {
             } catch (Exception e) {
                 logger.error(e);
             }
+
+        // Unregister the DefaultRoute
+        routes.entrySet().parallelStream()
+                .map(Map.Entry::getValue)
+                .flatMap(Collection::parallelStream)
+                .filter(mapping -> mapping.handler instanceof DefaultRoute)
+                .map(RouteMapping::handler)
+                .forEach(this::unregister);
+
+        // Only continue if the web server was set
+        if (this.craftsNet.webServer() != null)
+            this.craftsNet.webServer().awakeOrWarn();
     }
 
     /**
      * Registers a socket handler by inspecting its annotated methods and adding it to the registry.
-     * The method should be annotated with @{@link MessageReceiver} and @{@link Socket}.
+     * The method should be annotated with {@link Socket}.
      *
-     * @param t   The SocketHandler to be registered.
-     * @param <T> The type of the SocketHandler.
+     * @param handler The SocketHandler to be registered.
+     * @param <T>     The type of the SocketHandler.
      * @since 2.1.1
      */
-    public <T extends SocketHandler> void register(T t) {
-        Socket socket = rawAnnotation(t, Socket.class);
-        Pattern validator = createOrGetValidator(socket.value(), sockets);
-        sockets.put(
-                validator,
-                new SocketMapping(t, socket, validator, Utils.getMethodsByAnnotation(t.getClass(), MessageReceiver.class).toArray(new Method[0]))
-        );
+    public <T extends SocketHandler> void register(T handler) {
+        Socket parent = rawAnnotation(handler, Socket.class);
+
+        // Used for backwards compatibility
+        // For removal in version 4.0.0
+        List<Method> outdatedMethods = Utils.getMethodsByAnnotation(handler.getClass(), MessageReceiver.class);
+        if (!outdatedMethods.isEmpty()) {
+            logger.warning("Found" + (outdatedMethods.size() == 1 ? "" : " " + outdatedMethods.size()) +
+                    " outdated websocket creation in class " + handler.getClass().getSimpleName());
+
+            Socket socket = rawAnnotation(handler, Socket.class);
+            Pattern validator = createOrGetValidator(socket.value(), sockets);
+
+            List<SocketMapping> mappings = sockets.computeIfAbsent(validator, pattern -> new ArrayList<>());
+            for (Method method : outdatedMethods)
+                mappings.add(new SocketMapping(ProcessPriority.Priority.NORMAL, method, handler, validator));
+            return;
+        }
+
+        // New method of loading websockets
+        for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), Socket.class))
+            try {
+                if (method.getParameterCount() <= 1)
+                    throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + Socket.class.getName() + " but does not require " + SocketExchange.class.getName() + " as the first parameter!");
+                if (!SocketExchange.class.isAssignableFrom(method.getParameterTypes()[0]))
+                    throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + Socket.class.getName() + " but does not require " + SocketExchange.class.getName() + " as the first parameter!");
+                if (!String.class.isAssignableFrom(method.getParameterTypes()[1]) && !byte[].class.isAssignableFrom(method.getParameterTypes()[1]))
+                    throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + Socket.class.getName() + " but does not require a String or byte[] as the second parameter!");
+
+                Socket socket = rawAnnotation(method, Socket.class);
+                ProcessPriority priority = rawAnnotation(method, ProcessPriority.class);
+                Pattern validator = createOrGetValidator(url(parent != null ? parent.value() : "", socket.value()), routes);
+
+                List<SocketMapping> mappings = sockets.computeIfAbsent(validator, pattern -> new ArrayList<>());
+                mappings.add(new SocketMapping(
+                        priority != null ? priority.value() : ProcessPriority.Priority.NORMAL,
+                        method,
+                        handler,
+                        validator
+                ));
+            } catch (Exception e) {
+                logger.error(e);
+            }
+
+        // Only continue if the web socket server was set
+        if (this.craftsNet.webSocketServer() != null)
+            this.craftsNet.webSocketServer().awakeOrWarn();
     }
 
     /**
@@ -100,10 +165,26 @@ public class RouteRegistry {
      * @throws IllegalArgumentException If the provided "folder" is not a directory.
      */
     public void share(String path, File folder) {
+        share(path, folder, true);
+    }
+
+    /**
+     * Shares a folder for a specified path.
+     *
+     * @param path    The path pattern to share.
+     * @param folder  The folder to be shared.
+     * @param onlyGet Set to true if only get requests should be received by this share, false otherwise.
+     * @throws IllegalArgumentException If the provided "folder" is not a directory.
+     */
+    public void share(String path, File folder, boolean onlyGet) {
         if (!folder.isDirectory())
             throw new IllegalArgumentException("\"folder\" must be a folder!");
-        Pattern pattern = Pattern.compile(url(path) + (path.trim().endsWith("/") ? "" : "/") + "?(.*)");
-        shares.put(pattern, folder.getAbsolutePath());
+        Pattern pattern = Pattern.compile(url(path) + "/" + "?(.*)");
+        shares.put(pattern, new ShareMapping(folder.getAbsolutePath(), onlyGet));
+
+        // Only continue if the web server was set
+        if (this.craftsNet.webServer() != null)
+            this.craftsNet.webServer().awakeOrWarn();
     }
 
     /**
@@ -121,6 +202,10 @@ public class RouteRegistry {
             } catch (Exception e) {
                 logger.error(e);
             }
+
+        // Only continue if the web server has been set up
+        if (this.craftsNet.webServer() != null)
+            this.craftsNet.webServer().sleepIfNotNeeded();
     }
 
     /**
@@ -133,6 +218,10 @@ public class RouteRegistry {
     public <T extends SocketHandler> void unregister(T t) {
         Socket socket = rawAnnotation(t, Socket.class);
         sockets.entrySet().removeIf(validator -> validator.getKey().matcher(url(socket.value())).matches());
+
+        // Only continue if the web server has been set up
+        if (this.craftsNet.webSocketServer() != null)
+            this.craftsNet.webSocketServer().sleepIfNotNeeded();
     }
 
     /**
@@ -143,8 +232,23 @@ public class RouteRegistry {
      */
     public ConcurrentHashMap<Pattern, File> getShares() {
         ConcurrentHashMap<Pattern, File> result = new ConcurrentHashMap<>();
-        shares.forEach((pattern, filePath) -> result.put(pattern, new File(filePath)));
+        shares.forEach((pattern, mapping) -> result.put(pattern, new File(mapping.filepath())));
         return result;
+    }
+
+    /**
+     * Gets the mapping for the share associated with the given URL.
+     *
+     * @param url The URL for which to retrieve the associated mapping.
+     * @return The mapping of the share or null if no match is found.
+     * @since 2.3.2
+     */
+    public ShareMapping getShare(String url) {
+        return shares.entrySet().parallelStream()
+                .filter(entry -> entry.getKey().matcher(url(url)).matches())
+                .map(Map.Entry::getValue)
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -155,12 +259,8 @@ public class RouteRegistry {
      * @since 2.3.2
      */
     public File getShareFolder(String url) {
-        return shares.entrySet().parallelStream()
-                .filter(entry -> entry.getKey().matcher(url(url)).matches())
-                .map(Map.Entry::getValue)
-                .map(File::new)
-                .findFirst()
-                .orElse(null);
+        if (!isShare(url)) return null;
+        return new File(getShare(url).filepath());
     }
 
     /**
@@ -185,7 +285,20 @@ public class RouteRegistry {
      * @since 2.3.2
      */
     public boolean isShare(String url) {
-        return getShareFolder(url) != null && getSharePattern(url) != null;
+        return getShare(url) != null;
+    }
+
+    /**
+     * Checks if a URL corresponding share is able to accept a specific http method.
+     *
+     * @param url    The URL to the corresponding share.
+     * @param method The http method to check.
+     * @return True if the share can accept the specific http method, false otherwise.
+     */
+    public boolean canShareAccept(String url, HttpMethod method) {
+        if (!isShare(url)) return false;
+        boolean onlyGet = getShare(url).onlyGet();
+        return method.equals(HttpMethod.GET) || !onlyGet;
     }
 
     /**
@@ -203,7 +316,7 @@ public class RouteRegistry {
      * Gets the route mapping associated with a specific URL.
      *
      * @param url The URL for which the route mapping is sought.
-     * @return The RouteMapping object associated with the URL, or null if no mapping is found.
+     * @return A list of RouteMapping objects associated with the URL, or null if no mapping is found.
      * @since 1.0.0
      */
     @Nullable
@@ -214,12 +327,13 @@ public class RouteRegistry {
     /**
      * Gets the route mapping associated with a specific URL and HTTP method.
      *
-     * @param url The URL for which the route mapping is sought.
-     * @return The RouteMapping object associated with the URL, or null if no mapping is found.
+     * @param url    The URL for which the route mapping is sought.
+     * @param method The HTTP method (GET, POST, etc.) for which the route mapping is sought.
+     * @return A list of RouteMapping objects associated with the URL and HTTP method, or null if no mapping is found.
      * @since 2.1.1
      */
     @Nullable
-    public List<RouteMapping> getRoute(String url, String method) {
+    public List<RouteMapping> getRoute(String url, HttpMethod method) {
         return getRoute(url, null, null, method);
     }
 
@@ -229,11 +343,11 @@ public class RouteRegistry {
      * @param url    The URL for which the route mapping is sought.
      * @param domain The domain for which the route mapping is sought.
      * @param method The HTTP method (GET, POST, etc.) for which the route mapping is sought.
-     * @return The RouteMapping object associated with the URL, or null if no mapping is found.
+     * @return A list of RouteMapping objects associated with the URL and HTTP method, or null if no mapping is found.
      * @since 2.1.1
      */
     @Nullable
-    public List<RouteMapping> getRoute(String url, String domain, String method) {
+    public List<RouteMapping> getRoute(String url, String domain, HttpMethod method) {
         return getRoute(url, domain, null, method);
     }
 
@@ -243,11 +357,11 @@ public class RouteRegistry {
      * @param url     The URL for which the route mapping is sought.
      * @param headers The headers for which the route mapping is sought.
      * @param method  The HTTP method (GET, POST, etc.) for which the route mapping is sought.
-     * @return The RouteMapping object associated with the URL, or null if no mapping is found.
+     * @return A list of RouteMapping objects associated with the URL and HTTP method, or null if no mappings are found.
      * @since 2.1.1
      */
     @Nullable
-    public List<RouteMapping> getRoute(String url, Collection<String> headers, String method) {
+    public List<RouteMapping> getRoute(String url, Collection<String> headers, HttpMethod method) {
         return getRoute(url, null, headers, method);
     }
 
@@ -258,11 +372,11 @@ public class RouteRegistry {
      * @param domain  The domain for which the route mapping is sought.
      * @param headers The headers for which the route mapping is sought.
      * @param method  The HTTP method (GET, POST, etc.) for which the route mapping is sought.
-     * @return The RouteMapping object associated with the URL and HTTP method, or null if no mapping is found.
+     * @return A list of RouteMapping objects associated with the URL and HTTP method, or null if no mappings are found.
      * @since 2.3.0
      */
     @Nullable
-    public List<RouteMapping> getRoute(String url, String domain, Collection<String> headers, String method) {
+    public List<RouteMapping> getRoute(String url, String domain, Collection<String> headers, HttpMethod method) {
         return routes.entrySet().parallelStream()
                 .map(Map.Entry::getValue)
                 .flatMap(Collection::parallelStream)
@@ -272,7 +386,7 @@ public class RouteRegistry {
                         Method tmp = entry.method();
                         if (method != null) {
                             HttpMethod[] methods = annotation(tmp, RequestMethod.class);
-                            suitable = HttpMethod.asString(methods).toUpperCase().contains(method.toUpperCase());
+                            suitable = methods != null && Arrays.asList(methods).contains(method);
                         }
 
                         if (domain != null && suitable) {
@@ -311,7 +425,7 @@ public class RouteRegistry {
      * @since 2.1.1
      */
     @NotNull
-    public ConcurrentHashMap<Pattern, SocketMapping> getSockets() {
+    public ConcurrentHashMap<Pattern, List<SocketMapping>> getSockets() {
         return sockets;
     }
 
@@ -319,11 +433,11 @@ public class RouteRegistry {
      * Gets the socket mapping associated with a specific URL.
      *
      * @param url The URL for which the socket mapping is sought.
-     * @return The SocketMapping object associated with the URL, or null if no mapping is found.
+     * @return A list of SocketMapping objects associated with the URL, or null if no mapping is found.
      * @since 2.1.1
      */
     @Nullable
-    public SocketMapping getSocket(String url) {
+    public List<SocketMapping> getSocket(String url) {
         return getSocket(url, null);
     }
 
@@ -332,32 +446,37 @@ public class RouteRegistry {
      *
      * @param url    The URL for which the socket mapping is sought.
      * @param domain The domain for which the socket mapping is sought.
-     * @return The SocketMapping object associated with the URL, or null if no mapping is found.
+     * @return A list of SocketMapping objects associated with the URL, or null if no mapping is found.
      * @since 2.1.1
      */
     @Nullable
-    public SocketMapping getSocket(String url, String domain) {
+    public List<SocketMapping> getSocket(String url, String domain) {
         return sockets.entrySet().parallelStream()
+                .map(Map.Entry::getValue)
+                .flatMap(Collection::parallelStream)
                 .filter(entry -> {
                     try {
-                        List<String> domains = new ArrayList<>();
-//                        for(Method method : entry.getValue().receiver())
-//                            addArray(annotation(method, Domain.class), domains);
-                        addArray(annotation(entry.getValue().handler, Domain.class), domains);
-                        removeDuplicates(domains);
-                        if (domains.isEmpty()) domains.add("*");
+                        boolean suitable = true;
+                        Method tmp = entry.method();
 
-                        return entry.getKey().matcher(url(url)).matches() &&
-                                (domain == null || domains.contains("*") || domains.contains(domain));
+                        if (domain != null) {
+                            List<String> domains = new ArrayList<>();
+                            addArray(annotation(tmp, Domain.class), domains);
+                            addArray(annotation(entry.handler, Domain.class), domains);
+                            removeDuplicates(domains);
+                            if (domains.isEmpty()) domains.add("*");
+                            suitable = domains.contains("*") || domains.contains(domain);
+                        }
+
+                        if (suitable) return entry.validator().matcher(url(url)).matches();
+                        return false;
                     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException |
                              InstantiationException e) {
                         logger.error(e, "Error whilst loading socket route");
                     }
                     return false;
                 })
-                .map(Map.Entry::getValue)
-                .findFirst()
-                .orElse(null);
+                .collect(Collectors.toList());
     }
 
     /**
@@ -515,8 +634,8 @@ public class RouteRegistry {
      * @version 1.1
      * @since 1.0.0
      */
-    public record RouteMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull Object handler,
-                               @NotNull Pattern validator) {
+    public record RouteMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull RequestHandler handler,
+                               @NotNull Pattern validator) implements Mapping {
     }
 
     /**
@@ -525,8 +644,23 @@ public class RouteRegistry {
      *
      * @since 2.1.1
      */
-    public record SocketMapping(@NotNull SocketHandler handler, @NotNull Socket socket, @NotNull Pattern validator,
-                                Method[] receiver) {
+    public record SocketMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull SocketHandler handler,
+                                @NotNull Pattern validator) implements Mapping {
+    }
+
+    /**
+     * The ShareMapping class represents the mapping of a registered shared endpoint.
+     * It stores information about the filesystem path and if only get requests should be processed.
+     *
+     * @since 3.0.3
+     */
+    public record ShareMapping(@NotNull String filepath, boolean onlyGet) implements Mapping {
+    }
+
+    /**
+     * @since 3.0.3
+     */
+    public interface Mapping {
     }
 
 }

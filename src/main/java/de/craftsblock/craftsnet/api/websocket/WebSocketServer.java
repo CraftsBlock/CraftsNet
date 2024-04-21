@@ -1,10 +1,13 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.SSL;
 
-import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLSocket;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -16,6 +19,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * The WebSocketServer class represents a simple WebSocket server implementation. It allows WebSocket clients to connect,
@@ -29,13 +33,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @see WebSocketClient
  * @since 2.1.1
  */
-public class WebSocketServer {
+public class WebSocketServer extends Server {
 
-    private final Logger logger = CraftsNet.logger();
-    private Thread connector;
+    private final CraftsNet craftsNet;
+    private final Logger logger;
     private ConcurrentHashMap<String, ConcurrentLinkedQueue<WebSocketClient>> connected;
+
+    private Thread connector;
     private ServerSocket serverSocket;
-    private boolean running;
 
     /**
      * Constructs a WebSocketServer instance with the specified port number.
@@ -55,34 +60,62 @@ public class WebSocketServer {
      * @param ssl     A boolean flag indicating whether SSL encryption should be used.
      */
     public WebSocketServer(int port, int backlog, boolean ssl) {
-        try {
-            logger.info("Websocket server will be started on port " + port);
-            if (!ssl) serverSocket = new ServerSocket(port, backlog);
-            else {
-                SSLServerSocketFactory sslServerSocketFactory = SSL.load("./certificates/fullchain.pem", "./certificates/privkey.pem")
-                        .getServerSocketFactory();
-                serverSocket = sslServerSocketFactory.createServerSocket(port, backlog);
-            }
-            connected = new ConcurrentHashMap<>();
-            running = true;
-        } catch (IOException | UnrecoverableKeyException | KeyManagementException | NoSuchAlgorithmException |
-                 KeyStoreException | CertificateException e) {
-            logger.error(e);
-        }
+        super(port, backlog, ssl);
+        this.craftsNet = CraftsNet.instance();
+        this.logger = this.craftsNet.logger();
+    }
+
+    @Override
+    public void bind(int port, int backlog) {
+        super.bind(port, backlog);
+        if (logger != null) logger.info("Web socket server bound to port " + port);
     }
 
     /**
      * Starts the WebSocket server and waits for incoming connections.
      */
     public void start() {
+        try {
+            logger.info("Starting websocket server on port " + port);
+            if (ssl) {
+                SSLContext sslContext = SSL.load();
+                if (sslContext != null) {
+                    SSLServerSocket sslServerSocket = (SSLServerSocket) sslContext.getServerSocketFactory().createServerSocket(port, backlog);
+                    sslServerSocket.setSSLParameters(sslContext.getDefaultSSLParameters());
+                    sslServerSocket.setEnabledProtocols(new String[]{"TLSv1.2"});
+                    serverSocket = sslServerSocket;
+                }
+            }
+        } catch (IOException | UnrecoverableKeyException | KeyManagementException | NoSuchAlgorithmException |
+                 KeyStoreException | CertificateException e) {
+            logger.error(e);
+        } finally {
+            if (serverSocket == null) {
+                if (ssl)
+                    logger.warning("SSl was not activated properly, using an socket server as fallback!");
+                try {
+                    serverSocket = new ServerSocket(port, backlog);
+                } catch (IOException e) {
+                    logger.error("Error while creating the " + (ssl ? "fallback" : "") + " socket server.");
+                    logger.error(e);
+                }
+            }
+        }
+
+        if (serverSocket == null) return;
+
+        connected = new ConcurrentHashMap<>();
+        super.start();
+
         connector = new Thread(() -> {
-            int i = 0;
+            AtomicInteger i = new AtomicInteger();
             while (!Thread.currentThread().isInterrupted() && running) {
                 try {
                     Socket socket = serverSocket.accept();
-                    Thread client = new Thread(new WebSocketClient(socket, this));
-                    client.setName("Websocket#" + i++);
-                    client.start();
+                    if (socket instanceof SSLSocket sslSocket) {
+                        sslSocket.addHandshakeCompletedListener(event -> connectClient(event.getSocket(), i));
+                        sslSocket.startHandshake();
+                    } else connectClient(socket, i);
                 } catch (SocketException ignored) {
                 } catch (IOException e) {
                     logger.error(e);
@@ -91,15 +124,19 @@ public class WebSocketServer {
         });
         connector.setName("Websocket Server - Connector");
         connector.start();
-        Runtime.getRuntime().addShutdownHook(new Thread(this::stop));
-        logger.debug("Websocket Server JVM Shutdown Hook is initialized");
+    }
+
+    private void connectClient(Socket socket, AtomicInteger i) {
+        Thread client = new Thread(new WebSocketClient(socket, this));
+        client.setName("Websocket#" + i.getAndIncrement());
+        client.start();
     }
 
     /**
      * Stops the WebSocket server and closes all connections.
      */
+    @Override
     public void stop() {
-        running = false;
         try {
             connected.forEach((useless, client) -> client.forEach(webSocketClient -> webSocketClient.disconnect().interrupt()));
             connected.clear();
@@ -108,7 +145,34 @@ public class WebSocketServer {
                 connector.interrupt();
         } catch (IOException e) {
             logger.error(e);
+        } finally {
+            super.stop();
         }
+    }
+
+    @Override
+    public void awakeOrWarn() {
+        if (!isRunning() && isEnabled())
+            // Start the web socket server as it is needed and currently not running
+            this.craftsNet.webSocketServer().start();
+        else
+            // Print a warning if the web socket server is disabled and socket endpoints has been registered
+            logger.warning("A socket endpoint has been registered, but the web socket server is disabled!");
+    }
+
+    @Override
+    public void sleepIfNotNeeded() {
+        if (isRunning() && !craftsNet.routeRegistry().hasWebsockets() && isStatus(CraftsNet.ActivateType.DYNAMIC))
+            stop();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return !isStatus(CraftsNet.ActivateType.DISABLED);
+    }
+
+    private boolean isStatus(CraftsNet.ActivateType type) {
+        return craftsNet.getBuilder().isWebSocketServer(type);
     }
 
     /**

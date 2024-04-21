@@ -22,6 +22,11 @@ import static de.craftsblock.craftscore.event.EventPriority.MONITOR;
  */
 public class ConsoleListener implements ListenerAdapter {
 
+    /**
+     * Event handler for console messages.
+     *
+     * @param event The {@link ConsoleMessageEvent} which has been fired.
+     */
     @EventHandler(priority = MONITOR)
     public void handleConsoleMessage(ConsoleMessageEvent event) {
         if (event.isCancelled())
@@ -31,7 +36,7 @@ public class ConsoleListener implements ListenerAdapter {
         String[] args = message.split(" ");
         String command = args[0];
         args = Arrays.stream(args).skip(1).toArray(String[]::new);
-        CraftsNet.commandRegistry().perform(command, args);
+        CraftsNet.instance().commandRegistry().perform(command, args);
     }
 
 }

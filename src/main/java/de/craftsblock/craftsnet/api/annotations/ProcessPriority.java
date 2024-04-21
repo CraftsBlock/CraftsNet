@@ -32,11 +32,34 @@ public @interface ProcessPriority {
      * Priorities are defined as LOWEST, LOW, NORMAL, HIGH, HIGHEST, and MONITOR.
      */
     enum Priority {
+        /**
+         * Indicates the lowest priority. Will be executed first.
+         */
         LOWEST,
+
+        /**
+         * Indicates a low priority. Will be executed second.
+         */
         LOW,
+
+        /**
+         * Indicates a normal priority. Will be executed third.
+         */
         NORMAL,
+
+        /**
+         * Indicates a high priority. Will be executed fourth.
+         */
         HIGH,
+
+        /**
+         * Indicates the highest priority. Will be executed fifth.
+         */
         HIGHEST,
+
+        /**
+         * Indicates a monitoring priority. Will be executed last.
+         */
         MONITOR;
 
         /**

@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.events;
 
-import de.craftsblock.craftscore.event.Cancelable;
+import de.craftsblock.craftscore.event.Cancellable;
 import de.craftsblock.craftscore.event.Event;
 
 /**
@@ -12,7 +12,7 @@ import de.craftsblock.craftscore.event.Event;
  * @version 1.0
  * @since 1.0.0
  */
-public class ConsoleMessageEvent extends Event implements Cancelable {
+public class ConsoleMessageEvent extends Event implements Cancellable {
 
     private boolean cancelled = false;
     private final String message;

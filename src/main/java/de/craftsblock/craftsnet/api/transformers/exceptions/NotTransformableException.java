@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.api.exceptions;
+package de.craftsblock.craftsnet.api.transformers.exceptions;
 
 /**
  * This exception is thrown when a parameter cannot be transformed to a specified target type.
@@ -12,6 +12,12 @@ package de.craftsblock.craftsnet.api.exceptions;
  */
 public class NotTransformableException extends TransformerException {
 
+    /**
+     * Construct a new NotTransformableException which indicates that something bad happened while transforming the value.
+     *
+     * @param parameter  The dynamic URL parameter value that failed transforming.
+     * @param targetType The class to which the value should be transformed, but isn't suitable for the value.
+     */
     public NotTransformableException(String parameter, Class<?> targetType) {
         super(
                 "\"" + parameter + "\" is not transformable to type " +

@@ -1,6 +1,6 @@
-package de.craftsblock.craftsnet.api.annotations.transform;
+package de.craftsblock.craftsnet.api.transformers.annotations;
 
-import de.craftsblock.craftsnet.api.interfaces.Transformable;
+import de.craftsblock.craftsnet.api.transformers.Transformable;
 
 import java.lang.annotation.*;
 

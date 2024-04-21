@@ -1,32 +1,45 @@
 package de.craftsblock.craftsnet.events.sockets;
 
-import de.craftsblock.craftscore.event.Cancelable;
+import de.craftsblock.craftscore.event.Cancellable;
 import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import org.jetbrains.annotations.NotNull;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * The OutgoingSocketMessageEvent class represents an event related to an outgoing message on a websocket connection.
- * It extends the base Event class and implements the Cancelable interface to support event cancellation.
+ * It extends the base Event class and implements the Cancellable interface to support event cancellation.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0
  * @since 2.1.1
  */
-public class OutgoingSocketMessageEvent extends Event implements Cancelable {
+public class OutgoingSocketMessageEvent extends Event implements Cancellable {
 
     private final SocketExchange exchange;
     private boolean cancelled = false;
 
-    private String data;
+    private byte @NotNull [] data;
 
     /**
      * Constructs a new OutgoingSocketMessageEvent with the specified SocketExchange and message data.
      *
      * @param exchange The SocketExchange object representing the socket connection and its associated data.
-     * @param data     The outgoing message data for this event.
+     * @param data  The outgoing message data as it's string representation
      */
-    public OutgoingSocketMessageEvent(SocketExchange exchange, String data) {
+    public OutgoingSocketMessageEvent(@NotNull SocketExchange exchange, @NotNull String data) {
+        this(exchange, data.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Constructs a new OutgoingSocketMessageEvent with the specified SocketExchange and message data.
+     *
+     * @param exchange The SocketExchange object representing the socket connection and its associated data.
+     * @param data  The outgoing message data as a byte array
+     */
+    public OutgoingSocketMessageEvent(@NotNull SocketExchange exchange, byte @NotNull [] data) {
         this.exchange = exchange;
         this.data = data;
     }
@@ -45,7 +58,7 @@ public class OutgoingSocketMessageEvent extends Event implements Cancelable {
      *
      * @return The outgoing message data.
      */
-    public String getData() {
+    public byte @NotNull [] getData() {
         return data;
     }
 
@@ -54,7 +67,7 @@ public class OutgoingSocketMessageEvent extends Event implements Cancelable {
      *
      * @param data The outgoing message data to be set.
      */
-    public void setData(String data) {
+    public void setData(byte @NotNull [] data) {
         this.data = data;
     }
 

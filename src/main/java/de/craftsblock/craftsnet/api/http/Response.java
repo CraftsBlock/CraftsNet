@@ -2,6 +2,9 @@ package de.craftsblock.craftsnet.api.http;
 
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
+import de.craftsblock.craftscore.json.Json;
+import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.logging.Logger;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,6 +29,9 @@ import java.util.Arrays;
  */
 public class Response implements AutoCloseable {
 
+    private final CraftsNet craftsNet;
+    private final Logger logger;
+
     private final HttpExchange exchange;
     private final OutputStream stream;
     private final Headers headers;
@@ -39,6 +45,9 @@ public class Response implements AutoCloseable {
      * @param exchange The HttpExchange object representing the HTTP request-response exchange.
      */
     protected Response(HttpExchange exchange) {
+        this.craftsNet = CraftsNet.instance();
+        this.logger = this.craftsNet.logger();
+
         this.exchange = exchange;
         stream = exchange.getResponseBody();
         headers = exchange.getResponseHeaders();
@@ -85,7 +94,10 @@ public class Response implements AutoCloseable {
      * @throws IOException if an I/O error occurs.
      */
     public void print(File file) throws IOException {
-        if (bodySend) return;
+        if (bodySend) {
+            logger.warning("Tried to send file when the body was already send!");
+            return;
+        }
         bodySend = true;
         exchange.sendResponseHeaders(code, file.length());
         try (FileInputStream input = new FileInputStream(file)) {
@@ -94,6 +106,24 @@ public class Response implements AutoCloseable {
             while ((read = input.read(buffer)) != -1) stream.write(buffer, 0, read);
             Arrays.fill(buffer, (byte) 0);
         }
+    }
+
+    /**
+     * Sends the provided json object as the response body.
+     *
+     * @param json The json object to be sent as the response body.
+     * @throws IOException if an I/O error occurs.
+     */
+    public void print(Json json) throws IOException {
+        if (bodySend) {
+            logger.warning("Tried to send file when the body was already send!");
+            return;
+        }
+        bodySend = true;
+        String rawData = json.toString();
+        setContentType("application/json");
+        exchange.sendResponseHeaders(code, rawData.length());
+        println(rawData);
     }
 
     /**

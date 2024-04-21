@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.api.exceptions;
+package de.craftsblock.craftsnet.api.transformers.exceptions;
 
 /**
  * This class represents an exception that occurs during data transformation operations.

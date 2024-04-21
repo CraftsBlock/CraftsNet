@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.api.interfaces;
+package de.craftsblock.craftsnet.api.transformers;
 
 /**
  * Interface representing a transformation operation.
@@ -8,7 +8,7 @@ package de.craftsblock.craftsnet.api.interfaces;
  * @param <T> The type to which the parameter is transformed.
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.0.2
  */
 public interface Transformable<T> {
@@ -20,5 +20,14 @@ public interface Transformable<T> {
      * @return The transformed parameter of type T.
      */
     T transform(String parameter);
+
+    /**
+     * Gets whether the result of {@link Transformable#transform(String)} should be cached or not.
+     *
+     * @return true when its cacheable, false otherwise.
+     */
+    default boolean isCacheable() {
+        return true;
+    }
 
 }

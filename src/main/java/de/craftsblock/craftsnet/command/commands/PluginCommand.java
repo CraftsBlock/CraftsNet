@@ -29,7 +29,7 @@ public class PluginCommand implements CommandExecutor {
      */
     @Override
     public void onCommand(@NotNull Command command, @NotNull String[] args, @NotNull Logger logger) {
-        AddonManager addonManager = CraftsNet.addonManager();
+        AddonManager addonManager = CraftsNet.instance().addonManager();
         if (addonManager.getAddons().isEmpty()) {
             logger.info("Currently there are no addons installed!");
             return;

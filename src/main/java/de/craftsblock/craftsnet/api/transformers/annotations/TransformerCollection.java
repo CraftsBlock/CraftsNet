@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.api.annotations.transform;
+package de.craftsblock.craftsnet.api.transformers.annotations;
 
 import org.jetbrains.annotations.ApiStatus;
 
