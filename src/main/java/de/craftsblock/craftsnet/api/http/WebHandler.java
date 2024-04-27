@@ -241,7 +241,7 @@ public class WebHandler implements HttpHandler {
             return;
         }
 
-        response.setContentType(fileLoadedEvent.getContentType());
+        response.setContentType(fileLoadedEvent.getContentType(), "text/plain");
         response.print(share);
     }
 

@@ -8,7 +8,7 @@ java {
 }
 
 group = 'de.craftsblock'
-version = '3.0.4-SNAPTSHOT'
+version = '3.0.4-SNAPSHOT'
 
 repositories {
     mavenCentral()

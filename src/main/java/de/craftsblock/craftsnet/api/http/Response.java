@@ -5,6 +5,8 @@ import com.sun.net.httpserver.HttpExchange;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.logging.Logger;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -148,8 +150,20 @@ public class Response implements AutoCloseable {
      *
      * @param contentType The content type to be set in the response header.
      */
-    public void setContentType(String contentType) {
-        setHeader("content-type", contentType);
+    public void setContentType(@Nullable String contentType) {
+        setContentType(contentType, null);
+    }
+
+    /**
+     * Sets the content type for the response or use the fallback value if the contentType is null. If both, the
+     * preferred content type and the fallback content type are null, then no further action will be made.
+     *
+     * @param contentType The content type to be set in the response header.
+     * @param fallback    The fallback content type to be set in the response header if the content type was null.
+     */
+    public void setContentType(@Nullable String contentType, @Nullable String fallback) {
+        if (contentType != null) setHeader("content-type", contentType);
+        else if (fallback != null) setHeader("content-type", fallback);
     }
 
     /**
@@ -180,7 +194,7 @@ public class Response implements AutoCloseable {
      * @param key The key of the header to get the value for.
      * @return The value of the header with the specified key, or null if the header is not found.
      */
-    public String getHeader(String key) {
+    public String getHeader(@NotNull String key) {
         return headers.getFirst(key);
     }
 
@@ -194,6 +208,7 @@ public class Response implements AutoCloseable {
     public void addHeader(String key, String value) {
         if (bodySend)
             throw new IllegalStateException("Antwort Header wurden bereits gesendet!");
+        if (key == null || value == null) return;
         headers.add(key, value);
     }
 
@@ -207,6 +222,7 @@ public class Response implements AutoCloseable {
     public void setHeader(String key, String value) {
         if (bodySend)
             throw new IllegalStateException("Antwort Header wurden bereits gesendet!");
+        if (key == null || value == null) return;
         headers.set(key, value);
     }
 
