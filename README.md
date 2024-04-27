@@ -92,10 +92,9 @@ import de.craftsblock.backend.api.websocket.Socket;
 import de.craftsblock.backend.api.websocket.SocketExchange;
 import de.craftsblock.backend.api.websocket.SocketHandler;
 
-@Socket("/v1/socket")
 public class MySocket implements SocketHandler {
     
-  @MessageReceiver
+  @Socket("/v1/socket")
   public void handleSocketMessage(SocketExchange exchange, String data) {
     // Process the socket message
   }
