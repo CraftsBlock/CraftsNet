@@ -12,9 +12,11 @@ import java.lang.annotation.Target;
  * @author Philipp Maywald
  * @version 1.0
  * @see Socket
- * @since 2.1.1
- * @deprecated Does not affect anything in the future, it was replaced by the {@link Socket} annotation,
- * which now works like the {@link de.craftsblock.craftsnet.api.http.annotations.Route} annotation.
+ * @since CraftsNet-2.1.1
+ * @deprecated Will not do anything in the future, it was replaced by the {@link Socket} annotation,
+ * which now works like the {@link de.craftsblock.craftsnet.api.http.annotations.Route} annotation. All
+ * developers are recommended to switch to the new websocket registration mechanism, as this mechanism
+ * is only available up to release 4.0.0 of CraftsNet.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

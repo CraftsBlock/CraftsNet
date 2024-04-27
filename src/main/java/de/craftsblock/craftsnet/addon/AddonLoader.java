@@ -29,11 +29,21 @@ import java.util.zip.ZipFile;
  * @version 1.0.2
  * @see Addon
  * @see AddonManager
- * @since 1.0.0
+ * @since CraftsNet-1.0.0
  */
 final class AddonLoader {
 
     private final Stack<File> addons = new Stack<>();
+    private final CraftsNet craftsNet;
+
+    /**
+     * Constructs a new instance of an addon loader
+     *
+     * @param craftsNet The CraftsNet instance which instantiates this
+     */
+    public AddonLoader(CraftsNet craftsNet) {
+        this.craftsNet = craftsNet;
+    }
 
     /**
      * Adds a new addon file to the loader using the file name.
@@ -63,7 +73,6 @@ final class AddonLoader {
      */
     public void load(AddonManager manager) throws IOException {
         long start = System.currentTimeMillis();
-        CraftsNet craftsNet = CraftsNet.instance();
         Logger logger = craftsNet.logger();
         logger.info("Load all available addons");
 
@@ -125,7 +134,7 @@ final class AddonLoader {
                 // Load all required dependencies
                 URL[] dependencies = new URL[0];
                 if (addon.contains("dependencies")) {
-                    dependencies = ArtifactLoader.loadLibraries(this, configuration, name, addon.getStringList("dependencies").toArray(String[]::new));
+                    dependencies = ArtifactLoader.loadLibraries(this.craftsNet, this, configuration, name, addon.getStringList("dependencies").toArray(String[]::new));
                     urls.computeIfAbsent(name, s -> new ConcurrentLinkedQueue<>()).addAll(Arrays.asList(dependencies));
                 }
 
@@ -161,7 +170,7 @@ final class AddonLoader {
                 // Create addon class loader
                 ConcurrentLinkedQueue<URL> addonUrls = urls.getOrDefault(name, new ConcurrentLinkedQueue<>());
                 addonUrls.add(file.toURI().toURL());
-                AddonClassLoader classLoader = new AddonClassLoader(manager, configuration, addonUrls.toArray(URL[]::new));
+                AddonClassLoader classLoader = new AddonClassLoader(this.craftsNet, manager, configuration, addonUrls.toArray(URL[]::new));
 
                 // Load the main class of the addon using the class loader
                 String className = configuration.json.getString("main");
@@ -173,6 +182,8 @@ final class AddonLoader {
 
                 // Create an instance of the main class and inject dependencies using reflection
                 Addon obj = (Addon) clazz.getDeclaredConstructor().newInstance();
+                setField("craftsNet", obj, craftsNet);
+                setField("bodyRegistry", obj, craftsNet.bodyRegistry());
                 setField("commandRegistry", obj, craftsNet.commandRegistry());
                 setField("routeRegistry", obj, craftsNet.routeRegistry());
                 setField("listenerRegistry", obj, craftsNet.listenerRegistry());

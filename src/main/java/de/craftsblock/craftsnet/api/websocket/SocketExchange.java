@@ -14,7 +14,7 @@ import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
  * @see Socket
  * @see SocketHandler
  * @see MessageReceiver
- * @since 2.1.1
+ * @since CraftsNet-2.1.1
  */
 public record SocketExchange(WebSocketServer server, WebSocketClient client) {
 

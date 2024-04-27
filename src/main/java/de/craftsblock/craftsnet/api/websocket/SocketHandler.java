@@ -10,7 +10,7 @@ import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
  * @author Philipp Maywald
  * @version 1.0
  * @see Socket
- * @since 2.1.1
+ * @since CraftsNet-2.1.1
  */
 public interface SocketHandler {
 

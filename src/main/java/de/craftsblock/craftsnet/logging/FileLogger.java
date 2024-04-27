@@ -20,7 +20,7 @@ import java.util.regex.Pattern;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since 3.0.2
+ * @since CraftsNet-3.0.2
  */
 public class FileLogger {
 
@@ -83,35 +83,38 @@ public class FileLogger {
      * Creates an error log file for the given exception.
      * This method creates an error log file containing the stack trace of the given exception.
      *
-     * @param exception The exception for which to create the error log file.
+     * @param craftsNet The CraftsNet instance which instantiates this
+     * @param throwable The throwable for which to create the error log file.
      * @param protocol  The protocol associated with the error.
      * @param path      The path associated with the error.
      * @return The identifier of the error log file.
      */
-    public static long createErrorLog(Exception exception, String protocol, String path) {
-        return createErrorLog(exception, Map.of("Protocol", protocol, "Path", path));
+    public static long createErrorLog(CraftsNet craftsNet, Throwable throwable, String protocol, String path) {
+        return createErrorLog(craftsNet, throwable, Map.of("Protocol", protocol, "Path", path));
     }
 
     /**
      * Creates an error log file for the given throwable.
      * This method creates an error log file containing the stack trace of the given throwable.
      *
+     * @param craftsNet The CraftsNet instance which instantiates this
      * @param throwable The throwable for which to create the error log file.
      * @return The identifier of the error log file.
      */
-    public static long createErrorLog(Throwable throwable) {
-        return createErrorLog(throwable, Collections.emptyMap());
+    public static long createErrorLog(CraftsNet craftsNet, Throwable throwable) {
+        return createErrorLog(craftsNet, throwable, Collections.emptyMap());
     }
 
     /**
      * Creates an error log file for the given throwable.
      * This method creates an error log file containing the stack trace of the given throwable, along with additional information.
      *
+     * @param craftsNet  The CraftsNet instance which instantiates this file logger.
      * @param throwable  The throwable for which to create the error log file.
      * @param additional Additional information to include in the error log file.
      * @return The identifier of the error log file.
      */
-    public static long createErrorLog(Throwable throwable, Map<String, String> additional) {
+    public static long createErrorLog(CraftsNet craftsNet, Throwable throwable, Map<String, String> additional) {
         File errors = new File(folder, "errors");
         ensureParentFolder(errors);
         if (!errors.exists()) errors.mkdirs();
@@ -138,7 +141,7 @@ public class FileLogger {
 
             throwable.printStackTrace(stream);
         } catch (FileNotFoundException e) {
-            CraftsNet.instance().logger().error(e, "Failed to create error log file");
+            craftsNet.logger().error(e, "Failed to create error log file");
         }
 
         return identifier;

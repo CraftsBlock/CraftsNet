@@ -10,7 +10,7 @@ import de.craftsblock.craftscore.event.Event;
  * that depend on the availability of addons within the application environment.</p>
  *
  * @version 1.0.0
- * @since 3.0.3
+ * @since CraftsNet-3.0.3
  * @author CraftsBlock
  * @author Philipp Maywald
  */

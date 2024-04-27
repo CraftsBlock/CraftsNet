@@ -31,7 +31,7 @@ import java.util.concurrent.Executors;
  * @see RequestHandler
  * @see Route
  * @see WebHandler
- * @since 1.0.0
+ * @since CraftsNet-1.0.0
  */
 public class WebServer extends Server {
 
@@ -42,12 +42,13 @@ public class WebServer extends Server {
     /**
      * Constructs a WebServer with the specified port and SSL settings.
      *
-     * @param port The port number to listen on.
-     * @param ssl  A boolean flag indicating whether SSL encryption should be used (true for HTTPS, false for HTTP).
+     * @param craftsNet The CraftsNet instance which instantiates this webserver
+     * @param port      The port number to listen on.
+     * @param ssl       A boolean flag indicating whether SSL encryption should be used (true for HTTPS, false for HTTP).
      */
-    public WebServer(int port, boolean ssl) {
+    public WebServer(CraftsNet craftsNet, int port, boolean ssl) {
         super(port, ssl);
-        this.craftsNet = CraftsNet.instance();
+        this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
     }
 
@@ -70,7 +71,7 @@ public class WebServer extends Server {
             // Create the HttpServer or HttpsServer based on the SSL flag.
             if (ssl) {
                 // Load the SSL context using the provided SSL key files.
-                SSLContext sslContext = SSL.load();
+                SSLContext sslContext = SSL.load(this.craftsNet);
                 if (sslContext != null) {
                     // Configure the HttpsServer with the SSL context.
                     httpServer = HttpsServer.create(new InetSocketAddress(port), 0);
@@ -100,7 +101,7 @@ public class WebServer extends Server {
 
         logger.debug("Creating the API handler");
         HttpContext context = server.createContext("/");
-        context.setHandler(new WebHandler());
+        context.setHandler(new WebHandler(this.craftsNet));
 //        context.setAuthenticator(new Authenticator() {
 //            @Override
 //            public Result authenticate(HttpExchange exch) {
@@ -109,7 +110,7 @@ public class WebServer extends Server {
 //        });
 
         logger.debug("Setting up the executor and starting the web server");
-        server.setExecutor(Executors.newFixedThreadPool(25));
+        server.setExecutor(Executors.newCachedThreadPool());
         server.start();
         super.start();
         logger.debug("Web server has been started");

@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since 3.0.2
+ * @since CraftsNet-3.0.2
  */
 final class AddonLoadOrder {
 

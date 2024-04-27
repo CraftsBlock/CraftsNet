@@ -15,7 +15,7 @@ package de.craftsblock.craftsnet.api.http;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0
- * @since 1.0.0
+ * @since CraftsNet-1.0.0
  */
 public interface RequestHandler {
     // No methods are declared in this interface since it serves as a marker interface.

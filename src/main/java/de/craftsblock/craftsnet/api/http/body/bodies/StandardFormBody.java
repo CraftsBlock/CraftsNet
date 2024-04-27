@@ -1,4 +1,6 @@
-package de.craftsblock.craftsnet.api.http.body;
+package de.craftsblock.craftsnet.api.http.body.bodies;
+
+import de.craftsblock.craftsnet.api.http.Request;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -16,20 +18,21 @@ import java.nio.charset.StandardCharsets;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 2.0.0
  * @see FormBody
- * @since 2.2.0
+ * @since CraftsNet-2.2.0
  */
-public class StandardFormBody extends FormBody<String> {
+public final class StandardFormBody extends FormBody<String> {
 
     /**
      * Constructs a new {@code StandardFormBody} by reading and parsing form data from an input stream.
      *
-     * @param body The input stream containing the form data.
+     * @param request The representation of the http request.
+     * @param body    The input stream containing the form data.
      * @throws IOException If an error occurs while reading or parsing the form data.
      */
-    public StandardFormBody(InputStream body) throws IOException {
-        super(body);
+    public StandardFormBody(Request request, InputStream body) throws IOException {
+        super(request, body);
     }
 
     /**

@@ -18,7 +18,7 @@ import java.time.format.DateTimeFormatter;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.1
- * @since 1.0.0
+ * @since CraftsNet-1.0.0
  */
 public class Logger {
 

@@ -11,7 +11,7 @@ import de.craftsblock.craftsnet.api.transformers.Transformable;
  * @author Philipp Maywald
  * @version 1.0.0
  * @see Transformable
- * @since 3.0.2
+ * @since CraftsNet-3.0.2
  */
 public class FloatTransformer implements Transformable<Float> {
 

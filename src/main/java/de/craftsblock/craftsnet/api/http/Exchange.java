@@ -17,7 +17,7 @@ import org.jetbrains.annotations.NotNull;
  * @version 1.0
  * @see Request
  * @see Response
- * @since 1.0.0
+ * @since CraftsNet-1.0.0
  */
 public record Exchange(@NotNull String path, @NotNull Request request, @NotNull Response response) {
 

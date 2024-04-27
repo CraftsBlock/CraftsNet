@@ -1,5 +1,6 @@
-package de.craftsblock.craftsnet.api.http.body;
+package de.craftsblock.craftsnet.api.http.body.bodies;
 
+import de.craftsblock.craftsnet.api.http.Request;
 import org.apache.tika.mime.MimeTypeException;
 import org.apache.tika.mime.MimeTypes;
 
@@ -12,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * The {@code MultipartFormBody} class represents an HTTP request body that contains data in the
@@ -20,11 +23,11 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 2.0.0
  * @see FormBody
- * @since 2.2.0
+ * @since CraftsNet-2.2.0
  */
-public class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData> {
+public final class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData> {
 
     private final String boundary;
 
@@ -32,12 +35,13 @@ public class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData>
      * Constructs a new {@code MultipartFormBody} by specifying the boundary and providing an input
      * stream containing the multipart/form-data.
      *
+     * @param request  The representation of the http request.
      * @param boundary The boundary string that separates parts in the multipart request.
      * @param body     The input stream containing the multipart/form-data.
      * @throws IOException If an error occurs while reading or parsing the multipart data.
      */
-    public MultipartFormBody(String boundary, InputStream body) throws IOException {
-        super(body);
+    public MultipartFormBody(Request request, String boundary, InputStream body) throws IOException {
+        super(request, body);
         this.boundary = "--" + boundary;
         deserialize();
     }
@@ -64,10 +68,12 @@ public class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData>
 
             // Check if a new part starts with the boundary
             if (stringified.toLowerCase().startsWith(boundary.toLowerCase())) {
-                if (!values.isEmpty())
+                if (!values.isEmpty()) {
                     // Create a new MultipartItem and add it to the storage
+                    System.out.println("Name: " + name.get());
                     storage.computeIfAbsent(name.get(), s -> new ConcurrentLinkedQueue<>())
                             .add(new MultipartItem(List.copyOf(values), contentType.get()));
+                }
                 // Reset temporary variables
                 name.set(null);
                 values.clear();
@@ -88,7 +94,11 @@ public class MultipartFormBody extends FormBody<MultipartFormBody.MultipartData>
                     String[] disposition = stringified.split("; ");
                     if (disposition.length < 2) continue;
                     String inputName = disposition[1].split("=")[1];
-                    name.set(inputName.substring(1, inputName.length() - 1));
+
+                    Pattern pattern = Pattern.compile("[^a-zA-Z0-9-_:&;]");
+                    Matcher matcher = pattern.matcher(inputName);
+
+                    name.set(matcher.replaceAll(""));
                 } else if (stringified.startsWith("Content-Type:")) contentType.set(stringified.substring(14));
             } else if (name.get() != null)
                 // Add the line to the values list, which contains the data for the current part

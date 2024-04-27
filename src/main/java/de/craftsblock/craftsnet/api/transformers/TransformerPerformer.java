@@ -33,7 +33,7 @@ import static de.craftsblock.craftsnet.utils.Utils.patternGroupNameExtractPatter
  * @see Transformer
  * @see TransformerCollection
  * @see Transformable
- * @since 3.0.3
+ * @since CraftsNet-3.0.3
  */
 public class TransformerPerformer {
 
@@ -48,25 +48,27 @@ public class TransformerPerformer {
     /**
      * Constructor for TransformerPerformer.
      *
+     * @param craftsNet  The CraftsNet instance which instantiates this
      * @param validator  The pattern used for validation.
      * @param argsOffset The offset for arguments.
      */
-    public TransformerPerformer(@NotNull Pattern validator, int argsOffset) {
-        this(validator, argsOffset, null);
+    public TransformerPerformer(@NotNull CraftsNet craftsNet, @NotNull Pattern validator, int argsOffset) {
+        this(craftsNet, validator, argsOffset, null);
     }
 
     /**
      * Constructor for TransformerPerformer.
      *
+     * @param craftsNet  The CraftsNet instance which instantiates this
      * @param validator  The pattern used for validation.
      * @param argsOffset The offset for arguments.
      * @param callback   The callback responsible for handling transformer exception.
      */
-    public TransformerPerformer(@NotNull Pattern validator, int argsOffset, @Nullable TransformerErrorCallback callback) {
+    public TransformerPerformer(@NotNull CraftsNet craftsNet, @NotNull Pattern validator, int argsOffset, @Nullable TransformerErrorCallback callback) {
         this.groupNames.addAll(getGroupNames(validator.pattern()));
         this.argsOffset = argsOffset;
         this.callback = callback;
-        this.logger = CraftsNet.instance().logger();
+        this.logger = craftsNet.logger();
     }
 
     /**

@@ -4,10 +4,8 @@ import de.craftsblock.craftscore.id.Snowflake;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
-import org.apache.maven.repository.internal.MavenSessionBuilderSupplier;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.graph.Dependency;
@@ -39,7 +37,7 @@ import java.util.zip.ZipFile;
  * @version 2.0.0
  * @apiNote It utilizes the Eclipse Aether library for handling dependency resolution and management.
  * @see <a href="https://maven.apache.org/resolver/index.html">Eclipse Aether</a>
- * @since 3.0.0
+ * @since CraftsNet-3.0.0
  */
 final class ArtifactLoader {
 
@@ -116,8 +114,8 @@ final class ArtifactLoader {
      * @param libraries     The coordinates of the libraries to be loaded.
      * @return An array of URLs representing the loaded libraries.
      */
-    static URL[] loadLibraries(AddonLoader addonLoader, AddonLoader.Configuration configuration, String addon, String... libraries) {
-        Logger logger = CraftsNet.instance().logger();
+    static URL[] loadLibraries(CraftsNet craftsNet, AddonLoader addonLoader, AddonLoader.Configuration configuration, String addon, String... libraries) {
+        Logger logger = craftsNet.logger();
         logger.debug("Loading " + libraries.length + " libraries for " + addon + "...");
         List<Dependency> dependencies = new ArrayList<>();
         for (String library : libraries) {

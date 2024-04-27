@@ -17,7 +17,7 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.TransformerException
  * @author Philipp Maywald
  * @version 1.0.0
  * @see TransformerException
- * @since 3.0.3
+ * @since CraftsNet-3.0.3
  */
 public interface TransformerErrorCallback {
 

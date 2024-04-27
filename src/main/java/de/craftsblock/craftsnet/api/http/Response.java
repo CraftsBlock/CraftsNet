@@ -6,10 +6,7 @@ import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.logging.Logger;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -25,7 +22,7 @@ import java.util.Arrays;
  * @version 1.0
  * @see Exchange
  * @see WebServer
- * @since 1.0.0
+ * @since CraftsNet-1.0.0
  */
 public class Response implements AutoCloseable {
 
@@ -42,10 +39,11 @@ public class Response implements AutoCloseable {
     /**
      * Constructor for creating a new Response object.
      *
-     * @param exchange The HttpExchange object representing the HTTP request-response exchange.
+     * @param craftsNet The CraftsNet instance which instantiates this
+     * @param exchange  The HttpExchange object representing the HTTP request-response exchange.
      */
-    protected Response(HttpExchange exchange) {
-        this.craftsNet = CraftsNet.instance();
+    protected Response(CraftsNet craftsNet, HttpExchange exchange) {
+        this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
 
         this.exchange = exchange;
@@ -84,7 +82,13 @@ public class Response implements AutoCloseable {
         if (!bodySend)
             exchange.sendResponseHeaders(code, 0);
         bodySend = true;
-        stream.write(bytes);
+        try (ByteArrayInputStream input = new ByteArrayInputStream(bytes)) {
+            byte[] buffer = new byte[2048];
+            int read;
+            while ((read = input.read(buffer)) != -1) stream.write(buffer, 0, read);
+            stream.flush();
+            Arrays.fill(buffer, (byte) 0);
+        }
     }
 
     /**
@@ -119,11 +123,12 @@ public class Response implements AutoCloseable {
             logger.warning("Tried to send file when the body was already send!");
             return;
         }
-        bodySend = true;
-        String rawData = json.toString();
+
+        byte[] rawData = json.toString().getBytes(StandardCharsets.UTF_8);
         setContentType("application/json");
-        exchange.sendResponseHeaders(code, rawData.length());
-        println(rawData);
+        exchange.sendResponseHeaders(code, rawData.length);
+        bodySend = true;
+        print(rawData);
     }
 
     /**

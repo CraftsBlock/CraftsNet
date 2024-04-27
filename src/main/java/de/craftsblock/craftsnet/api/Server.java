@@ -6,7 +6,7 @@ package de.craftsblock.craftsnet.api;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since 3.0.3
+ * @since CraftsNet-3.0.3
  */
 public abstract class Server {
 

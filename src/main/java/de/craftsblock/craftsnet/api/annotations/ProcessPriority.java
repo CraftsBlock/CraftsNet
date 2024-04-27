@@ -13,7 +13,7 @@ import java.lang.annotation.Target;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since 3.0.1
+ * @since CraftsNet-3.0.1
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})

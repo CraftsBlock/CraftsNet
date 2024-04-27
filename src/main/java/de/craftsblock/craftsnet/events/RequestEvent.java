@@ -15,7 +15,7 @@ import java.util.List;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.1
- * @since 1.0.0
+ * @since CraftsNet-1.0.0
  */
 public class RequestEvent extends Event implements Cancellable {
 

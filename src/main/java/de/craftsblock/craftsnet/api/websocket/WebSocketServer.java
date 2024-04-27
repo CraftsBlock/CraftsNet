@@ -31,7 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Philipp Maywald
  * @version 1.1
  * @see WebSocketClient
- * @since 2.1.1
+ * @since CraftsNet-2.1.1
  */
 public class WebSocketServer extends Server {
 
@@ -45,23 +45,25 @@ public class WebSocketServer extends Server {
     /**
      * Constructs a WebSocketServer instance with the specified port number.
      *
-     * @param port The port number on which the server will listen for incoming connections.
-     * @param ssl  A boolean flag indicating whether SSL encryption should be used (true for HTTPS, false for HTTP).
+     * @param craftsNet The CraftsNet instance which instantiates this
+     * @param port      The port number on which the server will listen for incoming connections.
+     * @param ssl       A boolean flag indicating whether SSL encryption should be used (true for HTTPS, false for HTTP).
      */
-    public WebSocketServer(int port, boolean ssl) {
-        this(port, 0, ssl);
+    public WebSocketServer(CraftsNet craftsNet, int port, boolean ssl) {
+        this(craftsNet, port, 0, ssl);
     }
 
     /**
      * Constructs a WebSocketServer instance with the specified port number and backlog size.
      *
-     * @param port    The port number on which the server will listen for incoming connections.
-     * @param backlog The size of the backlog for the server socket.
-     * @param ssl     A boolean flag indicating whether SSL encryption should be used.
+     * @param craftsNet The CraftsNet instance which instantiates this
+     * @param port      The port number on which the server will listen for incoming connections.
+     * @param backlog   The size of the backlog for the server socket.
+     * @param ssl       A boolean flag indicating whether SSL encryption should be used.
      */
-    public WebSocketServer(int port, int backlog, boolean ssl) {
+    public WebSocketServer(CraftsNet craftsNet, int port, int backlog, boolean ssl) {
         super(port, backlog, ssl);
-        this.craftsNet = CraftsNet.instance();
+        this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
     }
 
@@ -74,11 +76,12 @@ public class WebSocketServer extends Server {
     /**
      * Starts the WebSocket server and waits for incoming connections.
      */
+    @Override
     public void start() {
         try {
             logger.info("Starting websocket server on port " + port);
             if (ssl) {
-                SSLContext sslContext = SSL.load();
+                SSLContext sslContext = SSL.load(this.craftsNet);
                 if (sslContext != null) {
                     SSLServerSocket sslServerSocket = (SSLServerSocket) sslContext.getServerSocketFactory().createServerSocket(port, backlog);
                     sslServerSocket.setSSLParameters(sslContext.getDefaultSSLParameters());
@@ -126,8 +129,14 @@ public class WebSocketServer extends Server {
         connector.start();
     }
 
+    /**
+     *
+     *
+     * @param socket
+     * @param i
+     */
     private void connectClient(Socket socket, AtomicInteger i) {
-        Thread client = new Thread(new WebSocketClient(socket, this));
+        Thread client = new Thread(new WebSocketClient(this.craftsNet, socket, this));
         client.setName("Websocket#" + i.getAndIncrement());
         client.start();
     }

@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
  * @version 1.0
  * @see WebServer
  * @see HttpMethod
- * @since 1.0.0
+ * @since CraftsNet-1.0.0
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})

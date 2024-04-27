@@ -9,7 +9,7 @@ package de.craftsblock.craftsnet.api.transformers;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.1
- * @since 3.0.2
+ * @since CraftsNet-3.0.2
  */
 public interface Transformable<T> {
 

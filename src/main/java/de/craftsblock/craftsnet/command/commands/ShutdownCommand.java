@@ -15,9 +15,20 @@ import org.jetbrains.annotations.NotNull;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since 2.2.0
+ * @since CraftsNet-2.2.0
  */
 public class ShutdownCommand implements CommandExecutor {
+
+    private final CraftsNet craftsNet;
+
+    /**
+     * Constructs a new instance shutdown command.
+     *
+     * @param craftsNet The CraftsNet instance which instantiates this shutdown command
+     */
+    public ShutdownCommand(CraftsNet craftsNet) {
+        this.craftsNet = craftsNet;
+    }
 
     /**
      * Executes the "shutdown" command, initiating the shutdown process for CraftsNet.
@@ -29,7 +40,7 @@ public class ShutdownCommand implements CommandExecutor {
     @Override
     public void onCommand(@NotNull Command command, @NotNull String[] args, @NotNull Logger logger) {
         logger.info("Shutdown anfrage wurde gesendet!");
-        CraftsNet.instance().stop();
+        craftsNet.stop();
         // Interrupt the console reader thread if it exists
         Thread thread = Utils.getThreadByName("Console Reader");
         if (thread != null) thread.interrupt();

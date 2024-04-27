@@ -18,7 +18,7 @@ import java.util.List;
  * @version 1.0.2
  * @see de.craftsblock.craftscore.event.Event
  * @see de.craftsblock.craftscore.event.Cancellable
- * @since 2.3.2
+ * @since CraftsNet-2.3.2
  */
 public class ShareRequestEvent extends Event implements Cancellable {
 

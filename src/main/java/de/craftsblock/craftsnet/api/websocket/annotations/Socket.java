@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  * @author Philipp Maywald
  * @version 1.0.1
  * @see SocketHandler
- * @since 2.1.1
+ * @since CraftsNet-2.1.1
  */
 @Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)

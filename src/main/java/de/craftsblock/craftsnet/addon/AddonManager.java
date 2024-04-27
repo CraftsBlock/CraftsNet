@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.addon;
 
+import de.craftsblock.craftsnet.CraftsNet;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -18,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version 1.0.1
  * @see Addon
  * @see AddonLoader
- * @since 1.0.0
+ * @since CraftsNet-1.0.0
  */
 public final class AddonManager {
 
@@ -28,15 +29,16 @@ public final class AddonManager {
      * Constructor for the AddonManager class. It loads and initializes the addons present in the "./addons/" folder.
      * It also adds a shutdown hook to handle cleanup when the application is shut down.
      *
+     * @param craftsNet The CraftsNet instance which instantiates this addon manager.
      * @throws IOException if there is an I/O error while accessing the addons folder.
      */
-    public AddonManager() throws IOException {
+    public AddonManager(CraftsNet craftsNet) throws IOException {
         File folder = new File("./addons/");
         if (!folder.isDirectory()) {
             folder.delete();
             folder.mkdirs();
         }
-        AddonLoader addonLoader = new AddonLoader();
+        AddonLoader addonLoader = new AddonLoader(craftsNet);
         for (File file : Objects.requireNonNull(folder.listFiles()))
             if (file.getName().endsWith(".jar")) addonLoader.add(file);
         addonLoader.load(this);

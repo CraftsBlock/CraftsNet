@@ -18,7 +18,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since 3.0.3
+ * @since CraftsNet-3.0.3
  */
 public final class AddonClassLoader extends URLClassLoader {
 
@@ -41,13 +41,14 @@ public final class AddonClassLoader extends URLClassLoader {
     /**
      * Constructs an AddonClassLoader with the specified addon manager, addon configuration, and URLs.
      *
+     * @param craftsNet The CraftsNet instance which instantiates this classloader
      * @param manager The addon manager.
      * @param addon   The configuration of the addon.
      * @param urls    The URLs from which to load classes and resources.
      */
-    AddonClassLoader(AddonManager manager, AddonLoader.Configuration addon, URL[] urls) {
+    AddonClassLoader(CraftsNet craftsNet, AddonManager manager, AddonLoader.Configuration addon, URL[] urls) {
         super(urls, ClassLoader.getSystemClassLoader());
-        this.craftsNet = CraftsNet.instance();
+        this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
 
         addonLoaders.add(this);

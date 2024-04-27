@@ -6,6 +6,7 @@ import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.WebServer;
+import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
 import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.command.CommandRegistry;
@@ -35,7 +36,7 @@ import java.lang.reflect.InvocationTargetException;
 public class CraftsNet {
 
     // Global variables
-    public static final String version = "3.0.3-SNAPSHOT";
+    public static final String version = "3.0.4-SNAPSHOT";
     private static CraftsNet instance;
 
     // Lokal instance
@@ -46,6 +47,7 @@ public class CraftsNet {
 
     // Manager instances
     private AddonManager addonManager;
+    private BodyRegistry bodyRegistry;
     private CommandRegistry commandRegistry;
     private ListenerRegistry listenerRegistry;
     private RouteRegistry routeRegistry;
@@ -101,8 +103,8 @@ public class CraftsNet {
 
         // Setup default uncaught exception handler
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-            long identifier = FileLogger.createErrorLog(e);
-            logger.error(e, "Exception: " + identifier);
+            long identifier = FileLogger.createErrorLog(this, e);
+            logger.error(e, "Throwable: " + identifier);
         });
 
         // Log startup message
@@ -113,14 +115,17 @@ public class CraftsNet {
         // Initialize listener and route registries, and addon manager
         logger.debug("Initialization of system variables");
         listenerRegistry = new ListenerRegistry();
-        routeRegistry = new RouteRegistry();
-        commandRegistry = new CommandRegistry();
+        routeRegistry = new RouteRegistry(this);
+        commandRegistry = new CommandRegistry(this);
         serviceManager = new ServiceManager();
-        if (!builder.isAddonSystem(ActivateType.DISABLED)) addonManager = new AddonManager();
+        if (!builder.isAddonSystem(ActivateType.DISABLED)) addonManager = new AddonManager(this);
 
         // Check if http routes are registered and start the web server if needed
-        webServer = new WebServer(builder.getWebServerPort(), builder.isSSL());
+        webServer = new WebServer(this, builder.getWebServerPort(), builder.isSSL());
         if (builder.isWebServer(ActivateType.ENABLED) || (builder.isWebServer(ActivateType.DYNAMIC))) {
+            // Set the bodyRegistry if the webserver is enabled.
+            bodyRegistry = new BodyRegistry();
+
             // Register a default route if nothing has been registered.
             if (!routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets())
                 routeRegistry().register(new DefaultRoute());
@@ -134,7 +139,7 @@ public class CraftsNet {
             logger.warning("The web server is forcible disabled, but has registered routes!");
 
         // Check if webSocket routes are registered and start the websocket server if needed
-        webSocketServer = new WebSocketServer(builder.getWebSocketServerPort(), builder.isSSL());
+        webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), builder.isSSL());
         if (builder.isWebSocketServer(ActivateType.ENABLED) || (builder.isWebSocketServer(ActivateType.DYNAMIC) && routeRegistry.hasWebsockets())) {
             logger.debug("Starting the websocket server");
             webSocketServer.start();
@@ -143,10 +148,10 @@ public class CraftsNet {
 
         // Register build in commands / listeners
         if (!builder.isCommandSystem(ActivateType.DISABLED)) {
-            listenerRegistry.register(new ConsoleListener());
-            commandRegistry.getCommand("pl").setExecutor(new PluginCommand());
+            listenerRegistry.register(new ConsoleListener(this));
+            commandRegistry.getCommand("pl").setExecutor(new PluginCommand(this));
             commandRegistry.getCommand("pl").addAlias("plugin", "plugins", "addons");
-            commandRegistry.getCommand("shutdown").setExecutor(new ShutdownCommand());
+            commandRegistry.getCommand("shutdown").setExecutor(new ShutdownCommand(this));
             commandRegistry.getCommand("shutdown").addAlias("quit", "exit");
             commandRegistry.getCommand("ver").setExecutor(new VersionCommand());
             commandRegistry.getCommand("ver").addAlias("version", "v");
@@ -226,6 +231,16 @@ public class CraftsNet {
      */
     public AddonManager addonManager() {
         return addonManager;
+    }
+
+    /**
+     * Retrieves the body registry instance for manging body types.
+     *
+     * @return The body registry instance.
+     * @since CraftsNet-3.0.4
+     */
+    public BodyRegistry bodyRegistry() {
+        return bodyRegistry;
     }
 
     /**

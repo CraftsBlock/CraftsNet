@@ -10,7 +10,7 @@ import java.lang.reflect.InvocationTargetException;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since 3.0.0
+ * @since CraftsNet-3.0.0
  */
 public interface ServiceLoader<T> {
 

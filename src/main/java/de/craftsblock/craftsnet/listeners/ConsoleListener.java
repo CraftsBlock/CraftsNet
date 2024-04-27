@@ -18,9 +18,20 @@ import static de.craftsblock.craftscore.event.EventPriority.MONITOR;
  * @author Philipp Maywald
  * @version 1.0
  * @see de.craftsblock.craftsnet.command.CommandRegistry
- * @since 2.2.0
+ * @since CraftsNet-2.2.0
  */
 public class ConsoleListener implements ListenerAdapter {
+
+    private final CraftsNet craftsNet;
+
+    /**
+     * Constructs a new instance of a console listener
+     *
+     * @param craftsNet The CraftsNet instance which instantiates this console listener
+     */
+    public ConsoleListener(CraftsNet craftsNet) {
+        this.craftsNet = craftsNet;
+    }
 
     /**
      * Event handler for console messages.
@@ -36,7 +47,7 @@ public class ConsoleListener implements ListenerAdapter {
         String[] args = message.split(" ");
         String command = args[0];
         args = Arrays.stream(args).skip(1).toArray(String[]::new);
-        CraftsNet.instance().commandRegistry().perform(command, args);
+        craftsNet.commandRegistry().perform(command, args);
     }
 
 }

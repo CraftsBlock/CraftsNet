@@ -45,7 +45,7 @@ import java.util.stream.IntStream;
  * @author Philipp Maywald
  * @version 1.7
  * @see WebSocketServer
- * @since 2.1.1
+ * @since CraftsNet-2.1.1
  */
 public class WebSocketClient implements Runnable {
 
@@ -69,14 +69,15 @@ public class WebSocketClient implements Runnable {
     /**
      * Creates a new WebSocketClient with the provided socket and server.
      *
-     * @param socket The Socket used for communication with the client.
-     * @param server The WebSocketServer to which this client belongs.
+     * @param craftsNet The CraftsNet instance which instantiates this
+     * @param socket    The Socket used for communication with the client.
+     * @param server    The WebSocketServer to which this client belongs.
      */
-    public WebSocketClient(Socket socket, WebSocketServer server) {
+    public WebSocketClient(CraftsNet craftsNet, Socket socket, WebSocketServer server) {
         this.socket = socket;
         this.server = server;
 
-        this.craftsNet = CraftsNet.instance();
+        this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
     }
 
@@ -153,7 +154,7 @@ public class WebSocketClient implements Runnable {
                 server.add(path, this);
 
                 // Create a transformer performer which handles all transformers
-                TransformerPerformer transformerPerformer = new TransformerPerformer(validator, 2, e -> {
+                TransformerPerformer transformerPerformer = new TransformerPerformer(this.craftsNet, validator, 2, e -> {
                     sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).asString());
                     disconnect();
                 });

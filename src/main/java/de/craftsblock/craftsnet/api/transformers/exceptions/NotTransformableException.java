@@ -8,7 +8,7 @@ package de.craftsblock.craftsnet.api.transformers.exceptions;
  * @author Philipp Maywald
  * @version 1.0.0
  * @see TransformerException
- * @since 3.0.2
+ * @since CraftsNet-3.0.2
  */
 public class NotTransformableException extends TransformerException {
 

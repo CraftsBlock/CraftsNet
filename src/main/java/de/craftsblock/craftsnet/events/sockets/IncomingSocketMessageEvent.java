@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0
- * @since 2.1.1
+ * @since CraftsNet-2.1.1
  */
 public class IncomingSocketMessageEvent extends Event implements Cancellable {
 

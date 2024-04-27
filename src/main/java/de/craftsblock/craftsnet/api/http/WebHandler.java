@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
  * @author Philipp Maywald
  * @version 1.2.0
  * @see WebServer
- * @since 3.0.1
+ * @since CraftsNet-3.0.1
  */
 public class WebHandler implements HttpHandler {
 
@@ -40,9 +40,11 @@ public class WebHandler implements HttpHandler {
 
     /**
      * Constructs a new instance of the WebHandler
+     *
+     * @param craftsNet The CraftsNet instance which instantiates this web handler.
      */
-    public WebHandler() {
-        this.craftsNet = CraftsNet.instance();
+    public WebHandler(CraftsNet craftsNet) {
+        this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
         this.registry = this.craftsNet.routeRegistry();
     }
@@ -55,7 +57,7 @@ public class WebHandler implements HttpHandler {
      */
     @Override
     public void handle(HttpExchange exchange) throws IOException {
-        try (Response response = new Response(exchange)) {
+        try (Response response = new Response(this.craftsNet, exchange)) {
             // Extract relevant information from the incoming request.
             String requestMethod = exchange.getRequestMethod();
             HttpMethod httpMethod = HttpMethod.parse(requestMethod);
@@ -73,7 +75,7 @@ public class WebHandler implements HttpHandler {
                 else domain = headers.getFirst("Host").split(":")[0];
 
                 // Create a Request object to encapsulate the incoming request information.
-                Request request = new Request(exchange, headers, url, ip, domain, httpMethod);
+                Request request = new Request(this.craftsNet, exchange, headers, url, ip, domain, httpMethod);
 
                 if (handleRoute(response, request)) return;
                 if (registry.isShare(url) && registry.canShareAccept(url, httpMethod)) {
@@ -84,9 +86,9 @@ public class WebHandler implements HttpHandler {
                 // Return an error as there is no route or share on the path
                 respondWithError(response, "Path do not match any API endpoint!");
                 logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[NOT FOUND]");
-            } catch (Exception e) {
-                long errorID = FileLogger.createErrorLog(e, "http", url);
-                logger.error(e, "Error: " + errorID);
+            } catch (Throwable t) {
+                long errorID = FileLogger.createErrorLog(this.craftsNet, t, "http", url);
+                logger.error(t, "Error: " + errorID);
                 response.println(Json.empty()
                         .set("error.message", "An unexpected exception happened whilst processing your request!")
                         .set("error.identifier", errorID)
@@ -111,8 +113,8 @@ public class WebHandler implements HttpHandler {
         String ip = request.getIp();
         Headers headers = request.getHeaders();
 
-        // Find the registered route mapping based on the URL and request method.
-        List<RouteRegistry.RouteMapping> routes = registry.getRoute(url, domain, headers.keySet(), requestMethod);
+        // Find the registered route mapping based on the request.
+        List<RouteRegistry.RouteMapping> routes = registry.getRoute(request);
 
         // If no matching route is found abort with return false
         if (routes == null || routes.isEmpty()) return false;
@@ -145,7 +147,7 @@ public class WebHandler implements HttpHandler {
             args[i - 1] = matcher.group(i);
 
         // Create a transformer performer which handles all transformers
-        TransformerPerformer transformerPerformer = new TransformerPerformer(validator, 1, e -> {
+        TransformerPerformer transformerPerformer = new TransformerPerformer(this.craftsNet, validator, 1, e -> {
             response.println(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).asString());
         });
 

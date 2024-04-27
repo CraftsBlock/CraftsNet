@@ -1,4 +1,7 @@
-package de.craftsblock.craftsnet.api.http.body;
+package de.craftsblock.craftsnet.api.http.body.bodies;
+
+import de.craftsblock.craftsnet.api.http.Request;
+import de.craftsblock.craftsnet.api.http.body.Body;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,11 +15,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * @param <T> The type of data that each field in the form body holds.
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 2.0.0
  * @see Body
  * @see MultipartFormBody
  * @see StandardFormBody
- * @since 2.2.0
+ * @since CraftsNet-2.2.0
  */
 public abstract class FormBody<T> extends Body {
 
@@ -27,10 +30,12 @@ public abstract class FormBody<T> extends Body {
      * Constructs a new {@code FormBody} with the given input stream and deserializes the form data
      * if it is of the standard form body type.
      *
-     * @param body The input stream containing the form data.
+     * @param request The representation of the http request.
+     * @param body    The input stream containing the form data.
      * @throws IOException If an error occurs while reading or parsing the form data.
      */
-    public FormBody(InputStream body) throws IOException {
+    public FormBody(Request request, InputStream body) throws IOException {
+        super(request);
         this.body = body;
         if (isStandardFormBody()) deserialize();
     }

@@ -15,7 +15,7 @@ import java.net.URLConnection;
  * @author Philipp Maywald
  * @version 1.1
  * @see de.craftsblock.craftscore.event.Event
- * @since 2.3.2
+ * @since CraftsNet-2.3.2
  */
 public class ShareFileLoadedEvent extends Event {
 

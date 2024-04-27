@@ -2,16 +2,17 @@ package de.craftsblock.craftsnet.api.http;
 
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
+import de.craftsblock.craftscore.id.Snowflake;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
+import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.body.Body;
-import de.craftsblock.craftsnet.api.http.body.JsonBody;
-import de.craftsblock.craftsnet.api.http.body.MultipartFormBody;
-import de.craftsblock.craftsnet.api.http.body.StandardFormBody;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.*;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -29,10 +30,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Philipp Maywald
  * @version 1.5.0
  * @see Exchange
- * @since 1.0.0
+ * @since CraftsNet-1.0.0
  */
 public class Request implements AutoCloseable {
 
+    private final long identifier = Snowflake.generate();
+
+    private final CraftsNet craftsNet;
     private final HttpExchange exchange;
     private final Headers headers;
     private final String domain;
@@ -43,12 +47,14 @@ public class Request implements AutoCloseable {
     private final Json cookies = JsonParser.parse("{}");
     private final String ip;
 
-    private Body body;
+    private File bodyLocation;
     private List<RouteRegistry.RouteMapping> routes;
+    private boolean closed = false;
 
     /**
      * Constructs a new Request object.
      *
+     * @param craftsNet  The CraftsNet instance to which the request was made.
      * @param exchange   The HttpExchange object representing the incoming HTTP request.
      * @param headers    The headers object representing the headers of the incoming http request.
      * @param url        The query string extracted from the request URI.
@@ -56,7 +62,8 @@ public class Request implements AutoCloseable {
      * @param domain     The domain used to make the http request.
      * @param httpMethod The http method used to access the route.
      */
-    public Request(HttpExchange exchange, Headers headers, String url, String ip, String domain, HttpMethod httpMethod) {
+    public Request(CraftsNet craftsNet, HttpExchange exchange, Headers headers, String url, String ip, String domain, HttpMethod httpMethod) {
+        this.craftsNet = craftsNet;
         this.exchange = exchange;
         this.headers = headers;
         this.rawUrl = url;
@@ -82,19 +89,68 @@ public class Request implements AutoCloseable {
                     return;
                 cookies.set(stripped[0], stripped[1]);
             });
+
+        retrieveBody();
+    }
+
+    /**
+     * Starts retrieving the request body.
+     */
+    private void retrieveBody() {
+        InputStream input = exchange.getRequestBody();
+        if (input == null) return;
+        try {
+            bodyLocation = Files.createTempFile("craftsnet", ".body").toFile();
+            bodyLocation.deleteOnExit();
+            try (FileOutputStream destination = new FileOutputStream(bodyLocation, true)) {
+
+                byte[] buffer = new byte[2048];
+                int read;
+                while ((read = input.read(buffer)) != -1) destination.write(buffer, 0, read);
+                destination.flush();
+                Arrays.fill(buffer, (byte) 0);
+
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        if (bodyLocation.length() <= 0) bodyLocation.delete();
     }
 
     /**
      * Closes the Request object, releasing associated resources such as the HttpExchange and request headers.
-     * If a request body is present, it is also closed to free any related resources.
+     * If request bodies are present, it is also closed all of them to free any related resources.
      *
      * @throws Exception If an error occurs while closing the Request object or its associated resources.
      */
     @Override
     public void close() throws Exception {
+        if (bodyLocation != null && bodyLocation.exists()) bodyLocation.delete();
         exchange.close();
         headers.clear();
-        if (body != null) body.close();
+        Body.cleanUp(this);
+        closed = true;
+    }
+
+    /**
+     * Gets if the request has been closed.
+     *
+     * @return true if the request was closed, false otherwise.
+     */
+    public boolean isClosed() {
+        return closed;
+    }
+
+    /**
+     * Gets the instance of CraftsNet to which the request was made.
+     *
+     * @return The CraftsNet instance.
+     */
+    public CraftsNet getCraftsNet() {
+        return craftsNet;
     }
 
     /**
@@ -226,6 +282,15 @@ public class Request implements AutoCloseable {
     }
 
     /**
+     * Retrieves the content type form the http request.
+     *
+     * @return The content type.
+     */
+    public String getContentType() {
+        return getHeader("Content-Type");
+    }
+
+    /**
      * Retrieves the matched routes mapping for the request.
      *
      * @return The RouteMapping objects representing the matched route, or null if no route is matched.
@@ -241,7 +306,8 @@ public class Request implements AutoCloseable {
      * @return {@code true} if a request body exists, otherwise {@code false}.
      */
     public boolean hasBody() {
-        return getBody() != null;
+        if (isClosed()) throw new IllegalStateException("Could not retrieve the body as this request is already closed!");
+        return bodyLocation != null && bodyLocation.exists() && bodyLocation.length() >= 1;
     }
 
     /**
@@ -249,26 +315,24 @@ public class Request implements AutoCloseable {
      *
      * @return The HTTP request body as a {@code Body} object, or {@code null} if no body exists or an error occurs.
      */
-    @Nullable
     public Body getBody() {
-        // Check if the body has already been obtained
-        if (body != null) return body;
-        try {
-            // Check the Content-Type header to determine the type of request body
-            if (headers.getFirst("Content-Type").startsWith("multipart/form-data")) {
-                // If it's a multipart/form-data request, extract the boundary
-                String[] boundary = headers.getFirst("Content-Type").split("=");
-                if (boundary.length != 2) return null; // Ensure that the Content-Type header contains a valid boundary
-                body = new MultipartFormBody(boundary[1], exchange.getRequestBody()); // Create a new MultipartFormBody using the boundary and the request body
-            } else if (headers.getFirst("Content-Type").startsWith("application/x-www-form-urlencoded"))
-                // If it's an application/x-www-form-urlencoded request, create a StandardFormBody
-                body = new StandardFormBody(exchange.getRequestBody());
-            else
-                body = JsonBody.parseOrNull(exchange.getRequestBody()); // If it's neither multipart nor form data, attempt to parse it as JSON
-            return body; // Return the obtained body
-        } catch (Exception ignored) {
-        }
-        return null; // Return null if no body exists or an error occurred
+        // Abort if request is closed or the body is not present.
+        if (isClosed()) throw new IllegalStateException("Could not retrieve the body as this request is already closed!");
+        if (!hasBody()) throw new IllegalStateException("Could not retrieve the body as it does not exists!");
+        // Returns a blank body with only the standard functionality.
+        return new Body(this) {
+        };
+    }
+
+    /**
+     * Retrieves a new instance of an input stream containing the request body.
+     *
+     * @return The input stream containing the body.
+     * @throws FileNotFoundException If the save file which contains the bytes of the body was not found.
+     */
+    public InputStream getRawBody() throws FileNotFoundException {
+        if (isClosed()) throw new IllegalStateException("Could not retrieve the body as this request is already closed!");
+        return new FileInputStream(bodyLocation);
     }
 
     /**

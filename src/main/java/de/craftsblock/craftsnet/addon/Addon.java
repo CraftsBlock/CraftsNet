@@ -4,6 +4,7 @@ import de.craftsblock.craftscore.event.ListenerRegistry;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.logging.Logger;
 
@@ -30,12 +31,14 @@ import java.io.File;
  * @author Philipp Maywald
  * @see AddonLoader
  * @see AddonManager
- * @since 1.0.0
+ * @since CraftsNet-1.0.0
  */
 public abstract class Addon {
 
+    private CraftsNet craftsNet;
     private String name;
 
+    private BodyRegistry bodyRegistry;
     private CommandRegistry commandRegistry;
     private ListenerRegistry listenerRegistry;
     private RouteRegistry routeRegistry;
@@ -72,6 +75,17 @@ public abstract class Addon {
      */
     public final String getName() {
         return name;
+    }
+
+    /**
+     * Get the BodyRegistry instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the registry directly.
+     *
+     * @return The BodyRegistry instance used by the addon.
+     * @since CraftsNet-3.0.4
+     */
+    public BodyRegistry bodyRegistry() {
+        return bodyRegistry;
     }
 
     /**
@@ -160,7 +174,7 @@ public abstract class Addon {
      * @param addon The class object representing the type of the addon to be retrieved.
      * @return An instance of the specified addon type if found, or {@code null} if not present.
      */
-    public static <T extends Addon> T getAddon(Class<T> addon) {
+    public <T extends Addon> T getAddon(Class<T> addon) {
         return CraftsNet.instance().addonManager().getAddon(addon);
     }
 

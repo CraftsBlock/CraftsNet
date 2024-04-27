@@ -14,11 +14,21 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Philipp Maywald
  * @version 1.0
  * @see Command
- * @since 2.2.0
+ * @since CraftsNet-2.2.0
  */
 public class CommandRegistry {
 
     private final ConcurrentHashMap<String, Command> commands = new ConcurrentHashMap<>();
+    private final CraftsNet craftsNet;
+
+    /**
+     * Constructs a new instance of the command registry.
+     *
+     * @param craftsNet The CraftsNet instance which instantiates this command registry.
+     */
+    public CommandRegistry(CraftsNet craftsNet) {
+        this.craftsNet = craftsNet;
+    }
 
     /**
      * Retrieves a command by name. If the command doesn't exist, it is created.
@@ -48,7 +58,7 @@ public class CommandRegistry {
      * @param args The arguments to pass to the command executor.
      */
     public void perform(String name, String[] args) {
-        Logger logger = CraftsNet.instance().logger();
+        Logger logger = craftsNet.logger();
         Command command = null;
         for (Command tmp : commands.values())
             if (tmp.getName().equalsIgnoreCase(name) || tmp.isAlias(name)) {

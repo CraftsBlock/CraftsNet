@@ -1,8 +1,10 @@
-package de.craftsblock.craftsnet.api.http.body;
+package de.craftsblock.craftsnet.api.http.body.bodies;
 
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftscore.utils.Validator;
+import de.craftsblock.craftsnet.api.http.Request;
+import de.craftsblock.craftsnet.api.http.body.Body;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,9 +17,9 @@ import java.io.InputStreamReader;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 2.0.0
  * @see Body
- * @since 2.2.0
+ * @since CraftsNet-2.2.0
  */
 public final class JsonBody extends Body {
 
@@ -26,10 +28,11 @@ public final class JsonBody extends Body {
     /**
      * Constructs a new {@code JsonBody} object by parsing a JSON-formatted string.
      *
-     * @param body The JSON-formatted string to parse.
-     * @throws IOException If an error occurs while parsing the JSON string.
+     * @param request The representation of the http request.
+     * @param body    The JSON-formatted string to parse.
      */
-    public JsonBody(String body) throws IOException {
+    public JsonBody(Request request, String body) {
+        super(request);
         this.body = JsonParser.parse(body);
     }
 
@@ -45,18 +48,19 @@ public final class JsonBody extends Body {
     /**
      * Parses an input stream as JSON and returns a {@code JsonBody} instance if the input is valid JSON.
      *
-     * @param body The input stream containing JSON data.
+     * @param request The representation of the http request.
+     * @param body    The input stream containing JSON data.
      * @return A {@code JsonBody} instance if the input is valid JSON, or {@code null} if it's not valid JSON.
      * @throws IOException If an error occurs while reading or parsing the input stream.
      */
-    public static Body parseOrNull(InputStream body) throws IOException {
+    public static Body parseOrNull(Request request, InputStream body) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(body));
         StringBuilder lines = new StringBuilder();
         String line;
         while ((line = reader.readLine()) != null)
             lines.append(line).append("\n");
         reader.close();
-        if (Validator.isJsonValid(lines.toString())) return new JsonBody(lines.toString());
+        if (Validator.isJsonValid(lines.toString())) return new JsonBody(request, lines.toString());
         return null;
     }
 

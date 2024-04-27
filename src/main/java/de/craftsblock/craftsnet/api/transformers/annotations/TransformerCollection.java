@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
  * @author Philipp Maywald
  * @version 1.0.0
  * @see Transformer
- * @since 3.0.2
+ * @since CraftsNet-3.0.2
  */
 @ApiStatus.Internal
 @Retention(RetentionPolicy.RUNTIME)

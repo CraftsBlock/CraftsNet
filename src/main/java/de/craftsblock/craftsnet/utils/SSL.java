@@ -27,7 +27,7 @@ import java.util.concurrent.ThreadLocalRandom;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.2.0
- * @since 2.1.1
+ * @since CraftsNet-2.1.1
  */
 public class SSL {
 
@@ -36,6 +36,7 @@ public class SSL {
      * The default paths are "./certificates/fullchain.pem" for the certificate chain and
      * "./certificates/privkey.pem" for the private key.
      *
+     * @param craftsNet The CraftsNet instance which instantiates this ssl load operation.
      * @return The SSLContext instance loaded with the default certificate chain and private key.
      * @throws CertificateException      If there's an error with the certificate.
      * @throws IOException               If there's an I/O error.
@@ -44,14 +45,15 @@ public class SSL {
      * @throws KeyManagementException    If there's an error with the key management.
      * @throws UnrecoverableKeyException If the key is unrecoverable.
      */
-    public static SSLContext load() throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, UnrecoverableKeyException {
-        return load("./certificates/fullchain.pem", "./certificates/privkey.pem");
+    public static SSLContext load(CraftsNet craftsNet) throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, UnrecoverableKeyException {
+        return load(craftsNet, "./certificates/fullchain.pem", "./certificates/privkey.pem");
     }
 
     /**
      * This method loads an SSL context using the provided full chain and private key files.
      * It sets up an SSLContext with the certificate chain and private key from the given files.
      *
+     * @param craftsNet The CraftsNet instance which instantiates this ssl load operation.
      * @param fullchain The path to the full chain file containing the certificate chain.
      * @param privkey   The path to the private key file.
      * @return The SSLContext instance loaded with the provided certificate chain and private key.
@@ -62,8 +64,7 @@ public class SSL {
      * @throws KeyManagementException    If there's an error with the key management.
      * @throws UnrecoverableKeyException If the key is unrecoverable.
      */
-    public static SSLContext load(String fullchain, String privkey) throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, UnrecoverableKeyException {
-        CraftsNet craftsNet = CraftsNet.instance();
+    public static SSLContext load(CraftsNet craftsNet, String fullchain, String privkey) throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, UnrecoverableKeyException {
         KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         keyStore.load(null);
 
@@ -77,7 +78,7 @@ public class SSL {
                 return null;
             }
 
-            PrivateKey privateKey = getPrivateKey(privateKeyStream);
+            PrivateKey privateKey = getPrivateKey(craftsNet, privateKeyStream);
 
             try {
                 for (X509Certificate certificate : certificates) {
@@ -192,11 +193,12 @@ public class SSL {
      * This method reads an InputStream containing a private key in PEM format,
      * decodes it, and returns a PrivateKey instance.
      *
+     * @param craftsNet The CraftsNet instance which instantiates this ssl private key operation.
      * @param privateKeyStream An InputStream containing the private key data in PEM format.
      * @return The PrivateKey instance decoded from the provided input stream.
      * @throws IOException If an I/O error occurs while reading the input stream.
      */
-    private static PrivateKey getPrivateKey(InputStream privateKeyStream) throws IOException {
+    private static PrivateKey getPrivateKey(CraftsNet craftsNet, InputStream privateKeyStream) throws IOException {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(privateKeyStream))) {
             String line;
             StringBuilder key = new StringBuilder();
@@ -206,7 +208,7 @@ public class SSL {
                 KeyFactory keyFactory = KeyFactory.getInstance("RSA");
                 return keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decodedKey));
             } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-                CraftsNet.instance().logger().error(e);
+                craftsNet.logger().error(e);
             }
         }
         return null;
