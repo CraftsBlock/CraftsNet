@@ -41,12 +41,15 @@ import java.util.zip.ZipFile;
  */
 final class ArtifactLoader {
 
-    private static final RepositorySystem repository;
-    private static final DefaultRepositorySystemSession session;
-    private static final List<RemoteRepository> repositories;
-    private static final RemoteRepository defaultRepo;
+    private final RepositorySystem repository;
+    private final DefaultRepositorySystemSession session;
+    private final List<RemoteRepository> repositories;
+    private final RemoteRepository defaultRepo;
 
-    static {
+    /**
+     * Creates a new instance of the artifact loader
+     */
+    ArtifactLoader() {
         RepositorySystemSupplier repositorySupplier = new RepositorySystemSupplier();
         repository = repositorySupplier.get();
 
@@ -76,7 +79,7 @@ final class ArtifactLoader {
     /**
      * Cleanup internal repository cache
      */
-    static void cleanup() {
+    void cleanup() {
         repositories.parallelStream()
                 .filter(remoteRepository -> !remoteRepository.equals(defaultRepo))
                 .forEach(repositories::remove);
@@ -85,7 +88,7 @@ final class ArtifactLoader {
     /**
      * Cleanup and shutdown of the internal repository resolver
      */
-    static void stop() {
+    void stop() {
         cleanup();
         repository.shutdown();
     }
@@ -95,7 +98,7 @@ final class ArtifactLoader {
      *
      * @param repo The URL of the remote repository to be added.
      */
-    static void addRepository(String repo) {
+    void addRepository(String repo) {
         if (repositories.stream().anyMatch(repository -> Objects.equals(repository.getUrl(), repo))) return;
         RemoteRepository remoteRepository = new RemoteRepository.Builder(
                 Snowflake.generate() + "",
@@ -114,7 +117,7 @@ final class ArtifactLoader {
      * @param libraries     The coordinates of the libraries to be loaded.
      * @return An array of URLs representing the loaded libraries.
      */
-    static URL[] loadLibraries(CraftsNet craftsNet, AddonLoader addonLoader, AddonLoader.Configuration configuration, String addon, String... libraries) {
+    URL[] loadLibraries(CraftsNet craftsNet, AddonLoader addonLoader, AddonLoader.Configuration configuration, String addon, String... libraries) {
         Logger logger = craftsNet.logger();
         logger.debug("Loading " + libraries.length + " libraries for " + addon + "...");
         List<Dependency> dependencies = new ArrayList<>();

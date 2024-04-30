@@ -495,20 +495,32 @@ public class RouteRegistry {
         List<T> values = new ArrayList<>();
 
         // Load the parent values and add it to the values list
-        T parentValue = annotation(obj, annotation, type, false);
-        if (parentValue != null)
-            if (parentValue instanceof List<?>) values.addAll((Collection<? extends T>) parentValue);
-            else if (parentValue.getClass().isArray()) addArray((T[]) parentValue, values, type);
-            else if (type.isInstance(parentValue)) values.add(parentValue);
-            else logger.warning("Found not suitable type of parent annotation. Found: " + parentValue.getClass() + "Expected: " + type);
+        Object parentValue = annotation(obj, annotation, type, false);
+        if (parentValue != null) {
+            Class<?> parentClass = parentValue.getClass();
+
+            if (parentValue instanceof List<?> && List.class.isAssignableFrom(type)) values.addAll((Collection<? extends T>) parentValue);
+            else if (parentValue instanceof Object[] array && type.isArray()) addArray(array, values, type);
+            else if (type.isInstance(parentValue)) values.add(type.cast(parentValue));
+            else
+                logger.warning("Found not suitable type of parent annotation. " +
+                        "Found: " + parentClass.getSimpleName() + (parentClass.isArray() ? "[]" : "") + " " +
+                        "Expected: " + type.getSimpleName() + (type.isArray() ? "[]" : ""));
+        }
 
         // Load the values and add it to the values list
-        T value = annotation(m, annotation, type, true);
-        if (value != null)
-            if (value instanceof List<?>) values.addAll((Collection<? extends T>) value);
-            else if (value.getClass().isArray()) addArray((T[]) value, values, type);
-            else if (type.isInstance(value)) values.add(value);
-            else logger.warning("Found not suitable type of annotation. Found: " + value.getClass() + "Expected: " + type);
+        Object value = annotation(m, annotation, type, true);
+        if (value != null) {
+            Class<?> valueClass = value.getClass();
+
+            if (value instanceof List<?> && List.class.isAssignableFrom(type)) values.addAll((Collection<? extends T>) value);
+            else if (value instanceof Object[] array && type.isArray()) addArray(array, values, type);
+            else if (type.isInstance(value)) values.add(type.cast(value));
+            else
+                logger.warning("Found not suitable type of annotation. " +
+                        "Found: " + valueClass.getSimpleName() + (valueClass.isArray() ? "[]" : "") + " " +
+                        "Expected: " + type.getSimpleName() + (type.isArray() ? "[]" : ""));
+        }
 
         // Remove duplicates
         removeDuplicates(values);
@@ -674,9 +686,9 @@ public class RouteRegistry {
      * @param t    The array containing elements to add.
      * @param list The list to which elements will be added.
      */
-    private <T> void addArray(T[] t, List<T> list, Class<T> type) {
+    private <T> void addArray(Object[] t, List<T> list, Class<T> type) {
         if (t == null) return;
-        list.addAll(Arrays.asList(t));
+        list.addAll(Arrays.asList(t).parallelStream().filter(type::isInstance).map(type::cast).toList());
     }
 
     /**

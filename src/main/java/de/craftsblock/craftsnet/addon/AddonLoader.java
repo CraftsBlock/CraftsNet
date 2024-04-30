@@ -76,6 +76,9 @@ final class AddonLoader {
         Logger logger = craftsNet.logger();
         logger.info("Load all available addons");
 
+        // Create a new artifact loader
+        ArtifactLoader artifactLoader = new ArtifactLoader();
+
         // Load all the dependencies and repositories from the addons
         ConcurrentHashMap<File, Configuration> configurations = new ConcurrentHashMap<>();
         ConcurrentHashMap<String, ConcurrentLinkedQueue<URL>> urls = new ConcurrentHashMap<>();
@@ -126,15 +129,15 @@ final class AddonLoader {
                 logger.debug("Checked jvm compatibility for " + name + " within " + (System.currentTimeMillis() - checkStart) + "ms");
 
                 // Inject all repositories
-                ArtifactLoader.cleanup();
+                artifactLoader.cleanup();
                 if (addon.contains("repositories"))
                     for (String repo : addon.getStringList("repositories"))
-                        ArtifactLoader.addRepository(repo);
+                        artifactLoader.addRepository(repo);
 
                 // Load all required dependencies
                 URL[] dependencies = new URL[0];
                 if (addon.contains("dependencies")) {
-                    dependencies = ArtifactLoader.loadLibraries(this.craftsNet, this, configuration, name, addon.getStringList("dependencies").toArray(String[]::new));
+                    dependencies = artifactLoader.loadLibraries(this.craftsNet, this, configuration, name, addon.getStringList("dependencies").toArray(String[]::new));
                     urls.computeIfAbsent(name, s -> new ConcurrentLinkedQueue<>()).addAll(Arrays.asList(dependencies));
                 }
 
@@ -142,7 +145,7 @@ final class AddonLoader {
                 configurations.put(file, new Configuration(configuration.json(), dependencies, configuration.services, configuration.addon()));
             }
         }
-        ArtifactLoader.stop();
+        artifactLoader.stop();
 
         AddonLoadOrder loadOrder = new AddonLoadOrder();
 
