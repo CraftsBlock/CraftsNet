@@ -7,7 +7,7 @@ import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 
 /**
- *
+ * Command executor for the reload command.
  * This class implements the {@link CommandExecutor} interface and provides functionality to handle the "reload" command.
  *
  * @author CraftsBlock
