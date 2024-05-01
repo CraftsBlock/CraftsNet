@@ -175,7 +175,7 @@ public abstract class Addon {
      * @return An instance of the specified addon type if found, or {@code null} if not present.
      */
     public <T extends Addon> T getAddon(Class<T> addon) {
-        return CraftsNet.instance().addonManager().getAddon(addon);
+        return craftsNet.addonManager().getAddon(addon);
     }
 
 }

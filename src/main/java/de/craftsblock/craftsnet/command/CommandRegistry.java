@@ -65,11 +65,13 @@ public class CommandRegistry {
                 command = tmp;
                 break;
             }
+
         if (command == null) {
             logger.warning("This command was not found!");
             return;
         }
-        command.getExecutor().onCommand(command, args, logger);
+
+        command.getExecutor().onCommand(command, name, args, logger);
     }
 
 }

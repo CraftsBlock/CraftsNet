@@ -35,11 +35,12 @@ public class PluginCommand implements CommandExecutor {
      * This method retrieves the {@link AddonManager} from CraftsNet and logs information about installed addons to the provided logger.
      *
      * @param command The command that was executed.
+     * @param alias   The alias name of the command used to access it.
      * @param args    The arguments passed with the command (not used in this implementation).
      * @param logger  The logger used to log messages.
      */
     @Override
-    public void onCommand(@NotNull Command command, @NotNull String[] args, @NotNull Logger logger) {
+    public void onCommand(@NotNull Command command, @NotNull String alias, @NotNull String[] args, @NotNull Logger logger) {
         AddonManager addonManager = craftsNet.addonManager();
         if (addonManager.getAddons().isEmpty()) {
             logger.info("Currently there are no addons installed!");

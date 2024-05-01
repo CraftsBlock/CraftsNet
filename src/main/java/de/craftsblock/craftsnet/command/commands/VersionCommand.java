@@ -23,11 +23,12 @@ public class VersionCommand implements CommandExecutor {
      * This method logs the current version of CraftsNet to the provided logger.
      *
      * @param command The command that was executed.
+     * @param alias   The alias name of the command used to access it.
      * @param args    The arguments passed with the command (not used in this implementation).
      * @param logger  The logger used to log messages.
      */
     @Override
-    public void onCommand(@NotNull Command command, @NotNull String[] args, @NotNull Logger logger) {
+    public void onCommand(@NotNull Command command, @NotNull String alias, @NotNull String[] args, @NotNull Logger logger) {
         logger.info("You are using CraftsNet v" + CraftsNet.version);
     }
 

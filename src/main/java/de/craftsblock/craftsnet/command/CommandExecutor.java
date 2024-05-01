@@ -19,9 +19,10 @@ public interface CommandExecutor {
      * Executes a command with the provided arguments and logger.
      *
      * @param command The command to be executed.
+     * @param alias   The alias name of the command used to access it.
      * @param args    The arguments passed with the command.
      * @param logger  The logger for outputting messages or logging.
      */
-    void onCommand(@NotNull Command command, @NotNull String[] args, @NotNull Logger logger);
+    void onCommand(@NotNull Command command, String alias, @NotNull String[] args, @NotNull Logger logger);
 
 }

@@ -11,6 +11,7 @@ import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.command.commands.PluginCommand;
+import de.craftsblock.craftsnet.command.commands.ReloadCommand;
 import de.craftsblock.craftsnet.command.commands.ShutdownCommand;
 import de.craftsblock.craftsnet.command.commands.VersionCommand;
 import de.craftsblock.craftsnet.events.ConsoleMessageEvent;
@@ -18,6 +19,7 @@ import de.craftsblock.craftsnet.listeners.ConsoleListener;
 import de.craftsblock.craftsnet.logging.FileLogger;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,11 +39,11 @@ public class CraftsNet {
 
     // Global variables
     public static final String version = "3.0.4-SNAPSHOT";
-    private static CraftsNet instance;
 
     // Lokal instance
     private Builder builder;
     private Logger logger;
+    private FileLogger fileLogger;
     private Thread consoleListener;
     private Thread shutdownThread;
 
@@ -87,11 +89,10 @@ public class CraftsNet {
      * @throws IOException If an I/O error occurs during the startup process.
      */
     protected void start(Builder builder) throws IOException {
-        // Check if the builder was set and throw an exception if it is already set
-        if (this.builder != null && instance == null)
-            throw new RuntimeException("");
+        // Check if the builder was set or CraftsNet is already running and throw an exception if needed.
+        if (this.builder != null)
+            throw new RuntimeException("The instance of CraftsNet has already been started!");
         // Save the builder and the current instance
-        CraftsNet.instance = this;
         this.builder = builder;
 
         // Start measuring the startup time
@@ -99,11 +100,12 @@ public class CraftsNet {
 
         // Create and initialize the logger & file logger
         logger = new Logger(builder.isDebug());
-        FileLogger.start();
+        fileLogger = new FileLogger();
+        fileLogger.start();
 
         // Setup default uncaught exception handler
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-            long identifier = FileLogger.createErrorLog(this, e);
+            long identifier = fileLogger.createErrorLog(this, e);
             logger.error(e, "Throwable: " + identifier);
         });
 
@@ -122,7 +124,7 @@ public class CraftsNet {
 
         // Check if http routes are registered and start the web server if needed
         webServer = new WebServer(this, builder.getWebServerPort(), builder.isSSL());
-        if (builder.isWebServer(ActivateType.ENABLED) || (builder.isWebServer(ActivateType.DYNAMIC))) {
+        if (builder.isWebServer(ActivateType.ENABLED) || builder.isWebServer(ActivateType.DYNAMIC)) {
             // Set the bodyRegistry if the webserver is enabled.
             bodyRegistry = new BodyRegistry();
 
@@ -151,8 +153,10 @@ public class CraftsNet {
             listenerRegistry.register(new ConsoleListener(this));
             commandRegistry.getCommand("pl").setExecutor(new PluginCommand(this));
             commandRegistry.getCommand("pl").addAlias("plugin", "plugins", "addons");
+            commandRegistry.getCommand("restart").setExecutor(new ReloadCommand(this));
+            commandRegistry.getCommand("restart").addAlias("reload", "rl");
             commandRegistry.getCommand("shutdown").setExecutor(new ShutdownCommand(this));
-            commandRegistry.getCommand("shutdown").addAlias("quit", "exit");
+            commandRegistry.getCommand("shutdown").addAlias("quit", "exit", "stop");
             commandRegistry.getCommand("ver").setExecutor(new VersionCommand());
             commandRegistry.getCommand("ver").addAlias("version", "v");
 
@@ -174,7 +178,9 @@ public class CraftsNet {
      * Stops the CraftsNet framework.
      */
     public void stop() {
+        logger.info("Shutdown request has been received");
         if (this.consoleListener != null && !this.consoleListener.isInterrupted()) {
+            logger.info("Closing the console input listener");
             this.consoleListener.interrupt();
             this.consoleListener = null;
         }
@@ -194,13 +200,39 @@ public class CraftsNet {
             this.addonManager = null;
         }
 
+        if (this.fileLogger != null) {
+            logger.info("Disconnecting the file logger");
+            this.fileLogger.stop();
+            this.fileLogger = null;
+        }
+
         try {
             if (this.shutdownThread != null) {
+                logger.info("Removing jvm shutdown hook");
                 Runtime.getRuntime().removeShutdownHook(this.shutdownThread);
                 this.shutdownThread = null;
             }
         } catch (IllegalStateException ignored) {
         }
+
+        logger.info("CraftsNet has been shutdown");
+    }
+
+    /**
+     * Restarts the CraftsNet framework.
+     */
+    public void restart() throws IOException {
+        restart(null);
+    }
+
+    /**
+     * Restarts the CraftsNet framework.
+     */
+    public void restart(Runnable executeBetween) throws IOException {
+        Builder builder = this.builder;
+        stop();
+        if (executeBetween != null) executeBetween.run();
+        start(builder);
     }
 
     /**
@@ -307,21 +339,21 @@ public class CraftsNet {
     }
 
     /**
+     * Retrieves the file logger instance for logging messages to an file.
+     *
+     * @return The file logger instance.
+     */
+    public FileLogger fileLogger() {
+        return fileLogger;
+    }
+
+    /**
      * Retrieves the builder instance used for configuring CraftsNet.
      *
      * @return The builder instance.
      */
     public Builder getBuilder() {
         return builder;
-    }
-
-    /**
-     * Retrieves the current active instance of CraftsNet.
-     *
-     * @return The singleton instance of CraftsNet.
-     */
-    public static CraftsNet instance() {
-        return instance;
     }
 
     /**

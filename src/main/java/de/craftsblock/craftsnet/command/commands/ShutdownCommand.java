@@ -34,11 +34,12 @@ public class ShutdownCommand implements CommandExecutor {
      * Executes the "shutdown" command, initiating the shutdown process for CraftsNet.
      *
      * @param command The {@code Command} object representing the "shutdown" command.
+     * @param alias   The alias name of the command used to access it.
      * @param args    The arguments passed with the command (not used in this command).
      * @param logger  The logger for outputting messages or logging.
      */
     @Override
-    public void onCommand(@NotNull Command command, @NotNull String[] args, @NotNull Logger logger) {
+    public void onCommand(@NotNull Command command, @NotNull String alias, @NotNull String[] args, @NotNull Logger logger) {
         logger.info("Shutdown anfrage wurde gesendet!");
         craftsNet.stop();
         // Interrupt the console reader thread if it exists
