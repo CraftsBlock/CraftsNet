@@ -87,7 +87,7 @@ public class WebHandler implements HttpHandler {
                 respondWithError(response, "Path do not match any API endpoint!");
                 logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[NOT FOUND]");
             } catch (Throwable t) {
-                long errorID = FileLogger.createErrorLog(this.craftsNet, t, "http", url);
+                long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "http", url);
                 logger.error(t, "Error: " + errorID);
                 response.println(Json.empty()
                         .set("error.message", "An unexpected exception happened whilst processing your request!")

@@ -24,17 +24,22 @@ import java.util.regex.Pattern;
  */
 public class FileLogger {
 
-    private static final File folder = new File("logs");
-    private static FileOutputStream stream;
+    private final File folder = new File("logs");
+
+    private FileOutputStream stream;
+    private PrintStream oldOut;
+    private PrintStream oldErr;
 
     /**
      * Starts logging to files.
      * This method sets up file logging by redirecting standard output and error streams to log files.
      */
-    public static void start() {
+    public void start() {
+        if (stream != null) return;
+
         try {
-            PrintStream oldOut = System.out;
-            PrintStream oldErr = System.err;
+            oldOut = System.out;
+            oldErr = System.err;
 
             File file = new File(folder, "latest.log");
             if (file.exists()) {
@@ -63,12 +68,30 @@ public class FileLogger {
     }
 
     /**
+     * Stops the logging to files
+     */
+    public void stop() {
+        OutputStream out = System.out;
+        OutputStream err = System.err;
+
+        if (oldOut != null) System.setOut(oldOut);
+        if (oldErr != null) System.setErr(oldErr);
+
+        try {
+            out.close();
+            err.close();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Adds a line to the log file.
      * This method adds a line to the current log file.
      *
      * @param line The line to add to the log file.
      */
-    public static void addLine(String line) {
+    public void addLine(String line) {
         if (stream == null) return;
         if (line != null && line.contains("SLF4J")) return;
         try {
@@ -89,7 +112,7 @@ public class FileLogger {
      * @param path      The path associated with the error.
      * @return The identifier of the error log file.
      */
-    public static long createErrorLog(CraftsNet craftsNet, Throwable throwable, String protocol, String path) {
+    public long createErrorLog(CraftsNet craftsNet, Throwable throwable, String protocol, String path) {
         return createErrorLog(craftsNet, throwable, Map.of("Protocol", protocol, "Path", path));
     }
 
@@ -101,7 +124,7 @@ public class FileLogger {
      * @param throwable The throwable for which to create the error log file.
      * @return The identifier of the error log file.
      */
-    public static long createErrorLog(CraftsNet craftsNet, Throwable throwable) {
+    public long createErrorLog(CraftsNet craftsNet, Throwable throwable) {
         return createErrorLog(craftsNet, throwable, Collections.emptyMap());
     }
 
@@ -114,7 +137,7 @@ public class FileLogger {
      * @param additional Additional information to include in the error log file.
      * @return The identifier of the error log file.
      */
-    public static long createErrorLog(CraftsNet craftsNet, Throwable throwable, Map<String, String> additional) {
+    public long createErrorLog(CraftsNet craftsNet, Throwable throwable, Map<String, String> additional) {
         File errors = new File(folder, "errors");
         ensureParentFolder(errors);
         if (!errors.exists()) errors.mkdirs();
@@ -153,7 +176,7 @@ public class FileLogger {
      *
      * @param file The file whose parent folder needs to be ensured.
      */
-    private static void ensureParentFolder(File file) {
+    private void ensureParentFolder(File file) {
         if (file.getParentFile() != null && !file.getParentFile().exists()) file.getParentFile().mkdirs();
     }
 
@@ -167,7 +190,7 @@ public class FileLogger {
         private static final Pattern pattern = Pattern.compile("\u001B\\[[;\\d]*m");
 
         // The output stream where the log messages will be written
-        private final OutputStream stream;
+        private final FileOutputStream stream;
 
         /**
          * Constructs a new {@code LoggerPrintStream} instance.
@@ -175,7 +198,7 @@ public class FileLogger {
          * @param console The original console print stream.
          * @param stream  The output stream where the log messages will be written.
          */
-        public LoggerPrintStream(PrintStream console, OutputStream stream) {
+        public LoggerPrintStream(PrintStream console, FileOutputStream stream) {
             super(console);
             this.stream = stream;
         }
@@ -218,7 +241,7 @@ public class FileLogger {
          */
         @Override
         public void close() {
-            super.close();
+//            super.close();
             try {
                 stream.flush();
                 stream.close();

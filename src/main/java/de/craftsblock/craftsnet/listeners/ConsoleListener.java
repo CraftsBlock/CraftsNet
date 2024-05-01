@@ -43,7 +43,7 @@ public class ConsoleListener implements ListenerAdapter {
         if (event.isCancelled())
             return;
         String message = event.getMessage();
-        FileLogger.addLine("> " + message);
+        craftsNet.fileLogger().addLine("> " + message);
         String[] args = message.split(" ");
         String command = args[0];
         args = Arrays.stream(args).skip(1).toArray(String[]::new);
