@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.addon;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -23,6 +24,9 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public final class AddonManager {
 
+    private final CraftsNet craftsNet;
+    private final Logger logger;
+
     private final ConcurrentHashMap<String, Addon> addons = new ConcurrentHashMap<>();
 
     /**
@@ -33,6 +37,9 @@ public final class AddonManager {
      * @throws IOException if there is an I/O error while accessing the addons folder.
      */
     public AddonManager(CraftsNet craftsNet) throws IOException {
+        this.craftsNet = craftsNet;
+        this.logger = this.craftsNet.logger();
+
         File folder = new File("./addons/");
         if (!folder.isDirectory()) {
             folder.delete();
@@ -48,7 +55,10 @@ public final class AddonManager {
      * Method to stop the AddonManager. It is called during application shutdown.
      */
     public void stop() {
-        addons.values().forEach(Addon::onDisable);
+        addons.values().forEach(addon -> {
+            logger.info("Disabling addon " + addon.getName());
+            addon.onDisable();
+        });
         addons.values().forEach(this::unregister);
         addons.clear();
     }
