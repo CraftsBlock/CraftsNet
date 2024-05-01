@@ -106,6 +106,7 @@ final class AddonLoader {
                 AtomicBoolean skip = new AtomicBoolean(false);
                 jarFile.stream().filter(jarEntry -> jarEntry.getName().endsWith(".class") && !jarEntry.isDirectory())
                         .forEach(jarEntry -> {
+                            if (!jarEntry.getName().endsWith(".class")) return;
                             if (skip.get()) return;
                             try (DataInputStream dis = new DataInputStream(jarFile.getInputStream(jarEntry))) {
                                 dis.skipBytes(4);
