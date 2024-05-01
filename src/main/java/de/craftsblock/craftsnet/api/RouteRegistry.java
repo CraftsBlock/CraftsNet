@@ -702,6 +702,15 @@ public class RouteRegistry {
                                @NotNull Pattern validator,
                                ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements) implements Mapping {
 
+        /**
+         * Retrieves a list of requirements which were registered under a certain annotation class.
+         *
+         * @param annotation The annotation as it's class representation used to find the requirements.
+         * @param type       The expected return type as it's class representation.
+         * @param <A>        The annotation used to find the requirements.
+         * @param <T>        The expected return type.
+         * @return A list of requirements which are listed under the annotation.
+         */
         public <A extends Annotation, T> List<T> getRequirements(Class<A> annotation, Class<T> type) {
             return requirements.get(annotation).parallelStream().filter(type::isInstance).map(type::cast).toList();
         }

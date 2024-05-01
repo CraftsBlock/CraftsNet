@@ -130,10 +130,10 @@ public class WebSocketServer extends Server {
     }
 
     /**
+     * Opens a new thread for the connection of the client and starts the websocket client.
      *
-     *
-     * @param socket
-     * @param i
+     * @param socket The socket used to connect.
+     * @param i      The current identifier of the websocket client.
      */
     private void connectClient(Socket socket, AtomicInteger i) {
         Thread client = new Thread(new WebSocketClient(this.craftsNet, socket, this));

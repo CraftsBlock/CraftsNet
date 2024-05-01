@@ -193,7 +193,7 @@ public class SSL {
      * This method reads an InputStream containing a private key in PEM format,
      * decodes it, and returns a PrivateKey instance.
      *
-     * @param craftsNet The CraftsNet instance which instantiates this ssl private key operation.
+     * @param craftsNet        The CraftsNet instance which instantiates this ssl private key operation.
      * @param privateKeyStream An InputStream containing the private key data in PEM format.
      * @return The PrivateKey instance decoded from the provided input stream.
      * @throws IOException If an I/O error occurs while reading the input stream.
