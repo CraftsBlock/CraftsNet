@@ -129,6 +129,18 @@ To enable SSL and enable a secure connection, you can simply add your SSL certif
 
 You can then enable SSL by appending `--ssl` to your startup command.
 
+## Open Source Licenses
+We are using some third party open source libraries. Beneeth you find a list of all third party open source libraries used:
+| Name                                                                   | Description                                                                                                                           | Licecnse                                                                                         |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| [OkHttp](https://github.com/square/okhttp)                             | Square’s meticulous HTTP client for the JVM, Android, and GraalVM.                                                                    | [Apache License 2.0](https://github.com/square/okhttp/blob/master/LICENSE.txt)                   |
+| [MySQL Connector-J](https://github.com/mysql/mysql-connector-j)        | MySQL Connector/J                                                                                                                     | [GPLv2 with FOSS exception](https://github.com/mysql/mysql-connector-j/blob/release/8.x/LICENSE) |
+| [GSON](https://github.com/google/gson)                                 | A Java serialization/deserialization library to convert Java Objects into JSON and back                                               | [Apache License 2.0](https://github.com/google/gson/blob/main/LICENSE)                           |
+| [Apache Tika](https://github.com/apache/tika)                          | The Apache Tika toolkit detects and extracts metadata and text from over a thousand different file types (such as PPT, XLS, and PDF). | [Apache License 2.0](https://github.com/apache/tika/blob/main/LICENSE.txt)                       |
+| [JetBrains Annotations](https://github.com/JetBrains/java-annotations) | Annotations for JVM-based languages.                                                                                                  | [Apache License 2.0](https://github.com/JetBrains/java-annotations/blob/master/LICENSE.txt)      |
+| [Apache Maven](https://github.com/apache/maven/tree/master)            | Apache Maven core                                                                                                                     | [Apache License 2.0](https://github.com/apache/maven/blob/master/LICENSE)                        |
+| [Apache Maven-Resolver](https://github.com/apache/maven-resolver)      | Apache Maven Artifact Resolver                                                                                                        | [Apache License 2.0](https://github.com/apache/maven-resolver/blob/master/LICENSE)               |
+
 ## Support and contribution
 If you have any questions or have found a bug, please feel free to let us know in our [issue tracker](https://github.com/CraftsBlock/CraftsNet/issues). We appreciate any help and welcome your contributions to improve the CraftsNet project.
 
