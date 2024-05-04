@@ -11,7 +11,6 @@ import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.events.RequestEvent;
 import de.craftsblock.craftsnet.events.shares.ShareFileLoadedEvent;
 import de.craftsblock.craftsnet.events.shares.ShareRequestEvent;
-import de.craftsblock.craftsnet.logging.FileLogger;
 import de.craftsblock.craftsnet.logging.Logger;
 
 import java.io.File;
@@ -87,12 +86,14 @@ public class WebHandler implements HttpHandler {
                 respondWithError(response, "Path do not match any API endpoint!");
                 logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[NOT FOUND]");
             } catch (Throwable t) {
-                long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "http", url);
-                logger.error(t, "Error: " + errorID);
-                response.println(Json.empty()
-                        .set("error.message", "An unexpected exception happened whilst processing your request!")
-                        .set("error.identifier", errorID)
-                        .asString());
+                if (craftsNet.fileLogger() != null) {
+                    long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "http", url);
+                    logger.error(t, "Error: " + errorID);
+                    response.println(Json.empty()
+                            .set("error.message", "An unexpected exception happened whilst processing your request!")
+                            .set("error.identifier", errorID)
+                            .asString());
+                }
             }
         }
     }

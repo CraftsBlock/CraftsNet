@@ -18,8 +18,8 @@ import de.craftsblock.craftsnet.events.ConsoleMessageEvent;
 import de.craftsblock.craftsnet.listeners.ConsoleListener;
 import de.craftsblock.craftsnet.logging.FileLogger;
 import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.logging.LoggerImpl;
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -32,7 +32,7 @@ import java.lang.reflect.InvocationTargetException;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.0.0
+ * @version 3.0.1
  * @since 1.0.0
  */
 public class CraftsNet {
@@ -99,14 +99,23 @@ public class CraftsNet {
         long start = System.currentTimeMillis();
 
         // Create and initialize the logger & file logger
-        logger = new Logger(builder.isDebug());
-        fileLogger = new FileLogger();
-        fileLogger.start();
+        logger = builder.getCustomLogger();
+
+        // Checks if the file logger was enabled and start it if so
+        if (builder.isFileLogger(ActivateType.ENABLED)) {
+            fileLogger = new FileLogger();
+            fileLogger.start();
+        }
 
         // Setup default uncaught exception handler
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-            long identifier = fileLogger.createErrorLog(this, e);
-            logger.error(e, "Throwable: " + identifier);
+            if (fileLogger != null) {
+                long identifier = fileLogger.createErrorLog(this, e);
+                logger.error(e, "Throwable: " + identifier);
+                return;
+            }
+
+            logger.error(e);
         });
 
         // Log startup message
@@ -383,6 +392,9 @@ public class CraftsNet {
         private ActivateType addonSystem;
         private ActivateType commandSystem;
 
+        private ActivateType fileLogger;
+        private Logger logger;
+
         private boolean debug;
         private boolean ssl;
 
@@ -393,7 +405,7 @@ public class CraftsNet {
             webServerPort = 5000;
             webSocketServerPort = 5001;
             webServer = webSocketServer = ActivateType.DYNAMIC;
-            addonSystem = commandSystem = ActivateType.ENABLED;
+            addonSystem = commandSystem = fileLogger = ActivateType.ENABLED;
             debug = false;
             ssl = false;
         }
@@ -406,6 +418,17 @@ public class CraftsNet {
          */
         public Builder withWebServer(int port) {
             return withWebServer(ActivateType.DYNAMIC, port);
+        }
+
+        /**
+         * Specifies the port for the web server.
+         *
+         * @param type The activation type for the web server.
+         * @return The Builder instance.
+         * @since 3.0.5
+         */
+        public Builder withWebServer(ActivateType type) {
+            return withWebServer(type, this.webServerPort);
         }
 
         /**
@@ -429,6 +452,17 @@ public class CraftsNet {
          */
         public Builder withWebSocketServer(int port) {
             return withWebSocketServer(ActivateType.DYNAMIC, port);
+        }
+
+        /**
+         * Specifies the activation type and port for the WebSocket server.
+         *
+         * @param type The activation type for the WebSocket server.
+         * @return The Builder instance.
+         * @since 3.0.5
+         */
+        public Builder withWebSocketServer(ActivateType type) {
+            return withWebSocketServer(type, this.webSocketServerPort);
         }
 
         /**
@@ -463,6 +497,30 @@ public class CraftsNet {
          */
         public Builder withCommandSystem(ActivateType type) {
             this.commandSystem = type;
+            return this;
+        }
+
+        /**
+         * Specifies the activation type for the file logger.
+         *
+         * @param type The activation type for the file logger.
+         * @return The Builder instance.
+         * @since 3.0.5
+         */
+        public Builder withFileLogger(ActivateType type) {
+            this.fileLogger = type;
+            return this;
+        }
+
+        /**
+         * Sets a custom logger which will be used by CraftsNet. It can be null when the default logger should be used.
+         *
+         * @param logger The instance of the custom logger.
+         * @return The Builder instance.
+         * @since 3.0.5
+         */
+        public Builder withCustomLogger(Logger logger) {
+            this.logger = logger;
             return this;
         }
 
@@ -583,6 +641,27 @@ public class CraftsNet {
         }
 
         /**
+         * Checks if the file logger is configured with the specified activation type.
+         *
+         * @param type The activation type to check.
+         * @return true if the file logger is configured with the specified activation type, false otherwise.
+         * @since 3.0.5
+         */
+        public boolean isFileLogger(ActivateType type) {
+            return fileLogger == type;
+        }
+
+        /**
+         * Retrieves the custom logger which should be used by CraftsNet.
+         *
+         * @return The logger instance.
+         * @since 3.0.5
+         */
+        public Logger getCustomLogger() {
+            return logger;
+        }
+
+        /**
          * Checks if debug mode is enabled.
          *
          * @return true if debug mode is enabled, false otherwise.
@@ -607,6 +686,9 @@ public class CraftsNet {
          * @throws IOException If an I/O error occurs during the startup process.
          */
         public CraftsNet build() throws IOException {
+            // Set up the logger if no logger was given
+            if (logger == null) logger = new LoggerImpl(isDebug());
+
             CraftsNet craftsNet = new CraftsNet();
             craftsNet.start(this);
             return craftsNet;
