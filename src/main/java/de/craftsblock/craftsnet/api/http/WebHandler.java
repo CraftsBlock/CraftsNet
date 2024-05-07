@@ -93,7 +93,7 @@ public class WebHandler implements HttpHandler {
                             .set("error.message", "An unexpected exception happened whilst processing your request!")
                             .set("error.identifier", errorID)
                             .asString());
-                }
+                } else logger.error(t);
             }
         }
     }

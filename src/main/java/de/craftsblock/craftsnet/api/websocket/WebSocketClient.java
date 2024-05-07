@@ -221,8 +221,14 @@ public class WebSocketClient implements Runnable {
                 sendMessage(JsonParser.parse("{}").set("error", "Path do not match any API endpoint!").asString());
             }
         } catch (SocketException ignored) {
-        } catch (Exception e) {
-            logger.error(e);
+        } catch (Throwable t) {
+            if (craftsNet.fileLogger() != null) {
+                long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "ws", path);
+                logger.error(t, "Error: " + errorID);
+                sendMessage(Json.empty()
+                        .set("error.message", "An unexpected exception happened whilst processing your message!")
+                        .set("error.identifier", errorID));
+            } else logger.error(t);
         } finally {
             disconnect();
         }
