@@ -130,7 +130,7 @@ To enable SSL and enable a secure connection, you can simply add your SSL certif
 You can then enable SSL by appending `--ssl` to your startup command.
 
 ## Open Source Licenses
-We are using some third party open source libraries. Beneeth you find a list of all third party open source libraries used:
+We are using some third party open source libraries. Below you find a list of all third party open source libraries used:
 | Name                                                                   | Description                                                                                                                           | Licecnse                                                                                         |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | [OkHttp](https://github.com/square/okhttp)                             | Square’s meticulous HTTP client for the JVM, Android, and GraalVM.                                                                    | [Apache License 2.0](https://github.com/square/okhttp/blob/master/LICENSE.txt)                   |
