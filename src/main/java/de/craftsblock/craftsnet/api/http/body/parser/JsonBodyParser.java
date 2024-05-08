@@ -27,7 +27,7 @@ public class JsonBodyParser extends BodyParser<JsonBody> {
      * Constructs a new JsonBodyParser object with the content type set to "application/json".
      */
     public JsonBodyParser() {
-        super(ContentType.APPLICATION_JSON);
+        super(ContentType.APPLICATION_JSON, "text/*");
     }
 
     /**

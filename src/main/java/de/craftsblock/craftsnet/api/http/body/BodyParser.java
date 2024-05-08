@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * This abstract class represents a parser for HTTP request or response bodies.
@@ -23,7 +24,7 @@ import java.util.List;
  */
 public abstract class BodyParser<T extends Body> {
 
-    private final List<String> contentTypes;
+    private final List<Pattern> contentTypes;
 
     /**
      * Constructs a new BodyParser with the given content types.
@@ -35,7 +36,7 @@ public abstract class BodyParser<T extends Body> {
         List<String> types = new ArrayList<>();
         types.add(contentType);
         types.addAll(List.of(contentTypes));
-        this.contentTypes = Collections.unmodifiableList(types);
+        this.contentTypes = types.parallelStream().map(Pattern::compile).toList();
     }
 
     /**
@@ -48,11 +49,11 @@ public abstract class BodyParser<T extends Body> {
     public abstract @Nullable T parse(Request request, InputStream body);
 
     /**
-     * Returns an unmodifiable list of supported content types.
+     * Returns an unmodifiable list of supported content types as patterns.
      *
-     * @return The list of supported content types.
+     * @return The list of supported content types as patterns.
      */
-    public final @Unmodifiable List<String> contentTypes() {
+    public final @Unmodifiable List<Pattern> contentTypes() {
         return contentTypes;
     }
 
@@ -63,7 +64,8 @@ public abstract class BodyParser<T extends Body> {
      * @return true if the parser supports the given content type, false otherwise.
      */
     public final boolean isParseable(String contentType) {
-        return this.contentTypes.contains(contentType);
+        return this.contentTypes.parallelStream()
+                .anyMatch(pattern -> pattern.matcher(contentType).matches());
     }
 
 }
