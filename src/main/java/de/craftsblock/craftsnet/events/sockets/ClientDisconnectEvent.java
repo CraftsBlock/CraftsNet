@@ -2,6 +2,8 @@ package de.craftsblock.craftsnet.events.sockets;
 
 import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.api.websocket.ClosureCode;
+import de.craftsblock.craftsnet.api.websocket.ControlByte;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
 
 import java.util.List;
@@ -20,15 +22,23 @@ public class ClientDisconnectEvent extends Event {
     private final SocketExchange exchange;
     private final List<RouteRegistry.SocketMapping> mappings;
 
+    private final int rawCloseCode;
+    private final ClosureCode closeCode;
+    private final String closeReason;
+
     /**
      * Constructs a new ClientDisconnectEvent with the specified SocketExchange and SocketMapping.
      *
      * @param exchange The SocketExchange object representing the socket connection and its associated data.
      * @param mappings A list of all SocketMapping objects associated with the client disconnection event.
      */
-    public ClientDisconnectEvent(SocketExchange exchange, List<RouteRegistry.SocketMapping> mappings) {
+    public ClientDisconnectEvent(SocketExchange exchange, int closeCode, String closeReason, List<RouteRegistry.SocketMapping> mappings) {
         this.exchange = exchange;
         this.mappings = mappings;
+
+        this.rawCloseCode = closeCode;
+        this.closeCode = ClosureCode.fromInt(closeCode);
+        this.closeReason = closeReason;
     }
 
     /**
@@ -56,6 +66,33 @@ public class ClientDisconnectEvent extends Event {
      */
     public SocketExchange getExchange() {
         return exchange;
+    }
+
+    /**
+     * Gets the raw close code why the connection was closed.
+     *
+     * @return The raw close code if it was present, -1 otherwise
+     */
+    public int getRawCloseCode() {
+        return rawCloseCode;
+    }
+
+    /**
+     * Gets the close code parsed to a ClosureCode why the connection was closed.
+     *
+     * @return The parsed close code if it was present, and it is registered in the ClosureCode enum, null otherwise
+     */
+    public ClosureCode getCloseCode() {
+        return closeCode;
+    }
+
+    /**
+     * Gets the reason why the connection was closed.
+     *
+     * @return The close reason if it was present, null otherwise
+     */
+    public String getCloseReason() {
+        return closeReason;
     }
 
 }

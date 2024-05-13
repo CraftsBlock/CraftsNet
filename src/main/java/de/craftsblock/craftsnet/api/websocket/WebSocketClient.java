@@ -8,10 +8,7 @@ import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
-import de.craftsblock.craftsnet.events.sockets.ClientConnectEvent;
-import de.craftsblock.craftsnet.events.sockets.ClientDisconnectEvent;
-import de.craftsblock.craftsnet.events.sockets.IncomingSocketMessageEvent;
-import de.craftsblock.craftsnet.events.sockets.OutgoingSocketMessageEvent;
+import de.craftsblock.craftsnet.events.sockets.*;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -22,6 +19,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.http.HttpClient;
+import java.net.http.WebSocket;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -65,6 +64,9 @@ public class WebSocketClient implements Runnable {
 
     private boolean active = false;
     private boolean connected = false;
+
+    private int closeCode = -1;
+    private String closeReason = null;
 
     /**
      * Creates a new WebSocketClient with the provided socket and server.
@@ -160,11 +162,33 @@ public class WebSocketClient implements Runnable {
                 });
 
                 connected = true;
-                byte[] message;
-                while (!Thread.currentThread().isInterrupted() && (message = readMessage()) != null) {
+                Message message;
+                while (!Thread.currentThread().isInterrupted() && isConnected() && (message = readMessage()) != null) {
                     // Process incoming messages from the client
-                    byte[] data = message;
-                    if (IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) break;
+                    byte[] data = message.message();
+
+                    if (message.controlByte.equals(ControlByte.CLOSE)) {
+                        if (data == null || data.length <= 2) break;
+                        closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
+                        closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
+                        break;
+                    }
+
+                    if (message.controlByte().equals(ControlByte.PING)) {
+                        craftsNet.listenerRegistry().call(new ReceivedPingMessageEvent(exchange, data));
+                        continue;
+                    }
+
+                    if (message.controlByte().equals(ControlByte.PONG)) {
+                        craftsNet.listenerRegistry().call(new ReceivedPongMessageEvent(exchange, data));
+                        continue;
+                    }
+
+                    if (message.controlByte().equals(ControlByte.TEXT) &&
+                            IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) {
+                        closeInternally(ClosureCode.UNSUPPORTED, "Send negativ byte values while the control byte is set to utf8!");
+                        break;
+                    }
 
                     // Fire an incoming socket message event and continue if it was cancelled
                     IncomingSocketMessageEvent event2 = new IncomingSocketMessageEvent(exchange, data);
@@ -302,10 +326,10 @@ public class WebSocketClient implements Runnable {
     /**
      * Reads a WebSocket message from the client.
      *
-     * @return The message as a byte array, or null if the client has disconnected.
+     * @return The message as a message, or null if the client has disconnected.
      * @throws IOException If an I/O error occurs while reading the message.
      */
-    private byte[] readMessage() throws IOException {
+    private Message readMessage() throws IOException {
         if (socket.isClosed()) return null;
 
         // Read the input stream from the socket.
@@ -313,10 +337,18 @@ public class WebSocketClient implements Runnable {
 
         // Create a 10-byte buffer to store the received message.
         byte[] frame = new byte[10];
+
         // Read the first two bytes of the frame (header) from the input stream.
         inputStream.read(frame, 0, 2);
 
-        // Extract the payload length from the second byte of the header.
+        // Extract the control byte from the first byte of the header.
+        ControlByte controlByte = ControlByte.fromByte(frame[0]);
+        if (controlByte == null) {
+            closeInternally(ClosureCode.UNSUPPORTED, "Unknown control byte 0x" + Integer.toHexString(frame[0]));
+            return null;
+        }
+
+        // Extract and the payload length from the second byte of the header.
         byte payloadLength = (byte) (frame[1] & 0x7F);
         if (payloadLength == 126)
             // If the payload length is 126, read an additional 2 bytes for the actual length.
@@ -355,7 +387,7 @@ public class WebSocketClient implements Runnable {
         }
 
         // Convert the read payload data to a string using UTF-8 encoding and return it.
-        return payloadBuilder.toByteArray();
+        return new Message(controlByte, payloadBuilder.toByteArray());
     }
 
     /**
@@ -436,7 +468,7 @@ public class WebSocketClient implements Runnable {
      * @param data The message to be sent, as it's string representation.
      */
     public void sendMessage(String data) {
-        sendMessage(data.getBytes(StandardCharsets.UTF_8));
+        sendMessage(data.getBytes(StandardCharsets.UTF_8), ControlByte.TEXT);
     }
 
     /**
@@ -445,17 +477,123 @@ public class WebSocketClient implements Runnable {
      * @param data The message to be sent, as a byte array.
      */
     public void sendMessage(byte[] data) {
-        try {
-            OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(new SocketExchange(server, this), data);
-            craftsNet.listenerRegistry().call(event);
-            if (event.isCancelled())
+        sendMessage(data, ControlByte.BINARY);
+    }
+
+    /**
+     * Sends a ping to the connected WebSocket client.
+     */
+    public void sendPing() {
+        sendMessage(null, ControlByte.PING);
+    }
+
+    /**
+     * Sends a pong to the connected WebSocket client.
+     */
+    public void sendPong() {
+        sendMessage(null, ControlByte.PONG);
+    }
+
+    /**
+     * Disconnects the client gracefully without providing any information about the reason.
+     */
+    public void close() {
+        sendMessage(null, ControlByte.CLOSE);
+    }
+
+    /**
+     * Disconnects the client gracefully with a specified reason.
+     *
+     * @param reason The reason why the client has been closed.
+     * @throws IllegalStateException If the code used to close the connection is only for internal use.
+     */
+    public void close(String reason) {
+        close(ClosureCode.NORMAL, reason);
+    }
+
+    /**
+     * Disconnects the client gracefully with a specified pre-defined code and reason.
+     *
+     * @param code   The pre-defined code that is responsible for closing the socket.
+     * @param reason The reason why the client has been closed.
+     * @throws IllegalStateException If the code used to close the connection is only for internal use.
+     */
+    public void close(ClosureCode code, String reason) {
+        close(code.intValue(), reason);
+    }
+
+    /**
+     * Disconnects the client gracefully with a specified code and reason.
+     *
+     * @param code   The close code.
+     * @param reason The reason why the client has been closed.
+     * @throws IllegalStateException If the code used to close the connection is only for internal use.
+     */
+    public void close(int code, String reason) {
+        if (ClosureCode.RAW_INTERNAL_CODES.contains(code)) {
+            closeInternally(ClosureCode.SERVER_ERROR, "Used close code " + code);
+            throw new IllegalStateException("The close code " + code + " was used, but is not meant to use!");
+        }
+
+        closeInternally(code, reason);
+    }
+
+    /**
+     * Closes the client internally with a pre-defined close code and a reason.
+     *
+     * @param code   The pre-defined close code.
+     * @param reason The reason why the client has been closed.
+     */
+    private void closeInternally(ClosureCode code, String reason) {
+        closeInternally(code.intValue(), reason);
+    }
+
+    /**
+     * Closes the client internally with a close code and a reason.
+     *
+     * @param code   The close code.
+     * @param reason The reason why the client has been closed.
+     */
+    private void closeInternally(int code, String reason) {
+        byte[] message = reason.getBytes(StandardCharsets.UTF_8);
+        byte[] data = new byte[2 + message.length];
+
+        // Convert the code to an unsigned short and write it as the first two bytes
+        data[0] = (byte) (code >> 8);
+        data[1] = (byte) code;
+
+        // Copy the message into the data array
+        System.arraycopy(message, 0, data, 2, message.length);
+
+        // Fire the message
+        sendMessage(data, ControlByte.CLOSE);
+        disconnect();
+    }
+
+    /**
+     * Sends a message with a specific control byte to the connected WebSocket client.
+     *
+     * @param data        The message to be sent, as a byte array.
+     * @param controlByte The byte used to control the message flow.
+     */
+    private void sendMessage(byte[] data, ControlByte controlByte) {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            if (data == null) {
+                outputStream.write(controlByte.byteValue());
+                writer.write(outputStream.toByteArray());
                 return;
+            }
+
+            OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(new SocketExchange(server, this), controlByte, data);
+            if (!controlByte.equals(ControlByte.CLOSE)) {
+                craftsNet.listenerRegistry().call(event);
+                if (event.isCancelled())
+                    return;
+            }
+
+            outputStream.write(event.getControlByte().byteValue());
 
             byte @NotNull [] bytes = event.getData();
-
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            outputStream.write((byte) 0x81);
-
             int length = bytes.length;
             if (length <= 125)
                 outputStream.write((byte) length);
@@ -495,7 +633,7 @@ public class WebSocketClient implements Runnable {
      * @return True if the websocket is connected, false otherwise or if the connection failed
      */
     public boolean isConnected() {
-        return connected;
+        return connected && socket.isConnected();
     }
 
     /**
@@ -504,26 +642,39 @@ public class WebSocketClient implements Runnable {
      *
      * @return The Thread the client is running from
      */
-    public Thread disconnect() {
-        try {
-            if (reader == null || writer == null) return Thread.currentThread();
-            craftsNet.listenerRegistry().call(new ClientDisconnectEvent(new SocketExchange(server, this), mappings));
-            if (reader != null) reader.close();
-            reader = null;
-            if (writer != null) writer.close();
-            writer = null;
-            if (socket != null) socket.close();
-            logger.debug(ip + " disconnected");
-            ip = null;
-            headers = null;
-            mappings = null;
-            path = null;
-            server.remove(this);
-            connected = false;
-        } catch (InvocationTargetException | IllegalAccessException | IOException e) {
-            logger.error(e);
-        }
+    protected Thread disconnect() {
+        if (isConnected())
+            try {
+                if (reader == null || writer == null) return Thread.currentThread();
+                craftsNet.listenerRegistry().call(new ClientDisconnectEvent(new SocketExchange(server, this), closeCode, closeReason, mappings));
+                if (reader != null) reader.close();
+                reader = null;
+                if (writer != null) writer.close();
+                writer = null;
+                if (socket != null) socket.close();
+                logger.debug(ip + " disconnected");
+                ip = null;
+                headers = null;
+                mappings = null;
+                path = null;
+                server.remove(this);
+                connected = false;
+            } catch (InvocationTargetException | IllegalAccessException | IOException e) {
+                logger.error(e);
+            }
         return Thread.currentThread();
+    }
+
+    /**
+     * Represents an incoming message containing the control byte and the message as a byte array.
+     *
+     * @param controlByte The parsed control byte.
+     * @param message     The message as a byte array.
+     * @version 1.0.0
+     * @since 3.0.5-SNAPSHOT
+     */
+    private record Message(ControlByte controlByte, byte[] message) {
+
     }
 
 }

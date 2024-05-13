@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.events.sockets;
 
 import de.craftsblock.craftscore.event.Cancellable;
 import de.craftsblock.craftscore.event.Event;
+import de.craftsblock.craftsnet.api.websocket.ControlByte;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
 import org.jetbrains.annotations.NotNull;
 
@@ -19,28 +20,32 @@ import java.nio.charset.StandardCharsets;
 public class OutgoingSocketMessageEvent extends Event implements Cancellable {
 
     private final SocketExchange exchange;
-    private boolean cancelled = false;
 
+    private boolean cancelled = false;
+    private ControlByte controlByte;
     private byte @NotNull [] data;
 
     /**
      * Constructs a new OutgoingSocketMessageEvent with the specified SocketExchange and message data.
      *
-     * @param exchange The SocketExchange object representing the socket connection and its associated data.
-     * @param data  The outgoing message data as it's string representation
+     * @param exchange    The SocketExchange object representing the socket connection and its associated data.
+     * @param controlByte The control byte that will be used to identify the message content.
+     * @param data        The outgoing message data as it's string representation
      */
-    public OutgoingSocketMessageEvent(@NotNull SocketExchange exchange, @NotNull String data) {
-        this(exchange, data.getBytes(StandardCharsets.UTF_8));
+    public OutgoingSocketMessageEvent(@NotNull SocketExchange exchange, ControlByte controlByte, @NotNull String data) {
+        this(exchange, controlByte, data.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
      * Constructs a new OutgoingSocketMessageEvent with the specified SocketExchange and message data.
      *
-     * @param exchange The SocketExchange object representing the socket connection and its associated data.
-     * @param data  The outgoing message data as a byte array
+     * @param exchange    The SocketExchange object representing the socket connection and its associated data.
+     * @param controlByte The control byte that will be used to identify the message content.
+     * @param data        The outgoing message data as a byte array
      */
-    public OutgoingSocketMessageEvent(@NotNull SocketExchange exchange, byte @NotNull [] data) {
+    public OutgoingSocketMessageEvent(@NotNull SocketExchange exchange, ControlByte controlByte, byte @NotNull [] data) {
         this.exchange = exchange;
+        this.controlByte = controlByte;
         this.data = data;
     }
 
@@ -51,6 +56,24 @@ public class OutgoingSocketMessageEvent extends Event implements Cancellable {
      */
     public SocketExchange getExchange() {
         return exchange;
+    }
+
+    /**
+     * Gets the control byte used when sending the data.
+     *
+     * @return The control byte of the message.
+     */
+    public ControlByte getControlByte() {
+        return controlByte;
+    }
+
+    /**
+     * Sets the control byte used to send the data.
+     *
+     * @param controlByte The control byte which should be used.
+     */
+    public void setControlByte(ControlByte controlByte) {
+        this.controlByte = controlByte;
     }
 
     /**
