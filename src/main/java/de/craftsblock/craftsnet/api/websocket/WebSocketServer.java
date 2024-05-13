@@ -225,10 +225,12 @@ public class WebSocketServer extends Server {
                 .forEach(entry -> {
                     try {
                         entry.getValue().removeIf(client::equals);
+                        if (entry.getValue().isEmpty()) connected.remove(entry.getKey());
+
+                        if (!client.isConnected()) return;
                         Thread thread = client.disconnect();
                         thread.interrupt();
                         thread.join(500);
-                        if (entry.getValue().isEmpty()) connected.remove(entry.getKey());
                     } catch (InterruptedException ignored) {
                     }
                 });
