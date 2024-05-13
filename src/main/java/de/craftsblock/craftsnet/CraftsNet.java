@@ -175,7 +175,7 @@ public class CraftsNet {
         }
 
         // Register a shutdown hook for calling the stop method
-        this.shutdownThread = new Thread(this::stop);
+        this.shutdownThread = new Thread(this::stop, "CraftsNet Shutdown");
         Runtime.getRuntime().addShutdownHook(this.shutdownThread);
         logger.debug("JVM Shutdown Hook is implemented");
 
