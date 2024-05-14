@@ -147,7 +147,10 @@ public class WebSocketServer extends Server {
     @Override
     public void stop() {
         try {
-            connected.forEach((useless, client) -> client.forEach(webSocketClient -> webSocketClient.disconnect().interrupt()));
+            connected.forEach((useless, client) -> client.forEach(webSocketClient -> {
+                if (webSocketClient.isConnected()) webSocketClient.close(ClosureCode.GOING_AWAY, "Server closed!");
+                webSocketClient.disconnect().interrupt();
+            }));
             connected.clear();
             serverSocket.close();
             if (connector != null)
