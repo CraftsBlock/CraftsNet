@@ -132,8 +132,10 @@ public class CraftsNet {
         if (!builder.isAddonSystem(ActivateType.DISABLED)) addonManager = new AddonManager(this);
 
         // Check if http routes are registered and start the web server if needed
-        webServer = new WebServer(this, builder.getWebServerPort(), builder.isSSL());
         if (builder.isWebServer(ActivateType.ENABLED) || builder.isWebServer(ActivateType.DYNAMIC)) {
+            logger.info("Setting up the web server");
+            webServer = new WebServer(this, builder.getWebServerPort(), builder.isSSL());
+
             // Set the bodyRegistry if the webserver is enabled.
             bodyRegistry = new BodyRegistry();
 
@@ -150,10 +152,14 @@ public class CraftsNet {
             logger.warning("The web server is forcible disabled, but has registered routes!");
 
         // Check if webSocket routes are registered and start the websocket server if needed
-        webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), builder.isSSL());
-        if (builder.isWebSocketServer(ActivateType.ENABLED) || (builder.isWebSocketServer(ActivateType.DYNAMIC) && routeRegistry.hasWebsockets())) {
-            logger.debug("Starting the websocket server");
-            webSocketServer.start();
+        if (builder.isWebSocketServer(ActivateType.ENABLED) || builder.isWebSocketServer(ActivateType.DYNAMIC)) {
+            logger.info("Setting up the websocket server");
+            webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), builder.isSSL());
+
+            if (routeRegistry.hasWebsockets()) {
+                logger.debug("Starting the websocket server");
+                webSocketServer.start();
+            }
         } else if (builder.isWebSocketServer(ActivateType.DISABLED) && routeRegistry.hasWebsockets())
             logger.warning("The websocket server is forcible disabled, but has registered endpoints!");
 
