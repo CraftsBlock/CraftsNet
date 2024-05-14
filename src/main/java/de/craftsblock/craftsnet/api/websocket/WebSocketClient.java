@@ -330,7 +330,7 @@ public class WebSocketClient implements Runnable {
      * @throws IOException If an I/O error occurs while reading the message.
      */
     private Message readMessage() throws IOException {
-        if (socket.isClosed()) return null;
+        if (!isConnected()) return null;
 
         // Read the input stream from the socket.
         InputStream inputStream = socket.getInputStream();
@@ -484,14 +484,50 @@ public class WebSocketClient implements Runnable {
      * Sends a ping to the connected WebSocket client.
      */
     public void sendPing() {
-        sendMessage(null, ControlByte.PING);
+        sendPing((byte[]) null);
+    }
+
+    /**
+     * Sends a ping with the provided payload to the connected WebSocket client.
+     *
+     * @param message The payload as a string which should be appended
+     */
+    public void sendPing(String message) {
+        sendPing(message.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Sends a ping with the provided payload to the connected WebSocket client.
+     *
+     * @param message The payload as a byte array which should be appended
+     */
+    public void sendPing(byte[] message) {
+        sendMessage(message, ControlByte.PING);
     }
 
     /**
      * Sends a pong to the connected WebSocket client.
      */
     public void sendPong() {
-        sendMessage(null, ControlByte.PONG);
+        sendPong((byte[]) null);
+    }
+
+    /**
+     * Sends a pong with the provided payload to the connected WebSocket client.
+     *
+     * @param message The payload as a string which should be appended
+     */
+    public void sendPong(String message) {
+        sendPong(message.getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Sends a pong with the provided payload to the connected WebSocket client.
+     *
+     * @param message The payload as a byte array which should be appended
+     */
+    public void sendPong(byte[] message) {
+        sendMessage(message, ControlByte.PONG);
     }
 
     /**
@@ -567,7 +603,7 @@ public class WebSocketClient implements Runnable {
 
         // Fire the message
         sendMessage(data, ControlByte.CLOSE);
-        disconnect();
+        connected = false;
     }
 
     /**
@@ -577,9 +613,13 @@ public class WebSocketClient implements Runnable {
      * @param controlByte The byte used to control the message flow.
      */
     private void sendMessage(byte[] data, ControlByte controlByte) {
+        if (!isConnected())
+            throw new IllegalStateException("The websocket connection has already been closed!");
+
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            if (data == null) {
+            if (data == null || data.length == 0) {
                 outputStream.write(controlByte.byteValue());
+                outputStream.write(0x00);
                 writer.write(outputStream.toByteArray());
                 return;
             }
@@ -643,7 +683,7 @@ public class WebSocketClient implements Runnable {
      * @return The Thread the client is running from
      */
     protected Thread disconnect() {
-        if (isConnected())
+        if (connected || socket.isConnected())
             try {
                 if (reader == null || writer == null) return Thread.currentThread();
                 craftsNet.listenerRegistry().call(new ClientDisconnectEvent(new SocketExchange(server, this), closeCode, closeReason, mappings));
@@ -653,10 +693,8 @@ public class WebSocketClient implements Runnable {
                 writer = null;
                 if (socket != null) socket.close();
                 logger.debug(ip + " disconnected");
-                ip = null;
                 headers = null;
                 mappings = null;
-                path = null;
                 server.remove(this);
                 connected = false;
             } catch (InvocationTargetException | IllegalAccessException | IOException e) {
