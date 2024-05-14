@@ -8,6 +8,7 @@ import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.WebServer;
 import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
 import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
+import de.craftsblock.craftsnet.api.websocket.DefaultPingResponder;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.command.commands.PluginCommand;
@@ -155,6 +156,7 @@ public class CraftsNet {
         if (builder.isWebSocketServer(ActivateType.ENABLED) || builder.isWebSocketServer(ActivateType.DYNAMIC)) {
             logger.info("Setting up the websocket server");
             webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), builder.isSSL());
+            DefaultPingResponder.register(this);
 
             if (routeRegistry.hasWebsockets()) {
                 logger.debug("Starting the websocket server");
