@@ -196,7 +196,7 @@ public class Request implements AutoCloseable {
      */
     public Map<String, String> getQueryParams() {
         ConcurrentHashMap<String, String> queryParams = new ConcurrentHashMap<>();
-        this.queryParams.getObject().keySet().forEach(key -> queryParams.put(key, this.queryParams.getString(key)));
+        this.queryParams.keySet().forEach(key -> queryParams.put(key, this.queryParams.getString(key)));
         return queryParams;
     }
 
@@ -242,7 +242,7 @@ public class Request implements AutoCloseable {
      */
     public Map<String, String> getCookies() {
         ConcurrentHashMap<String, String> cookies = new ConcurrentHashMap<>();
-        this.cookies.getObject().keySet().forEach(key -> cookies.put(key, this.cookies.getString(key)));
+        this.cookies.keySet().forEach(key -> cookies.put(key, this.cookies.getString(key)));
         return cookies;
     }
 
