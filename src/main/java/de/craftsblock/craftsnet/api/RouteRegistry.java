@@ -81,13 +81,10 @@ public class RouteRegistry {
                 // Load requirements
                 ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements = new ConcurrentHashMap<>();
                 List<Class<? extends Annotation>> annotations = List.of(
-                        Domain.class, RequireHeaders.class, RequireContentType.class, RequestMethod.class, RequireContentType.class,
-                        RequireBody.class
+                        Domain.class, RequireHeaders.class, RequireContentType.class, RequestMethod.class, RequireBody.class
                 );
 
-                for (Class<? extends Annotation> annotation : annotations)
-                    requirements.computeIfAbsent(annotation, aClass -> new ArrayList<>())
-                            .addAll(loadAnnotationValues(method, handler, annotation, annotationMethodType(annotation, "value")));
+                loadRequirements(requirements, annotations, method, handler);
 
                 // Remove empty requirements
                 requirements.forEach((aClass, objects) -> {
@@ -475,6 +472,35 @@ public class RouteRegistry {
     }
 
     /**
+     * Load all the requirements from a specific list of annotations
+     *
+     * @param requirements A list where all the requirements should go.
+     * @param annotations  A list with all requirements as their annotation representations.
+     * @param method       The method for which the requirements should be loaded.
+     * @param handler      The handler which contains the method and acts as the parent.
+     * @throws InvocationTargetException If the attribute's getter method is not found.
+     * @throws NoSuchMethodException     If there is an issue invoking the getter method.
+     * @throws IllegalAccessException    If there is an access issue with the getter method.
+     * @since CraftsNet-3.0.5
+     */
+    private void loadRequirements(ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements, List<Class<? extends Annotation>> annotations, Method method, Object handler) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        for (Class<? extends Annotation> annotation : annotations) {
+            Class<?> type = annotationMethodType(annotation, "value");
+            if (type == null) continue;
+
+            List<Object> requirement = requirements.computeIfAbsent(annotation, aClass -> new ArrayList<>());
+            List<?> values = loadAnnotationValues(method, handler, annotation, type);
+
+            if (type.isArray()) {
+                values.forEach(o -> requirement.addAll(List.of((Object[]) o)));
+                continue;
+            }
+
+            requirement.addAll(values);
+        }
+    }
+
+    /**
      * Loads all values of the annotation from the parent class and targeted method.
      *
      * @param m          The targeted method.
@@ -494,36 +520,44 @@ public class RouteRegistry {
     private <A extends Annotation, T> List<T> loadAnnotationValues(Method m, Object obj, Class<A> annotation, Class<T> type) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         List<T> values = new ArrayList<>();
 
-        // Load the parent values and add it to the values list
-        Object parentValue = annotation(obj, annotation, type, false);
-        if (parentValue != null) {
-            Class<?> parentClass = parentValue.getClass();
+        values.addAll(loadAnnotationValues(obj, annotation, type));
+        values.addAll(loadAnnotationValues(m, annotation, type));
 
-            if (parentValue instanceof List<?> && List.class.isAssignableFrom(type)) values.addAll((Collection<? extends T>) parentValue);
-            else if (parentValue instanceof Object[] array && type.isArray()) addArray(array, values, type);
-            else if (type.isInstance(parentValue)) values.add(type.cast(parentValue));
-            else
-                logger.warning("Found not suitable type of parent annotation. " +
-                        "Found: " + parentClass.getSimpleName() + (parentClass.isArray() ? "[]" : "") + " " +
-                        "Expected: " + type.getSimpleName() + (type.isArray() ? "[]" : ""));
-        }
+        // Remove duplicates
+        removeDuplicates(values);
+        return values;
+    }
 
-        // Load the values and add it to the values list
-        Object value = annotation(m, annotation, type, true);
+    /**
+     * Loads all values of the annotation from the parent class or the targeted method.
+     *
+     * @param obj        The parent class or the method.
+     * @param annotation The class of the annotation.
+     * @param type       The class of the targeted type.
+     * @param <A>        The type of the annotation.
+     * @param <T>        The type of the attribute value.
+     * @return A list with all the values of the parent and the method.
+     * @throws NoSuchMethodException     If the attribute's getter method is not found.
+     * @throws InvocationTargetException If there is an issue invoking the getter method.
+     * @throws IllegalAccessException    If there is an access issue with the getter method.
+     * @since CraftsNet-3.0.5
+     */
+    @SuppressWarnings("unchecked")
+    private <A extends Annotation, T> List<T> loadAnnotationValues(Object obj, Class<A> annotation, Class<T> type) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
+        List<T> values = new ArrayList<>();
+        Object value = annotation(obj, annotation, type, obj instanceof Method);
+
         if (value != null) {
-            Class<?> valueClass = value.getClass();
+            Class<?> clazz = value.getClass();
 
             if (value instanceof List<?> && List.class.isAssignableFrom(type)) values.addAll((Collection<? extends T>) value);
             else if (value instanceof Object[] array && type.isArray()) addArray(array, values, type);
             else if (type.isInstance(value)) values.add(type.cast(value));
-            else
-                logger.warning("Found not suitable type of annotation. " +
-                        "Found: " + valueClass.getSimpleName() + (valueClass.isArray() ? "[]" : "") + " " +
+            else logger.warning("Found no suitable type of annotation. " +
+                        "Found: " + clazz.getSimpleName() + (clazz.isArray() ? "[]" : "") + " " +
                         "Expected: " + type.getSimpleName() + (type.isArray() ? "[]" : ""));
         }
 
-        // Remove duplicates
-        removeDuplicates(values);
         return values;
     }
 
@@ -687,8 +721,8 @@ public class RouteRegistry {
      * @param list The list to which elements will be added.
      */
     private <T> void addArray(Object[] t, List<T> list, Class<T> type) {
-        if (t == null) return;
-        list.addAll(Arrays.asList(t).parallelStream().filter(type::isInstance).map(type::cast).toList());
+        if (!type.isInstance(t)) return;
+        list.add(type.cast(t));
     }
 
     /**
@@ -712,7 +746,8 @@ public class RouteRegistry {
          * @return A list of requirements which are listed under the annotation.
          */
         public <A extends Annotation, T> List<T> getRequirements(Class<A> annotation, Class<T> type) {
-            return requirements.get(annotation).parallelStream().filter(type::isInstance).map(type::cast).toList();
+            List<Object> requirement = requirements.get(annotation);
+            return requirement.parallelStream().filter(type::isInstance).map(type::cast).toList();
         }
 
     }
