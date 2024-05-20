@@ -17,7 +17,7 @@ repositories {
 
 dependencies {
     // CraftsBlock related dependencies
-    implementation 'de.craftsblock.craftscore:CraftsCore:3.7.46-SNAPSHOT'
+    implementation 'de.craftsblock.craftscore:CraftsCore:3.7.48-SNAPSHOT'
 
     // Third party needed dependencies
     implementation 'com.mysql:mysql-connector-j:8.4.0'
