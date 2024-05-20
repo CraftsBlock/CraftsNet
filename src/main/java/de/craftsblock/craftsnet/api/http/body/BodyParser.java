@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -63,7 +64,7 @@ public abstract class BodyParser<T extends Body> {
      * @param contentType The content type to check.
      * @return true if the parser supports the given content type, false otherwise.
      */
-    public final boolean isParseable(String contentType) {
+    public boolean isParseable(String contentType) {
         return this.contentTypes.parallelStream()
                 .anyMatch(pattern -> pattern.matcher(contentType).matches());
     }
