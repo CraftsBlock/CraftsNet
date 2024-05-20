@@ -70,7 +70,6 @@ public final class MultipartFormBody extends FormBody<MultipartFormBody.Multipar
             if (stringified.toLowerCase().startsWith(boundary.toLowerCase())) {
                 if (!values.isEmpty()) {
                     // Create a new MultipartItem and add it to the storage
-                    System.out.println("Name: " + name.get());
                     storage.computeIfAbsent(name.get(), s -> new ConcurrentLinkedQueue<>())
                             .add(new MultipartItem(List.copyOf(values), contentType.get()));
                 }
