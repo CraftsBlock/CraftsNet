@@ -245,11 +245,18 @@ public class CraftsNet {
     /**
      * Restarts the CraftsNet framework.
      */
-    public void restart(Runnable executeBetween) throws IOException {
+    public void restart(Runnable executeBetween) {
         Builder builder = this.builder;
-        stop();
-        if (executeBetween != null) executeBetween.run();
-        start(builder);
+        this.builder = null;
+        new Thread(() -> {
+            stop();
+            if (executeBetween != null) executeBetween.run();
+            try {
+                start(builder);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }, "main").start();
     }
 
     /**
