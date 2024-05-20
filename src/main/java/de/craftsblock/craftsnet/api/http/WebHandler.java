@@ -108,11 +108,9 @@ public class WebHandler implements HttpHandler {
      * @throws IllegalAccessException    If the route handler cannot be accessed.
      */
     private boolean handleRoute(Response response, Request request) throws Exception {
-        String domain = request.getDomain();
         HttpMethod requestMethod = request.getHttpMethod();
         String url = request.getUrl();
         String ip = request.getIp();
-        Headers headers = request.getHeaders();
 
         // Find the registered route mapping based on the request.
         List<RouteRegistry.RouteMapping> routes = registry.getRoute(request);
