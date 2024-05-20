@@ -31,3 +31,6 @@ dependencies {
     implementation 'org.apache.maven:maven-resolver-provider:4.0.0-alpha-13'
     implementation 'org.apache.maven.resolver:maven-resolver-supplier:2.0.0-alpha-8'
 }
+
+sourceCompatibility = JavaVersion.VERSION_18
+targetCompatibility = JavaVersion.VERSION_18
