@@ -178,6 +178,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                         if (data == null || data.length <= 2) break;
                         closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
                         closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
+                        closeInternally(ClosureCode.NORMAL, "Acknowledged close");
                         break;
                     }
 
