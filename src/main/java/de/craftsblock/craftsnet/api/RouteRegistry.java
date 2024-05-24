@@ -214,10 +214,9 @@ public class RouteRegistry {
      * The method should be annotated with {@link Socket}.
      *
      * @param handler The SocketHandler to be registered.
-     * @param <T>     The type of the SocketHandler.
      * @since CraftsNet-2.1.1
      */
-    public <T extends SocketHandler> void register(T handler) {
+    public void register(SocketHandler handler) {
         ConcurrentHashMap<Pattern, List<Mapping>> sockets = serverMappings.computeIfAbsent(WebSocketServer.class, c -> new ConcurrentHashMap<>());
         List<Class<? extends Annotation>> annotations = new ArrayList<>(this.requirements.get(WebSocketServer.class)
                 .parallelStream().map(Requirement::getAnnotation).toList());
@@ -345,12 +344,11 @@ public class RouteRegistry {
     /**
      * Unregisters a socket handler from the registry.
      *
-     * @param t   The SocketHandler to be unregistered.
-     * @param <T> The type of the SocketHandler.
+     * @param handler The SocketHandler to be unregistered.
      * @since CraftsNet-2.1.1
      */
-    public <T extends SocketHandler> void unregister(T t) {
-        Socket socket = rawAnnotation(t, Socket.class);
+    public void unregister(SocketHandler handler) {
+        Socket socket = rawAnnotation(handler, Socket.class);
         getSockets().entrySet().removeIf(validator -> validator.getKey().matcher(url(socket.value())).matches());
 
         // Only continue if the web server has been set up
