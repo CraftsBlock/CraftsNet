@@ -7,6 +7,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
+import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.events.sockets.*;
 import de.craftsblock.craftsnet.logging.Logger;
@@ -22,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,11 +49,13 @@ public class WebSocketClient implements Runnable {
 
     private final WebSocketServer server;
     private final Socket socket;
+
     private SocketExchange exchange;
     private Headers headers;
     private String ip;
-    private List<RouteRegistry.SocketMapping> mappings;
     private String path;
+    private String domain;
+    private List<RouteRegistry.SocketMapping> mappings;
 
     private BufferedReader reader;
     private OutputStream writer;
@@ -107,9 +111,10 @@ public class WebSocketClient implements Runnable {
             }
 
             // Determine the host domain from headers
-            AtomicReference<String> host = new AtomicReference<>(getHeader("Host"));
-            if (host.get() == null || host.get().isBlank()) host.set(null);
-            else host.set(host.get().split(":")[0]);
+            AtomicReference<String> host = new AtomicReference<>();
+            if (headers.containsKey("X-Forwarded-Host")) host.set(headers.getFirst("X-forwarded-Host").split(":")[0]);
+            else host.set(headers.getFirst("Host").split(":")[0]);
+            this.domain = host.get();
 
             // Determine the client's IP address from headers, taking into account any proxy headers
             ip = socket.getInetAddress().getHostAddress();
@@ -122,7 +127,7 @@ public class WebSocketClient implements Runnable {
             sendHandshake();
 
             // Check if the requested path has a corresponding endpoint registered in the server
-            mappings = getEndpoint(path, host.get());
+            mappings = getEndpoint();
             if (mappings != null && !mappings.isEmpty()) {
                 Pattern validator = mappings.get(0).validator();
                 Matcher matcher = validator.matcher(path);
@@ -157,6 +162,11 @@ public class WebSocketClient implements Runnable {
                     sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).asString());
                     disconnect();
                 });
+
+                // Prepare mappings
+                ConcurrentHashMap<ProcessPriority.Priority, List<RouteRegistry.SocketMapping>> mappedMappings = new ConcurrentHashMap<>();
+                for (RouteRegistry.SocketMapping mapping : mappings)
+                    mappedMappings.computeIfAbsent(mapping.priority(), m -> new ArrayList<>()).add(mapping);
 
                 connected = true;
                 Message message;
@@ -200,17 +210,10 @@ public class WebSocketClient implements Runnable {
                     for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
 
                     // Loop through all priorities
-                    ProcessPriority.Priority priority = ProcessPriority.Priority.LOWEST;
-                    while (priority != null) {
-                        if (mappings.isEmpty()) break;
+                    for (ProcessPriority.Priority priority : ProcessPriority.Priority.values()) {
+                        if (!mappedMappings.containsKey(priority)) continue;
 
-                        // Loop through all registered routes
-                        Iterator<RouteRegistry.SocketMapping> iterator = mappings.iterator();
-                        while (iterator.hasNext()) {
-                            RouteRegistry.SocketMapping mapping = iterator.next();
-                            if (!mapping.priority().equals(priority)) continue;
-                            iterator.remove();
-
+                        for (RouteRegistry.SocketMapping mapping : mappedMappings.get(priority)) {
                             SocketHandler handler = mapping.handler();
                             Method method = mapping.method();
 
@@ -226,12 +229,7 @@ public class WebSocketClient implements Runnable {
                             // Invoke the handler method
                             method.invoke(handler, passingArgs);
                         }
-
-                        // Update the current process priority
-                        priority = priority.next();
                     }
-
-                    mappings = getEndpoint(path, host.get());
                 }
 
                 // Clear up transformer cache to free up memory
@@ -289,13 +287,11 @@ public class WebSocketClient implements Runnable {
     /**
      * Retrieves the registered endpoint corresponding to the given header.
      *
-     * @param path The path to find the endpoint for.
-     * @param host The domain used to connect the endpoint.
      * @return The corresponding list of SocketMappings if found, or null if not found.
      */
     @Nullable
-    private List<RouteRegistry.SocketMapping> getEndpoint(String path, String host) {
-        return craftsNet.routeRegistry().getSocket(path, host);
+    private List<RouteRegistry.SocketMapping> getEndpoint() {
+        return craftsNet.routeRegistry().getSocket(this);
     }
 
     /**
@@ -439,6 +435,15 @@ public class WebSocketClient implements Runnable {
      */
     public String getIp() {
         return ip;
+    }
+
+    /**
+     * Returns the domain used by the connected client.
+     *
+     * @return The domain as a String.
+     */
+    public String getDomain() {
+        return domain;
     }
 
     /**
