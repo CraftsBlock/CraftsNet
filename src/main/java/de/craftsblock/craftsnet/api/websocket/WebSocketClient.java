@@ -2,7 +2,6 @@ package de.craftsblock.craftsnet.api.websocket;
 
 import com.sun.net.httpserver.Headers;
 import de.craftsblock.craftscore.json.Json;
-import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
@@ -132,11 +131,15 @@ public class WebSocketClient implements Runnable {
                 Pattern validator = mappings.get(0).validator();
                 Matcher matcher = validator.matcher(path);
                 if (!matcher.matches()) {
-                    sendMessage(JsonParser.parse("{}")
+                    sendMessage(Json.empty()
                             .set("error", "There was an unexpected error while matching!")
                             .asString());
                     return;
                 }
+
+                // Add this WebSocket client to the server's collection and mark it as connected
+                this.connected = true;
+                server.add(path, this);
 
                 // Trigger the ClientConnectEvent to handle the client connection
                 ClientConnectEvent event = new ClientConnectEvent(exchange, mappings);
@@ -154,9 +157,6 @@ public class WebSocketClient implements Runnable {
                 // If the event is not cancelled, process incoming messages from the client
                 logger.info(ip + " connected to " + path);
 
-                // Add this WebSocket client to the server's collection
-                server.add(path, this);
-
                 // Create a transformer performer which handles all transformers
                 TransformerPerformer transformerPerformer = new TransformerPerformer(this.craftsNet, validator, 2, e -> {
                     sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).asString());
@@ -168,9 +168,9 @@ public class WebSocketClient implements Runnable {
                 for (RouteRegistry.SocketMapping mapping : mappings)
                     mappedMappings.computeIfAbsent(mapping.priority(), m -> new ArrayList<>()).add(mapping);
 
-                connected = true;
                 Message message;
                 while (!Thread.currentThread().isInterrupted() && isConnected() && (message = readMessage()) != null) {
+                    long start = System.currentTimeMillis();
                     // Process incoming messages from the client
                     byte[] data = message.message();
 
@@ -237,7 +237,7 @@ public class WebSocketClient implements Runnable {
             } else {
                 // If the requested path has no corresponding endpoint, send an error message
                 logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[NOT FOUND]");
-                sendMessage(JsonParser.parse("{}").set("error", "Path do not match any API endpoint!").asString());
+                sendMessage(Json.empty().set("error", "Path do not match any API endpoint!").asString());
             }
         } catch (SocketException ignored) {
         } catch (Throwable t) {
@@ -605,7 +605,7 @@ public class WebSocketClient implements Runnable {
 
         // Fire the message
         sendMessage(data, ControlByte.CLOSE);
-        connected = false;
+        this.connected = false;
     }
 
     /**
@@ -675,7 +675,7 @@ public class WebSocketClient implements Runnable {
      * @return True if the websocket is connected, false otherwise or if the connection failed
      */
     public boolean isConnected() {
-        return connected && socket.isConnected();
+        return this.connected && this.socket.isConnected();
     }
 
     /**
@@ -685,7 +685,7 @@ public class WebSocketClient implements Runnable {
      * @return The Thread the client is running from
      */
     protected Thread disconnect() {
-        if (connected || socket.isConnected())
+        if (this.connected || socket.isConnected())
             try {
                 if (reader == null || writer == null) return Thread.currentThread();
                 craftsNet.listenerRegistry().call(new ClientDisconnectEvent(new SocketExchange(server, this), closeCode, closeReason, mappings));
@@ -698,7 +698,7 @@ public class WebSocketClient implements Runnable {
                 headers = null;
                 mappings = null;
                 server.remove(this);
-                connected = false;
+                this.connected = false;
             } catch (InvocationTargetException | IllegalAccessException | IOException e) {
                 logger.error(e);
             }
