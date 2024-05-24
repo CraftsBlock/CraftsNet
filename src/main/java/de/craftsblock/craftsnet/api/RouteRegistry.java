@@ -191,7 +191,7 @@ public class RouteRegistry {
                         throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require a String or byte[] as the second parameter!");
                 }
 
-                String child = annotation(handler, annotation, String.class, true);
+                String child = annotation(method, annotation, String.class, true);
                 ProcessPriority priority = rawAnnotation(method, ProcessPriority.class);
                 Pattern validator = createOrGetValidator(url(parent != null ? parent : "", child), routes);
 
@@ -431,7 +431,6 @@ public class RouteRegistry {
                     if (requirements.containsKey(WebServer.class))
                         for (Requirement requirement : requirements.get(WebServer.class))
                             if (!requirement.applies(request, entry)) {
-                                System.out.println("Requirement " + requirement + " does not apply!");
                                 return false;
                             }
 

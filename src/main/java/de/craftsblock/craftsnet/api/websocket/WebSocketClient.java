@@ -125,6 +125,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             // Send a WebSocket handshake to establish the connection
             sendHandshake();
+            this.connected = true;
 
             // Check if the requested path has a corresponding endpoint registered in the server
             mappings = getEndpoint();
@@ -139,7 +140,6 @@ public class WebSocketClient implements Runnable, RequireAble {
                 }
 
                 // Add this WebSocket client to the server's collection and mark it as connected
-                this.connected = true;
                 server.add(path, this);
 
                 // Trigger the ClientConnectEvent to handle the client connection
@@ -151,7 +151,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                     if (event.getReason() != null)
                         sendMessage(event.getReason());
                     disconnect();
-                    logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[ABORTED]");
+                    logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[" + event.getReason() + "]");
                     return;
                 }
 
@@ -171,7 +171,6 @@ public class WebSocketClient implements Runnable, RequireAble {
 
                 Message message;
                 while (!Thread.currentThread().isInterrupted() && isConnected() && (message = readMessage()) != null) {
-                    long start = System.currentTimeMillis();
                     // Process incoming messages from the client
                     byte[] data = message.message();
 
@@ -216,7 +215,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                         if (!mappedMappings.containsKey(priority)) continue;
 
                         for (RouteRegistry.EndpointMapping mapping : mappedMappings.get(priority)) {
-                            if (!(mapping.handler() instanceof Socket handler)) continue;
+                            if (!(mapping.handler() instanceof SocketHandler handler)) continue;
                             Method method = mapping.method();
 
                             // Perform all transformers and continue if passingArgs is null
@@ -239,7 +238,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             } else {
                 // If the requested path has no corresponding endpoint, send an error message
                 logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[NOT FOUND]");
-                sendMessage(Json.empty().set("error", "Path do not match any API endpoint!").asString());
+                closeInternally(ClosureCode.BAD_GATEWAY, Json.empty().set("error", "Path do not match any API endpoint!").asString());
             }
         } catch (SocketException ignored) {
         } catch (Throwable t) {
