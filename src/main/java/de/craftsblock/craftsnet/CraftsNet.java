@@ -145,7 +145,7 @@ public class CraftsNet {
                 routeRegistry().register(new DefaultRoute());
 
             // Start the webserver if needed
-            if (routeRegistry.hasRoutes()) {
+            if (routeRegistry.hasRoutes() || builder.isWebServer(ActivateType.ENABLED)) {
                 webServer.start();
             }
         } else if (builder.isWebServer(ActivateType.DISABLED) && routeRegistry.hasRoutes())
@@ -157,7 +157,7 @@ public class CraftsNet {
             webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), builder.isSSL());
             DefaultPingResponder.register(this);
 
-            if (routeRegistry.hasWebsockets()) {
+            if (routeRegistry.hasWebsockets() || builder.isWebSocketServer(ActivateType.ENABLED)) {
                 logger.debug("Setting up the websocket server");
                 webSocketServer.start();
             }
