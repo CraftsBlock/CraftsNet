@@ -40,7 +40,7 @@ import java.util.stream.IntStream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.7
+ * @version 2.0
  * @see WebSocketServer
  * @since CraftsNet-2.1.1
  */

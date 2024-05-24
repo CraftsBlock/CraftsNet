@@ -499,23 +499,6 @@ public class RouteRegistry {
                             if (!requirement.applies(client, entry)) return false;
 
                     return entry.validator().matcher(url(client.getPath())).matches();
-
-//                    try {
-//                        boolean suitable = true;
-//                        Method tmp = entry.method();
-//
-//                        if (domain != null) {
-//                            List<String> domains = new ArrayList<>(loadAnnotationValues(tmp, entry.handler, Domain.class, String.class));
-//                            if (domains.isEmpty()) domains.add("*");
-//                            suitable = domains.contains("*") || domains.contains(domain);
-//                        }
-//
-//                        if (suitable) return entry.validator().matcher(url(url)).matches();
-//                        return false;
-//                    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-//                        logger.error(e, "Error whilst loading socket route");
-//                    }
-//                    return false;
                 })
                 .collect(Collectors.toList());
     }
