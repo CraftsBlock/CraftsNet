@@ -167,7 +167,7 @@ public class WebSocketServer extends Server {
         if (!isRunning() && isEnabled())
             // Start the web socket server as it is needed and currently not running
             this.craftsNet.webSocketServer().start();
-        else
+        else if (!isEnabled())
             // Print a warning if the web socket server is disabled and socket endpoints has been registered
             logger.warning("A socket endpoint has been registered, but the web socket server is disabled!");
     }

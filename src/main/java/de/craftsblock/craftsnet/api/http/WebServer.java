@@ -132,7 +132,7 @@ public class WebServer extends Server {
         if (!isRunning() && isEnabled())
             // Start the web server as it is needed and currently not running
             this.craftsNet.webServer().start();
-        else
+        else if (!isEnabled())
             // Print a warning if the web server is disabled and routes has been registered
             logger.warning("A route has been registered, but the web server is disabled!");
     }
