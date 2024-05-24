@@ -146,7 +146,6 @@ public class CraftsNet {
 
             // Start the webserver if needed
             if (routeRegistry.hasRoutes()) {
-                logger.debug("Setting up the web server");
                 webServer.start();
             }
         } else if (builder.isWebServer(ActivateType.DISABLED) && routeRegistry.hasRoutes())
@@ -159,7 +158,7 @@ public class CraftsNet {
             DefaultPingResponder.register(this);
 
             if (routeRegistry.hasWebsockets()) {
-                logger.debug("Starting the websocket server");
+                logger.debug("Setting up the websocket server");
                 webSocketServer.start();
             }
         } else if (builder.isWebSocketServer(ActivateType.DISABLED) && routeRegistry.hasWebsockets())
