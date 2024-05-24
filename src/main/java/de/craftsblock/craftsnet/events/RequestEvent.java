@@ -21,7 +21,7 @@ public class RequestEvent extends Event implements Cancellable {
 
     private final Exchange exchange;
 
-    private final List<RouteRegistry.RouteMapping> mappings;
+    private final List<RouteRegistry.EndpointMapping> mappings;
 
     private String cancelReason;
     private boolean cancelled = false;
@@ -32,7 +32,7 @@ public class RequestEvent extends Event implements Cancellable {
      * @param exchange The Exchange object representing the request and its associated data.
      * @param mappings The RouteMapping objects associated with the request, can be null if not applicable.
      */
-    public RequestEvent(Exchange exchange, List<RouteRegistry.RouteMapping> mappings) {
+    public RequestEvent(Exchange exchange, List<RouteRegistry.EndpointMapping> mappings) {
         this.exchange = exchange;
         this.mappings = mappings;
     }
@@ -51,7 +51,7 @@ public class RequestEvent extends Event implements Cancellable {
      *
      * @return The RouteMapping objects representing the mapping for the request route.
      */
-    public List<RouteRegistry.RouteMapping> getMappings() {
+    public List<RouteRegistry.EndpointMapping> getMappings() {
         return mappings;
     }
 

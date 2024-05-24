@@ -19,7 +19,7 @@ import java.util.List;
 public class ClientConnectEvent extends Event implements Cancellable {
 
     private final SocketExchange exchange;
-    private final List<RouteRegistry.SocketMapping> mappings;
+    private final List<RouteRegistry.EndpointMapping> mappings;
     private boolean cancelled = false;
     private String reason;
 
@@ -29,7 +29,7 @@ public class ClientConnectEvent extends Event implements Cancellable {
      * @param exchange The SocketExchange object representing the socket connection and its associated data.
      * @param mappings  A list of SocketMapping objects associated with the client connection event.
      */
-    public ClientConnectEvent(SocketExchange exchange, List<RouteRegistry.SocketMapping> mappings) {
+    public ClientConnectEvent(SocketExchange exchange, List<RouteRegistry.EndpointMapping> mappings) {
         this.exchange = exchange;
         this.mappings = mappings;
     }
@@ -48,7 +48,7 @@ public class ClientConnectEvent extends Event implements Cancellable {
      *
      * @return A list of SocketMapping objects representing the mapping for the socket connection.
      */
-    public List<RouteRegistry.SocketMapping> getMappings() {
+    public List<RouteRegistry.EndpointMapping> getMappings() {
         return mappings;
     }
 

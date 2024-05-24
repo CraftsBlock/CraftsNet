@@ -5,6 +5,7 @@ import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.annotations.RequestMethod;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -30,16 +31,17 @@ public class MethodRequirement extends WebRequirement {
     /**
      * Checks if the requirement applies given the specified request and route mapping.
      *
-     * @param request       the HTTP request
-     * @param routeMapping  the route mapping
+     * @param request      the HTTP request
+     * @param routeMapping the route mapping
      * @return {@code true} if the requirement applies, {@code false} otherwise
      */
     @Override
-    public boolean applies(Request request, RouteRegistry.RouteMapping routeMapping) {
-        HttpMethod method = request.getHttpMethod();
-        List<HttpMethod> requirements = routeMapping.getRequirements(getAnnotation(), HttpMethod.class);
-        if (requirements == null) return true;
+    public boolean applies(Request request, RouteRegistry.EndpointMapping routeMapping) {
+        List<HttpMethod> rawRequirements = routeMapping.getRequirements(getAnnotation(), HttpMethod.class);
+        if (rawRequirements == null) return true;
+        List<HttpMethod> requirements = new ArrayList<>(rawRequirements);
 
+        HttpMethod method = request.getHttpMethod();
         if (requirements.contains(HttpMethod.ALL)) {
             requirements.remove(HttpMethod.ALL);
             Arrays.stream(HttpMethod.ALL.getMethods()).forEach(s -> requirements.add(HttpMethod.parse(s)));

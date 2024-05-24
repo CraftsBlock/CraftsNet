@@ -49,7 +49,7 @@ public class Request implements AutoCloseable, RequireAble {
     private final String ip;
 
     private File bodyLocation;
-    private List<RouteRegistry.RouteMapping> routes;
+    private List<RouteRegistry.EndpointMapping> routes;
     private boolean closed = false;
 
     /**
@@ -297,7 +297,7 @@ public class Request implements AutoCloseable, RequireAble {
      * @return The RouteMapping objects representing the matched route, or null if no route is matched.
      */
     @Nullable
-    public List<RouteRegistry.RouteMapping> getRoutes() {
+    public List<RouteRegistry.EndpointMapping> getRoutes() {
         return routes;
     }
 
@@ -398,7 +398,7 @@ public class Request implements AutoCloseable, RequireAble {
      *
      * @param routes The RouteMapping objects representing the matched route.
      */
-    protected void setRoutes(List<RouteRegistry.RouteMapping> routes) {
+    protected void setRoutes(List<RouteRegistry.EndpointMapping> routes) {
         this.routes = routes;
     }
 

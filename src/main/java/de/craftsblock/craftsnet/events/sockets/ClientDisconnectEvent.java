@@ -20,7 +20,7 @@ import java.util.List;
 public class ClientDisconnectEvent extends Event {
 
     private final SocketExchange exchange;
-    private final List<RouteRegistry.SocketMapping> mappings;
+    private final List<RouteRegistry.EndpointMapping> mappings;
 
     private final int rawCloseCode;
     private final ClosureCode closeCode;
@@ -32,7 +32,7 @@ public class ClientDisconnectEvent extends Event {
      * @param exchange The SocketExchange object representing the socket connection and its associated data.
      * @param mappings A list of all SocketMapping objects associated with the client disconnection event.
      */
-    public ClientDisconnectEvent(SocketExchange exchange, int closeCode, String closeReason, List<RouteRegistry.SocketMapping> mappings) {
+    public ClientDisconnectEvent(SocketExchange exchange, int closeCode, String closeReason, List<RouteRegistry.EndpointMapping> mappings) {
         this.exchange = exchange;
         this.mappings = mappings;
 
@@ -46,7 +46,7 @@ public class ClientDisconnectEvent extends Event {
      *
      * @return A list of all SocketMapping objects representing the mapping for the socket connection.
      */
-    public List<RouteRegistry.SocketMapping> getMappings() {
+    public List<RouteRegistry.EndpointMapping> getMappings() {
         return mappings;
     }
 

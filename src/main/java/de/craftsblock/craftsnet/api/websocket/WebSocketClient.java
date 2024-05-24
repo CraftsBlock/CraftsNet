@@ -6,6 +6,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
+import de.craftsblock.craftsnet.api.http.RequestHandler;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.events.sockets.*;
@@ -54,7 +55,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private String ip;
     private String path;
     private String domain;
-    private List<RouteRegistry.SocketMapping> mappings;
+    private List<RouteRegistry.EndpointMapping> mappings;
 
     private BufferedReader reader;
     private OutputStream writer;
@@ -164,8 +165,8 @@ public class WebSocketClient implements Runnable, RequireAble {
                 });
 
                 // Prepare mappings
-                ConcurrentHashMap<ProcessPriority.Priority, List<RouteRegistry.SocketMapping>> mappedMappings = new ConcurrentHashMap<>();
-                for (RouteRegistry.SocketMapping mapping : mappings)
+                ConcurrentHashMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappedMappings = new ConcurrentHashMap<>();
+                for (RouteRegistry.EndpointMapping mapping : mappings)
                     mappedMappings.computeIfAbsent(mapping.priority(), m -> new ArrayList<>()).add(mapping);
 
                 Message message;
@@ -214,8 +215,8 @@ public class WebSocketClient implements Runnable, RequireAble {
                     for (ProcessPriority.Priority priority : ProcessPriority.Priority.values()) {
                         if (!mappedMappings.containsKey(priority)) continue;
 
-                        for (RouteRegistry.SocketMapping mapping : mappedMappings.get(priority)) {
-                            SocketHandler handler = mapping.handler();
+                        for (RouteRegistry.EndpointMapping mapping : mappedMappings.get(priority)) {
+                            if (!(mapping.handler() instanceof Socket handler)) continue;
                             Method method = mapping.method();
 
                             // Perform all transformers and continue if passingArgs is null
@@ -291,7 +292,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @return The corresponding list of SocketMappings if found, or null if not found.
      */
     @Nullable
-    private List<RouteRegistry.SocketMapping> getEndpoint() {
+    private List<RouteRegistry.EndpointMapping> getEndpoint() {
         return craftsNet.routeRegistry().getSocket(this);
     }
 

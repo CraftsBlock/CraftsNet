@@ -26,12 +26,12 @@ public class BodyRequirement extends WebRequirement {
     /**
      * Checks if the requirement applies given the specified request and route mapping.
      *
-     * @param request       the HTTP request
-     * @param routeMapping  the route mapping
+     * @param request      the HTTP request
+     * @param routeMapping the route mapping
      * @return {@code true} if the requirement applies, {@code false} otherwise
      */
     @Override
-    public boolean applies(Request request, RouteRegistry.RouteMapping routeMapping) {
+    public boolean applies(Request request, RouteRegistry.EndpointMapping routeMapping) {
         if (!routeMapping.requirements().containsKey(getAnnotation()) || routeMapping.requirements().get(getAnnotation()).isEmpty()) return true;
         if (!request.hasBody()) return false;
 

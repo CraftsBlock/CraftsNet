@@ -2,8 +2,10 @@ package de.craftsblock.craftsnet.api.requirements.web;
 
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.Domain;
+import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.http.Request;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -32,10 +34,12 @@ public class HTTPDomainRequirement extends WebRequirement {
      * @return {@code true} if the requirement applies, {@code false} otherwise
      */
     @Override
-    public boolean applies(Request request, RouteRegistry.RouteMapping routeMapping) {
+    public boolean applies(Request request, RouteRegistry.EndpointMapping routeMapping) {
+        List<String> rawRequirements = routeMapping.getRequirements(getAnnotation(), String.class);
+        if (rawRequirements == null) return true;
+        List<String> requirements = new ArrayList<>(rawRequirements);
+
         String domain = request.getDomain();
-        List<String> requirements = routeMapping.getRequirements(getAnnotation(), String.class);
-        if (requirements == null) return true;
         if (domain == null) return false;
 
         return requirements.contains("*") || requirements.contains(domain);

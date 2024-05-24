@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.api.websocket;
 
+import de.craftsblock.craftsnet.api.Handler;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 
 /**
@@ -12,7 +13,7 @@ import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
  * @see Socket
  * @since CraftsNet-2.1.1
  */
-public interface SocketHandler {
+public interface SocketHandler extends Handler {
 
     // This interface does not define any specific methods, but it serves as a marker interface for WebSocket server handlers.
     // Classes that implement this interface are expected to handle WebSocket connections and related events.

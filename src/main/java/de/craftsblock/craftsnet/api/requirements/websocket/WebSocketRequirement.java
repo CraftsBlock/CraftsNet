@@ -15,7 +15,7 @@ import java.lang.annotation.Annotation;
  * @see Requirement
  * @since 3.0.5-SNAPSHOT
  */
-public abstract class WebSocketRequirement extends Requirement<WebSocketClient, RouteRegistry.SocketMapping> {
+public abstract class WebSocketRequirement extends Requirement<WebSocketClient, RouteRegistry.EndpointMapping> {
 
     /**
      * Constructs a new websocket requirement with the specified annotation class. The annotation will

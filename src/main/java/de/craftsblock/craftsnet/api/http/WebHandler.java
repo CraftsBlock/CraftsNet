@@ -113,7 +113,7 @@ public class WebHandler implements HttpHandler {
         String ip = request.getIp();
 
         // Find the registered route mapping based on the request.
-        List<RouteRegistry.RouteMapping> routes = registry.getRoute(request);
+        List<RouteRegistry.EndpointMapping> routes = registry.getRoute(request);
 
         // If no matching route is found abort with return false
         if (routes == null || routes.isEmpty()) return false;
@@ -156,13 +156,13 @@ public class WebHandler implements HttpHandler {
             if (routes.isEmpty()) break;
 
             // Loop through all registered routes
-            Iterator<RouteRegistry.RouteMapping> iterator = routes.iterator();
+            Iterator<RouteRegistry.EndpointMapping> iterator = routes.iterator();
             while (iterator.hasNext()) {
-                RouteRegistry.RouteMapping mapping = iterator.next();
+                RouteRegistry.EndpointMapping mapping = iterator.next();
                 if (!mapping.priority().equals(priority)) continue;
                 iterator.remove();
 
-                RequestHandler handler = mapping.handler();
+                if (!(mapping.handler() instanceof RequestHandler handler)) continue;
                 Method method = mapping.method();
 
                 // Perform all transformers and continue if passingArgs is null

@@ -1,5 +1,7 @@
 package de.craftsblock.craftsnet.api.http;
 
+import de.craftsblock.craftsnet.api.Handler;
+
 /**
  * The RequestHandler interface serves as a marker interface for classes that are intended to handle incoming HTTP requests.
  * Implementing this interface indicates that a class has the capability to handle HTTP requests, but it doesn't define any
@@ -17,7 +19,7 @@ package de.craftsblock.craftsnet.api.http;
  * @version 1.0
  * @since CraftsNet-1.0.0
  */
-public interface RequestHandler {
+public interface RequestHandler extends Handler {
     // No methods are declared in this interface since it serves as a marker interface.
     // Classes implementing this interface are expected to provide their own request handling logic.
 }

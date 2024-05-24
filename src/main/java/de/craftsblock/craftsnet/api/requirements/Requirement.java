@@ -15,7 +15,7 @@ import java.lang.annotation.Annotation;
  * @author CraftsBlock
  * @author Philipp Maywald
  */
-public abstract class Requirement<T extends RequireAble, R extends RouteRegistry.Mapping> {
+public abstract class Requirement<T extends RequireAble, R extends RouteRegistry.EndpointMapping> {
 
     private final Class<? extends Annotation> annotation;
 

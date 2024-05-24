@@ -5,6 +5,7 @@ import de.craftsblock.craftsnet.api.annotations.Domain;
 import de.craftsblock.craftsnet.api.requirements.web.WebRequirement;
 import de.craftsblock.craftsnet.api.websocket.WebSocketClient;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -33,10 +34,12 @@ public class WSDomainRequirement extends WebSocketRequirement {
      * @return {@code true} if the requirement applies, {@code false} otherwise
      */
     @Override
-    public boolean applies(WebSocketClient client, RouteRegistry.SocketMapping socketMapping) {
+    public boolean applies(WebSocketClient client, RouteRegistry.EndpointMapping socketMapping) {
+        List<String> rawRequirements = socketMapping.getRequirements(getAnnotation(), String.class);
+        if (rawRequirements == null) return true;
+        List<String> requirements = new ArrayList<>(rawRequirements);
+
         String domain = client.getDomain();
-        List<String> requirements = socketMapping.getRequirements(getAnnotation(), String.class);
-        if (requirements == null) return true;
         if (domain == null) return false;
 
         return requirements.contains("*") || requirements.contains(domain);

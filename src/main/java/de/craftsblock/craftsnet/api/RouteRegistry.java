@@ -46,8 +46,8 @@ public class RouteRegistry {
     private final CraftsNet craftsNet;
     private final Logger logger;
 
-    private final ConcurrentHashMap<Class<? extends Server>, ConcurrentLinkedQueue<Requirement<? extends RequireAble, ? extends Mapping>>> requirements = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<Class<? extends Server>, ConcurrentHashMap<Pattern, List<Mapping>>> serverMappings = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Class<? extends Server>, ConcurrentLinkedQueue<Requirement<? extends RequireAble, EndpointMapping>>> requirements = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Class<? extends Server>, ConcurrentHashMap<Pattern, List<EndpointMapping>>> serverMappings = new ConcurrentHashMap<>();
 
     private final ConcurrentHashMap<Pattern, ShareMapping> shares = new ConcurrentHashMap<>();
 
@@ -124,11 +124,11 @@ public class RouteRegistry {
      * @param process     Whether if all registered endpoints should receive the new requirement (true) or not (false).
      * @since 3.0.5-SNAPSHOT
      */
-    private void registerRawRequirement(Class<? extends Server> target, Requirement<? extends RequireAble, ? extends Mapping> requirement, boolean process) {
+    private void registerRawRequirement(Class<? extends Server> target, Requirement<? extends RequireAble, EndpointMapping> requirement, boolean process) {
         this.requirements.computeIfAbsent(target, c -> new ConcurrentLinkedQueue<>()).add(requirement);
         if (!process || !serverMappings.containsKey(target)) return;
 
-        ConcurrentHashMap<Pattern, List<Mapping>> patternedMappings = serverMappings.get(target);
+        ConcurrentHashMap<Pattern, List<EndpointMapping>> patternedMappings = serverMappings.get(target);
         if (patternedMappings.isEmpty()) return;
 
         List<Class<? extends Annotation>> annotations = Collections.singletonList(requirement.getAnnotation());
@@ -136,13 +136,11 @@ public class RouteRegistry {
             ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements = new ConcurrentHashMap<>();
 
             try {
-                if (mapping instanceof RouteMapping routeMapping) {
-                    loadRequirements(requirements, annotations, routeMapping.method, routeMapping.handler);
-                    requirements.forEach((aClass, objects) -> {
-                        if (objects.isEmpty()) requirements.remove(aClass);
-                    });
-                    routeMapping.requirements.putAll(requirements);
-                }
+                loadRequirements(requirements, annotations, mapping.method, mapping.handler);
+                requirements.forEach((aClass, objects) -> {
+                    if (objects.isEmpty()) requirements.remove(aClass);
+                });
+                mapping.requirements.putAll(requirements);
             } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
@@ -150,29 +148,52 @@ public class RouteRegistry {
     }
 
     /**
-     * Registers a request handler (route) by inspecting its annotated methods and adding it to the registry.
-     * The method should have Exchange as its first argument and be annotated with {@link Route}.
+     * Registers an endpoint handler (route or websocket) by inspecting its annotated methods and adding it to the registry.
      *
      * @param handler The RequestHandler to be registered.
-     * @since CraftsNet-1.0.0
+     * @since 3.0.5-SNAPSHOT
      */
-    public void register(RequestHandler handler) {
-        ConcurrentHashMap<Pattern, List<Mapping>> routes = serverMappings.computeIfAbsent(WebServer.class, c -> new ConcurrentHashMap<>());
-        List<Class<? extends Annotation>> annotations = new ArrayList<>(this.requirements.get(WebServer.class)
+    public void register(Handler handler) {
+        Class<? extends Server> rawServer;
+        Server server;
+        Class<? extends Annotation> annotation;
+        if (handler instanceof RequestHandler) {
+            rawServer = WebServer.class;
+            server = craftsNet.webServer();
+            annotation = Route.class;
+        } else if (handler instanceof SocketHandler socketHandler) {
+            rawServer = WebSocketServer.class;
+            server = craftsNet.webSocketServer();
+            annotation = Socket.class;
+            if (tryOldWebsocketRegister(socketHandler)) return;
+        } else
+            throw new IllegalStateException("Invalid handler type " + handler.getClass().getSimpleName() + " only RequestHandler and SocketHandler are allowed!");
+
+        ConcurrentHashMap<Pattern, List<EndpointMapping>> routes = serverMappings.computeIfAbsent(rawServer, c -> new ConcurrentHashMap<>());
+        List<Class<? extends Annotation>> annotations = new ArrayList<>(this.requirements.get(rawServer)
                 .parallelStream().map(Requirement::getAnnotation).toList());
 
-        Route parent = rawAnnotation(handler, Route.class);
+        try {
+            String parent = annotation(handler, annotation, String.class, true);
 
-        for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), Route.class))
-            try {
-                if (method.getParameterCount() <= 0)
-                    throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + Route.class.getName() + " but does not require " + Exchange.class.getName() + " as the first parameter!");
-                if (!Exchange.class.isAssignableFrom(method.getParameterTypes()[0]))
-                    throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + Route.class.getName() + " but does not require " + Exchange.class.getName() + " as the first parameter!");
+            for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), annotation)) {
+                if (WebServer.class.isAssignableFrom(rawServer)) {
+                    if (method.getParameterCount() <= 0)
+                        throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + Exchange.class.getName() + " as the first parameter!");
+                    if (!Exchange.class.isAssignableFrom(method.getParameterTypes()[0]))
+                        throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + Exchange.class.getName() + " as the first parameter!");
+                } else {
+                    if (method.getParameterCount() <= 1)
+                        throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + SocketExchange.class.getName() + " as the first parameter!");
+                    if (!SocketExchange.class.isAssignableFrom(method.getParameterTypes()[0]))
+                        throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + SocketExchange.class.getName() + " as the first parameter!");
+                    if (!String.class.isAssignableFrom(method.getParameterTypes()[1]) && !byte[].class.isAssignableFrom(method.getParameterTypes()[1]))
+                        throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require a String or byte[] as the second parameter!");
+                }
 
-                Route route = rawAnnotation(method, Route.class);
+                String child = annotation(handler, annotation, String.class, true);
                 ProcessPriority priority = rawAnnotation(method, ProcessPriority.class);
-                Pattern validator = createOrGetValidator(url(parent != null ? parent.value() : "", route.value()), routes);
+                Pattern validator = createOrGetValidator(url(parent != null ? parent : "", child), routes);
 
                 // Load requirements
                 ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements = new ConcurrentHashMap<>();
@@ -183,110 +204,74 @@ public class RouteRegistry {
                     if (objects.isEmpty()) requirements.remove(aClass);
                 });
 
-                // Register the route mapping
-                List<Mapping> mappings = routes.computeIfAbsent(validator, pattern -> new ArrayList<>());
-                mappings.add(new RouteMapping(
+                // Register the endpoint mapping
+                List<EndpointMapping> mappings = routes.computeIfAbsent(validator, pattern -> new ArrayList<>());
+                mappings.add(new EndpointMapping(
                         priority != null ? priority.value() : ProcessPriority.Priority.NORMAL,
                         method, handler, validator, requirements
                 ));
-            } catch (Exception e) {
-                logger.error(e);
             }
+
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         // Unregister the DefaultRoute
         if (!(handler instanceof DefaultRoute))
             routes.entrySet().parallelStream()
                     .map(Map.Entry::getValue)
                     .flatMap(Collection::parallelStream)
-                    .filter(RouteMapping.class::isInstance)
-                    .map(RouteMapping.class::cast)
+                    .filter(Objects::nonNull)
                     .filter(mapping -> mapping.handler instanceof DefaultRoute)
-                    .map(RouteMapping::handler)
+                    .map(EndpointMapping::handler)
                     .forEach(this::unregister);
 
         // Only continue if the web server was set
-        if (this.craftsNet.webServer() != null)
-            this.craftsNet.webServer().awakeOrWarn();
+        if (server != null)
+            server.awakeOrWarn();
     }
 
     /**
-     * Registers a socket handler by inspecting its annotated methods and adding it to the registry.
+     * Tries to register the old websocket handler format by inspecting its annotated methods and adding it to the registry.
      * The method should be annotated with {@link Socket}.
      *
      * @param handler The SocketHandler to be registered.
-     * @since CraftsNet-2.1.1
+     * @return {@code true} if there are websockets in the old format, {@code false} otherwise.
+     * @since 3.0.5-SNAPSHOT
      */
-    public void register(SocketHandler handler) {
-        ConcurrentHashMap<Pattern, List<Mapping>> sockets = serverMappings.computeIfAbsent(WebSocketServer.class, c -> new ConcurrentHashMap<>());
+    @Deprecated(since = "3.0.5-SNAPSHOT", forRemoval = true)
+    private boolean tryOldWebsocketRegister(SocketHandler handler) {
+        ConcurrentHashMap<Pattern, List<EndpointMapping>> sockets = serverMappings.computeIfAbsent(WebSocketServer.class, c -> new ConcurrentHashMap<>());
         List<Class<? extends Annotation>> annotations = new ArrayList<>(this.requirements.get(WebSocketServer.class)
                 .parallelStream().map(Requirement::getAnnotation).toList());
 
-        Socket parent = rawAnnotation(handler, Socket.class);
-
-        // Used for backwards compatibility
-        // For removal in version 4.0.0
         List<Method> outdatedMethods = Utils.getMethodsByAnnotation(handler.getClass(), MessageReceiver.class);
-        if (!outdatedMethods.isEmpty()) {
-            logger.warning("Found" + (outdatedMethods.size() == 1 ? "" : " " + outdatedMethods.size()) +
-                    " outdated websocket creation in class " + handler.getClass().getSimpleName());
+        if (outdatedMethods.isEmpty()) return false;
 
-            try {
-                Socket socket = rawAnnotation(handler, Socket.class);
-                Pattern validator = createOrGetValidator(socket.value(), sockets);
+        logger.warning("Found" + (outdatedMethods.size() == 1 ? "" : " " + outdatedMethods.size()) +
+                " outdated websocket creation in class " + handler.getClass().getSimpleName());
 
-                // Load requirements
-                ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements = new ConcurrentHashMap<>();
-                loadRequirements(requirements, annotations, null, handler);
+        try {
+            Socket socket = rawAnnotation(handler, Socket.class);
+            Pattern validator = createOrGetValidator(socket.value(), sockets);
 
-                // Remove empty requirements
-                requirements.forEach((aClass, objects) -> {
-                    if (objects.isEmpty()) requirements.remove(aClass);
-                });
+            // Load requirements
+            ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements = new ConcurrentHashMap<>();
+            loadRequirements(requirements, annotations, null, handler);
 
-                List<Mapping> mappings = sockets.computeIfAbsent(validator, pattern -> new ArrayList<>());
-                for (Method method : outdatedMethods)
-                    mappings.add(new SocketMapping(ProcessPriority.Priority.NORMAL, method, handler, validator, requirements));
-            } catch (Exception e) {
-                logger.error(e);
-            }
-            return;
-        } else
-            // New method of loading websockets
-            for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), Socket.class))
-                try {
-                    if (method.getParameterCount() <= 1)
-                        throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + Socket.class.getName() + " but does not require " + SocketExchange.class.getName() + " as the first parameter!");
-                    if (!SocketExchange.class.isAssignableFrom(method.getParameterTypes()[0]))
-                        throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + Socket.class.getName() + " but does not require " + SocketExchange.class.getName() + " as the first parameter!");
-                    if (!String.class.isAssignableFrom(method.getParameterTypes()[1]) && !byte[].class.isAssignableFrom(method.getParameterTypes()[1]))
-                        throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + Socket.class.getName() + " but does not require a String or byte[] as the second parameter!");
+            // Remove empty requirements
+            requirements.forEach((aClass, objects) -> {
+                if (objects.isEmpty()) requirements.remove(aClass);
+            });
 
-                    Socket socket = rawAnnotation(method, Socket.class);
-                    ProcessPriority priority = rawAnnotation(method, ProcessPriority.class);
-                    Pattern validator = createOrGetValidator(url(parent != null ? parent.value() : "", socket.value()), sockets);
+            List<EndpointMapping> mappings = sockets.computeIfAbsent(validator, pattern -> new ArrayList<>());
+            for (Method method : outdatedMethods)
+                mappings.add(new EndpointMapping(ProcessPriority.Priority.NORMAL, method, handler, validator, requirements));
+        } catch (Exception e) {
+            logger.error(e);
+        }
 
-                    // Load requirements
-                    ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements = new ConcurrentHashMap<>();
-                    loadRequirements(requirements, annotations, null, handler);
-
-                    // Remove empty requirements
-                    requirements.forEach((aClass, objects) -> {
-                        if (objects.isEmpty()) requirements.remove(aClass);
-                    });
-
-                    List<Mapping> mappings = serverMappings.computeIfAbsent(WebSocketServer.class, c -> new ConcurrentHashMap<>())
-                            .computeIfAbsent(validator, pattern -> new ArrayList<>());
-                    mappings.add(new SocketMapping(
-                            priority != null ? priority.value() : ProcessPriority.Priority.NORMAL,
-                            method, handler, validator, requirements
-                    ));
-                } catch (Exception e) {
-                    logger.error(e);
-                }
-
-        // Only continue if the web socket server was set
-        if (this.craftsNet.webSocketServer() != null)
-            this.craftsNet.webSocketServer().awakeOrWarn();
+        return true;
     }
 
     /**
@@ -320,13 +305,13 @@ public class RouteRegistry {
     }
 
     /**
-     * Unregisters a request handler (route) from the registry.
+     * Unregisters an endpoint handler (route or websocket) from the registry.
      *
      * @param handler The RequestHandler to be unregistered.
      * @since CraftsNet-1.0.0
      */
-    public void unregister(RequestHandler handler) {
-        ConcurrentHashMap<Pattern, List<Mapping>> routes = serverMappings.computeIfAbsent(WebServer.class, c -> new ConcurrentHashMap<>());
+    public void unregister(Handler handler) {
+        ConcurrentHashMap<Pattern, List<EndpointMapping>> routes = serverMappings.computeIfAbsent(WebServer.class, c -> new ConcurrentHashMap<>());
         Route parent = rawAnnotation(handler, Route.class);
         for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), Route.class))
             try {
@@ -339,21 +324,6 @@ public class RouteRegistry {
         // Only continue if the web server has been set up
         if (this.craftsNet.webServer() != null)
             this.craftsNet.webServer().sleepIfNotNeeded();
-    }
-
-    /**
-     * Unregisters a socket handler from the registry.
-     *
-     * @param handler The SocketHandler to be unregistered.
-     * @since CraftsNet-2.1.1
-     */
-    public void unregister(SocketHandler handler) {
-        Socket socket = rawAnnotation(handler, Socket.class);
-        getSockets().entrySet().removeIf(validator -> validator.getKey().matcher(url(socket.value())).matches());
-
-        // Only continue if the web server has been set up
-        if (this.craftsNet.webSocketServer() != null)
-            this.craftsNet.webSocketServer().sleepIfNotNeeded();
     }
 
     /**
@@ -440,8 +410,8 @@ public class RouteRegistry {
      * @since CraftsNet-1.0.0
      */
     @NotNull
-    public ConcurrentHashMap<Pattern, List<RouteMapping>> getRoutes() {
-        return getMappingsOfType(WebServer.class, RouteMapping.class);
+    public ConcurrentHashMap<Pattern, List<EndpointMapping>> getRoutes() {
+        return new ConcurrentHashMap<>(Map.copyOf(serverMappings.computeIfAbsent(WebServer.class, c -> new ConcurrentHashMap<>())));
     }
 
     /**
@@ -453,14 +423,17 @@ public class RouteRegistry {
      */
     @Nullable
     @SuppressWarnings("unchecked")
-    public List<RouteMapping> getRoute(Request request) {
+    public List<EndpointMapping> getRoute(Request request) {
         return getRoutes().entrySet().parallelStream()
                 .map(Map.Entry::getValue)
                 .flatMap(Collection::parallelStream)
                 .filter(entry -> {
                     if (requirements.containsKey(WebServer.class))
                         for (Requirement requirement : requirements.get(WebServer.class))
-                            if (!requirement.applies(request, entry)) return false;
+                            if (!requirement.applies(request, entry)) {
+                                System.out.println("Requirement " + requirement + " does not apply!");
+                                return false;
+                            }
 
                     return entry.validator().matcher(url(request.getUrl())).matches();
                 })
@@ -474,8 +447,8 @@ public class RouteRegistry {
      * @since CraftsNet-2.1.1
      */
     @NotNull
-    public ConcurrentHashMap<Pattern, List<SocketMapping>> getSockets() {
-        return getMappingsOfType(WebSocketServer.class, SocketMapping.class);
+    public ConcurrentHashMap<Pattern, List<EndpointMapping>> getSockets() {
+        return new ConcurrentHashMap<>(Map.copyOf(serverMappings.computeIfAbsent(WebSocketServer.class, c -> new ConcurrentHashMap<>())));
     }
 
     /**
@@ -487,7 +460,7 @@ public class RouteRegistry {
      */
     @Nullable
     @SuppressWarnings("unchecked")
-    public List<SocketMapping> getSocket(WebSocketClient client) {
+    public List<EndpointMapping> getSocket(WebSocketClient client) {
         return getSockets().entrySet().parallelStream()
                 .map(Map.Entry::getValue)
                 .flatMap(Collection::parallelStream)
@@ -785,62 +758,15 @@ public class RouteRegistry {
     }
 
     /**
-     * Loads the list of mappings from the specific server system and cast the values to the required type.
+     * The EndpointMapping class represents the mapping of a registered handler.
+     * It stores information about the priority, method, handler, validator pattern, and requirements.
      *
-     * @param server The server system from which the mappings should be loaded from.
-     * @param type   The targeted type to which all the mappings should be cast.
-     * @param <S>    The type of the server system.
-     * @param <T>    The type of the targeted result type.
-     * @return The list of mappings.
-     * @since 3.0.5
+     * @version 1.0.0
+     * @since 3.0.5-SNAPSHOT
      */
-    private <S extends Server, T extends Mapping> ConcurrentHashMap<Pattern, List<T>> getMappingsOfType(Class<S> server, Class<T> type) {
-        return new ConcurrentHashMap<>(Map.copyOf(
-                serverMappings.computeIfAbsent(server, c -> new ConcurrentHashMap<>()).entrySet().parallelStream()
-                        .filter(entry -> entry.getValue().parallelStream().allMatch(type::isInstance))
-                        .map(entry -> Map.entry(entry.getKey(), entry.getValue().parallelStream().map(type::cast).toList()))
-                        .collect(Collectors.toConcurrentMap(Map.Entry::getKey, Map.Entry::getValue))
-        ));
-    }
-
-    /**
-     * The RouteMapping class represents the mapping of a registered route.
-     * It stores information about the method, handler, and validator pattern for the route.
-     *
-     * @version 1.1
-     * @since CraftsNet-1.0.0
-     */
-    public record RouteMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull RequestHandler handler,
-                               @NotNull Pattern validator,
-                               ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements) implements Mapping {
-
-        /**
-         * {@inheritDoc}
-         *
-         * @param annotation The annotation as it's class representation used to find the requirements.
-         * @param type       The expected return type as it's class representation.
-         * @param <A>        The annotation used to find the requirements.
-         * @param <T>        The expected return type.
-         * @return A list of requirements which are listed under the annotation.
-         */
-        @Override
-        public <A extends Annotation, T> List<T> getRequirements(Class<A> annotation, Class<T> type) {
-            if (!requirements.containsKey(annotation)) return null;
-            List<Object> requirement = requirements.get(annotation);
-            return requirement.parallelStream().filter(type::isInstance).map(type::cast).toList();
-        }
-
-    }
-
-    /**
-     * The SocketMapping class represents the mapping of a registered socket handler.
-     * It stores information about the socket handler, socket annotation, validator pattern, and message receiver methods.
-     *
-     * @since CraftsNet-2.1.1
-     */
-    public record SocketMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull SocketHandler handler,
-                                @NotNull Pattern validator,
-                                ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements) implements Mapping {
+    public record EndpointMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull Handler handler,
+                                  @NotNull Pattern validator,
+                                  ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements) implements Mapping {
 
         /**
          * {@inheritDoc}

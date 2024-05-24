@@ -15,7 +15,7 @@ import java.lang.annotation.Annotation;
  * @see Requirement
  * @since 3.0.5-SNAPSHOT
  */
-public abstract class WebRequirement extends Requirement<Request, RouteRegistry.RouteMapping> {
+public abstract class WebRequirement extends Requirement<Request, RouteRegistry.EndpointMapping> {
 
     /**
      * Constructs a new web requirement with the specified annotation class. The annotation will
