@@ -8,6 +8,7 @@ import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.body.Body;
+import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -32,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see Exchange
  * @since CraftsNet-1.0.0
  */
-public class Request implements AutoCloseable {
+public class Request implements AutoCloseable, RequireAble {
 
     private final long identifier = Snowflake.generate();
 

@@ -44,7 +44,7 @@ import java.util.stream.IntStream;
  * @see WebSocketServer
  * @since CraftsNet-2.1.1
  */
-public class WebSocketClient implements Runnable {
+public class WebSocketClient implements Runnable, RequireAble {
 
     private final WebSocketServer server;
     private final Socket socket;
