@@ -6,10 +6,8 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
-import de.craftsblock.craftsnet.api.http.RequestHandler;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
-import de.craftsblock.craftsnet.api.requirements.websocket.MessageTypeRequirement;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.events.sockets.*;
 import de.craftsblock.craftsnet.logging.Logger;
@@ -27,7 +25,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,9 +42,9 @@ import java.util.stream.IntStream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0
+ * @version 2.0.1
  * @see WebSocketServer
- * @since CraftsNet-2.1.1
+ * @since 2.1.1-SNAPSHOT
  */
 public class WebSocketClient implements Runnable, RequireAble {
 

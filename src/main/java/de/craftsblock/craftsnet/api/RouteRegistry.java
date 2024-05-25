@@ -39,8 +39,8 @@ import java.util.stream.Collectors;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.0.0
- * @since CraftsNet1.0.0
+ * @version 3.0.1
+ * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
 
@@ -117,10 +117,23 @@ public class RouteRegistry {
         registerRawRequirement(WebSocketServer.class, requirement, process);
     }
 
+    /**
+     * Get all registered requirement processors.
+     *
+     * @return A map which contains all the requirement processors per server sorted.
+     * @since 3.0.5-SNAPSHOT
+     */
     public ConcurrentHashMap<Class<? extends Server>, ConcurrentLinkedQueue<Requirement<? extends RequireAble, EndpointMapping>>> getRequirements() {
         return new ConcurrentHashMap<>(Map.copyOf(requirements));
     }
 
+    /**
+     * Get all registered requirement processors for a specific server system.
+     *
+     * @param server The server system the requirement processors should be loaded from.
+     * @return A list which contains all the requirement processors for the specific server system.
+     * @since 3.0.5-SNAPSHOT
+     */
     public Collection<Requirement<? extends RequireAble, EndpointMapping>> getRequirements(Class<? extends Server> server) {
         return requirements.containsKey(server) ? Collections.unmodifiableCollection(requirements.get(server)) : List.of();
     }
