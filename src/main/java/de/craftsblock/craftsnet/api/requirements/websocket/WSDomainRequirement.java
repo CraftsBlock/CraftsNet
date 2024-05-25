@@ -17,7 +17,7 @@ import java.util.List;
  * @see WebRequirement
  * @since 3.0.5-SNAPSHOT
  */
-public class WSDomainRequirement extends WebSocketRequirement {
+public class WSDomainRequirement extends WebSocketRequirement<WebSocketClient> {
 
     /**
      * Constructs a new websocket domain requirement.
@@ -29,13 +29,13 @@ public class WSDomainRequirement extends WebSocketRequirement {
     /**
      * Checks if the requirement applies given the specified websocket client and socket mapping.
      *
-     * @param client        the websocket client
-     * @param socketMapping the socket mapping
+     * @param client          the websocket client
+     * @param endpointMapping the socket mapping
      * @return {@code true} if the requirement applies, {@code false} otherwise
      */
     @Override
-    public boolean applies(WebSocketClient client, RouteRegistry.EndpointMapping socketMapping) {
-        List<String> rawRequirements = socketMapping.getRequirements(getAnnotation(), String.class);
+    public boolean applies(WebSocketClient client, RouteRegistry.EndpointMapping endpointMapping) {
+        List<String> rawRequirements = endpointMapping.getRequirements(getAnnotation(), String.class);
         if (rawRequirements == null) return true;
         List<String> requirements = new ArrayList<>(rawRequirements);
 

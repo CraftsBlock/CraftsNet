@@ -8,9 +8,12 @@ import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.http.RequestHandler;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
+import de.craftsblock.craftsnet.api.requirements.Requirement;
+import de.craftsblock.craftsnet.api.requirements.websocket.MessageTypeRequirement;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.events.sockets.*;
 import de.craftsblock.craftsnet.logging.Logger;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -24,6 +27,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -128,118 +132,129 @@ public class WebSocketClient implements Runnable, RequireAble {
             this.connected = true;
 
             // Check if the requested path has a corresponding endpoint registered in the server
-            mappings = getEndpoint();
-            if (mappings != null && !mappings.isEmpty()) {
-                Pattern validator = mappings.get(0).validator();
-                Matcher matcher = validator.matcher(path);
-                if (!matcher.matches()) {
-                    sendMessage(Json.empty()
-                            .set("error", "There was an unexpected error while matching!")
-                            .asString());
-                    return;
-                }
-
-                // Add this WebSocket client to the server's collection and mark it as connected
-                server.add(path, this);
-
-                // Trigger the ClientConnectEvent to handle the client connection
-                ClientConnectEvent event = new ClientConnectEvent(exchange, mappings);
-                craftsNet.listenerRegistry().call(event);
-
-                // If the event is cancelled, disconnect the client
-                if (event.isCancelled()) {
-                    if (event.getReason() != null)
-                        sendMessage(event.getReason());
-                    disconnect();
-                    logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[" + event.getReason() + "]");
-                    return;
-                }
-
-                // If the event is not cancelled, process incoming messages from the client
-                logger.info(ip + " connected to " + path);
-
-                // Create a transformer performer which handles all transformers
-                TransformerPerformer transformerPerformer = new TransformerPerformer(this.craftsNet, validator, 2, e -> {
-                    sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).asString());
-                    disconnect();
-                });
-
-                // Prepare mappings
-                ConcurrentHashMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappedMappings = new ConcurrentHashMap<>();
-                for (RouteRegistry.EndpointMapping mapping : mappings)
-                    mappedMappings.computeIfAbsent(mapping.priority(), m -> new ArrayList<>()).add(mapping);
-
-                Message message;
-                while (!Thread.currentThread().isInterrupted() && isConnected() && (message = readMessage()) != null) {
-                    // Process incoming messages from the client
-                    byte[] data = message.message();
-
-                    if (message.controlByte.equals(ControlByte.CLOSE)) {
-                        if (data == null || data.length <= 2) break;
-                        closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
-                        closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
-                        closeInternally(ClosureCode.NORMAL, "Acknowledged close");
-                        break;
-                    }
-
-                    if (message.controlByte().equals(ControlByte.PING)) {
-                        craftsNet.listenerRegistry().call(new ReceivedPingMessageEvent(exchange, data));
-                        continue;
-                    }
-
-                    if (message.controlByte().equals(ControlByte.PONG)) {
-                        craftsNet.listenerRegistry().call(new ReceivedPongMessageEvent(exchange, data));
-                        continue;
-                    }
-
-                    if (message.controlByte().equals(ControlByte.TEXT) &&
-                            IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) {
-                        closeInternally(ClosureCode.UNSUPPORTED, "Send negativ byte values while the control byte is set to utf8!");
-                        break;
-                    }
-
-                    // Fire an incoming socket message event and continue if it was cancelled
-                    IncomingSocketMessageEvent event2 = new IncomingSocketMessageEvent(exchange, data);
-                    craftsNet.listenerRegistry().call(event2);
-                    if (event2.isCancelled())
-                        continue;
-
-                    // Extract and pass the message parameters to the endpoint handler
-                    Object[] args = new Object[matcher.groupCount() + 1];
-                    args[0] = exchange;
-                    args[1] = data;
-                    for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
-
-                    // Loop through all priorities
-                    for (ProcessPriority.Priority priority : ProcessPriority.Priority.values()) {
-                        if (!mappedMappings.containsKey(priority)) continue;
-
-                        for (RouteRegistry.EndpointMapping mapping : mappedMappings.get(priority)) {
-                            if (!(mapping.handler() instanceof SocketHandler handler)) continue;
-                            Method method = mapping.method();
-
-                            // Perform all transformers and continue if passingArgs is null
-                            Object[] passingArgs = transformerPerformer.perform(method, args);
-                            if (passingArgs == null)
-                                continue;
-
-                            // Check if the second parameter is a string and converts the message data if so
-                            if (method.getParameterCount() >= 2 && method.getParameterTypes()[1].equals(String.class))
-                                passingArgs[1] = new String(data, StandardCharsets.UTF_8);
-
-                            // Invoke the handler method
-                            method.invoke(handler, passingArgs);
-                        }
-                    }
-                }
-
-                // Clear up transformer cache to free up memory
-                transformerPerformer.clearCache();
-            } else {
+            this.mappings = getEndpoint();
+            if (mappings == null || mappings.isEmpty()) {
                 // If the requested path has no corresponding endpoint, send an error message
                 logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[NOT FOUND]");
                 closeInternally(ClosureCode.BAD_GATEWAY, Json.empty().set("error", "Path do not match any API endpoint!").asString());
+                return;
             }
+
+            Pattern validator = mappings.get(0).validator();
+            Matcher matcher = validator.matcher(path);
+            if (!matcher.matches()) {
+                sendMessage(Json.empty()
+                        .set("error", "There was an unexpected error while matching!")
+                        .asString());
+                return;
+            }
+
+            // Add this WebSocket client to the server's collection and mark it as connected
+            server.add(path, this);
+
+            // Trigger the ClientConnectEvent to handle the client connection
+            ClientConnectEvent event = new ClientConnectEvent(exchange, mappings);
+            craftsNet.listenerRegistry().call(event);
+
+            // If the event is cancelled, disconnect the client
+            if (event.isCancelled()) {
+                if (event.getReason() != null)
+                    sendMessage(event.getReason());
+                disconnect();
+                logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[" + event.getReason() + "]");
+                return;
+            }
+
+            // If the event is not cancelled, process incoming messages from the client
+            logger.info(ip + " connected to " + path);
+
+            // Create a transformer performer which handles all transformers
+            TransformerPerformer transformerPerformer = new TransformerPerformer(this.craftsNet, validator, 2, e -> {
+                sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).asString());
+                disconnect();
+            });
+
+            // Prepare mappings
+            ConcurrentHashMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappedMappings = new ConcurrentHashMap<>();
+            for (RouteRegistry.EndpointMapping mapping : mappings)
+                mappedMappings.computeIfAbsent(mapping.priority(), m -> new ArrayList<>()).add(mapping);
+
+            Message message;
+            while (!Thread.currentThread().isInterrupted() && isConnected() && (message = readMessage()) != null) {
+                // Process incoming messages from the client
+                byte[] data = message.message();
+
+                if (message.controlByte.equals(ControlByte.CLOSE)) {
+                    if (data == null || data.length <= 2) break;
+                    closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
+                    closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
+                    closeInternally(ClosureCode.NORMAL, "Acknowledged close");
+                    break;
+                }
+
+                if (message.controlByte().equals(ControlByte.PING)) {
+                    craftsNet.listenerRegistry().call(new ReceivedPingMessageEvent(exchange, data));
+                    continue;
+                }
+
+                if (message.controlByte().equals(ControlByte.PONG)) {
+                    craftsNet.listenerRegistry().call(new ReceivedPongMessageEvent(exchange, data));
+                    continue;
+                }
+
+                if (message.controlByte().equals(ControlByte.TEXT) &&
+                        IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) {
+                    closeInternally(ClosureCode.UNSUPPORTED, "Send negativ byte values while the control byte is set to utf8!");
+                    break;
+                }
+
+                // Fire an incoming socket message event and continue if it was cancelled
+                IncomingSocketMessageEvent event2 = new IncomingSocketMessageEvent(exchange, data);
+                craftsNet.listenerRegistry().call(event2);
+                if (event2.isCancelled())
+                    continue;
+
+                // Extract and pass the message parameters to the endpoint handler
+                Object[] args = new Object[matcher.groupCount() + 1];
+                args[0] = exchange;
+                args[1] = data;
+                for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
+
+                // Loop through all priorities
+                for (ProcessPriority.Priority priority : ProcessPriority.Priority.values()) {
+                    if (!mappedMappings.containsKey(priority)) continue;
+
+                    mappingLoop:
+                    for (RouteRegistry.EndpointMapping mapping : mappedMappings.get(priority)) {
+                        if (!(mapping.handler() instanceof SocketHandler handler)) continue;
+                        Method method = mapping.method();
+
+                        // Process the requirements
+                        if (craftsNet.routeRegistry().getRequirements().containsKey(WebSocketServer.class))
+                            for (Requirement requirement : craftsNet.routeRegistry().getRequirements().get(WebSocketServer.class))
+                                try {
+                                    Method m = requirement.getClass().getDeclaredMethod("applies", Message.class, RouteRegistry.EndpointMapping.class);
+                                    if (!((Boolean) m.invoke(requirement, message, mapping))) continue mappingLoop;
+                                } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
+                                }
+
+                        // Perform all transformers and continue if passingArgs is null
+                        Object[] passingArgs = transformerPerformer.perform(method, args);
+                        if (passingArgs == null)
+                            continue;
+
+                        // Check if the second parameter is a string and converts the message data if so
+                        if (method.getParameterCount() >= 2 && method.getParameterTypes()[1].equals(String.class))
+                            passingArgs[1] = new String(data, StandardCharsets.UTF_8);
+
+                        // Invoke the handler method
+                        method.invoke(handler, passingArgs);
+                    }
+                }
+            }
+
+            // Clear up transformer cache to free up memory
+            transformerPerformer.clearCache();
         } catch (SocketException ignored) {
         } catch (Throwable t) {
             if (craftsNet.fileLogger() != null) {
@@ -690,10 +705,12 @@ public class WebSocketClient implements Runnable, RequireAble {
             try {
                 if (reader == null || writer == null) return Thread.currentThread();
                 craftsNet.listenerRegistry().call(new ClientDisconnectEvent(new SocketExchange(server, this), closeCode, closeReason, mappings));
+
                 if (reader != null) reader.close();
                 reader = null;
                 if (writer != null) writer.close();
                 writer = null;
+
                 if (socket != null) socket.close();
                 logger.debug(ip + " disconnected");
                 headers = null;
@@ -714,7 +731,8 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @version 1.0.0
      * @since 3.0.5-SNAPSHOT
      */
-    private record Message(ControlByte controlByte, byte[] message) {
+    @ApiStatus.Internal
+    public record Message(ControlByte controlByte, byte[] message) implements RequireAble {
 
     }
 

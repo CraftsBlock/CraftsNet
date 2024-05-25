@@ -1,8 +1,8 @@
 package de.craftsblock.craftsnet.api.requirements.websocket;
 
 import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
-import de.craftsblock.craftsnet.api.websocket.WebSocketClient;
 
 import java.lang.annotation.Annotation;
 
@@ -15,7 +15,8 @@ import java.lang.annotation.Annotation;
  * @see Requirement
  * @since 3.0.5-SNAPSHOT
  */
-public abstract class WebSocketRequirement extends Requirement<WebSocketClient, RouteRegistry.EndpointMapping> {
+public abstract class WebSocketRequirement<T extends RequireAble> extends Requirement<T, RouteRegistry.EndpointMapping> {
+
 
     /**
      * Constructs a new websocket requirement with the specified annotation class. The annotation will
