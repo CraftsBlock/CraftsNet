@@ -39,7 +39,7 @@ import java.lang.reflect.InvocationTargetException;
 public class CraftsNet {
 
     // Global variables
-    public static final String version = "3.0.4-SNAPSHOT";
+    public static final String version = "3.0.5-SNAPSHOT";
 
     // Lokal instance
     private Builder builder;
