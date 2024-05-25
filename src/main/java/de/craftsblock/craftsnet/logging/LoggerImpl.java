@@ -82,7 +82,6 @@ public class LoggerImpl implements Logger {
      */
     @Override
     public void error(@NotNull Throwable throwable) {
-        log("\u001b[31;1mERROR\u001b[0m", throwable.getMessage());
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
         throwable.printStackTrace(pw);
@@ -98,14 +97,8 @@ public class LoggerImpl implements Logger {
      */
     @Override
     public void error(@NotNull Throwable throwable, @Nullable String comment) {
-        log("\u001b[31;1mERROR\u001b[0m", comment + " > " + throwable.getClass().getName() + ": " + throwable.getMessage());
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        throwable.printStackTrace(pw);
-        for (String line : sw.toString().split("\n")) {
-            if (!line.trim().startsWith("at")) continue;
-            error(line);
-        }
+        error(comment);
+        error(throwable);
     }
 
     /**
