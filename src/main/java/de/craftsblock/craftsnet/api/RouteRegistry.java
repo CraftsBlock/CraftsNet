@@ -62,15 +62,15 @@ public class RouteRegistry {
         this.logger = this.craftsNet.logger();
 
         // Built in http requirements
-        registerRequirement(new HTTPDomainRequirement());
-        registerRequirement(new MethodRequirement());
-        registerRequirement(new HeadersRequirement());
-        registerRequirement(new ContentTypeRequirement());
-        registerRequirement(new BodyRequirement());
+        registerRequirement(new HTTPDomainRequirement(), false);
+        registerRequirement(new MethodRequirement(), false);
+        registerRequirement(new HeadersRequirement(), false);
+        registerRequirement(new ContentTypeRequirement(), false);
+        registerRequirement(new BodyRequirement(), false);
 
         // Built in websocket requirements
-        registerRequirement(new WSDomainRequirement());
-        registerRequirement(new MessageTypeRequirement());
+        registerRequirement(new WSDomainRequirement(), false);
+        registerRequirement(new MessageTypeRequirement(), false);
     }
 
     /**
