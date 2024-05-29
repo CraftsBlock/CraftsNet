@@ -176,7 +176,7 @@ public class RouteRegistry {
      * @param handler The RequestHandler to be registered.
      * @since 3.0.5-SNAPSHOT
      * @deprecated This method is only used for backwards compatibility, use the register(Handler) method instead, as this
-     *             method will be removed in 4.0.0-SNAPSHOT!
+     * method will be removed in 4.0.0-SNAPSHOT!
      */
     @Deprecated(since = "3.0.5-SNAPSHOT", forRemoval = true)
     public void register(RequestHandler handler) {
@@ -187,10 +187,10 @@ public class RouteRegistry {
     /**
      * Registers an endpoint handler (websocket) by inspecting its annotated methods and adding it to the registry.
      *
-     * @param handler The RequestHandler to be registered.
+     * @param handler The SocketHandler to be registered.
      * @since 3.0.5-SNAPSHOT
      * @deprecated This method is only used for backwards compatibility, use the register(Handler) method instead, as this
-     *             method will be removed in 4.0.0-SNAPSHOT!
+     * method will be removed in 4.0.0-SNAPSHOT!
      */
     @Deprecated(since = "3.0.5-SNAPSHOT", forRemoval = true)
     public void register(SocketHandler handler) {
@@ -201,7 +201,7 @@ public class RouteRegistry {
     /**
      * Registers an endpoint handler (route or websocket) by inspecting its annotated methods and adding it to the registry.
      *
-     * @param handler The RequestHandler to be registered.
+     * @param handler The Handler to be registered.
      * @since 3.0.5-SNAPSHOT
      */
     public <T extends Handler> void register(T handler) {

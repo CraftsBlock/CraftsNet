@@ -4,6 +4,7 @@ import de.craftsblock.craftscore.event.ListenerRegistry;
 import de.craftsblock.craftscore.utils.ArgumentParser;
 import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
+import de.craftsblock.craftsnet.api.Handler;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.WebServer;
 import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
@@ -34,7 +35,7 @@ import java.lang.reflect.InvocationTargetException;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 3.0.1
- * @since 1.0.0
+ * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
 
@@ -142,7 +143,7 @@ public class CraftsNet {
 
             // Register a default route if nothing has been registered.
             if (!routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets())
-                routeRegistry().register(new DefaultRoute());
+                routeRegistry().register((Handler) new DefaultRoute());
 
             // Start the webserver if needed
             if (routeRegistry.hasRoutes() || builder.isWebServer(ActivateType.ENABLED)) {
