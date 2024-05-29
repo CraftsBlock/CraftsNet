@@ -11,6 +11,4 @@ package de.craftsblock.craftsnet.api.requirements;
  */
 public interface RequireAble {
 
-    // TODO: Besseren Namen überlegen
-
 }
