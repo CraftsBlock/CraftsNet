@@ -114,12 +114,12 @@ public class TransformerPerformer {
 
                 // Check if the parameter type is not the value type
                 if (!type.isAssignableFrom(value.getClass())) {
-                    String[] name = type.getSimpleName().split("\\.");
+                    String name = type.getSimpleName();
 
 
                     // Gets and checks if a method for an alternative transformation is present.
                     // This allows for example the use of both Integer and int
-                    Method converter = Utils.getMethod(value.getClass(), name[name.length - 1] + "Value");
+                    Method converter = Utils.getMethod(value.getClass(), name + "Value");
                     if (converter == null) continue;
 
                     // Set the value of the argument to the return of the method for alternativ transformation.
