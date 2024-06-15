@@ -50,6 +50,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
     private final WebSocketServer server;
     private final Socket socket;
+    private final WebSocketStorage storage;
 
     private SocketExchange exchange;
     private Headers headers;
@@ -80,6 +81,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     public WebSocketClient(CraftsNet craftsNet, Socket socket, WebSocketServer server) {
         this.socket = socket;
         this.server = server;
+        this.storage = new WebSocketStorage();
 
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
@@ -466,6 +468,15 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     public Headers getHeaders() {
         return headers;
+    }
+
+    /**
+     * Returns the storage of this websocket client for storing specific data.
+     *
+     * @return The storage of this websocket client instance.
+     */
+    public WebSocketStorage getStorage() {
+        return storage;
     }
 
     /**
