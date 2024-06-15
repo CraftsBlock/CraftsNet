@@ -723,6 +723,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 logger.debug(ip + " disconnected");
                 headers = null;
                 mappings = null;
+                storage.clear();
                 server.remove(this);
                 this.connected = false;
             } catch (InvocationTargetException | IllegalAccessException | IOException e) {
