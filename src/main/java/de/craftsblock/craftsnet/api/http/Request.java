@@ -76,19 +76,15 @@ public class Request implements AutoCloseable, RequireAble {
         String[] urlStripped = url.split("\\?");
         String query = (urlStripped.length == 2 ? urlStripped[1] : "");
         Arrays.stream(query.split("&")).forEach(pair -> {
-            String[] stripped = pair.split("=");
-            if (stripped.length != 2)
-                return;
-            queryParams.set(stripped[0], stripped[1]);
+            String[] stripped = pair.split("=", 2);
+            queryParams.set(stripped[0], stripped.length == 2 ? stripped[1] : "");
         });
         this.url = urlStripped[0];
 
         if (headers.containsKey("cookie"))
             Arrays.stream(headers.getFirst("cookie").split("; ")).forEach(pair -> {
-                String[] stripped = pair.split("=");
-                if (stripped.length != 2)
-                    return;
-                cookies.set(stripped[0], stripped[1]);
+                String[] stripped = pair.split("=", 2);
+                cookies.set(stripped[0], stripped.length == 2 ? stripped[1] : "");
             });
 
         retrieveBody();
