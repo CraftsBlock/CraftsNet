@@ -129,7 +129,7 @@ public class LoggerImpl implements Logger {
      * @param prefix The log level prefix (e.g., INFO, WARN, ERROR, DEBUG).
      * @param text   The log message to be printed.
      */
-    private void log(@NotNull String prefix, @Nullable String text) {
+    private synchronized void log(@NotNull String prefix, @Nullable String text) {
         System.out.println(
                 "\u001b[38;5;228m" + OffsetDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "\u001b[0m " +
                         prefix + " \u001b[38;5;219m|\u001b[0m " +

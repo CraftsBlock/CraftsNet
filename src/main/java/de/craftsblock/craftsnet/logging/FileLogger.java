@@ -10,7 +10,6 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
@@ -91,7 +90,7 @@ public class FileLogger {
      *
      * @param line The line to add to the log file.
      */
-    public void addLine(String line) {
+    public synchronized void addLine(String line) {
         if (stream == null) return;
         if (line != null && line.contains("SLF4J")) return;
         try {
@@ -137,7 +136,7 @@ public class FileLogger {
      * @param additional Additional information to include in the error log file.
      * @return The identifier of the error log file.
      */
-    public long createErrorLog(CraftsNet craftsNet, Throwable throwable, Map<String, String> additional) {
+    public synchronized long createErrorLog(CraftsNet craftsNet, Throwable throwable, Map<String, String> additional) {
         File errors = new File(folder, "errors");
         ensureParentFolder(errors);
         if (!errors.exists()) errors.mkdirs();
