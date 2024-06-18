@@ -70,6 +70,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
     private int closeCode = -1;
     private String closeReason = null;
+    private boolean closeByServer = false;
 
     /**
      * Creates a new WebSocketClient with the provided socket and server.
@@ -135,7 +136,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             if (mappings == null || mappings.isEmpty()) {
                 // If the requested path has no corresponding endpoint, send an error message
                 logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[NOT FOUND]");
-                closeInternally(ClosureCode.BAD_GATEWAY, Json.empty().set("error", "Path do not match any API endpoint!").asString());
+                closeInternally(ClosureCode.BAD_GATEWAY, Json.empty().set("error", "Path do not match any API endpoint!").asString(), true);
                 return;
             }
 
@@ -187,7 +188,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                     if (data == null || data.length <= 2) break;
                     closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
                     closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
-                    closeInternally(ClosureCode.NORMAL, "Acknowledged close");
+                    closeInternally(ClosureCode.NORMAL, "Acknowledged close", false);
                     break;
                 }
 
@@ -203,7 +204,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
                 if (message.controlByte().equals(ControlByte.TEXT) &&
                         IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) {
-                    closeInternally(ClosureCode.UNSUPPORTED, "Send negativ byte values while the control byte is set to utf8!");
+                    closeInternally(ClosureCode.UNSUPPORTED, "Send negativ byte values while the control byte is set to utf8!", true);
                     break;
                 }
 
@@ -593,11 +594,11 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     public void close(int code, String reason) {
         if (ClosureCode.RAW_INTERNAL_CODES.contains(code)) {
-            closeInternally(ClosureCode.SERVER_ERROR, "Used close code " + code);
+            closeInternally(ClosureCode.SERVER_ERROR, "Used close code " + code, true);
             throw new IllegalStateException("The close code " + code + " was used, but is not meant to use!");
         }
 
-        closeInternally(code, reason);
+        closeInternally(code, reason, true);
     }
 
     /**
@@ -606,8 +607,8 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param code   The pre-defined close code.
      * @param reason The reason why the client has been closed.
      */
-    private void closeInternally(ClosureCode code, String reason) {
-        closeInternally(code.intValue(), reason);
+    private void closeInternally(ClosureCode code, String reason, boolean closeByServer) {
+        closeInternally(code.intValue(), reason, closeByServer);
     }
 
     /**
@@ -616,7 +617,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param code   The close code.
      * @param reason The reason why the client has been closed.
      */
-    private void closeInternally(int code, String reason) {
+    private synchronized void closeInternally(int code, String reason, boolean closeByServer) {
         byte[] message = reason.getBytes(StandardCharsets.UTF_8);
         byte[] data = new byte[2 + message.length];
 
@@ -629,6 +630,10 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         // Fire the message
         sendMessage(data, ControlByte.CLOSE);
+
+        this.closeCode = code;
+        this.closeReason = reason;
+        this.closeByServer = closeByServer;
         this.connected = false;
     }
 
@@ -638,7 +643,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param data        The message to be sent, as a byte array.
      * @param controlByte The byte used to control the message flow.
      */
-    private void sendMessage(byte[] data, ControlByte controlByte) {
+    private synchronized void sendMessage(byte[] data, ControlByte controlByte) {
         if (!isConnected())
             throw new IllegalStateException("The websocket connection has already been closed!");
 
@@ -708,11 +713,11 @@ public class WebSocketClient implements Runnable, RequireAble {
      *
      * @return The Thread the client is running from
      */
-    protected Thread disconnect() {
+    protected synchronized Thread disconnect() {
         if (this.connected || socket.isConnected())
             try {
                 if (reader == null || writer == null) return Thread.currentThread();
-                craftsNet.listenerRegistry().call(new ClientDisconnectEvent(new SocketExchange(server, this), closeCode, closeReason, mappings));
+                craftsNet.listenerRegistry().call(new ClientDisconnectEvent(new SocketExchange(server, this), closeCode, closeReason, closeByServer, mappings));
 
                 if (reader != null) reader.close();
                 reader = null;
@@ -720,7 +725,18 @@ public class WebSocketClient implements Runnable, RequireAble {
                 writer = null;
 
                 if (socket != null) socket.close();
-                logger.debug(ip + " disconnected");
+
+                if (!closeByServer && this.connected) logger.warning(ip + " disconnected abnormal: The underlying tcp connection has been killed!");
+                else if (!closeByServer && closeCode != -1 && closeCode != ClosureCode.NORMAL.intValue()) {
+                    ClosureCode code = ClosureCode.fromInt(closeCode);
+                    logger.warning(
+                            ip + " disconnected abnormal " +
+                                    "(Code: " + (code != null ? code : closeCode) + ")" +
+                                    (closeReason != null && !closeReason.isEmpty() ? ": " + closeReason : "")
+                    );
+                } else
+                    logger.debug(ip + " disconnected");
+
                 headers = null;
                 mappings = null;
                 storage.clear();

@@ -25,6 +25,7 @@ public class ClientDisconnectEvent extends Event {
     private final int rawCloseCode;
     private final ClosureCode closeCode;
     private final String closeReason;
+    private final boolean closeByServer;
 
     /**
      * Constructs a new ClientDisconnectEvent with the specified SocketExchange and SocketMapping.
@@ -32,13 +33,14 @@ public class ClientDisconnectEvent extends Event {
      * @param exchange The SocketExchange object representing the socket connection and its associated data.
      * @param mappings A list of all SocketMapping objects associated with the client disconnection event.
      */
-    public ClientDisconnectEvent(SocketExchange exchange, int closeCode, String closeReason, List<RouteRegistry.EndpointMapping> mappings) {
+    public ClientDisconnectEvent(SocketExchange exchange, int closeCode, String closeReason, boolean closeByServer, List<RouteRegistry.EndpointMapping> mappings) {
         this.exchange = exchange;
         this.mappings = mappings;
 
         this.rawCloseCode = closeCode;
         this.closeCode = ClosureCode.fromInt(closeCode);
         this.closeReason = closeReason;
+        this.closeByServer = closeByServer;
     }
 
     /**
@@ -93,6 +95,15 @@ public class ClientDisconnectEvent extends Event {
      */
     public String getCloseReason() {
         return closeReason;
+    }
+
+    /**
+     * Gets whether the server disconnected the client or the client disconnected.
+     *
+     * @return true if the server closed the connection, false otherwise.
+     */
+    public boolean wasClosedByServer() {
+        return closeByServer;
     }
 
 }
