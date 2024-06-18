@@ -1,21 +1,21 @@
 package de.craftsblock.craftsnet.utils;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.logging.Logger;
 
-import javax.net.ssl.*;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.security.*;
-import java.security.cert.*;
 import java.security.cert.Certificate;
+import java.security.cert.*;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
-import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Date;
+import java.util.List;
 
 /**
  * The SSL class encapsulates a collection of utility methods aimed at facilitating SSL/TLS functionality
