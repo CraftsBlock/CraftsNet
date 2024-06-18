@@ -1,16 +1,18 @@
 package de.craftsblock.craftsnet.api.websocket;
 
-import de.craftsblock.craftscore.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A specialized ConcurrentHashMap implementation for storing WebSocket related data.
  * This class provides utility methods to retrieve stored values as specific types and to check
  * the type of stored values.
+ *
+ * @author CraftsBlock
+ * @author Philipp Maywald
+ * @version 1.0.0
+ * @since 3.0.6-SNAPSHOT
  */
 public class WebSocketStorage extends ConcurrentHashMap<String, Object> {
 
