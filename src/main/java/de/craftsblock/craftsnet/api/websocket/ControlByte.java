@@ -11,30 +11,32 @@ package de.craftsblock.craftsnet.api.websocket;
  */
 public enum ControlByte {
 
+    CONTINUATION(0x00),
+
     /**
      * Indicates a text frame.
      */
-    TEXT(0xFFFFFF81),
+    TEXT(0x01),
 
     /**
      * Indicates a binary frame.
      */
-    BINARY(0xFFFFFF82),
+    BINARY(0x02),
 
     /**
      * Indicates a Ping frame.
      */
-    PING(0xFFFFFF89),
+    PING(0x09),
 
     /**
      * Indicates a Pong frame.
      */
-    PONG(0xFFFFFF8A),
+    PONG(0x0A),
 
     /**
      * Indicates a Close frame.
      */
-    CLOSE(0xFFFFFF88);
+    CLOSE(0x08);
 
     private final int controlByte;
 
@@ -73,7 +75,7 @@ public enum ControlByte {
      */
     public static ControlByte fromInt(int controlByte) {
         for (ControlByte b : ControlByte.values())
-            if (b.intValue() == controlByte)
+            if ((b.byteValue() & 0x0F) == (controlByte & 0x0F))
                 return b;
         return null;
     }
