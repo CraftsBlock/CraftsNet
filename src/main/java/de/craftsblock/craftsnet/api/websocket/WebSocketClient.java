@@ -179,13 +179,13 @@ public class WebSocketClient implements Runnable, RequireAble {
             for (RouteRegistry.EndpointMapping mapping : mappings)
                 mappedMappings.computeIfAbsent(mapping.priority(), m -> new ArrayList<>()).add(mapping);
 
-            Message message;
-            while (!Thread.currentThread().isInterrupted() && isConnected() && (message = readMessage()) != null) {
+            Frame frame;
+            while (!Thread.currentThread().isInterrupted() && isConnected() && (frame = readMessage()) != null) {
                 if (!this.connected || !this.socket.isConnected()) break;
                 // Process incoming messages from the client
-                byte[] data = message.message();
+                byte[] data = frame.getData();
 
-                if (message.controlByte.equals(ControlByte.CLOSE)) {
+                if (frame.getOpcode().equals(ControlByte.CLOSE)) {
                     if (data == null || data.length <= 2) break;
                     closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
                     closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
@@ -193,17 +193,17 @@ public class WebSocketClient implements Runnable, RequireAble {
                     break;
                 }
 
-                if (message.controlByte().equals(ControlByte.PING)) {
+                if (frame.getOpcode().equals(ControlByte.PING)) {
                     craftsNet.listenerRegistry().call(new ReceivedPingMessageEvent(exchange, data));
                     continue;
                 }
 
-                if (message.controlByte().equals(ControlByte.PONG)) {
+                if (frame.getOpcode().equals(ControlByte.PONG)) {
                     craftsNet.listenerRegistry().call(new ReceivedPongMessageEvent(exchange, data));
                     continue;
                 }
 
-                if (message.controlByte().equals(ControlByte.TEXT) &&
+                if (frame.getOpcode().equals(ControlByte.TEXT) &&
                         IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) {
                     closeInternally(ClosureCode.UNSUPPORTED, "Send negativ byte values while the control byte is set to utf8!", true);
                     break;
@@ -234,8 +234,8 @@ public class WebSocketClient implements Runnable, RequireAble {
                         if (craftsNet.routeRegistry().getRequirements().containsKey(WebSocketServer.class))
                             for (Requirement requirement : craftsNet.routeRegistry().getRequirements().get(WebSocketServer.class))
                                 try {
-                                    Method m = requirement.getClass().getDeclaredMethod("applies", Message.class, RouteRegistry.EndpointMapping.class);
-                                    if (!((Boolean) m.invoke(requirement, message, mapping))) continue mappingLoop;
+                                    Method m = requirement.getClass().getDeclaredMethod("applies", Frame.class, RouteRegistry.EndpointMapping.class);
+                                    if (!((Boolean) m.invoke(requirement, frame, mapping))) continue mappingLoop;
                                 } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
                                 }
 
@@ -247,6 +247,10 @@ public class WebSocketClient implements Runnable, RequireAble {
                         // Check if the second parameter is a string and converts the message data if so
                         if (method.getParameterCount() >= 2 && method.getParameterTypes()[1].equals(String.class))
                             passingArgs[1] = new String(data, StandardCharsets.UTF_8);
+
+                        // Check if the second parameter is a frame and overrides the passing args accordingly
+                        if (method.getParameterCount() >= 2 && method.getParameterTypes()[1].equals(Frame.class))
+                            passingArgs[1] = frame;
 
                         // Invoke the handler method
                         method.invoke(handler, passingArgs);
@@ -339,7 +343,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @return The message as a message, or null if the client has disconnected.
      * @throws IOException If an I/O error occurs while reading the message.
      */
-    private Message readMessage() throws IOException {
+    private Frame readMessage() throws IOException {
         if (!isConnected()) return null;
 
         // Read the input stream from the socket.
@@ -356,8 +360,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             frame.get().appendFrame(read);
         }
 
-        // Convert the read payload data to a string using UTF-8 encoding and return it.
-        return new Message(frame.get().getOpcode(), frame.get().getData());
+        return frame.get();
     }
 
     /**
@@ -713,19 +716,6 @@ public class WebSocketClient implements Runnable, RequireAble {
                 logger.error(e);
             }
         return Thread.currentThread();
-    }
-
-    /**
-     * Represents an incoming message containing the control byte and the message as a byte array.
-     *
-     * @param controlByte The parsed control byte.
-     * @param message     The message as a byte array.
-     * @version 1.0.0
-     * @since 3.0.5-SNAPSHOT
-     */
-    @ApiStatus.Internal
-    public record Message(ControlByte controlByte, byte[] message) implements RequireAble {
-
     }
 
 }

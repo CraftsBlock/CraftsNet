@@ -12,10 +12,7 @@ import de.craftsblock.craftsnet.api.requirements.web.*;
 import de.craftsblock.craftsnet.api.requirements.websocket.MessageTypeRequirement;
 import de.craftsblock.craftsnet.api.requirements.websocket.WSDomainRequirement;
 import de.craftsblock.craftsnet.api.requirements.websocket.WebSocketRequirement;
-import de.craftsblock.craftsnet.api.websocket.SocketExchange;
-import de.craftsblock.craftsnet.api.websocket.SocketHandler;
-import de.craftsblock.craftsnet.api.websocket.WebSocketClient;
-import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
+import de.craftsblock.craftsnet.api.websocket.*;
 import de.craftsblock.craftsnet.api.websocket.annotations.MessageReceiver;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 import de.craftsblock.craftsnet.logging.Logger;
@@ -237,8 +234,8 @@ public class RouteRegistry {
                             throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + SocketExchange.class.getName() + " as the first parameter!");
                         if (!SocketExchange.class.isAssignableFrom(method.getParameterTypes()[0]))
                             throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + SocketExchange.class.getName() + " as the first parameter!");
-                        if (!String.class.isAssignableFrom(method.getParameterTypes()[1]) && !byte[].class.isAssignableFrom(method.getParameterTypes()[1]))
-                            throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require a String or byte[] as the second parameter!");
+                        if (!String.class.isAssignableFrom(method.getParameterTypes()[1]) && !byte[].class.isAssignableFrom(method.getParameterTypes()[1]) && !Frame.class.isAssignableFrom(method.getParameterTypes()[1]))
+                            throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require a Frame, String or byte[] as the second parameter!");
                     }
 
                     String child = annotation(method, annotation, String.class, true);
