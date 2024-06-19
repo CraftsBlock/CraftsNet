@@ -597,24 +597,35 @@ public class WebSocketClient implements Runnable, RequireAble {
                     return;
             }
 
-            outputStream.write(0x80 | event.getControlByte().byteValue());
+            List<byte[]> frames = server.shouldFragment() ? this.splitByteArray(event.getData(), server.getFragmentSize()) : List.of(event.getData());
 
-            byte @NotNull [] bytes = event.getData();
-            int length = bytes.length;
-            if (length <= 125)
-                outputStream.write((byte) length);
-            else if (length <= 65535) {
-                outputStream.write((byte) 126);
-                outputStream.write((byte) (length >> 8));
-                outputStream.write((byte) length);
-            } else {
-                outputStream.write((byte) 127);
-                for (int i = 7; i >= 0; i--)
-                    outputStream.write((byte) (length >> (8 * i)));
+            boolean first = true;
+            for (int i = 0; i < frames.size(); i++) {
+                outputStream.write(
+                        (i == frames.size() - 1 ? 0x80 : 0x00) |
+                                (first ? event.getControlByte().byteValue() : ControlByte.CONTINUATION.byteValue())
+                );
+                first = false;
+
+                byte @NotNull [] bytes = frames.get(i);
+                int length = bytes.length;
+                if (length <= 125)
+                    outputStream.write((byte) length);
+                else if (length <= 65535) {
+                    outputStream.write((byte) 126);
+                    outputStream.write((byte) (length >> 8));
+                    outputStream.write((byte) length);
+                } else {
+                    outputStream.write((byte) 127);
+                    for (int j = 7; j >= 0; j--)
+                        outputStream.write((byte) (length >> (8 * j)));
+                }
+
+                outputStream.write(bytes);
+                writer.write(outputStream.toByteArray());
+
+                outputStream.reset();
             }
-
-            outputStream.write(bytes);
-            writer.write(outputStream.toByteArray());
         } catch (SocketException ignored) {
         } catch (IOException e) {
             logger.error(e);
@@ -622,6 +633,27 @@ public class WebSocketClient implements Runnable, RequireAble {
         } catch (InvocationTargetException | IllegalAccessException e) {
             logger.error(e);
         }
+    }
+
+    /**
+     * Splits a byte array into smaller arrays based on a specified maximum size.
+     *
+     * @param input   The byte array to be split.
+     * @param maxSize The maximum size of each chunk.
+     * @return A list of byte arrays, each with a size up to the specified maximum size.
+     */
+    private List<byte[]> splitByteArray(byte[] input, int maxSize) {
+        List<byte[]> result = new ArrayList<>();
+        int inputLength = input.length;
+
+        for (int start = 0; start < inputLength; start += maxSize) {
+            int end = Math.min(inputLength, start + maxSize);
+            byte[] chunk = new byte[end - start];
+            System.arraycopy(input, start, chunk, 0, end - start);
+            result.add(chunk);
+        }
+
+        return result;
     }
 
     /**

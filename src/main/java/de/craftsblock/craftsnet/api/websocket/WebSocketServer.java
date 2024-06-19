@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.api.websocket;
 
+import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.logging.Logger;
@@ -42,6 +43,9 @@ public class WebSocketServer extends Server {
     private Thread connector;
     private ServerSocket serverSocket;
 
+    private boolean shouldFragment = false;
+    private int fragmentSize = 1024;
+
     /**
      * Constructs a WebSocketServer instance with the specified port number.
      *
@@ -67,6 +71,12 @@ public class WebSocketServer extends Server {
         this.logger = this.craftsNet.logger();
     }
 
+    /**
+     * Binds this instance of the websocket server to a specific port and specifies the backlog.
+     *
+     * @param port    The port number to bind the server to.
+     * @param backlog The maximum number of pending connections the server's socket may have in the queue.
+     */
     @Override
     public void bind(int port, int backlog) {
         super.bind(port, backlog);
@@ -162,6 +172,9 @@ public class WebSocketServer extends Server {
         }
     }
 
+    /**
+     * Starts the websocket server if it is required, or emits a warning if the websocket server is required but is deactivated.
+     */
     @Override
     public void awakeOrWarn() {
         if (!isRunning() && isEnabled())
@@ -172,19 +185,73 @@ public class WebSocketServer extends Server {
             logger.warning("A socket endpoint has been registered, but the web socket server is disabled!");
     }
 
+    /**
+     *
+     */
     @Override
     public void sleepIfNotNeeded() {
         if (isRunning() && !craftsNet.routeRegistry().hasWebsockets() && isStatus(CraftsNet.ActivateType.DYNAMIC))
             stop();
     }
 
+    /**
+     * Checks if the websocket server is enabled.
+     *
+     * @return true if it is enabled, false otherwise.
+     */
     @Override
     public boolean isEnabled() {
         return !isStatus(CraftsNet.ActivateType.DISABLED);
     }
 
+    /**
+     * Checks if the websocket server has a certain activation status in the builder.
+     *
+     * @param type The activation which should be present.
+     * @return true if the activation status is equals, false otherwise.
+     */
     private boolean isStatus(CraftsNet.ActivateType type) {
         return craftsNet.getBuilder().isWebSocketServer(type);
+    }
+
+    /**
+     * Returns whether fragmentation is enabled or not.
+     *
+     * @return true if fragmentation is enabled, false otherwise
+     */
+    @Experimental
+    public boolean shouldFragment() {
+        return shouldFragment;
+    }
+
+    /**
+     * Enable or disable fragmentation of messages send by the server.
+     *
+     * @param shouldFragment true if fragmentation should be enabled, false otherwise.
+     */
+    @Experimental
+    public void setFragmentationEnabled(boolean shouldFragment) {
+        this.shouldFragment = shouldFragment;
+    }
+
+    /**
+     * Returns the size which should every fragment of a frame should have.
+     *
+     * @return The max size of each frame.
+     */
+    @Experimental
+    public int getFragmentSize() {
+        return fragmentSize;
+    }
+
+    /**
+     * Sets the maximum size of each fragment of a frame.
+     *
+     * @param fragmentSize The max size of the fragments.
+     */
+    @Experimental
+    public void setFragmentSize(int fragmentSize) {
+        this.fragmentSize = fragmentSize;
     }
 
     /**
