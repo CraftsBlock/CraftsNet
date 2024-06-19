@@ -181,6 +181,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             Message message;
             while (!Thread.currentThread().isInterrupted() && isConnected() && (message = readMessage()) != null) {
+                if (!this.connected || !this.socket.isConnected()) break;
                 // Process incoming messages from the client
                 byte[] data = message.message();
 
@@ -343,86 +344,20 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         // Read the input stream from the socket.
         InputStream inputStream = socket.getInputStream();
+        AtomicReference<Frame> frame = new AtomicReference<>();
 
-        // Create a 10-byte buffer to store the received message.
-        byte[] frame = new byte[10];
+        while (frame.get() == null || !frame.get().isFinalFrame()) {
+            Frame read = Frame.read(inputStream);
+            if (frame.get() == null) {
+                frame.set(read);
+                continue;
+            }
 
-        // Read the first two bytes of the frame (header) from the input stream.
-        inputStream.read(frame, 0, 2);
-
-        // Extract the control byte from the first byte of the header.
-        ControlByte controlByte = ControlByte.fromByte(frame[0]);
-        if (controlByte == null) {
-            closeInternally(ClosureCode.UNSUPPORTED, "Unknown control byte 0x" + Integer.toHexString(frame[0]));
-            return null;
-        }
-
-        // Extract and the payload length from the second byte of the header.
-        byte payloadLength = (byte) (frame[1] & 0x7F);
-        if (payloadLength == 126)
-            // If the payload length is 126, read an additional 2 bytes for the actual length.
-            inputStream.read(frame, 2, 2);
-        else if (payloadLength == 127)
-            // If the payload length is 127, read an additional 8 bytes for the actual length.
-            inputStream.read(frame, 2, 8);
-
-        // Calculate the actual value of the payload length based on the read bytes
-        long payloadLengthValue = getPayloadLengthValue(frame, payloadLength);
-
-        // Read the 4 bytes of the masking key (masks) from the input stream.
-        byte[] masks = new byte[4];
-        inputStream.read(masks);
-
-        // Create a ByteArrayOutputStream to store the payload data.
-        ByteArrayOutputStream payloadBuilder = new ByteArrayOutputStream();
-
-        // Initialize variables to track the number of bytes read and the remaining bytes to read.
-        long bytesRead = 0;
-        long bytesToRead = payloadLengthValue;
-
-        // Create a 4,096-byte chunk to read the payload data in pieces.
-        byte[] chunk = new byte[4096];
-        int chunkSize;
-
-        // Read the payload data in chunks from the input stream and remove the masking.
-        while (bytesToRead > 0 && (chunkSize = inputStream.read(chunk, 0, (int) Math.min(chunk.length, bytesToRead))) != -1) {
-            for (int i = 0; i < chunkSize; i++)
-                chunk[i] ^= masks[(int) ((bytesRead + i) % 4)]; // Remove the masking from each byte.
-            payloadBuilder.write(chunk, 0, chunkSize); // Append the unmasked data to the payloadBuilder.
-
-            // Update the tracked variables.
-            bytesRead += chunkSize;
-            bytesToRead -= chunkSize;
+            frame.get().appendFrame(read);
         }
 
         // Convert the read payload data to a string using UTF-8 encoding and return it.
-        return new Message(controlByte, payloadBuilder.toByteArray());
-    }
-
-    /**
-     * Extracts the payload length value from the WebSocket frame header.
-     *
-     * @param frame         The WebSocket frame header.
-     * @param payloadLength The payload length value from the frame.
-     * @return The actual payload length value.
-     */
-    private long getPayloadLengthValue(byte[] frame, byte payloadLength) {
-        if (payloadLength == 126)
-            // If the payload length is 126, combine the 3rd and 4th bytes to get the actual length.
-            return ((frame[2] & 0xFF) << 8) | (frame[3] & 0xFF);
-        else if (payloadLength == 127)
-            // If the payload length is 127, combine the 3rd to 10th bytes to get the actual length.
-            return ((frame[2] & 0xFFL) << 56)
-                    | ((frame[3] & 0xFFL) << 48)
-                    | ((frame[4] & 0xFFL) << 40)
-                    | ((frame[5] & 0xFFL) << 32)
-                    | ((frame[6] & 0xFFL) << 24)
-                    | ((frame[7] & 0xFFL) << 16)
-                    | ((frame[8] & 0xFFL) << 8)
-                    | (frame[9] & 0xFFL);
-        else
-            // For payload lengths less than 126, the payloadLength itself represents the actual length.
-            return payloadLength;
+        return new Message(frame.get().getOpcode(), frame.get().getData());
     }
 
     /**
@@ -649,20 +584,20 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             if (data == null || data.length == 0) {
-                outputStream.write(controlByte.byteValue());
+                outputStream.write(0x80 | controlByte.byteValue());
                 outputStream.write(0x00);
                 writer.write(outputStream.toByteArray());
                 return;
             }
 
             OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(new SocketExchange(server, this), controlByte, data);
-            if (!controlByte.equals(ControlByte.CLOSE)) {
+            if (!controlByte.equals(ControlByte.CLOSE) && !controlByte.equals(ControlByte.CONTINUATION)) {
                 craftsNet.listenerRegistry().call(event);
                 if (event.isCancelled())
                     return;
             }
 
-            outputStream.write(event.getControlByte().byteValue());
+            outputStream.write(0x80 | event.getControlByte().byteValue());
 
             byte @NotNull [] bytes = event.getData();
             int length = bytes.length;
