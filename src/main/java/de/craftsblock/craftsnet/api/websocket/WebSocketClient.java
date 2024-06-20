@@ -9,6 +9,7 @@ import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
+import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
 import de.craftsblock.craftsnet.events.sockets.*;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.Nullable;
@@ -127,9 +128,19 @@ public class WebSocketClient implements Runnable, RequireAble {
             if (getHeader("Cf-connecting-ip") != null)
                 ip = getHeader("Cf-connecting-ip");
 
+            // Loadup extensions
+            for (String protocol : getHeader("Sec-websocket-extensions").split(";\\s"))
+                if (craftsNet.webSocketExtensionRegistry().hasExtension(protocol))
+                    this.extensions.add(craftsNet.webSocketExtensionRegistry().getExtensionByName(protocol));
+
             // Send a WebSocket handshake to establish the connection
             sendHandshake();
             this.connected = true;
+
+            // Reverse the extension list as it is required to process the more important one's at the end
+            Collections.reverse(extensions);
+
+            sendMessage("Hello du sack");
 
             // Check if the requested path has a corresponding endpoint registered in the server
             this.mappings = getEndpoint();
@@ -250,7 +261,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
                         // Check if the second parameter is a frame and overrides the passing args accordingly
                         if (method.getParameterCount() >= 2 && method.getParameterTypes()[1].equals(Frame.class))
-                            passingArgs[1] = frame;
+                            passingArgs[1] = frame.clone();
 
                         // Invoke the handler method
                         method.invoke(handler, passingArgs);
@@ -335,10 +346,12 @@ public class WebSocketClient implements Runnable, RequireAble {
             MessageDigest digest = MessageDigest.getInstance("SHA-1");
             byte[] hash = digest.digest(concatenated.getBytes(StandardCharsets.UTF_8));
 
+            String extensions = String.join(",", this.extensions.parallelStream().map(WebSocketExtension::getProtocolName).toList());
             String response = "HTTP/1.1 101 Switching Protocols\r\n"
                     + "Upgrade: websocket\r\n"
                     + "Connection: Upgrade\r\n"
                     + "Sec-WebSocket-Accept: " + Base64.getEncoder().encodeToString(hash) + "\r\n"
+                    + (!extensions.isEmpty() ? "Sec-websocket-extensions: " + extensions + "\r\n" : "")
                     + "\r\n";
             writer.write(response.getBytes(StandardCharsets.UTF_8));
         } catch (NoSuchAlgorithmException | IOException e) {
@@ -375,7 +388,11 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
         }
 
-        return frame.get();
+        Frame read = frame.get();
+        for (WebSocketExtension extension : this.extensions)
+            read = extension.decode(read);
+
+        return read;
     }
 
     /**
@@ -593,7 +610,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     /**
      * Sends a message with a specific control byte to the connected WebSocket client.
      *
-     * @param data        The message to be sent, as a byte array.
+     * @param data   The message to be sent, as a byte array.
      * @param opcode The byte used to control the message flow.
      */
     private synchronized void sendMessage(byte[] data, Opcode opcode) {
@@ -615,17 +632,22 @@ public class WebSocketClient implements Runnable, RequireAble {
                     return;
             }
 
-            Frame frame = new Frame(true, false, false, false, opcode, event.getData());
-            for (WebSocketExtension extension : this.extensions)
-                frame = extension.encode(frame);
+            Frame frame = new Frame(true, false, false, false, event.getOpcode(), event.getData());
 
             if (server.shouldFragment())
                 for (Frame send : frame.fragmentFrame(server.getFragmentSize())) {
+                    for (WebSocketExtension extension : this.extensions)
+                        send = extension.encode(send);
+
+                    outputStream.reset();
                     send.write(outputStream);
                     writer.write(outputStream.toByteArray());
-                    outputStream.reset();
                 }
             else {
+                for (WebSocketExtension extension : this.extensions)
+                    frame = extension.encode(frame);
+
+                outputStream.reset();
                 frame.write(outputStream);
                 writer.write(outputStream.toByteArray());
             }
@@ -710,6 +732,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 headers = null;
                 mappings = null;
                 storage.clear();
+                extensions.clear();
                 server.remove(this);
                 this.connected = false;
             } catch (InvocationTargetException | IllegalAccessException | IOException e) {

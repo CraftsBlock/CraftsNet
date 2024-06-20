@@ -11,6 +11,7 @@ import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
 import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
 import de.craftsblock.craftsnet.api.websocket.DefaultPingResponder;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
+import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegistry;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.command.commands.PluginCommand;
 import de.craftsblock.craftsnet.command.commands.ReloadCommand;
@@ -56,6 +57,7 @@ public class CraftsNet {
     private ListenerRegistry listenerRegistry;
     private RouteRegistry routeRegistry;
     private ServiceManager serviceManager;
+    private WebSocketExtensionRegistry webSocketExtensionRegistry;
 
     // Server instances
     private WebServer webServer;
@@ -155,6 +157,7 @@ public class CraftsNet {
         // Check if webSocket routes are registered and start the websocket server if needed
         if (builder.isWebSocketServer(ActivateType.ENABLED) || builder.isWebSocketServer(ActivateType.DYNAMIC)) {
             logger.info("Setting up the websocket server");
+            webSocketExtensionRegistry = new WebSocketExtensionRegistry();
             webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), builder.isSSL());
             DefaultPingResponder.register(this);
 
@@ -333,6 +336,15 @@ public class CraftsNet {
      */
     public ServiceManager serviceManager() {
         return serviceManager;
+    }
+
+    /**
+     * Retrieves the extension registry for the websocket protocol.
+     *
+     * @return The websocket extension registry.
+     */
+    public WebSocketExtensionRegistry webSocketExtensionRegistry() {
+        return webSocketExtensionRegistry;
     }
 
     /**

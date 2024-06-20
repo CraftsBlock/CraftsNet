@@ -233,7 +233,11 @@ public class Frame implements RequireAble {
      * @throws IOException if an I/O error occurs while writing to the stream.
      */
     protected synchronized void write(OutputStream stream) throws IOException {
-        stream.write((isFinalFrame() ? 0x80 : 0x00) | opcode.byteValue());
+        stream.write((byte) ((isFinalFrame() ? 0x80 : 0x00)
+                | (isRsv1() ? 0x40 : 0x00)
+                | (isRsv2() ? 0x20 : 0x00)
+                | (isRsv3() ? 0x10 : 0x00)
+                | opcode.byteValue()));
 
         byte @NotNull [] data = getData();
         int length = data.length;
@@ -319,6 +323,16 @@ public class Frame implements RequireAble {
         else
             // For payload lengths less than 126, the payloadLength itself represents the actual length.
             return payloadLength;
+    }
+
+    /**
+     * Creates a deep copy of this frame.
+     *
+     * @return The deep copy.
+     */
+    @Override
+    protected Object clone() {
+        return new Frame(fin, rsv1, rsv2, rsv3, opcode, data.clone());
     }
 
 }
