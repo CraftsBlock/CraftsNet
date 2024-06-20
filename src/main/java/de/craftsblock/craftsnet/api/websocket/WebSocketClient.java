@@ -11,7 +11,6 @@ import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.events.sockets.*;
 import de.craftsblock.craftsnet.logging.Logger;
-import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -25,6 +24,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -51,6 +52,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final WebSocketServer server;
     private final Socket socket;
     private final WebSocketStorage storage;
+    private final ConcurrentLinkedDeque<WebSocketExtension> extensions;
 
     private SocketExchange exchange;
     private Headers headers;
@@ -83,6 +85,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.socket = socket;
         this.server = server;
         this.storage = new WebSocketStorage();
+        this.extensions = new ConcurrentLinkedDeque<>();
 
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
@@ -262,16 +265,25 @@ public class WebSocketClient implements Runnable, RequireAble {
             transformerPerformer.clearCache();
         } catch (SocketException ignored) {
         } catch (Throwable t) {
-            if (craftsNet.fileLogger() != null) {
-                long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "ws", path);
-                logger.error(t, "Error: " + errorID);
-                sendMessage(Json.empty()
-                        .set("error.message", "An unexpected exception happened whilst processing your message!")
-                        .set("error.identifier", errorID));
-            } else logger.error(t);
+            createErrorLog(t);
         } finally {
             disconnect();
         }
+    }
+
+    /**
+     * Creates an error log for a specific throwable
+     *
+     * @param t the throwable which has been thrown
+     */
+    private void createErrorLog(Throwable t) {
+        if (craftsNet.fileLogger() != null) {
+            long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "ws", path);
+            logger.error(t, "Error: " + errorID);
+            sendMessage(Json.empty()
+                    .set("error.message", "An unexpected exception happened whilst processing your message!")
+                    .set("error.identifier", errorID));
+        } else logger.error(t);
     }
 
     /**
@@ -351,13 +363,17 @@ public class WebSocketClient implements Runnable, RequireAble {
         AtomicReference<Frame> frame = new AtomicReference<>();
 
         while (frame.get() == null || !frame.get().isFinalFrame()) {
-            Frame read = Frame.read(inputStream);
-            if (frame.get() == null) {
-                frame.set(read);
-                continue;
-            }
+            try {
+                Frame read = Frame.read(inputStream);
+                if (frame.get() == null) {
+                    frame.set(read);
+                    continue;
+                }
 
-            frame.get().appendFrame(read);
+                frame.get().appendFrame(read);
+            } catch (Throwable t) {
+                createErrorLog(t);
+            }
         }
 
         return frame.get();
@@ -600,34 +616,20 @@ public class WebSocketClient implements Runnable, RequireAble {
                     return;
             }
 
-            List<byte[]> frames = server.shouldFragment() ? this.splitByteArray(event.getData(), server.getFragmentSize()) : List.of(event.getData());
+            Frame frame = new Frame(true, false, false, false, controlByte, event.getData());
 
-            boolean first = true;
-            for (int i = 0; i < frames.size(); i++) {
-                outputStream.write(
-                        (i == frames.size() - 1 ? 0x80 : 0x00) |
-                                (first ? event.getControlByte().byteValue() : ControlByte.CONTINUATION.byteValue())
-                );
-                first = false;
+            for (WebSocketExtension extension : this.extensions)
+                extension.encode(frame);
 
-                byte @NotNull [] bytes = frames.get(i);
-                int length = bytes.length;
-                if (length <= 125)
-                    outputStream.write((byte) length);
-                else if (length <= 65535) {
-                    outputStream.write((byte) 126);
-                    outputStream.write((byte) (length >> 8));
-                    outputStream.write((byte) length);
-                } else {
-                    outputStream.write((byte) 127);
-                    for (int j = 7; j >= 0; j--)
-                        outputStream.write((byte) (length >> (8 * j)));
+            if (server.shouldFragment())
+                for (Frame send : frame.fragmentFrame(server.getFragmentSize())) {
+                    send.write(outputStream);
+                    writer.write(outputStream.toByteArray());
+                    outputStream.reset();
                 }
-
-                outputStream.write(bytes);
+            else {
+                frame.write(outputStream);
                 writer.write(outputStream.toByteArray());
-
-                outputStream.reset();
             }
         } catch (SocketException ignored) {
         } catch (IOException e) {

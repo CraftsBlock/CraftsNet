@@ -1,11 +1,16 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Represents a WebSocket frame that contains control information and payload data.
@@ -33,7 +38,7 @@ import java.nio.charset.StandardCharsets;
  */
 public class Frame implements RequireAble {
 
-    private final ControlByte opcode;
+    private ControlByte opcode;
     private byte[] data;
 
     private boolean fin;
@@ -42,12 +47,37 @@ public class Frame implements RequireAble {
     private final boolean rsv3;
 
     /**
-     * Constructs a Frame with the given frame header and data.
+     * Constructs a new {@code Frame} with the specified parameters. This constructor initializes the frame
+     * with the provided values for the final frame indicator, reserved bits, opcode, and payload data.
      *
-     * @param frame The frame header.
-     * @param data  The payload data.
+     * @param fin    whether this frame is the final fragment in a message. If true, this is the final frame.
+     * @param rsv1   the first reserved bit. Should be false unless an extension uses it.
+     * @param rsv2   the second reserved bit. Should be false unless an extension uses it.
+     * @param rsv3   the third reserved bit. Should be false unless an extension uses it.
+     * @param opcode the opcode of the frame, indicating the type of frame.
+     * @param data   the payload data of the frame. This array should not be null and contains the actual message data.
      */
-    public Frame(byte[] frame, byte[] data) {
+    public Frame(boolean fin, boolean rsv1, boolean rsv2, boolean rsv3, @NotNull ControlByte opcode, byte @NotNull [] data) {
+        this.fin = fin;
+        this.rsv1 = rsv1;
+        this.rsv2 = rsv2;
+        this.rsv3 = rsv3;
+        this.opcode = opcode;
+        this.data = data;
+    }
+
+    /**
+     * Constructs a new {@code Frame} by decoding the provided frame header and payload data.
+     * This constructor extracts the final frame indicator, reserved bits, and opcode from the
+     * frame header, and sets the payload data.
+     *
+     * @param frame an array of bytes representing the frame header. The first byte should contain
+     *              the FIN flag, reserved bits, and opcode.
+     * @param data  the payload data of the frame. This array should not be null and contains the
+     *              actual message data.
+     * @throws IllegalArgumentException if the opcode derived from the frame header is invalid.
+     */
+    public Frame(byte @NotNull [] frame, byte @NotNull [] data) {
         fin = (frame[0] & 0x80) != 0;
         rsv1 = (frame[0] & 0x40) != 0;
         rsv2 = (frame[0] & 0x20) != 0;
@@ -130,18 +160,23 @@ public class Frame implements RequireAble {
     }
 
     /**
-     * Appends another frame's data to this frame.
-     * This method is used to handle fragmented frames by combining their data.
-     * The method checks if the provided frame has a continuation opcode and if this frame
-     * is not already marked as the final frame. If these conditions are met, it merges
-     * the data from the provided frame into this frame.
+     * Appends the data from the specified frame to the current frame. This method is intended to be used
+     * for frames with the continuation opcode, allowing fragmented frames to be reassembled into a single
+     * frame. The method ensures that only continuation frames are appended and that appending is not attempted
+     * on a frame marked as final.
      *
-     * @param frame The frame to append. This frame should have the continuation opcode.
-     * @throws IllegalStateException if the frame's opcode is not a continuation or if this frame is already the final frame.
+     * <p>This method is synchronized to ensure thread safety during the append operation. It updates the
+     * current frame's data by merging it with the data from the specified frame and appropriately sets the
+     * final (FIN) flag if either the current frame or the appended frame has the FIN flag set.
+     *
+     * @param frame the frame whose data is to be appended to the current frame. The frame must have the
+     *              continuation opcode and the current frame must not be marked as final.
+     * @throws IllegalStateException if the frame's opcode is not continuation or if the current frame
+     *                               is already marked as final.
      */
     protected synchronized void appendFrame(Frame frame) {
         if (!frame.getOpcode().equals(ControlByte.CONTINUATION))
-            throw new IllegalStateException("Tried to append a frame whose opcode is not a continuation!");
+            throw new IllegalStateException("Tried to append a frame whose opcode is not continuation!");
 
         if (this.isFinalFrame())
             throw new IllegalStateException("Tried to append a frame while the current frame was already the last one!");
@@ -152,6 +187,68 @@ public class Frame implements RequireAble {
         this.setData(mergedData);
 
         fin = this.fin || frame.fin;
+    }
+
+    /**
+     * Fragments the current frame into multiple smaller frames, each with a maximum length specified by the
+     * {@code fragmentLength} parameter. This is useful for splitting large frames into smaller fragments
+     * to comply with WebSocket protocol requirements for frame sizes.
+     *
+     * <p>The resulting fragments are stored in a synchronized collection to ensure thread safety. Each
+     * fragment will have the same RSV1, RSV2, and RSV3 values as the original frame and a continuation
+     * opcode, except for the last fragment which will have its FIN bit set to true to indicate the final fragment.
+     *
+     * @param fragmentLength the maximum length of each fragmented frame. If the data length is less than
+     *                       or equal to {@code fragmentLength}, a single frame is returned.
+     * @return a collection of frames, each containing a portion of the original frame's data. The collection
+     * is guaranteed to be thread-safe.
+     */
+    protected synchronized Collection<Frame> fragmentFrame(int fragmentLength) {
+        List<Frame> result = new ArrayList<>();
+        byte[] data = getData();
+        int length = data.length;
+
+        for (int start = 0; start < length; start += fragmentLength) {
+            int end = Math.min(length, start + fragmentLength);
+            byte[] chunk = new byte[end - start];
+            System.arraycopy(data, start, chunk, 0, end - start);
+            result.add(new Frame(false, rsv1, rsv2, rsv3, ControlByte.CONTINUATION, chunk));
+        }
+
+        if (!result.isEmpty()) {
+            result.get(result.size() - 1).fin = true;
+            result.get(0).opcode = this.opcode;
+        }
+        return result;
+    }
+
+    /**
+     * Writes the current frame to the specified output stream. This method encodes the frame header and
+     * payload data according to the WebSocket protocol. The method ensures that the frame is correctly
+     * formatted with the final frame indicator and the appropriate opcode, followed by the payload length
+     * and the actual payload data.
+     *
+     * @param stream the output stream to which the frame will be written.
+     * @throws IOException if an I/O error occurs while writing to the stream.
+     */
+    protected synchronized void write(OutputStream stream) throws IOException {
+        stream.write((isFinalFrame() ? 0x80 : 0x00) | opcode.byteValue());
+
+        byte @NotNull [] data = getData();
+        int length = data.length;
+        if (length <= 125)
+            stream.write((byte) length);
+        else if (length <= 65535) {
+            stream.write((byte) 126);
+            stream.write((byte) (length >> 8));
+            stream.write((byte) length);
+        } else {
+            stream.write((byte) 127);
+            for (int j = 7; j >= 0; j--)
+                stream.write((byte) (length >> (8 * j)));
+        }
+
+        stream.write(data);
     }
 
     /**
