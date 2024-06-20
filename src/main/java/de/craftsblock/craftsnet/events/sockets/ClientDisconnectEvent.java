@@ -3,7 +3,6 @@ package de.craftsblock.craftsnet.events.sockets;
 import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.websocket.ClosureCode;
-import de.craftsblock.craftsnet.api.websocket.ControlByte;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
 
 import java.util.List;

@@ -11,7 +11,6 @@ import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.events.sockets.*;
 import de.craftsblock.craftsnet.logging.Logger;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -24,8 +23,6 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -52,7 +49,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final WebSocketServer server;
     private final Socket socket;
     private final WebSocketStorage storage;
-    private final ConcurrentLinkedDeque<WebSocketExtension> extensions;
+    private final List<WebSocketExtension> extensions;
 
     private SocketExchange exchange;
     private Headers headers;
@@ -85,7 +82,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.socket = socket;
         this.server = server;
         this.storage = new WebSocketStorage();
-        this.extensions = new ConcurrentLinkedDeque<>();
+        this.extensions = new ArrayList<>();
 
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
@@ -188,7 +185,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 // Process incoming messages from the client
                 byte[] data = frame.getData();
 
-                if (frame.getOpcode().equals(ControlByte.CLOSE)) {
+                if (frame.getOpcode().equals(Opcode.CLOSE)) {
                     if (data == null || data.length <= 2) break;
                     closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
                     closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
@@ -196,17 +193,17 @@ public class WebSocketClient implements Runnable, RequireAble {
                     break;
                 }
 
-                if (frame.getOpcode().equals(ControlByte.PING)) {
+                if (frame.getOpcode().equals(Opcode.PING)) {
                     craftsNet.listenerRegistry().call(new ReceivedPingMessageEvent(exchange, data));
                     continue;
                 }
 
-                if (frame.getOpcode().equals(ControlByte.PONG)) {
+                if (frame.getOpcode().equals(Opcode.PONG)) {
                     craftsNet.listenerRegistry().call(new ReceivedPongMessageEvent(exchange, data));
                     continue;
                 }
 
-                if (frame.getOpcode().equals(ControlByte.TEXT) &&
+                if (frame.getOpcode().equals(Opcode.TEXT) &&
                         IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) {
                     closeInternally(ClosureCode.UNSUPPORTED, "Send negativ byte values while the control byte is set to utf8!", true);
                     break;
@@ -371,8 +368,10 @@ public class WebSocketClient implements Runnable, RequireAble {
                 }
 
                 frame.get().appendFrame(read);
-            } catch (Throwable t) {
-                createErrorLog(t);
+            } catch (SocketException e) {
+                throw e;
+            } catch (NullPointerException | IOException e) {
+                createErrorLog(e);
             }
         }
 
@@ -449,7 +448,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param data The message to be sent, as it's string representation.
      */
     public void sendMessage(String data) {
-        sendMessage(data.getBytes(StandardCharsets.UTF_8), ControlByte.TEXT);
+        sendMessage(data.getBytes(StandardCharsets.UTF_8), Opcode.TEXT);
     }
 
     /**
@@ -458,7 +457,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param data The message to be sent, as a byte array.
      */
     public void sendMessage(byte[] data) {
-        sendMessage(data, ControlByte.BINARY);
+        sendMessage(data, Opcode.BINARY);
     }
 
     /**
@@ -483,7 +482,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param message The payload as a byte array which should be appended
      */
     public void sendPing(byte[] message) {
-        sendMessage(message, ControlByte.PING);
+        sendMessage(message, Opcode.PING);
     }
 
     /**
@@ -508,14 +507,14 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param message The payload as a byte array which should be appended
      */
     public void sendPong(byte[] message) {
-        sendMessage(message, ControlByte.PONG);
+        sendMessage(message, Opcode.PONG);
     }
 
     /**
      * Disconnects the client gracefully without providing any information about the reason.
      */
     public void close() {
-        sendMessage(null, ControlByte.CLOSE);
+        sendMessage(null, Opcode.CLOSE);
     }
 
     /**
@@ -583,7 +582,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         System.arraycopy(message, 0, data, 2, message.length);
 
         // Fire the message
-        sendMessage(data, ControlByte.CLOSE);
+        sendMessage(data, Opcode.CLOSE);
 
         this.closeCode = code;
         this.closeReason = reason;
@@ -595,31 +594,30 @@ public class WebSocketClient implements Runnable, RequireAble {
      * Sends a message with a specific control byte to the connected WebSocket client.
      *
      * @param data        The message to be sent, as a byte array.
-     * @param controlByte The byte used to control the message flow.
+     * @param opcode The byte used to control the message flow.
      */
-    private synchronized void sendMessage(byte[] data, ControlByte controlByte) {
+    private synchronized void sendMessage(byte[] data, Opcode opcode) {
         if (!isConnected())
             throw new IllegalStateException("The websocket connection has already been closed!");
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             if (data == null || data.length == 0) {
-                outputStream.write(0x80 | controlByte.byteValue());
+                outputStream.write(0x80 | opcode.byteValue());
                 outputStream.write(0x00);
                 writer.write(outputStream.toByteArray());
                 return;
             }
 
-            OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(new SocketExchange(server, this), controlByte, data);
-            if (!controlByte.equals(ControlByte.CLOSE) && !controlByte.equals(ControlByte.CONTINUATION)) {
+            OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(new SocketExchange(server, this), opcode, data);
+            if (!opcode.equals(Opcode.CLOSE) && !opcode.equals(Opcode.CONTINUATION)) {
                 craftsNet.listenerRegistry().call(event);
                 if (event.isCancelled())
                     return;
             }
 
-            Frame frame = new Frame(true, false, false, false, controlByte, event.getData());
-
+            Frame frame = new Frame(true, false, false, false, opcode, event.getData());
             for (WebSocketExtension extension : this.extensions)
-                extension.encode(frame);
+                frame = extension.encode(frame);
 
             if (server.shouldFragment())
                 for (Frame send : frame.fragmentFrame(server.getFragmentSize())) {

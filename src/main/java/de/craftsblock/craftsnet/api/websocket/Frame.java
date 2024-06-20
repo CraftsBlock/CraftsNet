@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -38,7 +39,7 @@ import java.util.List;
  */
 public class Frame implements RequireAble {
 
-    private ControlByte opcode;
+    private Opcode opcode;
     private byte[] data;
 
     private boolean fin;
@@ -57,7 +58,7 @@ public class Frame implements RequireAble {
      * @param opcode the opcode of the frame, indicating the type of frame.
      * @param data   the payload data of the frame. This array should not be null and contains the actual message data.
      */
-    public Frame(boolean fin, boolean rsv1, boolean rsv2, boolean rsv3, @NotNull ControlByte opcode, byte @NotNull [] data) {
+    public Frame(boolean fin, boolean rsv1, boolean rsv2, boolean rsv3, @NotNull Opcode opcode, byte @NotNull [] data) {
         this.fin = fin;
         this.rsv1 = rsv1;
         this.rsv2 = rsv2;
@@ -83,7 +84,7 @@ public class Frame implements RequireAble {
         rsv2 = (frame[0] & 0x20) != 0;
         rsv3 = (frame[0] & 0x10) != 0;
 
-        this.opcode = ControlByte.fromByte((byte) (frame[0] & 0x0F));
+        this.opcode = Opcode.fromByte((byte) (frame[0] & 0x0F));
         this.data = data;
     }
 
@@ -128,7 +129,7 @@ public class Frame implements RequireAble {
      *
      * @return The opcode of this frame.
      */
-    public ControlByte getOpcode() {
+    public Opcode getOpcode() {
         return opcode;
     }
 
@@ -175,7 +176,7 @@ public class Frame implements RequireAble {
      *                               is already marked as final.
      */
     protected synchronized void appendFrame(Frame frame) {
-        if (!frame.getOpcode().equals(ControlByte.CONTINUATION))
+        if (!frame.getOpcode().equals(Opcode.CONTINUATION))
             throw new IllegalStateException("Tried to append a frame whose opcode is not continuation!");
 
         if (this.isFinalFrame())
@@ -212,7 +213,7 @@ public class Frame implements RequireAble {
             int end = Math.min(length, start + fragmentLength);
             byte[] chunk = new byte[end - start];
             System.arraycopy(data, start, chunk, 0, end - start);
-            result.add(new Frame(false, rsv1, rsv2, rsv3, ControlByte.CONTINUATION, chunk));
+            result.add(new Frame(false, rsv1, rsv2, rsv3, Opcode.CONTINUATION, chunk));
         }
 
         if (!result.isEmpty()) {

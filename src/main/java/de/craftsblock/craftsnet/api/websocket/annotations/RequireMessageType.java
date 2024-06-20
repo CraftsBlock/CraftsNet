@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket.annotations;
 
 import de.craftsblock.craftsnet.api.http.WebServer;
-import de.craftsblock.craftsnet.api.websocket.ControlByte;
+import de.craftsblock.craftsnet.api.websocket.Opcode;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -27,6 +27,6 @@ public @interface RequireMessageType {
      *
      * @return The domain as a string.
      */
-    ControlByte[] value() default {ControlByte.TEXT, ControlByte.BINARY};
+    Opcode[] value() default {Opcode.TEXT, Opcode.BINARY};
 
 }
