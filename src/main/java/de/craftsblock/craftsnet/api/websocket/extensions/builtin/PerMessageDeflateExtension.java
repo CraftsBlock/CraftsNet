@@ -104,47 +104,30 @@ public class PerMessageDeflateExtension extends WebSocketExtension {
 
         Frame result = new Frame(frame.isFinalFrame(), false, frame.isRsv2(), frame.isRsv3(), frame.getOpcode(), new byte[0]);
         Inflater inflater = new Inflater(true);
-        List<byte[]> chunks = Utils.splitByteArray(frame.getData(), BLOCK_END_BYTES);
-        AtomicReference<byte[]> decompressed = new AtomicReference<>(new byte[0]);
+        inflater.setInput(frame.getData());
 
-        try {
-            for (byte[] chunk : chunks) {
-                if (chunk.length == 0) continue;
-                inflater.reset();
-                inflater.setInput(chunk);
+        byte[] buffer = new byte[1024];
+        int totalLength = 0;
+        try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
+            while (!inflater.finished()) {
+                if (inflater.getRemaining() == 0) break;
+                int length = inflater.inflate(buffer);
 
-                byte[] buffer = new byte[1024];
-                int totalLength = 0;
-                try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
-                    while (!inflater.finished()) {
-                        if (inflater.getRemaining() == 0) break;
-                        int length = inflater.inflate(buffer);
+                totalLength += length;
+                if (totalLength > maxDataLength)
+                    throw new IllegalStateException("Decompressed data exceeds the maximum permitted size! (Max size: "
+                            + (maxDataLength / 1024 / 1024) + " MB)");
 
-                        totalLength += length;
-                        if (totalLength > maxDataLength)
-                            throw new IllegalStateException("Decompressed data exceeds the maximum permitted size! (Max size: "
-                                    + (maxDataLength / 1024 / 1024) + " MB)");
-
-                        stream.write(buffer, 0, length);
-                    }
-
-                    byte[] previousChunks = decompressed.get();
-                    byte[] chunkData = stream.toByteArray();
-                    byte[] merged = new byte[previousChunks.length + chunkData.length];
-
-                    System.arraycopy(previousChunks, 0, merged, 0, previousChunks.length);
-                    System.arraycopy(chunkData, 0, merged, previousChunks.length, chunkData.length);
-
-                    decompressed.set(merged);
-                } catch (IOException | IllegalStateException | DataFormatException e) {
-                    throw new RuntimeException(e);
-                }
+                stream.write(buffer, 0, length);
             }
+
+            result.setData(stream.toByteArray());
+        } catch (IOException | IllegalStateException | DataFormatException e) {
+            throw new RuntimeException(e);
         } finally {
             inflater.end();
         }
 
-        result.setData(decompressed.get());
         return result;
     }
 
@@ -228,6 +211,7 @@ public class PerMessageDeflateExtension extends WebSocketExtension {
     public static void setDeflateFlush(int deflateFlush) {
         PerMessageDeflateExtension.deflateFlush = deflateFlush;
     }
+
     /**
      * Gets the deflate flush mode.
      *
