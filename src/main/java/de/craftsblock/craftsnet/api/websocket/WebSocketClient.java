@@ -41,7 +41,7 @@ import java.util.stream.IntStream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.1
+ * @version 3.0.0
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
