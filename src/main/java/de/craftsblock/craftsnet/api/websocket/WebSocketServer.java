@@ -251,6 +251,7 @@ public class WebSocketServer extends Server {
      */
     @Experimental
     public void setFragmentSize(int fragmentSize) {
+        if (fragmentSize <= 0) return;
         this.fragmentSize = fragmentSize;
     }
 

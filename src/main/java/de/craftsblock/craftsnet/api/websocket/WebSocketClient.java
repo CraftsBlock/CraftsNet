@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import com.sun.net.httpserver.Headers;
+import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
@@ -68,6 +69,9 @@ public class WebSocketClient implements Runnable, RequireAble {
     private boolean active = false;
     private boolean connected = false;
 
+    private boolean shouldFragment;
+    private int fragmentSize;
+
     private int closeCode = -1;
     private String closeReason = null;
     private boolean closeByServer = false;
@@ -85,6 +89,8 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.storage = new WebSocketStorage();
         this.extensions = new ArrayList<>();
 
+        this.shouldFragment = server.shouldFragment();
+        this.fragmentSize = -1;
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
     }
@@ -451,6 +457,47 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
+     * Returns whether fragmentation is enabled or not.
+     *
+     * @return true if fragmentation is enabled, false otherwise
+     */
+    @Experimental
+    public boolean shouldFragment() {
+        return server.shouldFragment() && shouldFragment || shouldFragment;
+    }
+
+    /**
+     * Enable or disable fragmentation of messages send by the server.
+     *
+     * @param shouldFragment true if fragmentation should be enabled, false otherwise.
+     */
+    @Experimental
+    public void setFragmentationEnabled(boolean shouldFragment) {
+        this.shouldFragment = shouldFragment;
+    }
+
+    /**
+     * Returns the size which should every fragment of a frame should have.
+     *
+     * @return The max size of each frame.
+     */
+    @Experimental
+    public int getFragmentSize() {
+        if (fragmentSize <= 0) return server.getFragmentSize();
+        return fragmentSize;
+    }
+
+    /**
+     * Sets the maximum size of each fragment of a frame.
+     *
+     * @param fragmentSize The max size of the fragments.
+     */
+    @Experimental
+    public void setFragmentSize(int fragmentSize) {
+        this.fragmentSize = fragmentSize;
+    }
+
+    /**
      * Sends a message to the connected WebSocket client.
      *
      * @param data The message to be sent, as it's json representation.
@@ -634,8 +681,8 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             Frame frame = new Frame(true, false, false, false, event.getOpcode(), event.getData());
 
-            if (server.shouldFragment())
-                for (Frame send : frame.fragmentFrame(server.getFragmentSize())) {
+            if (shouldFragment())
+                for (Frame send : frame.fragmentFrame(getFragmentSize())) {
                     for (WebSocketExtension extension : this.extensions)
                         send = extension.encode(send);
 
