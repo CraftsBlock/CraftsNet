@@ -202,6 +202,7 @@ final class AddonLoader {
                     for (String depended : addon.getStringList("depends"))
                         loadOrder.depends(obj, depended);
                 manager.register(obj);
+                configuration.addon.set(obj);
             } catch (Exception e) {
                 logger.error(e);
             }
