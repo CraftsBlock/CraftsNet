@@ -8,6 +8,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
+import de.craftsblock.craftsnet.api.utils.SessionStorage;
 import de.craftsblock.craftsnet.events.RequestEvent;
 import de.craftsblock.craftsnet.events.shares.ShareFileLoadedEvent;
 import de.craftsblock.craftsnet.events.shares.ShareRequestEvent;
@@ -122,7 +123,7 @@ public class WebHandler implements HttpHandler {
         request.setRoutes(routes);
 
         // Create a RequestEvent and call listeners before invoking the API handler method.
-        RequestEvent event = new RequestEvent(new Exchange(url, request, response), routes);
+        RequestEvent event = new RequestEvent(new Exchange(url, request, response, new SessionStorage()), routes);
         craftsNet.listenerRegistry().call(event);
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "ABORTED";
@@ -141,7 +142,7 @@ public class WebHandler implements HttpHandler {
         // Prepare the argument array to be passed to the API handler method.
         Object[] args = new Object[matcher.groupCount()];
 
-        args[0] = new Exchange(url, request, response);
+        args[0] = new Exchange(url, request, response, event.getExchange().storage());
         for (int i = 2; i <= matcher.groupCount(); i++)
             args[i - 1] = matcher.group(i);
 
@@ -178,7 +179,8 @@ public class WebHandler implements HttpHandler {
             priority = priority.next();
         }
 
-        // Clear up transformer cache to free up memory
+        // Clean up to free up memory
+        if (args.length == 1 && args[0] instanceof Exchange exchange) exchange.storage().clear();
         transformerPerformer.clearCache();
 
         return true;
@@ -208,8 +210,9 @@ public class WebHandler implements HttpHandler {
         }
 
         String path = matcher.group(1);
-        ShareRequestEvent event = new ShareRequestEvent(url, path, new Exchange(request.getUrl(), request, response), registry.getShare(url));
+        ShareRequestEvent event = new ShareRequestEvent(url, path, new Exchange(request.getUrl(), request, response, new SessionStorage()), registry.getShare(url));
         craftsNet.listenerRegistry().call(event);
+        event.getExchange().storage().clear(); // Clear the session storage as it is no longer needed
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "SHARE ABORTED";
             logger.info(httpMethod + " " + url + " from " + ip + " \u001b[38;5;9m[" + cancelReason + "]");

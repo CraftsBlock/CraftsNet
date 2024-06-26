@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.api.http;
 
+import de.craftsblock.craftsnet.api.utils.SessionStorage;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -12,13 +13,14 @@ import org.jetbrains.annotations.NotNull;
  * @param path     The path the client connected to.
  * @param request  The {@link Request} object containing the incoming data from the client.
  * @param response The {@link Response} object used to send data back to the client.
+ * @param storage  A storage for this request designed for storing request specific data.
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 2.0.0
  * @see Request
  * @see Response
- * @since CraftsNet-1.0.0
+ * @since 1.0.0-SNAPSHOT
  */
-public record Exchange(@NotNull String path, @NotNull Request request, @NotNull Response response) {
+public record Exchange(@NotNull String path, @NotNull Request request, @NotNull Response response, @NotNull SessionStorage storage) {
 
 }

@@ -10,6 +10,7 @@ import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
+import de.craftsblock.craftsnet.api.utils.SessionStorage;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
 import de.craftsblock.craftsnet.events.sockets.*;
 import de.craftsblock.craftsnet.logging.Logger;
@@ -50,7 +51,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
     private final WebSocketServer server;
     private final Socket socket;
-    private final WebSocketStorage storage;
+    private final SessionStorage storage;
     private final List<WebSocketExtension> extensions;
 
     private SocketExchange exchange;
@@ -86,7 +87,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     public WebSocketClient(CraftsNet craftsNet, Socket socket, WebSocketServer server) {
         this.socket = socket;
         this.server = server;
-        this.storage = new WebSocketStorage();
+        this.storage = new SessionStorage();
         this.extensions = new ArrayList<>();
 
         this.shouldFragment = server.shouldFragment();
@@ -452,7 +453,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      *
      * @return The storage of this websocket client instance.
      */
-    public WebSocketStorage getStorage() {
+    public SessionStorage getStorage() {
         return storage;
     }
 

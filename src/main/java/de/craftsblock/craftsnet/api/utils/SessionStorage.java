@@ -1,11 +1,11 @@
-package de.craftsblock.craftsnet.api.websocket;
+package de.craftsblock.craftsnet.api.utils;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * A specialized ConcurrentHashMap implementation for storing WebSocket related data.
+ * A specialized ConcurrentHashMap implementation for storing session related data.
  * This class provides utility methods to retrieve stored values as specific types and to check
  * the type of stored values.
  *
@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version 1.0.0
  * @since 3.0.6-SNAPSHOT
  */
-public class WebSocketStorage extends ConcurrentHashMap<String, Object> {
+public class SessionStorage extends ConcurrentHashMap<String, Object> {
 
     /**
      * Retrieves the value associated with the specified key and casts it to the specified type.
