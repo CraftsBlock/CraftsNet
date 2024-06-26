@@ -1,8 +1,10 @@
 package de.craftsblock.craftsnet.api.transformers;
 
+import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftscore.cache.DoubleKeyedCache;
 import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.api.Handler;
 import de.craftsblock.craftsnet.api.transformers.exceptions.TransformerException;
 import de.craftsblock.craftsnet.api.transformers.annotations.Transformer;
 import de.craftsblock.craftsnet.api.transformers.annotations.TransformerCollection;
@@ -29,7 +31,7 @@ import static de.craftsblock.craftsnet.utils.Utils.patternGroupNameExtractPatter
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.1.0
  * @see Transformer
  * @see TransformerCollection
  * @see Transformable
@@ -74,8 +76,9 @@ public class TransformerPerformer {
     /**
      * Performs transformations on method arguments.
      *
-     * @param method The method to perform transformations on.
-     * @param args   The arguments containing the transform targets.
+     * @param handler The handler on which the performer should be performed
+     * @param method  The method to perform transformations on.
+     * @param args    The arguments containing the transform targets.
      * @return An array of transformed arguments.
      * @throws NoSuchMethodException     if the transformer method could not be found.
      * @throws InstantiationException    if no new instance of the Transformable can be created.
@@ -84,19 +87,14 @@ public class TransformerPerformer {
      * @throws IOException               if an I/O error occurs.
      * @throws InvocationTargetException if the underlying method throws an exception.
      */
-    public Object[] perform(Method method, Object[] args) throws Exception {
+    public Object[] perform(Handler handler, Method method, Object[] args) throws Exception {
         // Copy args into a new array
         Object[] copiedArgs = new Object[args.length];
         System.arraycopy(args, 0, copiedArgs, 0, args.length);
 
         // Apply all the transformers
-        Transformer standaloneTransformer = method.getAnnotation(Transformer.class);
-        TransformerCollection transformers = method.getAnnotation(TransformerCollection.class);
-        if (transformers != null)
-            for (Transformer transformer : transformers.value())
-                transform(groupNames, copiedArgs, transformer);
-        else if (standaloneTransformer != null)
-            transform(groupNames, copiedArgs, standaloneTransformer);
+        applyTransformers(copiedArgs, handler);
+        applyTransformers(copiedArgs, method);
 
         // Loop through all parameters of the method and checks the parameter type
         Class<?>[] parameterTypes = method.getParameterTypes();
@@ -128,6 +126,27 @@ public class TransformerPerformer {
             }
 
         return copiedArgs;
+    }
+
+    /**
+     * Applies the transformation process to the obj.
+     *
+     * @param args The args which should be transformed.
+     * @param obj  The method or the handler which contains the information about the transformers.
+     * @throws NoSuchMethodException  if the transformer method could not be found.
+     * @throws InstantiationException if no new instance of the Transformable can be created.
+     * @throws IllegalAccessException if access to the constructor of Transformable or
+     *                                access to the method Transformable.transform(String) is restricted.
+     */
+    @Experimental
+    private void applyTransformers(Object[] args, Object obj) throws NoSuchMethodException, InstantiationException, IllegalAccessException {
+        Transformer standaloneTransformer = (obj instanceof Method method ? method : obj.getClass()).getAnnotation(Transformer.class);
+        TransformerCollection transformers = (obj instanceof Method method ? method : obj.getClass()).getAnnotation(TransformerCollection.class);
+        if (transformers != null)
+            for (Transformer transformer : transformers.value())
+                transform(groupNames, args, transformer);
+        else if (standaloneTransformer != null)
+            transform(groupNames, args, standaloneTransformer);
     }
 
     /**

@@ -167,7 +167,7 @@ public class WebHandler implements HttpHandler {
                 Method method = mapping.method();
 
                 // Perform all transformers and continue if passingArgs is null
-                Object[] passingArgs = transformerPerformer.perform(method, args);
+                Object[] passingArgs = transformerPerformer.perform(mapping.handler(), method, args);
                 if (passingArgs == null)
                     continue;
 

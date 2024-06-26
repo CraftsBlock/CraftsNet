@@ -258,7 +258,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                                 }
 
                         // Perform all transformers and continue if passingArgs is null
-                        Object[] passingArgs = transformerPerformer.perform(method, args);
+                        Object[] passingArgs = transformerPerformer.perform(mapping.handler(), method, args);
                         if (passingArgs == null)
                             continue;
 
