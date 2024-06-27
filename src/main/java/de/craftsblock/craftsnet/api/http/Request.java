@@ -8,17 +8,16 @@ import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.body.Body;
+import de.craftsblock.craftsnet.api.http.cookies.Cookie;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * The Request class represents an incoming HTTP request received by the web server.
@@ -29,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.0
+ * @version 1.5.1
  * @see Exchange
  * @since CraftsNet-1.0.0
  */
@@ -45,7 +44,7 @@ public class Request implements AutoCloseable, RequireAble {
     private final String rawUrl;
     private final String url;
     private final Json queryParams = JsonParser.parse("{}");
-    private final Json cookies = JsonParser.parse("{}");
+    private final ConcurrentHashMap<String, Cookie> cookies = new ConcurrentHashMap<>();
     private final String ip;
 
     private File bodyLocation;
@@ -81,12 +80,8 @@ public class Request implements AutoCloseable, RequireAble {
         });
         this.url = urlStripped[0];
 
-        if (headers.containsKey("cookie"))
-            Arrays.stream(headers.getFirst("cookie").split("; ")).forEach(pair -> {
-                String[] stripped = pair.split("=", 2);
-                cookies.set(stripped[0], stripped.length == 2 ? stripped[1] : "");
-            });
-
+        for (Cookie cookie : parseCookies(headers))
+            this.cookies.put(cookie.getName(), cookie);
         retrieveBody();
     }
 
@@ -237,10 +232,8 @@ public class Request implements AutoCloseable, RequireAble {
      *
      * @return The mapped view of all cookies.
      */
-    public Map<String, String> getCookies() {
-        ConcurrentHashMap<String, String> cookies = new ConcurrentHashMap<>();
-        this.cookies.keySet().forEach(key -> cookies.put(key, this.cookies.getString(key)));
-        return cookies;
+    public Map<String, Cookie> getCookies() {
+        return Collections.unmodifiableMap(this.cookies);
     }
 
     /**
@@ -250,31 +243,31 @@ public class Request implements AutoCloseable, RequireAble {
      * @return True if the request contains the specified cookie, false otherwise.
      */
     public boolean hasCookie(String key) {
-        return cookies.contains(key);
+        return cookies.containsKey(key);
     }
 
     /**
-     * Retrieves the value of the specified cookie from the request.
+     * Retrieves the specified cookie from the request.
      *
      * @param key The name of the cookie to retrieve.
-     * @return The value of the specified cookie, or null if the cookie is not found.
+     * @return The specified cookie, or null if the cookie is not found.
      */
     @Nullable
-    public String retrieveCookie(@NotNull String key) {
+    public Cookie retrieveCookie(@NotNull String key) {
         if (hasCookie(key))
-            return cookies.getString(key);
+            return cookies.get(key);
         return null;
     }
 
     /**
-     * Retrieves the value of the specified cookie from the request or return a fallback value if it is not present on this request.
+     * Retrieves the specified cookie from the request or return a fallback cookie if it is not present on this request.
      *
      * @param key      The name of the cookie to retrieve.
      * @param fallback The fallback value, if the desired cookie is not present.
-     * @return The value of the specified cookie, or null if the cookie is not found.
+     * @return The specified cookie, or null if the cookie is not found.
      */
     @NotNull
-    public String retrieveCookie(@NotNull String key, @NotNull String fallback) {
+    public Cookie retrieveCookie(@NotNull String key, @NotNull Cookie fallback) {
         return hasCookie(key) ? Objects.requireNonNull(retrieveCookie(key)) : fallback;
     }
 
@@ -396,6 +389,40 @@ public class Request implements AutoCloseable, RequireAble {
      */
     protected void setRoutes(List<RouteRegistry.EndpointMapping> routes) {
         this.routes = routes;
+    }
+
+    /**
+     * Parses the "Cookie" header from the given HTTP headers and returns a collection of Cookie objects.
+     * <p>
+     * This method extracts cookie information from the "Cookie" header and constructs Cookie objects
+     * for each cookie found. It handles attributes such as Path, Domain, Expires, SameSite, Secure, and HttpOnly.
+     *
+     * @param headers The HTTP headers from which to parse cookies
+     * @return A ConcurrentLinkedQueue containing all parsed cookies
+     */
+    protected static ConcurrentLinkedQueue<Cookie> parseCookies(Headers headers) {
+        ConcurrentLinkedQueue<Cookie> cookies = new ConcurrentLinkedQueue<>();
+        if (headers.containsKey("cookie"))
+            Arrays.stream(headers.getFirst("cookie").split("; ")).forEach(pair -> {
+                String[] args = pair.split(";");
+                if (args.length < 1) return;
+                String[] nameValue = args[0].split("=", 2);
+
+                Cookie cookie = new Cookie(nameValue[0], nameValue.length == 2 ? nameValue[1] : "");
+                for (int i = 0; i < args.length; i++) {
+                    if (i == 0) continue;
+                    String[] arg = args[i].split("=");
+                    if (arg.length == 0) continue;
+                    if (arg[0].equalsIgnoreCase("Path")) cookie.setPath(arg.length == 2 ? arg[1] : null);
+                    if (arg[0].equalsIgnoreCase("Domain")) cookie.setDomain(arg.length == 2 ? arg[1] : null);
+                    if (arg[0].equalsIgnoreCase("Expires")) cookie.setExpiresAt(arg.length == 2 ? arg[1] : null);
+                    if (arg[0].equalsIgnoreCase("SameSite")) cookie.setSameSite(arg.length == 2 ? arg[1] : null);
+                    if (arg[0].equalsIgnoreCase("Secure")) cookie.setSecure(true);
+                    if (arg[0].equalsIgnoreCase("HttpOnly")) cookie.setHttpOnly(true);
+                }
+                cookies.add(cookie);
+            });
+        return cookies;
     }
 
 }

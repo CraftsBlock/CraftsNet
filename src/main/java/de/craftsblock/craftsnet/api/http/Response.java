@@ -4,13 +4,18 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.api.http.cookies.Cookie;
+import de.craftsblock.craftsnet.api.http.cookies.SameSite;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * The Response class represents an HTTP response sent by the web server to the client.
@@ -21,7 +26,7 @@ import java.util.Arrays;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 1.0.1
  * @see Exchange
  * @see WebServer
  * @since CraftsNet-1.0.0
@@ -34,6 +39,7 @@ public class Response implements AutoCloseable {
     private final HttpExchange exchange;
     private final OutputStream stream;
     private final Headers headers;
+    private final ConcurrentHashMap<String, Cookie> cookies = new ConcurrentHashMap<>();
 
     private int code = 200;
     private boolean bodySend = false;
@@ -82,7 +88,7 @@ public class Response implements AutoCloseable {
      */
     public void print(byte[] bytes) throws IOException {
         if (!bodySend)
-            exchange.sendResponseHeaders(code, 0);
+            sendResponseHeaders(code, 0);
         bodySend = true;
         try (ByteArrayInputStream input = new ByteArrayInputStream(bytes)) {
             byte[] buffer = new byte[2048];
@@ -105,7 +111,7 @@ public class Response implements AutoCloseable {
             return;
         }
         bodySend = true;
-        exchange.sendResponseHeaders(code, file.length());
+        sendResponseHeaders(code, file.length());
         try (FileInputStream input = new FileInputStream(file)) {
             byte[] buffer = new byte[2048];
             int read;
@@ -128,9 +134,23 @@ public class Response implements AutoCloseable {
 
         byte[] rawData = json.toString().getBytes(StandardCharsets.UTF_8);
         setContentType("application/json");
-        exchange.sendResponseHeaders(code, rawData.length);
+        sendResponseHeaders(code, rawData.length);
         bodySend = true;
         print(rawData);
+    }
+
+    /**
+     * Sends the response headers to the client, including any cookies that have been set.
+     *
+     * @param code   The HTTP status code
+     * @param length The length of the response body
+     * @throws IOException if an I/O error occurs
+     */
+    private void sendResponseHeaders(int code, long length) throws IOException {
+        for (Cookie cookie : getCookies())
+            addHeader("Set-Cookie", cookie.toString());
+
+        exchange.sendResponseHeaders(code, length);
     }
 
     /**
@@ -141,7 +161,7 @@ public class Response implements AutoCloseable {
     @Override
     public void close() throws IOException {
         if (!bodySend)
-            exchange.sendResponseHeaders(code, 0);
+            sendResponseHeaders(code, 0);
         exchange.close();
     }
 
@@ -224,6 +244,58 @@ public class Response implements AutoCloseable {
             throw new IllegalStateException("Antwort Header wurden bereits gesendet!");
         if (key == null || value == null) return;
         headers.set(key, value);
+    }
+
+    /**
+     * Sets a cookie with the specified name and no value.
+     *
+     * @param name The name of the cookie, cannot be null
+     * @return The created Cookie object
+     */
+    public Cookie setCookie(@NotNull String name) {
+        return setCookie(name, null);
+    }
+
+    /**
+     * Sets a cookie with the specified name and value.
+     *
+     * @param name  The name of the cookie, cannot be null
+     * @param value The value of the cookie, can be null
+     * @return The created Cookie object
+     */
+    public Cookie setCookie(@NotNull String name, @Nullable Object value) {
+        return setCookie(new Cookie(name, value));
+    }
+
+    /**
+     * Adds a cookie to the response, overriding any existing cookie with the same name.
+     *
+     * @param cookie The Cookie object to add, cannot be null
+     * @return The added Cookie object
+     */
+    public Cookie setCookie(Cookie cookie) {
+        String name = cookie.getName();
+        if (!cookies.containsKey(name)) cookies.put(name, cookie);
+        else cookies.get(name).override(cookie);
+        return cookie;
+    }
+
+    /**
+     * Marks a cookie for deletion by invoking the mark deleted method on the specific cookie.
+     *
+     * @param name The name of the cookie to delete
+     */
+    public void deleteCookie(String name) {
+        cookies.computeIfAbsent(name, Cookie::new).markDeleted();
+    }
+
+    /**
+     * Returns a collection of all cookies currently set for the response.
+     *
+     * @return A ConcurrentLinkedQueue containing all cookies
+     */
+    public ConcurrentLinkedQueue<Cookie> getCookies() {
+        return new ConcurrentLinkedQueue<>(cookies.values());
     }
 
     /**
