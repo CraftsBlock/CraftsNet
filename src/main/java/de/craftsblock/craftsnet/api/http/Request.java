@@ -413,12 +413,7 @@ public class Request implements AutoCloseable, RequireAble {
                     if (i == 0) continue;
                     String[] arg = args[i].split("=");
                     if (arg.length == 0) continue;
-                    if (arg[0].equalsIgnoreCase("Path")) cookie.setPath(arg.length == 2 ? arg[1] : null);
-                    if (arg[0].equalsIgnoreCase("Domain")) cookie.setDomain(arg.length == 2 ? arg[1] : null);
-                    if (arg[0].equalsIgnoreCase("Expires")) cookie.setExpiresAt(arg.length == 2 ? arg[1] : null);
-                    if (arg[0].equalsIgnoreCase("SameSite")) cookie.setSameSite(arg.length == 2 ? arg[1] : null);
-                    if (arg[0].equalsIgnoreCase("Secure")) cookie.setSecure(true);
-                    if (arg[0].equalsIgnoreCase("HttpOnly")) cookie.setHttpOnly(true);
+                    cookie.setFlag(arg[0], arg.length == 2 ? arg[1] : null);
                 }
                 cookies.add(cookie);
             });

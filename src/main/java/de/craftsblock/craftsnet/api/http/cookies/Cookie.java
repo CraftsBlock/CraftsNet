@@ -50,6 +50,27 @@ public class Cookie {
     }
 
     /**
+     * Sets a specified attribute of the cookie based on the flag provided.
+     * <p>
+     * This method allows setting various cookie attributes using a flag and its corresponding argument.
+     * Recognized flags are "Path", "Domain", "Expires", "SameSite", "Secure", and "HttpOnly".
+     *
+     * @param flag The attribute to be set, cannot be null
+     * @param arg  The value for the attribute, can be null for attributes that accept null values
+     * @return The current Cookie object, for method chaining
+     */
+    public Cookie setFlag(@NotNull String flag, @Nullable String arg) {
+        if (flag.equalsIgnoreCase("path")) this.setPath(arg);
+        if (flag.equalsIgnoreCase("domain")) this.setDomain(arg);
+        if (flag.equalsIgnoreCase("expires")) this.setExpiresAt(arg);
+        if (flag.equalsIgnoreCase("samesite")) this.setSameSite(arg);
+        if (flag.equalsIgnoreCase("secure")) this.setSecure(true);
+        if (flag.equalsIgnoreCase("httponly")) this.setHttpOnly(true);
+
+        return this;
+    }
+
+    /**
      * Returns the name of the cookie.
      *
      * @return The name of the cookie
@@ -59,21 +80,30 @@ public class Cookie {
     }
 
     /**
-     * Returns the value of the cookie.
+     * Retrieves the value of the cookie, cast to the specified type.
+     * <p>
+     * This method returns the value of the cookie if it is set, casting it to the type specified by the caller.
+     * If the value is null, it returns null. The caller must ensure that the type cast is correct.
      *
-     * @return The value of the cookie, or null if not set
+     * @param <T> The type to which the cookie value should be cast
+     * @return The value of the cookie cast to the specified type, or null if the value is not set
+     * @throws ClassCastException If the value cannot be cast to the specified type
      */
-    public @Nullable Object getValue() {
-        return value;
+    @SuppressWarnings("unchecked")
+    public <T> @Nullable T getValue() {
+        if (this.value == null) return null;
+        return (T) this.value;
     }
 
     /**
      * Sets the value of the cookie.
      *
      * @param value The new value of the cookie, can be null
+     * @return The current Cookie object, for method chaining
      */
-    public void setValue(@Nullable Object value) {
+    public Cookie setValue(@Nullable Object value) {
         this.value = value;
+        return this;
     }
 
     /**
@@ -89,9 +119,11 @@ public class Cookie {
      * Sets the path of the cookie.
      *
      * @param path The new path of the cookie, can be null
+     * @return The current Cookie object, for method chaining
      */
-    public void setPath(@Nullable String path) {
+    public Cookie setPath(@Nullable String path) {
         this.path = path;
+        return this;
     }
 
     /**
@@ -107,9 +139,11 @@ public class Cookie {
      * Sets the domain of the cookie.
      *
      * @param domain The new domain of the cookie, can be null
+     * @return The current Cookie object, for method chaining
      */
-    public void setDomain(@Nullable String domain) {
+    public Cookie setDomain(@Nullable String domain) {
         this.domain = domain;
+        return this;
     }
 
     /**
@@ -125,19 +159,22 @@ public class Cookie {
      * Sets the expiry date of the cookie using a string representation.
      *
      * @param expiresAt The new expiry date of the cookie, can be null
+     * @return The current Cookie object, for method chaining
      */
-    public void setExpiresAt(@Nullable String expiresAt) {
-        if (expiresAt == null) this.setExpiresAt((TemporalAccessor) null);
-        else this.setExpiresAt(OffsetDateTime.parse(expiresAt));
+    public Cookie setExpiresAt(@Nullable String expiresAt) {
+        if (expiresAt == null) return this.setExpiresAt((TemporalAccessor) null);
+        else return this.setExpiresAt(OffsetDateTime.parse(expiresAt));
     }
 
     /**
      * Sets the expiry date of the cookie using a TemporalAccessor.
      *
      * @param expiresAt The new expiry date of the cookie, can be null
+     * @return The current Cookie object, for method chaining
      */
-    public void setExpiresAt(@Nullable TemporalAccessor expiresAt) {
+    public Cookie setExpiresAt(@Nullable TemporalAccessor expiresAt) {
         this.expiresAt = expiresAt;
+        return this;
     }
 
     /**
@@ -153,19 +190,22 @@ public class Cookie {
      * Sets the SameSite policy of the cookie using a string representation.
      *
      * @param sameSite The new SameSite policy of the cookie, can be null
+     * @return The current Cookie object, for method chaining
      */
-    public void setSameSite(@Nullable String sameSite) {
-        if (sameSite == null) this.setSameSite((SameSite) null);
-        else this.setSameSite(SameSite.valueOf(sameSite.toUpperCase()));
+    public Cookie setSameSite(@Nullable String sameSite) {
+        if (sameSite == null) return this.setSameSite((SameSite) null);
+        else return this.setSameSite(SameSite.valueOf(sameSite.toUpperCase()));
     }
 
     /**
      * Sets the SameSite policy of the cookie.
      *
      * @param sameSite The new SameSite policy of the cookie, can be null
+     * @return The current Cookie object, for method chaining
      */
-    public void setSameSite(@Nullable SameSite sameSite) {
+    public Cookie setSameSite(@Nullable SameSite sameSite) {
         this.sameSite = sameSite;
+        return this;
     }
 
     /**
@@ -181,9 +221,11 @@ public class Cookie {
      * Sets whether the cookie is secure.
      *
      * @param secure true to make the cookie secure, false otherwise
+     * @return The current Cookie object, for method chaining
      */
-    public void setSecure(boolean secure) {
+    public Cookie setSecure(boolean secure) {
         this.secure = secure;
+        return this;
     }
 
     /**
@@ -199,17 +241,20 @@ public class Cookie {
      * Sets whether the cookie is HttpOnly.
      *
      * @param httpOnly true to make the cookie HttpOnly, false otherwise
+     * @return The current Cookie object, for method chaining
      */
-    public void setHttpOnly(boolean httpOnly) {
+    public Cookie setHttpOnly(boolean httpOnly) {
         this.httpOnly = httpOnly;
+        return this;
     }
 
     /**
      * Overrides the current cookie's attributes with those of another cookie.
      *
      * @param cookie The cookie to copy attributes from
+     * @return The current Cookie object, for method chaining
      */
-    public void override(Cookie cookie) {
+    public Cookie override(Cookie cookie) {
         assert this.name.equalsIgnoreCase(cookie.name);
         this.value = cookie.getValue();
         this.path = cookie.getPath();
@@ -218,13 +263,17 @@ public class Cookie {
         this.sameSite = cookie.getSameSite();
         this.secure = cookie.isSecure();
         this.httpOnly = cookie.isHttpOnly();
+        return this;
     }
 
     /**
      * Marks the cookie as deleted by setting its expiry date to a date in the past.
+     *
+     * @return The current Cookie object, for method chaining
      */
-    public void markDeleted() {
+    public Cookie markDeleted() {
         setExpiresAt(OffsetDateTime.now().minusYears(5));
+        return this;
     }
 
     /**
