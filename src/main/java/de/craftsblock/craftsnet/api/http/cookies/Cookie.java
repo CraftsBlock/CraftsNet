@@ -4,8 +4,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.TemporalAccessor;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -24,7 +26,8 @@ public class Cookie {
 
     private String path = null;
     private String domain = null;
-    private TemporalAccessor expiresAt = null;
+    private OffsetDateTime expiresAt = null;
+    private long maxAge = -1;
     private SameSite sameSite = null;
     private boolean secure = true;
     private boolean httpOnly = true;
@@ -63,6 +66,7 @@ public class Cookie {
         if (flag.equalsIgnoreCase("path")) this.setPath(arg);
         if (flag.equalsIgnoreCase("domain")) this.setDomain(arg);
         if (flag.equalsIgnoreCase("expires")) this.setExpiresAt(arg);
+        if (flag.equalsIgnoreCase("max-age") && arg != null) this.setMaxAge(Long.parseLong(arg));
         if (flag.equalsIgnoreCase("samesite")) this.setSameSite(arg);
         if (flag.equalsIgnoreCase("secure")) this.setSecure(true);
         if (flag.equalsIgnoreCase("httponly")) this.setHttpOnly(true);
@@ -151,7 +155,7 @@ public class Cookie {
      *
      * @return The expiry date of the cookie, or null if not set
      */
-    public TemporalAccessor getExpiresAt() {
+    public OffsetDateTime getExpiresAt() {
         return expiresAt;
     }
 
@@ -162,7 +166,7 @@ public class Cookie {
      * @return The current Cookie object, for method chaining
      */
     public Cookie setExpiresAt(@Nullable String expiresAt) {
-        if (expiresAt == null) return this.setExpiresAt((TemporalAccessor) null);
+        if (expiresAt == null) return this.setExpiresAt((OffsetDateTime) null);
         else return this.setExpiresAt(OffsetDateTime.parse(expiresAt));
     }
 
@@ -172,9 +176,28 @@ public class Cookie {
      * @param expiresAt The new expiry date of the cookie, can be null
      * @return The current Cookie object, for method chaining
      */
-    public Cookie setExpiresAt(@Nullable TemporalAccessor expiresAt) {
+    public Cookie setExpiresAt(@Nullable OffsetDateTime expiresAt) {
         this.expiresAt = expiresAt;
         return this;
+    }
+
+    /**
+     * Returns the maximum age of the cookie.
+     *
+     * @return The maximum age of the cookie, if disabled -1 will be returned.
+     */
+    public long getMaxAge() {
+        return maxAge;
+    }
+
+    /**
+     * Sets the maximum age of this cookie. Set to -1 to disable this flag.
+     *
+     * @param maxAge The number in seconds the cookie is valid.
+     */
+    public void setMaxAge(long maxAge) {
+        if (maxAge < -1) return;
+        this.maxAge = maxAge;
     }
 
     /**
@@ -273,6 +296,7 @@ public class Cookie {
      */
     public Cookie markDeleted() {
         setExpiresAt(OffsetDateTime.now().minusYears(5));
+        setMaxAge(0);
         return this;
     }
 
@@ -286,7 +310,8 @@ public class Cookie {
         return this.name + "=" + (this.value != null ? this.value.toString() : "") +
                 (this.path != null ? "; Path=" + this.path : "") +
                 (this.domain != null ? "; Domain=" + this.domain : "") +
-                (this.path != null ? "; Expires=" + DateTimeFormatter.RFC_1123_DATE_TIME.format(this.expiresAt) : "") +
+                (this.path != null ? "; Expires=" + DateTimeFormatter.RFC_1123_DATE_TIME.format(expiresAt) : "") +
+                (this.maxAge != -1 ? "; Max-Age=" + maxAge : "") +
                 (this.sameSite != null ? "; SameSite=" + this.sameSite : "") +
                 (this.secure || (this.sameSite != null && this.sameSite.equals(SameSite.NONE)) ? "; Secure" : "") +
                 (this.httpOnly ? "; HttpOnly" : "");
