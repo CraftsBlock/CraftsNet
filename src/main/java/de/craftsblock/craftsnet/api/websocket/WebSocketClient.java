@@ -136,9 +136,10 @@ public class WebSocketClient implements Runnable, RequireAble {
                 ip = getHeader("Cf-connecting-ip");
 
             // Loadup extensions
-            for (String protocol : getHeader("Sec-websocket-extensions").split(";\\s"))
-                if (craftsNet.webSocketExtensionRegistry().hasExtension(protocol))
-                    this.extensions.add(craftsNet.webSocketExtensionRegistry().getExtensionByName(protocol));
+            if (getHeader("Sec-websocket-extensions") != null)
+                for (String protocol : getHeader("Sec-websocket-extensions").split(";\\s"))
+                    if (craftsNet.webSocketExtensionRegistry().hasExtension(protocol))
+                        this.extensions.add(craftsNet.webSocketExtensionRegistry().getExtensionByName(protocol));
 
             // Send a WebSocket handshake to establish the connection
             sendHandshake();
