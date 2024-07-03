@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.0.1
+ * @version 3.0.2
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -59,15 +59,17 @@ public class RouteRegistry {
         this.logger = this.craftsNet.logger();
 
         // Built in http requirements
+        registerRequirement(new BodyRequirement(), false);
+        registerRequirement(new CookieRequirement(), false);
+        registerRequirement(new ContentTypeRequirement(), false);
+        registerRequirement(new HeadersRequirement(), false);
         registerRequirement(new HTTPDomainRequirement(), false);
         registerRequirement(new MethodRequirement(), false);
-        registerRequirement(new HeadersRequirement(), false);
-        registerRequirement(new ContentTypeRequirement(), false);
-        registerRequirement(new BodyRequirement(), false);
+        registerRequirement(new QueryParameterRequirement(), false);
 
         // Built in websocket requirements
-        registerRequirement(new WSDomainRequirement(), false);
         registerRequirement(new MessageTypeRequirement(), false);
+        registerRequirement(new WSDomainRequirement(), false);
     }
 
     /**
