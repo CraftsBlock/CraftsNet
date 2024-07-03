@@ -125,6 +125,10 @@ public class WebSocketServer extends Server {
             while (!Thread.currentThread().isInterrupted() && running) {
                 try {
                     Socket socket = serverSocket.accept();
+
+                    // Set timeout duration
+                    socket.setSoTimeout(1000 * 60 * 5);
+
                     if (socket instanceof SSLSocket sslSocket) {
                         sslSocket.addHandshakeCompletedListener(event -> connectClient(event.getSocket(), i));
                         sslSocket.startHandshake();

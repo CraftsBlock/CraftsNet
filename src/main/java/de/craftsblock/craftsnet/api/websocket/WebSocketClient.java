@@ -378,20 +378,15 @@ public class WebSocketClient implements Runnable, RequireAble {
         InputStream inputStream = socket.getInputStream();
         AtomicReference<Frame> frame = new AtomicReference<>();
 
-        while (frame.get() == null || !frame.get().isFinalFrame()) {
-            try {
-                Frame read = Frame.read(inputStream);
-                if (frame.get() == null) {
-                    frame.set(read);
-                    continue;
-                }
-
-                frame.get().appendFrame(read);
-            } catch (SocketException e) {
-                throw e;
-            } catch (NullPointerException | IOException e) {
-                createErrorLog(e);
+        while (isConnected() && frame.get() == null || !frame.get().isFinalFrame()) {
+            Frame read = Frame.read(inputStream);
+            if (frame.get() == null) {
+                frame.set(read);
+                if (read.isFinalFrame()) break;
+                continue;
             }
+
+            frame.get().appendFrame(read);
         }
 
         Frame read = frame.get();

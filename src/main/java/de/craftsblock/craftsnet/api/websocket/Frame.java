@@ -9,6 +9,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -267,16 +268,17 @@ public class Frame implements RequireAble {
      */
     protected static Frame read(InputStream stream) throws IOException {
         byte[] frame = new byte[10];
-        stream.read(frame, 0, 2);
+        if (stream.read(frame, 0, 2) < 0) throw new IOException("EOF: Failed to read the header of the frame!");
 
         byte payloadLength = (byte) (frame[1] & 0x7F);
-        if (payloadLength == 126) stream.read(frame, 2, 2);
-        else if (payloadLength == 127) stream.read(frame, 2, 8);
+        if (payloadLength >= 126 && stream.read(frame, 2, payloadLength == 126 ? 2 : 8) < 0)
+            throw new IOException("EOF: Failed to read the payload length of the frame!");
 
         long payloadLengthValue = getPayloadLengthValue(frame, payloadLength);
 
         byte[] masks = new byte[4];
-        stream.read(masks);
+        if (stream.read(masks) < 0)
+            throw new IOException("EOF: Failed to read the masks of the frame!");
 
         ByteArrayOutputStream payloadBuilder = new ByteArrayOutputStream();
 
@@ -286,7 +288,7 @@ public class Frame implements RequireAble {
         byte[] chunk = new byte[4096];
         int chunkSize;
 
-        while (bytesToRead > 0 && (chunkSize = stream.read(chunk, 0, (int) Math.min(chunk.length, bytesToRead))) != -1) {
+        while (bytesToRead > 0 && (chunkSize = stream.read(chunk, 0, (int) Math.min(chunk.length, bytesToRead))) >= 0) {
             for (int i = 0; i < chunkSize; i++)
                 chunk[i] ^= masks[(int) ((bytesRead + i) % 4)];
             payloadBuilder.write(chunk, 0, chunkSize);
@@ -294,6 +296,8 @@ public class Frame implements RequireAble {
             bytesRead += chunkSize;
             bytesToRead -= chunkSize;
         }
+
+        Arrays.fill(chunk, (byte) 0);
 
         return new Frame(frame, payloadBuilder.toByteArray());
     }
