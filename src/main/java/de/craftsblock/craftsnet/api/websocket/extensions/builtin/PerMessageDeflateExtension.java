@@ -3,13 +3,10 @@ package de.craftsblock.craftsnet.api.websocket.extensions.builtin;
 import de.craftsblock.craftsnet.api.websocket.Frame;
 import de.craftsblock.craftsnet.api.websocket.Opcode;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
-import de.craftsblock.craftsnet.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;

@@ -148,8 +148,6 @@ public class WebSocketClient implements Runnable, RequireAble {
             // Reverse the extension list as it is required to process the more important one's at the end
             Collections.reverse(extensions);
 
-            sendMessage("Hello du sack");
-
             // Check if the requested path has a corresponding endpoint registered in the server
             this.mappings = getEndpoint();
             if (mappings == null || mappings.isEmpty()) {
