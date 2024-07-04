@@ -174,7 +174,7 @@ public class RouteRegistry {
      *
      * @param handler The RequestHandler to be registered.
      * @since 3.0.5-SNAPSHOT
-     * @deprecated This method is only used for backwards compatibility, use the register(Handler) method instead, as this
+     * @deprecated This method is only used for backwards compatibility, use the {@link RouteRegistry#register(Handler)} method instead, as this
      * method will be removed in 4.0.0-SNAPSHOT!
      */
     @Deprecated(since = "3.0.5-SNAPSHOT", forRemoval = true)
@@ -188,7 +188,7 @@ public class RouteRegistry {
      *
      * @param handler The SocketHandler to be registered.
      * @since 3.0.5-SNAPSHOT
-     * @deprecated This method is only used for backwards compatibility, use the register(Handler) method instead, as this
+     * @deprecated This method is only used for backwards compatibility, use the {@link RouteRegistry#register(Handler)} method instead, as this
      * method will be removed in 4.0.0-SNAPSHOT!
      */
     @Deprecated(since = "3.0.5-SNAPSHOT", forRemoval = true)
@@ -203,7 +203,7 @@ public class RouteRegistry {
      * @param handler The Handler to be registered.
      * @since 3.0.5-SNAPSHOT
      */
-    public <T extends Handler> void register(T handler) {
+    public void register(Handler handler) {
         ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = new ConcurrentHashMap<>();
         if (handler instanceof RequestHandler)
             annotations.computeIfAbsent(Route.class, c -> new ServerMapping(WebServer.class, craftsNet.webServer()));
