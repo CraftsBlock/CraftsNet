@@ -16,19 +16,34 @@ repositories {
 }
 
 dependencies {
-    // CraftsBlock related dependencies
-    implementation 'de.craftsblock.craftscore:CraftsCore:3.7.50-SNAPSHOT'
+    // CraftsBlock related dependencies ---------------------------------------------------------------------------------------
 
-    // Third party needed dependencies
-    implementation 'com.mysql:mysql-connector-j:8.4.0'
+    implementation 'de.craftsblock.craftscore:CraftsCore:3.7.51-SNAPSHOT'
+
+    // Third party needed dependencies ----------------------------------------------------------------------------------------
+
+    // https://mvnrepository.com/artifact/com.mysql/mysql-connector-j
+    implementation 'com.mysql:mysql-connector-j:9.0.0'
+
+    // https://mvnrepository.com/artifact/com.squareup.okhttp3/okhttp
     implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.14'
-    implementation 'com.google.code.gson:gson:2.10'
 
+    // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    implementation 'com.google.code.gson:gson:2.11.0'
+
+    // https://mvnrepository.com/artifact/org.apache.tika/tika-core
     implementation 'org.apache.tika:tika-core:2.9.2'
+
+    // https://mvnrepository.com/artifact/org.jetbrains/annotations
     implementation 'org.jetbrains:annotations:24.1.0'
 
-    // Artifact resolving dependencies
+    // Artifact resolving dependencies ----------------------------------------------------------------------------------------
+
+    /* https://mvnrepository.com/artifact/org.apache.maven/maven-resolver-provider
+       Stay with this version as there is no update available for the maven-resolver-supplier. */
     implementation 'org.apache.maven:maven-resolver-provider:4.0.0-alpha-13'
+
+    // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-supplier
     implementation 'org.apache.maven.resolver:maven-resolver-supplier:2.0.0-alpha-8'
 }
 
