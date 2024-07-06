@@ -162,7 +162,6 @@ public class CraftsNet {
             DefaultPingResponder.register(this);
 
             if (routeRegistry.hasWebsockets() || builder.isWebSocketServer(ActivateType.ENABLED)) {
-                logger.debug("Setting up the websocket server");
                 webSocketServer.start();
             }
         } else if (builder.isWebSocketServer(ActivateType.DISABLED) && routeRegistry.hasWebsockets())
