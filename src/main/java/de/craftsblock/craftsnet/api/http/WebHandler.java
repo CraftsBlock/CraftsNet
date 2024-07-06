@@ -57,10 +57,11 @@ public class WebHandler implements HttpHandler {
      */
     @Override
     public void handle(HttpExchange exchange) throws IOException {
+        // Extract relevant information from the incoming request.
+        String requestMethod = exchange.getRequestMethod();
+        HttpMethod httpMethod = HttpMethod.parse(requestMethod);
+
         try (Response response = new Response(this.craftsNet, exchange)) {
-            // Extract relevant information from the incoming request.
-            String requestMethod = exchange.getRequestMethod();
-            HttpMethod httpMethod = HttpMethod.parse(requestMethod);
             String url = exchange.getRequestURI().toString();
             Headers headers = exchange.getRequestHeaders();
 
@@ -90,10 +91,11 @@ public class WebHandler implements HttpHandler {
                 if (craftsNet.fileLogger() != null) {
                     long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "http", url);
                     logger.error(t, "Error: " + errorID);
-                    response.println(Json.empty()
-                            .set("error.message", "An unexpected exception happened whilst processing your request!")
-                            .set("error.identifier", errorID)
-                            .asString());
+                    if (!httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN))
+                        response.println(Json.empty()
+                                .set("error.message", "An unexpected exception happened whilst processing your request!")
+                                .set("error.identifier", errorID)
+                                .asString());
                 } else logger.error(t);
             }
         }
