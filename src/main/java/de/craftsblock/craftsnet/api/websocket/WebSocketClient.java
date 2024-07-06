@@ -15,6 +15,7 @@ import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
 import de.craftsblock.craftsnet.events.sockets.*;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.Nullable;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -279,6 +280,10 @@ public class WebSocketClient implements Runnable, RequireAble {
             transformerPerformer.clearCache();
         } catch (SocketException ignored) {
         } catch (Throwable t) {
+            if (t instanceof IOException ioException && ioException.getMessage().contains("EOF")) {
+                logger.error("EOF: No more data can be read from the input streams!");
+                return;
+            }
             createErrorLog(t);
         } finally {
             disconnect();
