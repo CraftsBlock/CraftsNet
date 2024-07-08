@@ -5,9 +5,9 @@ import de.craftsblock.craftscore.cache.DoubleKeyedCache;
 import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Handler;
-import de.craftsblock.craftsnet.api.transformers.exceptions.TransformerException;
 import de.craftsblock.craftsnet.api.transformers.annotations.Transformer;
 import de.craftsblock.craftsnet.api.transformers.annotations.TransformerCollection;
+import de.craftsblock.craftsnet.api.transformers.exceptions.TransformerException;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,11 +15,11 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.*;
-import java.util.regex.Matcher;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
-import static de.craftsblock.craftsnet.utils.Utils.patternGroupNameExtractPattern;
+import static de.craftsblock.craftsnet.utils.Utils.getGroupNames;
 
 /**
  * <p>The TransformerPerformer class is responsible for performing transformations on method arguments based on provided annotations.
@@ -204,21 +204,6 @@ public class TransformerPerformer {
                 // Parse up the TransformerException to the route handler
                 args[groupIndex] = e;
         }
-    }
-
-    /**
-     * Extracts the group names of a {@link Pattern}.
-     *
-     * @param regex The pattern, from which the group names should be extracted.
-     * @return A {@link List<String>} which contains the group names in the right order.
-     */
-    private List<String> getGroupNames(String regex) {
-        Set<String> groupNames = new TreeSet<>();
-        Matcher matcher = patternGroupNameExtractPattern.matcher(regex);
-        while (matcher.find()) groupNames.add(matcher.group(1));
-        List<String> output = new ArrayList<>(groupNames);
-        Collections.reverse(output);
-        return output;
     }
 
     /**

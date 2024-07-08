@@ -72,7 +72,7 @@ public class Response implements AutoCloseable {
      * @throws IOException if an I/O error occurs.
      */
     public void print(Object object) throws IOException {
-        if (!bodySend) setContentType("application/json");
+        if (!bodySend && !hasHeader("Content-Type")) setContentType("application/json");
         println(object.toString());
     }
 

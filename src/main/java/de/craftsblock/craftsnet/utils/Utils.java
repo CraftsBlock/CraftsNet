@@ -2,8 +2,8 @@ package de.craftsblock.craftsnet.utils;
 
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -41,6 +41,31 @@ public class Utils {
         Thread[] threads = Thread.getAllStackTraces().keySet().toArray(new Thread[0]);
         for (Thread t : threads) if (t.getName().equals(name)) return t;
         return null;
+    }
+
+    /**
+     * Extracts the group names of a {@link Pattern}.
+     *
+     * @param pattern The pattern, from which the group names should be extracted.
+     * @return A {@link List<String>} which contains the group names in the right order.
+     */
+    public static List<String> getGroupNames(Pattern pattern) {
+        return getGroupNames(pattern.pattern());
+    }
+
+    /**
+     * Extracts the group names of a {@link Pattern}.
+     *
+     * @param regex The pattern, from which the group names should be extracted.
+     * @return A {@link List<String>} which contains the group names in the right order.
+     */
+    public static List<String> getGroupNames(String regex) {
+        Set<String> groupNames = new TreeSet<>();
+        Matcher matcher = patternGroupNameExtractPattern.matcher(regex);
+        while (matcher.find()) groupNames.add(matcher.group(1));
+        List<String> output = new ArrayList<>(groupNames);
+        Collections.reverse(output);
+        return output;
     }
 
 }

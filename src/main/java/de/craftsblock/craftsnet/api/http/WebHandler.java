@@ -212,9 +212,9 @@ public class WebHandler implements HttpHandler {
         }
 
         String path = matcher.group(1);
-        ShareRequestEvent event = new ShareRequestEvent(url, path, new Exchange(request.getUrl(), request, response, new SessionStorage()), registry.getShare(url));
+        Exchange customExchange = new Exchange(request.getUrl(), request, response, new SessionStorage());
+        ShareRequestEvent event = new ShareRequestEvent(url, path, customExchange, registry.getShare(url));
         craftsNet.listenerRegistry().call(event);
-        event.getExchange().storage().clear(); // Clear the session storage as it is no longer needed
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "SHARE ABORTED";
             logger.info(httpMethod + " " + url + " from " + ip + " \u001b[38;5;9m[" + cancelReason + "]");
@@ -247,6 +247,7 @@ public class WebHandler implements HttpHandler {
 
         response.setContentType(fileLoadedEvent.getContentType(), "text/plain");
         response.print(share);
+        event.getExchange().storage().clear(); // Clear the session storage as it is no longer needed
     }
 
     /**
