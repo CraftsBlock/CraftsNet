@@ -298,8 +298,8 @@ public class RouteRegistry {
         List<Method> outdatedMethods = Utils.getMethodsByAnnotation(handler.getClass(), MessageReceiver.class);
         if (outdatedMethods.isEmpty()) return;
 
-        logger.warning("Found" + (outdatedMethods.size() == 1 ? "" : " " + outdatedMethods.size()) +
-                " outdated websocket creation in class " + handler.getClass().getSimpleName());
+        logger.warning("Found" + (outdatedMethods.size() == 1 ? " one" : " " + outdatedMethods.size()) +
+                " outdated websocket creation(s) in class " + handler.getClass().getSimpleName());
 
         try {
             Socket socket = rawAnnotation(handler, Socket.class);
