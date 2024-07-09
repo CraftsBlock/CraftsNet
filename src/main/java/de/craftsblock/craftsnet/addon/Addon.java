@@ -29,9 +29,10 @@ import java.io.File;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
+ * @version 1.0.10
  * @see AddonLoader
  * @see AddonManager
- * @since CraftsNet-1.0.0
+ * @since 1.0.0-SNAPSHOT
  */
 public abstract class Addon {
 
@@ -67,6 +68,17 @@ public abstract class Addon {
      * any necessary shutdown tasks.
      */
     public abstract void onDisable();
+
+    /**
+     * Get the CraftsNet instance on which the addon was registered.
+     * This method is marked as final to prevent subclasses from modifying the registry directly.
+     *
+     * @return The CraftsNet instance on which the addon was registered.
+     * @since CraftsNet-3.0.7
+     */
+    public final CraftsNet craftsNet() {
+        return craftsNet;
+    }
 
     /**
      * Get the name of the addon.
