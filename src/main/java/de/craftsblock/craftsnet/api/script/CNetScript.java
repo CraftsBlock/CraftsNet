@@ -35,7 +35,6 @@ public abstract class CNetScript {
      *
      * @param exchange the exchange object providing context for script execution
      * @throws Exception if any error occurs during script execution
-     * @apiNote Subclasses should override this method to provide specific script logic.
      */
     public abstract void execute(Exchange exchange) throws Exception;
 

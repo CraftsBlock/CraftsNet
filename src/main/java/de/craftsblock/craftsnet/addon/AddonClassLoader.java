@@ -6,10 +6,7 @@ import de.craftsblock.craftsnet.logging.Logger;
 
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
@@ -42,9 +39,9 @@ public final class AddonClassLoader extends URLClassLoader {
      * Constructs an AddonClassLoader with the specified addon manager, addon configuration, and URLs.
      *
      * @param craftsNet The CraftsNet instance which instantiates this classloader
-     * @param manager The addon manager.
-     * @param addon   The configuration of the addon.
-     * @param urls    The URLs from which to load classes and resources.
+     * @param manager   The addon manager.
+     * @param addon     The configuration of the addon.
+     * @param urls      The URLs from which to load classes and resources.
      */
     AddonClassLoader(CraftsNet craftsNet, AddonManager manager, AddonLoader.Configuration addon, URL[] urls) {
         super(urls, ClassLoader.getSystemClassLoader());
@@ -128,4 +125,9 @@ public final class AddonClassLoader extends URLClassLoader {
         }
         return super.findClass(name);
     }
+
+    public static Set<AddonClassLoader> getAddonLoaders() {
+        return Collections.unmodifiableSet(addonLoaders);
+    }
+
 }

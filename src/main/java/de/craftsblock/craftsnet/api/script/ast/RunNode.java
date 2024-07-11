@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.api.script.ast;
 
+import de.craftsblock.craftsnet.addon.AddonClassLoader;
 import de.craftsblock.craftsnet.api.http.Exchange;
 import de.craftsblock.craftsnet.api.script.CNetScript;
 import de.craftsblock.craftsnet.api.script.compiler.CNetInterpreter;
@@ -51,15 +52,35 @@ public class RunNode extends ASTNode {
             String rawTarget = VariableNode.buildTarget(interpreter, value, true);
 
             try {
-                Class<?> type = Class.forName(rawTarget.startsWith(".") ? rawTarget.substring(1) : rawTarget);
+                String name = rawTarget.startsWith(".") ? rawTarget.substring(1) : rawTarget;
+                Class<?> type = null;
+
+                try {
+                    type = Class.forName(name);
+                } catch (ClassNotFoundException ignored) {
+                }
+
+                if (type == null)
+                    for (ClassLoader loader : AddonClassLoader.getAddonLoaders()) {
+                        try {
+                            type = loader.loadClass(name);
+                        } catch (ClassNotFoundException e) {
+                            continue;
+                        }
+                        break;
+                    }
+
+                if (type == null)
+                    throw new RuntimeException("The class " + name + " could not be found!");
+
                 if (!CNetScript.class.isAssignableFrom(type))
-                    throw new RuntimeException("");
+                    throw new RuntimeException("The script (" + type.getName() + ") you tried to run is not an instance of " + CNetScript.class.getName() + "!");
 
                 Object instance = type.getDeclaredConstructor().newInstance();
                 Method method = type.getDeclaredMethod("execute", Exchange.class);
 
                 method.invoke(instance, exchange);
-            } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException |
+            } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                      IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
