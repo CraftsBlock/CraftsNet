@@ -1,8 +1,8 @@
 package de.craftsblock.craftsnet.api.requirements.web;
 
-import de.craftsblock.craftsnet.api.http.annotations.RequireParameter;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.Request;
+import de.craftsblock.craftsnet.api.http.annotations.RequireParameter;
 
 import java.util.ArrayList;
 import java.util.HashSet;

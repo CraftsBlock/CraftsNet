@@ -2,8 +2,8 @@ package de.craftsblock.craftsnet.api.requirements.websocket;
 
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.requirements.web.WebRequirement;
-import de.craftsblock.craftsnet.api.websocket.Opcode;
 import de.craftsblock.craftsnet.api.websocket.Frame;
+import de.craftsblock.craftsnet.api.websocket.Opcode;
 import de.craftsblock.craftsnet.api.websocket.annotations.RequireMessageType;
 
 import java.util.ArrayList;

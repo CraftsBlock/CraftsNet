@@ -2,17 +2,14 @@ package de.craftsblock.craftsnet.api.http;
 
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
-import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.http.cookies.Cookie;
-import de.craftsblock.craftsnet.api.http.cookies.SameSite;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.time.temporal.TemporalAccessor;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;

@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.api.transformers.builtin;
 
-import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableException;
 import de.craftsblock.craftsnet.api.transformers.Transformable;
+import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableException;
 
 /**
  * A transformer class for converting a string representation of a boolean value to a Boolean object.

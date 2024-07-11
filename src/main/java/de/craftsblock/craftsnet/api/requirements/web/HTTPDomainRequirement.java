@@ -2,7 +2,6 @@ package de.craftsblock.craftsnet.api.requirements.web;
 
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.Domain;
-import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.http.Request;
 
 import java.util.ArrayList;

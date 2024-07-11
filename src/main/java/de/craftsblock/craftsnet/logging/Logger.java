@@ -3,11 +3,6 @@ package de.craftsblock.craftsnet.logging;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-
 /**
  * A logger interface for logging messages at different severity levels.
  * Implementations of this interface can be used for logging messages to various destinations

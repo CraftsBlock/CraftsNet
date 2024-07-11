@@ -4,7 +4,6 @@ import de.craftsblock.craftscore.event.EventHandler;
 import de.craftsblock.craftscore.event.ListenerAdapter;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.events.ConsoleMessageEvent;
-import de.craftsblock.craftsnet.logging.FileLogger;
 
 import java.util.Arrays;
 
