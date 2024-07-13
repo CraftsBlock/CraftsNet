@@ -25,6 +25,6 @@ public abstract class ASTNode {
      * @param interpreter the interpreter to use for interpreting this node
      * @param exchange the exchange context in which this node is interpreted
      */
-    public abstract void interpret(CNetInterpreter interpreter, Exchange exchange);
+    public abstract boolean interpret(CNetInterpreter interpreter, Exchange exchange);
 
 }

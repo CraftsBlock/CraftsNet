@@ -41,12 +41,13 @@ public class VariableNode extends ASTNode {
      * @param exchange    the exchange context in which the node is interpreted
      */
     @Override
-    public void interpret(CNetInterpreter interpreter, Exchange exchange) {
+    public boolean interpret(CNetInterpreter interpreter, Exchange exchange) {
         String value = this.getValue();
         getVariables(interpreter).put(
                 this.getName(),
                 value.contains(".") ? value : PackageNode.getCurrentPackage(interpreter).concat(".").concat(value)
         );
+        return true;
     }
 
     /**

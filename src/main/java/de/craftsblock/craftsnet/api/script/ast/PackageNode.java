@@ -36,9 +36,10 @@ public class PackageNode extends ASTNode {
      * @param exchange    the exchange context in which the node is interpreted
      */
     @Override
-    public void interpret(CNetInterpreter interpreter, Exchange exchange) {
+    public boolean interpret(CNetInterpreter interpreter, Exchange exchange) {
         String target = VariableNode.buildTarget(interpreter, this.getTarget(), false);
         interpreter.putToStorage(getClass(), target.equals(".") ? "" : target);
+        return true;
     }
 
     /**

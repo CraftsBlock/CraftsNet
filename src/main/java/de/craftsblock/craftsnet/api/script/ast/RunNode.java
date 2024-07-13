@@ -47,7 +47,7 @@ public class RunNode extends ASTNode {
      * @param exchange    the exchange context in which the node is interpreted
      */
     @Override
-    public void interpret(CNetInterpreter interpreter, Exchange exchange) {
+    public boolean interpret(CNetInterpreter interpreter, Exchange exchange) {
         for (String value : this.getTargets()) {
             String rawTarget = VariableNode.buildTarget(interpreter, value, true);
 
@@ -79,12 +79,13 @@ public class RunNode extends ASTNode {
                 Object instance = type.getDeclaredConstructor().newInstance();
                 Method method = type.getDeclaredMethod("execute", Exchange.class);
 
-                method.invoke(instance, exchange);
+                return !((boolean) method.invoke(instance, exchange));
             } catch (NoSuchMethodException | InvocationTargetException | InstantiationException |
                      IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
         }
+        return true;
     }
 
     /**

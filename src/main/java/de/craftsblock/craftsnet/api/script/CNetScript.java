@@ -34,8 +34,10 @@ public abstract class CNetScript {
      * Implement this method to define the behavior of the script when executed.
      *
      * @param exchange the exchange object providing context for script execution
+     * @return {@code true} if the no more output should be done after the script was executed,
+     * {@code false} otherwise
      * @throws Exception if any error occurs during script execution
      */
-    public abstract void execute(Exchange exchange) throws Exception;
+    public abstract boolean execute(Exchange exchange) throws Exception;
 
 }

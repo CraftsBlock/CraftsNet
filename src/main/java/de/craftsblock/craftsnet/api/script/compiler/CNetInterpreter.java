@@ -38,7 +38,9 @@ public class CNetInterpreter {
      * @param exchange the exchange context in which to interpret the nodes
      */
     public void interpret(List<ASTNode> nodes, Exchange exchange) {
-        for (ASTNode node : nodes) node.interpret(this, exchange);
+        for (ASTNode node : nodes)
+            if (!node.interpret(this, exchange))
+                break;
     }
 
     /**
