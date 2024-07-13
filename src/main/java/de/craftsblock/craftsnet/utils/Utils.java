@@ -1,7 +1,12 @@
 package de.craftsblock.craftsnet.utils;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -12,7 +17,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.0.2
  * @since CraftsNet-2.1.1
  */
 public class Utils {
@@ -66,6 +71,31 @@ public class Utils {
         List<String> output = new ArrayList<>(groupNames);
         Collections.reverse(output);
         return output;
+    }
+
+    /**
+     * Checks if the given byte array is valid for the specified charset.
+     *
+     * <p>This method attempts to decode the byte array using the provided charset. If the decoding
+     * process completes without throwing a {@link CharacterCodingException}, the byte array is
+     * considered valid for that charset.</p>
+     *
+     * @param data    the byte array to be checked for validity
+     * @param charset the charset to be used for decoding
+     * @return {@code true} if the byte array can be successfully decoded using the specified charset,
+     * {@code false} otherwise
+     * @throws IllegalArgumentException if either the data or charset is {@code null}
+     */
+    public static boolean isEncodingValid(byte @NotNull [] data, @NotNull Charset charset) {
+        CharsetDecoder decoder = charset.newDecoder();
+        ByteBuffer buf = ByteBuffer.wrap(data);
+
+        try {
+            decoder.decode(buf);
+        } catch (CharacterCodingException e) {
+            return false;
+        }
+        return true;
     }
 
 }

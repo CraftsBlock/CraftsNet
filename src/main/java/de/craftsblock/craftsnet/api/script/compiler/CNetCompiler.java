@@ -4,11 +4,17 @@ import de.craftsblock.craftsnet.api.http.Exchange;
 import de.craftsblock.craftsnet.api.script.ast.ASTNode;
 import de.craftsblock.craftsnet.api.script.tokens.CNetToken;
 import de.craftsblock.craftsnet.api.script.tokens.CNetTokenType;
+import de.craftsblock.craftsnet.utils.Utils;
+import okio.Utf8;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.ByteBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -39,7 +45,7 @@ public class CNetCompiler {
         byte[] data;
         try (FileInputStream in = new FileInputStream(input)) {
             data = in.readAllBytes();
-            if (IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) return false;
+            if (!Utils.isEncodingValid(data, StandardCharsets.UTF_8)) return false;
         }
         return canCompile(new String(data, StandardCharsets.UTF_8));
     }
@@ -57,7 +63,7 @@ public class CNetCompiler {
     /**
      * Compiles the script from the given file and executes it in the provided exchange context.
      *
-     * @param input the input file containing the script to compile
+     * @param input    the input file containing the script to compile
      * @param exchange the exchange context in which the script is executed
      * @throws IOException if an I/O error occurs
      */
@@ -65,7 +71,7 @@ public class CNetCompiler {
         byte[] data;
         try (FileInputStream in = new FileInputStream(input)) {
             data = in.readAllBytes();
-            if (IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0))
+            if (!Utils.isEncodingValid(data, StandardCharsets.UTF_8))
                 throw new UnsupportedEncodingException("The file must not contain none utf8 chars! (At least one byte was negativ!)");
         }
         compile(new String(data, StandardCharsets.UTF_8), exchange);
@@ -74,7 +80,7 @@ public class CNetCompiler {
     /**
      * Compiles the script from the given string and executes it in the provided exchange context.
      *
-     * @param input the input string containing the script to compile
+     * @param input    the input string containing the script to compile
      * @param exchange the exchange context in which the script is executed
      */
     public static void compile(String input, Exchange exchange) {

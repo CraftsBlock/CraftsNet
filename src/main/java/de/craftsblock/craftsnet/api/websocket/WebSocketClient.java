@@ -14,6 +14,7 @@ import de.craftsblock.craftsnet.api.utils.SessionStorage;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
 import de.craftsblock.craftsnet.events.sockets.*;
 import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.utils.Utils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -220,8 +221,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                     continue;
                 }
 
-                if (frame.getOpcode().equals(Opcode.TEXT) &&
-                        IntStream.range(0, data.length).map(i -> data[i]).anyMatch(tmp -> tmp < 0)) {
+                if (frame.getOpcode().equals(Opcode.TEXT) && !Utils.isEncodingValid(frame.getData(), StandardCharsets.UTF_8)) {
                     closeInternally(ClosureCode.UNSUPPORTED, "Send negativ byte values while the control byte is set to utf8!", true);
                     break;
                 }
