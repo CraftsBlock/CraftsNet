@@ -76,7 +76,6 @@ public class RouteRegistry {
      * Registers and applies a new requirement to the web system.
      *
      * @param requirement The requirement which should be registered.
-     * @since 3.0.5-SNAPSHOT
      */
     public void registerRequirement(WebRequirement requirement) {
         registerRequirement(requirement, true);
@@ -88,7 +87,6 @@ public class RouteRegistry {
      *
      * @param requirement The requirement which should be registered.
      * @param process     Whether if all registered endpoints should receive the new requirement (true) or not (false).
-     * @since 3.0.5-SNAPSHOT
      */
     public void registerRequirement(WebRequirement requirement, boolean process) {
         registerRawRequirement(WebServer.class, requirement, process);
@@ -98,7 +96,6 @@ public class RouteRegistry {
      * Registers and applies a new requirement to the websocket system.
      *
      * @param requirement The requirement which should be registered.
-     * @since 3.0.5-SNAPSHOT
      */
     public void registerRequirement(WebSocketRequirement requirement) {
         registerRequirement(requirement, true);
@@ -110,7 +107,6 @@ public class RouteRegistry {
      *
      * @param requirement The requirement which should be registered.
      * @param process     Whether if all registered endpoints should receive the new requirement (true) or not (false).
-     * @since 3.0.5-SNAPSHOT
      */
     public void registerRequirement(WebSocketRequirement requirement, boolean process) {
         registerRawRequirement(WebSocketServer.class, requirement, process);
@@ -120,7 +116,6 @@ public class RouteRegistry {
      * Get all registered requirement processors.
      *
      * @return A map which contains all the requirement processors per server sorted.
-     * @since 3.0.5-SNAPSHOT
      */
     public ConcurrentHashMap<Class<? extends Server>, ConcurrentLinkedQueue<Requirement<? extends RequireAble, EndpointMapping>>> getRequirements() {
         return new ConcurrentHashMap<>(Map.copyOf(requirements));
@@ -131,7 +126,6 @@ public class RouteRegistry {
      *
      * @param server The server system the requirement processors should be loaded from.
      * @return A list which contains all the requirement processors for the specific server system.
-     * @since 3.0.5-SNAPSHOT
      */
     public Collection<Requirement<? extends RequireAble, EndpointMapping>> getRequirements(Class<? extends Server> server) {
         return requirements.containsKey(server) ? Collections.unmodifiableCollection(requirements.get(server)) : List.of();
@@ -144,7 +138,6 @@ public class RouteRegistry {
      * @param target      The targeted server.
      * @param requirement The requirement which should be registered.
      * @param process     Whether if all registered endpoints should receive the new requirement (true) or not (false).
-     * @since 3.0.5-SNAPSHOT
      */
     private void registerRawRequirement(Class<? extends Server> target, Requirement<? extends RequireAble, EndpointMapping> requirement, boolean process) {
         this.requirements.computeIfAbsent(target, c -> new ConcurrentLinkedQueue<>()).add(requirement);
@@ -173,7 +166,6 @@ public class RouteRegistry {
      * Registers an endpoint handler (route) by inspecting its annotated methods and adding it to the registry.
      *
      * @param handler The RequestHandler to be registered.
-     * @since 3.0.5-SNAPSHOT
      * @deprecated This method is only used for backwards compatibility, use the {@link RouteRegistry#register(Handler)} method instead, as this
      * method will be removed in 4.0.0-SNAPSHOT!
      */
@@ -187,7 +179,6 @@ public class RouteRegistry {
      * Registers an endpoint handler (websocket) by inspecting its annotated methods and adding it to the registry.
      *
      * @param handler The SocketHandler to be registered.
-     * @since 3.0.5-SNAPSHOT
      * @deprecated This method is only used for backwards compatibility, use the {@link RouteRegistry#register(Handler)} method instead, as this
      * method will be removed in 4.0.0-SNAPSHOT!
      */
@@ -201,7 +192,6 @@ public class RouteRegistry {
      * Registers an endpoint handler (route or websocket) by inspecting its annotated methods and adding it to the registry.
      *
      * @param handler The Handler to be registered.
-     * @since 3.0.5-SNAPSHOT
      */
     public void register(Handler handler) {
         ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = new ConcurrentHashMap<>();
@@ -228,16 +218,16 @@ public class RouteRegistry {
                 for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), annotation)) {
                     if (WebServer.class.isAssignableFrom(rawServer)) {
                         if (method.getParameterCount() <= 0)
-                            throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + Exchange.class.getName() + " as the first parameter!");
+                            throw new IllegalStateException("The method " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + Exchange.class.getName() + " as the first parameter!");
                         if (!Exchange.class.isAssignableFrom(method.getParameterTypes()[0]))
-                            throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + Exchange.class.getName() + " as the first parameter!");
+                            throw new IllegalStateException("The method " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + Exchange.class.getName() + " as the first parameter!");
                     } else {
                         if (method.getParameterCount() <= 1)
-                            throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + SocketExchange.class.getName() + " as the first parameter!");
+                            throw new IllegalStateException("The method " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + SocketExchange.class.getName() + " as the first parameter!");
                         if (!SocketExchange.class.isAssignableFrom(method.getParameterTypes()[0]))
-                            throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + SocketExchange.class.getName() + " as the first parameter!");
+                            throw new IllegalStateException("The method " + method.getName() + " has the annotation " + annotation.getName() + " but does not require " + SocketExchange.class.getName() + " as the first parameter!");
                         if (!String.class.isAssignableFrom(method.getParameterTypes()[1]) && !byte[].class.isAssignableFrom(method.getParameterTypes()[1]) && !Frame.class.isAssignableFrom(method.getParameterTypes()[1]))
-                            throw new IllegalStateException("The methode " + method.getName() + " has the annotation " + annotation.getName() + " but does not require a Frame, String or byte[] as the second parameter!");
+                            throw new IllegalStateException("The method " + method.getName() + " has the annotation " + annotation.getName() + " but does not require a Frame, String or byte[] as the second parameter!");
                     }
 
                     String child = annotation(method, annotation, String.class, true);
@@ -286,8 +276,6 @@ public class RouteRegistry {
      * The method should be annotated with {@link Socket}.
      *
      * @param handler The SocketHandler to be registered.
-     * @return {@code true} if there are websockets in the old format, {@code false} otherwise.
-     * @since 3.0.5-SNAPSHOT
      */
     @Deprecated(since = "3.0.5-SNAPSHOT", forRemoval = true)
     private void tryOldWebsocketRegister(SocketHandler handler) {
@@ -356,7 +344,6 @@ public class RouteRegistry {
      * Unregisters an endpoint handler (route or websocket) from the registry.
      *
      * @param handler The RequestHandler to be unregistered.
-     * @since CraftsNet-1.0.0
      */
     public void unregister(Handler handler) {
         ConcurrentHashMap<Pattern, List<EndpointMapping>> routes = serverMappings.computeIfAbsent(WebServer.class, c -> new ConcurrentHashMap<>());
@@ -378,7 +365,6 @@ public class RouteRegistry {
      * Returns an immutable copy of the shared folders and patterns.
      *
      * @return An immutable copy of the shared folders and patterns.
-     * @since CraftsNet-2.3.2
      */
     public ConcurrentHashMap<Pattern, File> getShares() {
         ConcurrentHashMap<Pattern, File> result = new ConcurrentHashMap<>();
@@ -391,7 +377,6 @@ public class RouteRegistry {
      *
      * @param url The URL for which to retrieve the associated mapping.
      * @return The mapping of the share or null if no match is found.
-     * @since CraftsNet-2.3.2
      */
     public ShareMapping getShare(String url) {
         return shares.entrySet().parallelStream()
@@ -406,7 +391,6 @@ public class RouteRegistry {
      *
      * @param url The URL for which to retrieve the associated shared folder.
      * @return The shared folder or null if no match is found.
-     * @since CraftsNet-2.3.2
      */
     public File getShareFolder(String url) {
         if (!isShare(url)) return null;
@@ -418,7 +402,6 @@ public class RouteRegistry {
      *
      * @param url The URL for which to retrieve the associated pattern.
      * @return The pattern or null if no match is found.
-     * @since CraftsNet-2.3.2
      */
     public Pattern getSharePattern(String url) {
         return shares.keySet().parallelStream()
@@ -432,7 +415,6 @@ public class RouteRegistry {
      *
      * @param url The URL to check.
      * @return True if the URL corresponds to a shared folder, false otherwise.
-     * @since CraftsNet-2.3.2
      */
     public boolean isShare(String url) {
         return getShare(url) != null;
@@ -455,7 +437,6 @@ public class RouteRegistry {
      * Gets an immutable copy of the registered routes in the registry.
      *
      * @return A ConcurrentHashMap containing the registered routes.
-     * @since CraftsNet-1.0.0
      */
     @NotNull
     public ConcurrentHashMap<Pattern, List<EndpointMapping>> getRoutes() {
@@ -467,7 +448,6 @@ public class RouteRegistry {
      *
      * @param request The http request for which a routes should be found.
      * @return A list of RouteMapping objects associated with the URL and HTTP method, or null if no mappings are found.
-     * @since CraftsNet-2.3.0
      */
     @Nullable
     @SuppressWarnings("unchecked")
@@ -491,7 +471,6 @@ public class RouteRegistry {
      * Gets an immutable copy of the registered socket handlers in the registry.
      *
      * @return A ConcurrentHashMap containing the registered socket handlers.
-     * @since CraftsNet-2.1.1
      */
     @NotNull
     public ConcurrentHashMap<Pattern, List<EndpointMapping>> getSockets() {
@@ -503,7 +482,6 @@ public class RouteRegistry {
      *
      * @param client The client for which the socket mapping is sought.
      * @return A list of SocketMapping objects associated with the URL, or null if no mapping is found.
-     * @since CraftsNet-2.1.1
      */
     @Nullable
     @SuppressWarnings("unchecked")
@@ -530,7 +508,6 @@ public class RouteRegistry {
      *
      * @param url The URL for which the validator pattern is created.
      * @return The Pattern object representing the validator pattern.
-     * @since CraftsNet-1.0.0
      */
     @NotNull
     private Pattern createValidator(String url) {
@@ -564,7 +541,6 @@ public class RouteRegistry {
      * @throws InvocationTargetException If the attribute's getter method is not found.
      * @throws NoSuchMethodException     If there is an issue invoking the getter method.
      * @throws IllegalAccessException    If there is an access issue with the getter method.
-     * @since CraftsNet-3.0.5
      */
     private void loadRequirements(ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements, List<Class<? extends Annotation>> annotations, Method method, Object handler) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         for (Class<? extends Annotation> annotation : annotations) {
@@ -596,7 +572,6 @@ public class RouteRegistry {
      * @throws NoSuchMethodException     If the attribute's getter method is not found.
      * @throws InvocationTargetException If there is an issue invoking the getter method.
      * @throws IllegalAccessException    If there is an access issue with the getter method.
-     * @since CraftsNet-3.0.4
      */
     @NotNull
     @SuppressWarnings("unchecked")
@@ -623,7 +598,6 @@ public class RouteRegistry {
      * @throws NoSuchMethodException     If the attribute's getter method is not found.
      * @throws InvocationTargetException If there is an issue invoking the getter method.
      * @throws IllegalAccessException    If there is an access issue with the getter method.
-     * @since CraftsNet-3.0.5
      */
     @SuppressWarnings("unchecked")
     private <A extends Annotation, T> List<T> loadAnnotationValues(Object obj, Class<A> annotation, Class<T> type) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
@@ -651,7 +625,6 @@ public class RouteRegistry {
      * @param annotation The class of the annotation to search for.
      * @param <A>        The type of the annotation.
      * @return The found annotation or null if none is found.
-     * @since CraftsNet-2.3.0
      */
     private <A extends Annotation> A rawAnnotation(Object o, Class<A> annotation) {
         if (o instanceof Method method) return method.getAnnotation(annotation);
@@ -697,7 +670,6 @@ public class RouteRegistry {
      * @param method     The name of the method
      * @param <A>        The type of the annotation.
      * @return The class representation of the return type.
-     * @since CraftsNet-3.0.4
      */
     private <A extends Annotation> Class<?> annotationMethodType(Class<A> annotation, String method) {
         try {
@@ -733,7 +705,6 @@ public class RouteRegistry {
      * @param type The class of the targeted type
      * @param <T>  The targeted type
      * @return Returns the cast value or null if not cast able.
-     * @since CraftsNet-3.0.4
      */
     private static @Nullable <T> T castTo(Object o, Class<T> type) {
         return type.isInstance(o) ? type.cast(o) : null;
@@ -743,7 +714,6 @@ public class RouteRegistry {
      * Checks if the registry has any registered socket handlers.
      *
      * @return true if the registry has registered socket handlers, false otherwise.
-     * @since CraftsNet-2.1.1
      */
     public boolean hasWebsockets() {
         return !getSockets().isEmpty();
@@ -753,7 +723,6 @@ public class RouteRegistry {
      * Checks if the registry has any registered route handlers or shares.
      *
      * @return true if the registry has registered route handlers or shares, false otherwise.
-     * @since CraftsNet-2.1.1
      */
     public boolean hasRoutes() {
         return !getRoutes().isEmpty() || hasShares();
@@ -763,7 +732,6 @@ public class RouteRegistry {
      * Checks if the registry has any registered shares.
      *
      * @return true if the registry has registered shares, false otherwise.
-     * @since CraftsNet-2.3.2
      */
     public boolean hasShares() {
         return !shares.isEmpty();
@@ -775,7 +743,6 @@ public class RouteRegistry {
      *
      * @param url The URL to be formatted.
      * @return The formatted URL.
-     * @since CraftsNet-1.0.0
      */
     private String url(String url) {
         String result = (!url.trim().startsWith("/") ? "/" : "") + url.trim();
