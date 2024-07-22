@@ -307,8 +307,8 @@ public class Cookie {
         return this.name + "=" + (this.value != null ? this.value.toString() : "") +
                 (this.path != null ? "; Path=" + this.path : "") +
                 (this.domain != null ? "; Domain=" + this.domain : "") +
-                (this.path != null ? "; Expires=" + DateTimeFormatter.RFC_1123_DATE_TIME.format(expiresAt) : "") +
                 (this.maxAge != -1 ? "; Max-Age=" + maxAge : "") +
+                (this.expiresAt != null ? "; Expires=" + DateTimeFormatter.RFC_1123_DATE_TIME.format(expiresAt) : "") +
                 (this.sameSite != null ? "; SameSite=" + this.sameSite : "") +
                 (this.secure || (this.sameSite != null && this.sameSite.equals(SameSite.NONE)) ? "; Secure" : "") +
                 (this.httpOnly ? "; HttpOnly" : "");
