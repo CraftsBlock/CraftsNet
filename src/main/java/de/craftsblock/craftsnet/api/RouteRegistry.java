@@ -439,8 +439,8 @@ public class RouteRegistry {
      * @return A ConcurrentHashMap containing the registered routes.
      */
     @NotNull
-    public ConcurrentHashMap<Pattern, List<EndpointMapping>> getRoutes() {
-        return new ConcurrentHashMap<>(Map.copyOf(serverMappings.computeIfAbsent(WebServer.class, c -> new ConcurrentHashMap<>())));
+    public Map<Pattern, List<EndpointMapping>> getRoutes() {
+        return Map.copyOf(serverMappings.computeIfAbsent(WebServer.class, c -> new ConcurrentHashMap<>()));
     }
 
     /**
@@ -473,8 +473,8 @@ public class RouteRegistry {
      * @return A ConcurrentHashMap containing the registered socket handlers.
      */
     @NotNull
-    public ConcurrentHashMap<Pattern, List<EndpointMapping>> getSockets() {
-        return new ConcurrentHashMap<>(Map.copyOf(serverMappings.computeIfAbsent(WebSocketServer.class, c -> new ConcurrentHashMap<>())));
+    public Map<Pattern, List<EndpointMapping>> getSockets() {
+        return Map.copyOf(serverMappings.computeIfAbsent(WebSocketServer.class, c -> new ConcurrentHashMap<>()));
     }
 
     /**
@@ -811,21 +811,6 @@ public class RouteRegistry {
      * @since CraftsNet-3.0.3
      */
     public record ShareMapping(@NotNull String filepath, boolean onlyGet) implements Mapping {
-
-        /**
-         * {@inheritDoc}
-         *
-         * @param annotation The annotation as it's class representation used to find the requirements.
-         * @param type       The expected return type as it's class representation.
-         * @param <A>        The annotation used to find the requirements.
-         * @param <T>        The expected return type.
-         * @return A list of requirements which are listed under the annotation.
-         */
-        @Override
-        public <A extends Annotation, T> List<T> getRequirements(Class<A> annotation, Class<T> type) {
-            return List.of();
-        }
-
     }
 
     /**
@@ -834,20 +819,6 @@ public class RouteRegistry {
      * @since CraftsNet-3.0.3
      */
     private record ServerMapping(Class<? extends Server> rawServer, Server server) implements Mapping {
-
-        /**
-         * {@inheritDoc}
-         *
-         * @param annotation The annotation as it's class representation used to find the requirements.
-         * @param type       The expected return type as it's class representation.
-         * @param <A>        The annotation used to find the requirements.
-         * @param <T>        The expected return type.
-         * @return A list of requirements which are listed under the annotation.
-         */
-        @Override
-        public <A extends Annotation, T> List<T> getRequirements(Class<A> annotation, Class<T> type) {
-            return List.of();
-        }
     }
 
     /**
@@ -866,7 +837,9 @@ public class RouteRegistry {
          * @param <T>        The expected return type.
          * @return A list of requirements which are listed under the annotation.
          */
-        <A extends Annotation, T> List<T> getRequirements(Class<A> annotation, Class<T> type);
+        default <A extends Annotation, T> List<T> getRequirements(Class<A> annotation, Class<T> type) {
+            return List.of();
+        }
 
     }
 
