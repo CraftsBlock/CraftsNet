@@ -5,21 +5,15 @@ import de.craftsblock.craftsnet.api.script.ast.ASTNode;
 import de.craftsblock.craftsnet.api.script.tokens.CNetToken;
 import de.craftsblock.craftsnet.api.script.tokens.CNetTokenType;
 import de.craftsblock.craftsnet.utils.Utils;
-import okio.Utf8;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.nio.ByteBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 
 /**
  * The CNetCompiler class is responsible for compiling CNetScript source code.
@@ -108,7 +102,7 @@ public class CNetCompiler {
             CNetParser parser = new CNetParser(tokens);
             List<ASTNode> nodes = parser.parse();
 
-            interpreter.interpret(nodes, exchange);
+            if (!interpreter.interpret(nodes, exchange)) break;
         }
         interpreter.reset();
     }
