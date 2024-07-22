@@ -194,17 +194,10 @@ public class RouteRegistry {
      * @param handler The Handler to be registered.
      */
     public void register(Handler handler) {
-        ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = new ConcurrentHashMap<>();
-        if (handler instanceof RequestHandler)
-            annotations.computeIfAbsent(Route.class, c -> new ServerMapping(WebServer.class, craftsNet.webServer()));
+        ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = retrieveHandlerInfoMap(handler);
 
-        if (handler instanceof SocketHandler socketHandler) {
-            tryOldWebsocketRegister(socketHandler);
-            annotations.computeIfAbsent(Socket.class, c -> new ServerMapping(WebSocketServer.class, craftsNet.webSocketServer()));
-        }
-
-        if (annotations.isEmpty())
-            throw new IllegalStateException("Invalid handler type " + handler.getClass().getSimpleName() + " only RequestHandler and SocketHandler are allowed!");
+        if (annotations.containsKey(Socket.class))
+            tryOldWebsocketRegister((SocketHandler) handler);
 
         for (Class<? extends Annotation> annotation : annotations.keySet())
             try {
@@ -213,7 +206,7 @@ public class RouteRegistry {
                 List<Class<? extends Annotation>> requirementAnnotations = new ArrayList<>(this.requirements.get(rawServer)
                         .parallelStream().map(Requirement::getAnnotation).toList());
 
-                String parent = annotation(handler, annotation, String.class, true);
+                String parent = retrieveValueOfAnnotation(handler, annotation, String.class, true);
 
                 for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), annotation)) {
                     if (WebServer.class.isAssignableFrom(rawServer)) {
@@ -230,9 +223,9 @@ public class RouteRegistry {
                             throw new IllegalStateException("The method " + method.getName() + " has the annotation " + annotation.getName() + " but does not require a Frame, String or byte[] as the second parameter!");
                     }
 
-                    String child = annotation(method, annotation, String.class, true);
-                    ProcessPriority priority = rawAnnotation(method, ProcessPriority.class);
-                    Pattern validator = createOrGetValidator(url(parent != null ? parent : "", child), endpoints);
+                    String child = retrieveValueOfAnnotation(method, annotation, String.class, true);
+                    ProcessPriority priority = retrieveRawAnnotation(method, ProcessPriority.class);
+                    Pattern validator = createOrGetValidator(mergeUrl(parent != null ? parent : "", child), endpoints);
 
                     // Load requirements
                     ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements = new ConcurrentHashMap<>();
@@ -265,7 +258,7 @@ public class RouteRegistry {
                     .map(EndpointMapping::handler)
                     .forEach(this::unregister);
 
-        // Only continue if the web server was set
+        // Loop through all active servers and turn them on as they are now needed.
         for (ServerMapping mapping : annotations.values())
             if (mapping.server() != null)
                 mapping.server().awakeOrWarn();
@@ -290,7 +283,7 @@ public class RouteRegistry {
                 " outdated websocket creation(s) in class " + handler.getClass().getSimpleName());
 
         try {
-            Socket socket = rawAnnotation(handler, Socket.class);
+            Socket socket = retrieveRawAnnotation(handler, Socket.class);
             Pattern validator = createOrGetValidator(socket.value(), sockets);
 
             // Load requirements
@@ -332,7 +325,7 @@ public class RouteRegistry {
     public void share(String path, File folder, boolean onlyGet) {
         if (!folder.isDirectory())
             throw new IllegalArgumentException("\"folder\" must be a folder!");
-        Pattern pattern = Pattern.compile(url(path) + "/" + "?(.*)");
+        Pattern pattern = Pattern.compile(formatUrl(path) + "/" + "?(.*)");
         shares.put(pattern, new ShareMapping(folder.getAbsolutePath(), onlyGet));
 
         // Only continue if the web server was set
@@ -346,19 +339,28 @@ public class RouteRegistry {
      * @param handler The RequestHandler to be unregistered.
      */
     public void unregister(Handler handler) {
-        ConcurrentHashMap<Pattern, List<EndpointMapping>> routes = serverMappings.computeIfAbsent(WebServer.class, c -> new ConcurrentHashMap<>());
-        Route parent = rawAnnotation(handler, Route.class);
-        for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), Route.class))
-            try {
-                Route route = rawAnnotation(method, Route.class);
-                routes.entrySet().removeIf(validator -> validator.getKey().matcher(url(parent != null ? parent.value() : "", route.value())).matches());
-            } catch (Exception e) {
-                logger.error(e);
-            }
+        ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = retrieveHandlerInfoMap(handler);
 
-        // Only continue if the web server has been set up
-        if (this.craftsNet.webServer() != null)
-            this.craftsNet.webServer().sleepIfNotNeeded();
+        for (Class<? extends Annotation> annotation : annotations.keySet()) {
+            try {
+                ServerMapping mapping = annotations.get(annotation);
+
+                ConcurrentHashMap<Pattern, List<EndpointMapping>> endpoints = serverMappings.computeIfAbsent(mapping.rawServer(), c -> new ConcurrentHashMap<>());
+                String parent = retrieveValueOfAnnotation(handler, annotation, String.class, true);
+                for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), annotation)) {
+                    String child = retrieveValueOfAnnotation(method, annotation, String.class, true);
+                    endpoints.entrySet().removeIf(validator -> validator.getKey().matcher(mergeUrl(parent != null ? parent : "", child)).matches());
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+
+        // Loop through all active servers and turn them off if they are not needed.
+        for (ServerMapping mapping : annotations.values())
+            if (mapping.server() != null)
+                mapping.server().sleepIfNotNeeded();
     }
 
     /**
@@ -366,10 +368,10 @@ public class RouteRegistry {
      *
      * @return An immutable copy of the shared folders and patterns.
      */
-    public ConcurrentHashMap<Pattern, File> getShares() {
-        ConcurrentHashMap<Pattern, File> result = new ConcurrentHashMap<>();
-        shares.forEach((pattern, mapping) -> result.put(pattern, new File(mapping.filepath())));
-        return result;
+    public Map<Pattern, File> getShares() {
+        return shares.entrySet().parallelStream()
+                .map(entry -> Map.entry(entry.getKey(), new File(entry.getValue().filepath())))
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
     /**
@@ -380,7 +382,7 @@ public class RouteRegistry {
      */
     public ShareMapping getShare(String url) {
         return shares.entrySet().parallelStream()
-                .filter(entry -> entry.getKey().matcher(url(url)).matches())
+                .filter(entry -> entry.getKey().matcher(formatUrl(url)).matches())
                 .map(Map.Entry::getValue)
                 .findFirst()
                 .orElse(null);
@@ -405,7 +407,7 @@ public class RouteRegistry {
      */
     public Pattern getSharePattern(String url) {
         return shares.keySet().parallelStream()
-                .filter(file -> file.matcher(url(url)).matches())
+                .filter(file -> file.matcher(formatUrl(url)).matches())
                 .findFirst()
                 .orElse(null);
     }
@@ -462,7 +464,7 @@ public class RouteRegistry {
                                 return false;
                             }
 
-                    return entry.validator().matcher(url(request.getUrl())).matches();
+                    return entry.validator().matcher(formatUrl(request.getUrl())).matches();
                 })
                 .collect(Collectors.toList());
     }
@@ -484,7 +486,6 @@ public class RouteRegistry {
      * @return A list of SocketMapping objects associated with the URL, or null if no mapping is found.
      */
     @Nullable
-    @SuppressWarnings("unchecked")
     public List<EndpointMapping> getSocket(WebSocketClient client) {
         return getSockets().entrySet().parallelStream()
                 .map(Map.Entry::getValue)
@@ -498,7 +499,7 @@ public class RouteRegistry {
                             } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
                             }
 
-                    return entry.validator().matcher(url(client.getPath())).matches();
+                    return entry.validator().matcher(formatUrl(client.getPath())).matches();
                 })
                 .collect(Collectors.toList());
     }
@@ -511,8 +512,8 @@ public class RouteRegistry {
      */
     @NotNull
     private Pattern createValidator(String url) {
-        Pattern pattern = Pattern.compile("\\{(.*?[^/]+)\\}", Pattern.DOTALL | Pattern.MULTILINE);
-        Matcher matcher = pattern.matcher(url(url));
+        Pattern pattern = Pattern.compile("\\{(.*?[^/]+)}", Pattern.DOTALL | Pattern.MULTILINE);
+        Matcher matcher = pattern.matcher(formatUrl(url));
         return Pattern.compile("^(" + matcher.replaceAll("(?<$1>[^/]+)") + ")/?", Pattern.CASE_INSENSITIVE);
     }
 
@@ -525,10 +526,9 @@ public class RouteRegistry {
      */
     @NotNull
     private Pattern createOrGetValidator(String url, ConcurrentHashMap<Pattern, ?> mappings) {
-        Pattern created = createValidator(url);
         return mappings.keySet().parallelStream()
-                .filter(pattern -> pattern.pattern().equalsIgnoreCase(created.pattern()))
-                .findFirst().orElse(created);
+                .filter(pattern -> pattern.matcher(url).matches())
+                .findFirst().orElse(createValidator(url));
     }
 
     /**
@@ -574,7 +574,6 @@ public class RouteRegistry {
      * @throws IllegalAccessException    If there is an access issue with the getter method.
      */
     @NotNull
-    @SuppressWarnings("unchecked")
     private <A extends Annotation, T> List<T> loadAnnotationValues(Method m, Object obj, Class<A> annotation, Class<T> type) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         List<T> values = new ArrayList<>();
 
@@ -602,7 +601,7 @@ public class RouteRegistry {
     @SuppressWarnings("unchecked")
     private <A extends Annotation, T> List<T> loadAnnotationValues(Object obj, Class<A> annotation, Class<T> type) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         List<T> values = new ArrayList<>();
-        Object value = annotation(obj, annotation, type, obj instanceof Method);
+        Object value = retrieveValueOfAnnotation(obj, annotation, type, obj instanceof Method);
 
         if (value != null) {
             Class<?> clazz = value.getClass();
@@ -626,7 +625,7 @@ public class RouteRegistry {
      * @param <A>        The type of the annotation.
      * @return The found annotation or null if none is found.
      */
-    private <A extends Annotation> A rawAnnotation(Object o, Class<A> annotation) {
+    private <A extends Annotation> A retrieveRawAnnotation(Object o, Class<A> annotation) {
         if (o instanceof Method method) return method.getAnnotation(annotation);
         return o.getClass().getAnnotation(annotation);
     }
@@ -645,8 +644,8 @@ public class RouteRegistry {
      * @throws InvocationTargetException If there is an issue invoking the getter method.
      * @throws IllegalAccessException    If there is an access issue with the getter method.
      */
-    private <A extends Annotation, T> T annotation(Object o, Class<A> annotationClass, Class<T> type, boolean fallback) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        A annotation = rawAnnotation(o, annotationClass);
+    private <A extends Annotation, T> T retrieveValueOfAnnotation(Object o, Class<A> annotationClass, Class<T> type, boolean fallback) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        A annotation = retrieveRawAnnotation(o, annotationClass);
         if (annotation == null)
             if (fallback) {
                 Method method = annotationClass.getDeclaredMethod("value");
@@ -678,24 +677,6 @@ public class RouteRegistry {
         } catch (NoSuchMethodException ignored) {
         }
         return null;
-    }
-
-    /**
-     * Concatenates two URL path segments, ensuring proper formatting.
-     *
-     * @param parent The parent path segment.
-     * @param child  The child path segment to append.
-     * @return The concatenated URL path.
-     */
-    private String url(String parent, String child) {
-        parent = parent.trim();
-        child = child.trim();
-
-        String result = (!parent.startsWith("/") && !parent.isBlank() ? "/" : "") + parent;
-        if (!parent.endsWith("/")) result += "/";
-        result += child;
-
-        return url(result);
     }
 
     /**
@@ -738,13 +719,31 @@ public class RouteRegistry {
     }
 
     /**
+     * Concatenates two URL path segments, ensuring proper formatting.
+     *
+     * @param first  The first path segment.
+     * @param second The second path segment to append.
+     * @return The concatenated URL path.
+     */
+    private String mergeUrl(String first, String second) {
+        first = first.trim();
+        second = second.trim();
+
+        String result = (!first.startsWith("/") && !first.isBlank() ? "/" : "") + first;
+        if (!first.endsWith("/")) result += "/";
+        result += second;
+
+        return formatUrl(result);
+    }
+
+    /**
      * Formats the URL by ensuring it starts and does not end with a slash.
      * It also removes duplicate slashes from the url.
      *
      * @param url The URL to be formatted.
      * @return The formatted URL.
      */
-    private String url(String url) {
+    private String formatUrl(String url) {
         String result = (!url.trim().startsWith("/") ? "/" : "") + url.trim();
         return result
                 .replaceAll("/+", "/")
@@ -773,6 +772,25 @@ public class RouteRegistry {
     private <T> void addArray(Object[] t, List<T> list, Class<T> type) {
         if (!type.isInstance(t)) return;
         list.add(type.cast(t));
+    }
+
+    /**
+     * Retrieves a map with information about the server types held by the handler.
+     *
+     * @param handler The handler from which the information should be retrieved.
+     * @return The information about the server types held by the handler.
+     */
+    private ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> retrieveHandlerInfoMap(Handler handler) {
+        ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = new ConcurrentHashMap<>();
+        if (handler instanceof RequestHandler)
+            annotations.computeIfAbsent(Route.class, c -> new ServerMapping(WebServer.class, craftsNet.webServer()));
+
+        if (handler instanceof SocketHandler)
+            annotations.computeIfAbsent(Socket.class, c -> new ServerMapping(WebSocketServer.class, craftsNet.webSocketServer()));
+
+        if (annotations.isEmpty())
+            throw new IllegalStateException("Invalid handler type " + handler.getClass().getSimpleName() + " only RequestHandler and SocketHandler are allowed!");
+        return annotations;
     }
 
     /**
