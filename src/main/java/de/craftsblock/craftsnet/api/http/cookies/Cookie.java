@@ -24,7 +24,7 @@ public class Cookie {
     private String path = null;
     private String domain = null;
     private OffsetDateTime expiresAt = null;
-    private long maxAge = -1;
+    private long maxAge = -2;
     private SameSite sameSite = null;
     private boolean secure = true;
     private boolean httpOnly = true;
@@ -188,7 +188,7 @@ public class Cookie {
     }
 
     /**
-     * Sets the maximum age of this cookie. Set to -1 to disable this flag.
+     * Sets the maximum age of this cookie. Set to -2 to disable this flag.
      *
      * @param maxAge The number in seconds the cookie is valid.
      */
@@ -293,7 +293,7 @@ public class Cookie {
      */
     public Cookie markDeleted() {
         setExpiresAt(OffsetDateTime.now().minusYears(5));
-        setMaxAge(0);
+        setMaxAge(-1);
         return this;
     }
 
@@ -307,8 +307,8 @@ public class Cookie {
         return this.name + "=" + (this.value != null ? this.value.toString() : "") +
                 (this.path != null ? "; Path=" + this.path : "") +
                 (this.domain != null ? "; Domain=" + this.domain : "") +
-                (this.maxAge != -1 ? "; Max-Age=" + maxAge : "") +
                 (this.expiresAt != null ? "; Expires=" + DateTimeFormatter.RFC_1123_DATE_TIME.format(expiresAt) : "") +
+                (this.maxAge >= -1 ? "; Max-Age=" + maxAge : "") +
                 (this.sameSite != null ? "; SameSite=" + this.sameSite : "") +
                 (this.secure || (this.sameSite != null && this.sameSite.equals(SameSite.NONE)) ? "; Secure" : "") +
                 (this.httpOnly ? "; HttpOnly" : "");
