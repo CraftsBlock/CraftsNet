@@ -97,7 +97,7 @@ public class RouteRegistry {
      *
      * @param requirement The requirement which should be registered.
      */
-    public void registerRequirement(WebSocketRequirement requirement) {
+    public void registerRequirement(WebSocketRequirement<? extends RequireAble> requirement) {
         registerRequirement(requirement, true);
     }
 
@@ -108,7 +108,7 @@ public class RouteRegistry {
      * @param requirement The requirement which should be registered.
      * @param process     Whether if all registered endpoints should receive the new requirement (true) or not (false).
      */
-    public void registerRequirement(WebSocketRequirement requirement, boolean process) {
+    public void registerRequirement(WebSocketRequirement<? extends RequireAble> requirement, boolean process) {
         registerRawRequirement(WebSocketServer.class, requirement, process);
     }
 

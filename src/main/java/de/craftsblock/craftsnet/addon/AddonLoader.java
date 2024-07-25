@@ -6,6 +6,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.events.addons.AddonsLoadedEvent;
 import de.craftsblock.craftsnet.logging.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -89,6 +90,8 @@ final class AddonLoader {
             }
 
             try (JarFile jarFile = new JarFile(file, true, ZipFile.OPEN_READ, Runtime.version())) {
+                logger.debug("Loading jar file " + file.getAbsolutePath());
+
                 // Load the configuration file from the jar
                 Configuration configuration = loadConfig(jarFile);
                 if (configuration == null) {
@@ -101,33 +104,44 @@ final class AddonLoader {
                 // Check if the jar version is compatible
                 long checkStart = System.currentTimeMillis();
 
-                int minMajor = Runtime.version().feature() + 44;
-                int minMinor = Runtime.version().interim();
+                int maxMajor = Runtime.version().feature() + 44;
+                int maxMinor = Runtime.version().interim();
                 AtomicBoolean skip = new AtomicBoolean(false);
                 jarFile.stream().filter(jarEntry -> jarEntry.getName().endsWith(".class") && !jarEntry.isDirectory())
                         .forEach(jarEntry -> {
                             if (!jarEntry.getName().endsWith(".class")) return;
                             if (skip.get()) return;
                             try (DataInputStream dis = new DataInputStream(jarFile.getInputStream(jarEntry))) {
-                                dis.skipBytes(4);
+                                if (dis.readInt() != 0xCAFEBABE) {
+                                    skip.set(true);
+                                    logger.error("Error loading addon " + name + " (" + file.getName() + "), skipping!");
+                                    logger.error(new RuntimeException(
+                                            jarEntry.getName() + " is not an valid class file! There was an magic number mismatch with the first 4 bytes!"
+                                    ));
+                                    return;
+                                }
+
                                 int minor = dis.readUnsignedShort();
                                 int major = dis.readUnsignedShort();
-                                skip.set(major > minMajor || minor > minMinor);
+                                skip.set(major > maxMajor || minor > maxMinor);
                                 if (skip.get()) {
                                     logger.error("Error loading addon " + name + " (" + file.getName() + "), skipping!");
                                     logger.error(new RuntimeException(
                                             jarEntry.getName().replace(".class", "") + " " +
                                                     "has been compiled by a more recent version of the Java Runtime (class file version " + major + "." + minor + "), " +
-                                                    "this version of the Java Runtime only recognizes class file versions up to " + minMajor + "." + minMinor)
+                                                    "this version of the Java Runtime only recognizes class file versions up to " + maxMajor + "." + maxMinor)
                                     );
                                 }
                             } catch (IOException e) {
                                 logger.error(e);
                             }
                         });
-                if (skip.get()) continue;
+                if (skip.get()) {
+                    logger.error(file.getAbsolutePath() + " is not jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
+                    continue;
+                }
 
-                logger.debug("Checked jvm compatibility for " + name + " within " + (System.currentTimeMillis() - checkStart) + "ms");
+                logger.debug(file.getAbsolutePath() + " is jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
 
                 // Inject all repositories
                 artifactLoader.cleanup();

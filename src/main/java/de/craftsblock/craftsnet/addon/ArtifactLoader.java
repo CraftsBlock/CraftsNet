@@ -137,7 +137,7 @@ final class ArtifactLoader {
 
         ConcurrentLinkedQueue<URL> urls = new ConcurrentLinkedQueue<>();
         result.getArtifactResults().forEach(artifact -> {
-            File file = artifact.getArtifact().getFile();
+            File file = artifact.getArtifact().getPath().toFile();
             try (JarFile jarFile = new JarFile(file, true, ZipFile.OPEN_READ, Runtime.version())) {
                 urls.add(file.toURI().toURL());
                 configuration.services().addAll(addonLoader.loadServices(jarFile));
@@ -148,7 +148,7 @@ final class ArtifactLoader {
             logger.debug("Loaded library " + file.getName() + " for " + addon);
         });
 
-        return urls.toArray(new URL[0]);
+        return urls.toArray(URL[]::new);
     }
 
 }
