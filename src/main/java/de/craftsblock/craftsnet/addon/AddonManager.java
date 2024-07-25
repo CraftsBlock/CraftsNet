@@ -41,10 +41,12 @@ public final class AddonManager {
         this.logger = this.craftsNet.logger();
 
         File folder = new File("./addons/");
+        logger.debug("Addon folder set to " + folder.getAbsolutePath());
         if (!folder.isDirectory()) {
             folder.delete();
             folder.mkdirs();
         }
+
         AddonLoader addonLoader = new AddonLoader(craftsNet);
         for (File file : Objects.requireNonNull(folder.listFiles()))
             if (file.getName().endsWith(".jar")) addonLoader.add(file);

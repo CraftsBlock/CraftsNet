@@ -49,6 +49,7 @@ public class CraftsNet {
     private FileLogger fileLogger;
     private Thread consoleListener;
     private Thread shutdownThread;
+    private Thread.UncaughtExceptionHandler oldDefaultUncaughtExceptionHandler;
 
     // Manager instances
     private AddonManager addonManager;
@@ -111,7 +112,13 @@ public class CraftsNet {
             fileLogger.start();
         }
 
+        // Log startup message
+        logger.info("CraftsNet v" + version + " boots up");
+        Runtime.Version version = Runtime.version();
+        logger.debug("JVM Version: " + version.toString() + "; Max recognizable class file version: " + (version.feature() + 44) + "." + version.interim());
+
         // Setup default uncaught exception handler
+        this.oldDefaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             if (fileLogger != null) {
                 long identifier = fileLogger.createErrorLog(this, e);
@@ -121,31 +128,35 @@ public class CraftsNet {
 
             logger.error(e);
         });
-
-        // Log startup message
-        logger.info("CraftsNet v" + version + " boots up");
-        Runtime.Version version = Runtime.version();
-        logger.debug("JVM Version: " + version.toString() + "; Max recognizable class file version: " + (version.feature() + 44) + "." + version.interim());
+        logger.debug("Injected the default uncaught exception handler");
 
         // Initialize listener and route registries, and addon manager
-        logger.debug("Initialization of system variables");
+        logger.info("Initialization of system variables");
+        logger.debug("Initialization of the listener registry");
         listenerRegistry = new ListenerRegistry();
+        logger.debug("Initialization of the route registry");
         routeRegistry = new RouteRegistry(this);
+        logger.debug("Initialization of the command registry");
         commandRegistry = new CommandRegistry(this);
+        logger.debug("Initialization of the service manager");
         serviceManager = new ServiceManager();
+        logger.debug("Initialization of the addon manager");
         if (!builder.isAddonSystem(ActivateType.DISABLED)) addonManager = new AddonManager(this);
 
         // Check if http routes are registered and start the web server if needed
         if (builder.isWebServer(ActivateType.ENABLED) || builder.isWebServer(ActivateType.DYNAMIC)) {
-            logger.info("Setting up the web server");
+            logger.info("Preparing the webserver");
             webServer = new WebServer(this, builder.getWebServerPort(), builder.isSSL());
 
             // Set the bodyRegistry if the webserver is enabled.
+            logger.debug("Initialization of the body registry");
             bodyRegistry = new BodyRegistry();
 
             // Register a default route if nothing has been registered.
-            if (!routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets())
+            if (!routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
+                logger.debug("No routes and sockets found, creating the default route");
                 routeRegistry().register((Handler) new DefaultRoute());
+            }
 
             // Start the webserver if needed
             if (routeRegistry.hasRoutes() || builder.isWebServer(ActivateType.ENABLED)) {
@@ -156,9 +167,11 @@ public class CraftsNet {
 
         // Check if webSocket routes are registered and start the websocket server if needed
         if (builder.isWebSocketServer(ActivateType.ENABLED) || builder.isWebSocketServer(ActivateType.DYNAMIC)) {
-            logger.info("Setting up the websocket server");
+            logger.info("Preparing the websocket server");
+            logger.debug("Initialization of the websocket extension registry");
             webSocketExtensionRegistry = new WebSocketExtensionRegistry();
             webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), builder.isSSL());
+            logger.debug("Implementing the default ping responder");
             DefaultPingResponder.register(this);
 
             if (routeRegistry.hasWebsockets() || builder.isWebSocketServer(ActivateType.ENABLED)) {
@@ -169,7 +182,10 @@ public class CraftsNet {
 
         // Register build in commands / listeners
         if (!builder.isCommandSystem(ActivateType.DISABLED)) {
+            logger.debug("Registering the console listener");
             listenerRegistry.register(new ConsoleListener(this));
+
+            logger.debug("Registering the default commands");
             commandRegistry.getCommand("pl").setExecutor(new PluginCommand(this));
             commandRegistry.getCommand("pl").addAlias("plugin", "plugins", "addons");
             commandRegistry.getCommand("restart").setExecutor(new ReloadCommand(this));
@@ -181,7 +197,7 @@ public class CraftsNet {
 
             // Set up and start the console listener
             this.consoleListener = getConsoleReader();
-            logger.debug("Console listener is started");
+            logger.debug("Started the console reader");
         }
 
         // Register a shutdown hook for calling the stop method
@@ -190,7 +206,7 @@ public class CraftsNet {
         logger.debug("JVM Shutdown Hook is implemented");
 
         // Log successful startup message with elapsed time
-        logger.info("Backend was successfully started after " + (System.currentTimeMillis() - start) + "ms");
+        logger.info("CraftsNet was successfully started after " + (System.currentTimeMillis() - start) + "ms");
     }
 
     /**
@@ -217,6 +233,11 @@ public class CraftsNet {
         if (this.addonManager != null) {
             this.addonManager.stop();
             this.addonManager = null;
+        }
+
+        if (this.oldDefaultUncaughtExceptionHandler != null) {
+            logger.debug("Resetting the default uncaught exception handler");
+            Thread.setDefaultUncaughtExceptionHandler(this.oldDefaultUncaughtExceptionHandler);
         }
 
         if (this.fileLogger != null) {
