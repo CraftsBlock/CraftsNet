@@ -6,7 +6,10 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
@@ -42,9 +45,13 @@ public class FileLogger {
 
             File file = new File(folder, "latest.log");
             if (file.exists()) {
+                BasicFileAttributes attributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+                OffsetDateTime creationTime = OffsetDateTime.ofInstant(attributes.creationTime().toInstant(), ZoneId.systemDefault());
+                String prefix = creationTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
                 int i = 1;
                 while (true) {
-                    File newName = new File(folder, OffsetDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) + "_" + i + ".log");
+                    File newName = new File(folder, prefix + "_" + i + ".log");
                     if (newName.exists()) {
                         i++;
                         continue;
@@ -240,7 +247,6 @@ public class FileLogger {
          */
         @Override
         public void close() {
-//            super.close();
             try {
                 stream.flush();
                 stream.close();
