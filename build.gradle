@@ -18,7 +18,7 @@ repositories {
 dependencies {
     // CraftsBlock related dependencies ---------------------------------------------------------------------------------------
 
-    implementation 'de.craftsblock.craftscore:CraftsCore:3.7.51-SNAPSHOT'
+    implementation 'de.craftsblock.craftscore:CraftsCore:3.7.52-SNAPSHOT'
 
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
@@ -47,5 +47,5 @@ dependencies {
     implementation 'org.apache.maven.resolver:maven-resolver-supplier:2.0.0-alpha-8'
 }
 
-sourceCompatibility = JavaVersion.VERSION_18
-targetCompatibility = JavaVersion.VERSION_18
+sourceCompatibility = JavaVersion.VERSION_17
+targetCompatibility = JavaVersion.VERSION_17
