@@ -572,6 +572,21 @@ public class CraftsNet {
         }
 
         /**
+         * Specifies the activation type for the logger.
+         *
+         * @param type The activation type for the logger.
+         * @return The Builder instance.
+         * @since 3.0.5
+         */
+        public Builder withLogger(ActivateType type) {
+            if (type.equals(ActivateType.DISABLED))
+                this.logger = this.logger instanceof EmptyLogger ? this.logger : new EmptyLogger(this.logger);
+            else if (this.logger instanceof EmptyLogger logger)
+                this.logger = logger.previous();
+            return this;
+        }
+
+        /**
          * Specifies whether debug mode should be enabled.
          *
          * @param enabled true if debug mode should be enabled, false otherwise.

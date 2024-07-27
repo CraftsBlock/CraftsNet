@@ -52,7 +52,7 @@ public class LoggerImpl implements Logger {
      */
     @Override
     public void info(@Nullable String text) {
-        log("\u001b[34;1mINFO\u001b[0m ", text);
+        log(LogLevel.INFO, text);
     }
 
     /**
@@ -62,7 +62,7 @@ public class LoggerImpl implements Logger {
      */
     @Override
     public void warning(@Nullable String text) {
-        log("\u001b[33mWARN\u001b[0m ", text);
+        log(LogLevel.WARNING, text);
     }
 
     /**
@@ -72,7 +72,7 @@ public class LoggerImpl implements Logger {
      */
     @Override
     public void error(@Nullable String text) {
-        log("\u001b[31;1mERROR\u001b[0m", text);
+        log(LogLevel.ERROR, text);
     }
 
     /**
@@ -86,7 +86,7 @@ public class LoggerImpl implements Logger {
         PrintWriter pw = new PrintWriter(sw);
         throwable.printStackTrace(pw);
         for (String line : sw.toString().split("\n"))
-            error(line);
+            log(LogLevel.EXCEPTION, line);
     }
 
     /**
@@ -97,7 +97,7 @@ public class LoggerImpl implements Logger {
      */
     @Override
     public void error(@NotNull Throwable throwable, @Nullable String comment) {
-        error(comment);
+        log(LogLevel.EXCEPTION, comment);
         error(throwable);
     }
 
@@ -109,7 +109,7 @@ public class LoggerImpl implements Logger {
     @Override
     public void debug(@Nullable String text) {
         if (debug)
-            log("\u001b[38;5;147mDEBUG\u001b[0m", text);
+            log(LogLevel.DEBUG, text);
     }
 
     /**
@@ -126,13 +126,13 @@ public class LoggerImpl implements Logger {
     /**
      * Helper method to format and print the log message to the console.
      *
-     * @param prefix The log level prefix (e.g., INFO, WARN, ERROR, DEBUG).
-     * @param text   The log message to be printed.
+     * @param level The log level (e.g., INFO, WARN, ERROR, DEBUG).
+     * @param text  The log message to be printed.
      */
-    private synchronized void log(@NotNull String prefix, @Nullable String text) {
+    private synchronized void log(@NotNull LogLevel level, @Nullable String text) {
         System.out.println(
                 "\u001b[38;5;228m" + OffsetDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "\u001b[0m " +
-                        prefix + " \u001b[38;5;219m|\u001b[0m " +
+                        level.getPrefix() + "\u001b[38;5;219m|\u001b[0m " +
                         "\u001b[36m" + (name != null ? name : Thread.currentThread().getName()) + "\u001b[0m" +
                         "\u001b[38;5;252m: " + text + "\u001b[0m"
         );
