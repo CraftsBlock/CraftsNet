@@ -270,36 +270,35 @@ public class Frame implements RequireAble {
         byte[] frame = new byte[10];
         if (stream.read(frame, 0, 2) < 0) throw new IOException("EOF: Failed to read the header of the frame!");
 
-        byte payloadLength = (byte) (frame[1] & 0x7F);
-        if (payloadLength >= 126 && stream.read(frame, 2, payloadLength == 126 ? 2 : 8) < 0)
+        byte rawPayloadLength = (byte) (frame[1] & 0x7F);
+        if (rawPayloadLength >= 126 && stream.read(frame, 2, rawPayloadLength == 126 ? 2 : 8) < 0)
             throw new IOException("EOF: Failed to read the payload length of the frame!");
 
-        long payloadLengthValue = getPayloadLengthValue(frame, payloadLength);
+        long payloadLength = getPayloadLengthValue(frame, rawPayloadLength);
 
         byte[] masks = new byte[4];
         if (stream.read(masks) < 0)
             throw new IOException("EOF: Failed to read the masks of the frame!");
 
-        ByteArrayOutputStream payloadBuilder = new ByteArrayOutputStream();
-
         long bytesRead = 0;
-        long bytesToRead = payloadLengthValue;
+        long bytesToRead = payloadLength;
 
         byte[] chunk = new byte[4096];
         int chunkSize;
 
-        while (bytesToRead > 0 && (chunkSize = stream.read(chunk, 0, (int) Math.min(chunk.length, bytesToRead))) >= 0) {
-            for (int i = 0; i < chunkSize; i++)
-                chunk[i] ^= masks[(int) ((bytesRead + i) % 4)];
-            payloadBuilder.write(chunk, 0, chunkSize);
+        try (ByteArrayOutputStream payloadBuilder = new ByteArrayOutputStream()) {
+            while (bytesToRead > 0 && (chunkSize = stream.read(chunk, 0, (int) Math.min(chunk.length, bytesToRead))) >= 0) {
+                for (int i = 0; i < chunkSize; i++)
+                    chunk[i] ^= masks[(int) ((bytesRead + i) % 4)];
+                payloadBuilder.write(chunk, 0, chunkSize);
 
-            bytesRead += chunkSize;
-            bytesToRead -= chunkSize;
+                bytesRead += chunkSize;
+                bytesToRead -= chunkSize;
+            }
+
+            Arrays.fill(chunk, (byte) 0);
+            return new Frame(frame, payloadBuilder.toByteArray());
         }
-
-        Arrays.fill(chunk, (byte) 0);
-
-        return new Frame(frame, payloadBuilder.toByteArray());
     }
 
     /**
