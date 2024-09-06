@@ -457,14 +457,16 @@ public class RouteRegistry {
         return getRoutes().entrySet().parallelStream()
                 .map(Map.Entry::getValue)
                 .flatMap(Collection::parallelStream)
+                .filter(entry -> entry.validator().matcher(formatUrl(request.getUrl())).matches())
                 .filter(entry -> {
                     if (requirements.containsKey(WebServer.class))
-                        for (Requirement requirement : requirements.get(WebServer.class))
-                            if (!requirement.applies(request, entry)) {
+                        for (Requirement requirement : requirements.get(WebServer.class)) {
+                            boolean applies = requirement.applies(request, entry);
+                            if (!applies) {
                                 return false;
                             }
-
-                    return entry.validator().matcher(formatUrl(request.getUrl())).matches();
+                        }
+                    return true;
                 })
                 .collect(Collectors.toList());
     }
@@ -490,6 +492,7 @@ public class RouteRegistry {
         return getSockets().entrySet().parallelStream()
                 .map(Map.Entry::getValue)
                 .flatMap(Collection::parallelStream)
+                .filter(entry -> entry.validator().matcher(formatUrl(client.getPath())).matches())
                 .filter(entry -> {
                     if (requirements.containsKey(WebSocketServer.class))
                         for (Requirement requirement : requirements.get(WebSocketServer.class))
@@ -498,8 +501,7 @@ public class RouteRegistry {
                                 if (!((Boolean) method.invoke(requirement, client, entry))) return false;
                             } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
                             }
-
-                    return entry.validator().matcher(formatUrl(client.getPath())).matches();
+                    return true;
                 })
                 .collect(Collectors.toList());
     }
