@@ -37,7 +37,6 @@ public class RunNode extends ASTNode {
             targets.add(parser.consume(CNetTokenType.IDENTIFIER, CNetTokenType.POINTER).value());
         }
         while (parser.canConsume(CNetTokenType.SEPARATION));
-        parser.consume(CNetTokenType.SEMICOLON);
     }
 
     /**

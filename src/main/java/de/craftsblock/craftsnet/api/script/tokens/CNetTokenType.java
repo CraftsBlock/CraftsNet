@@ -27,7 +27,7 @@ public enum CNetTokenType {
     VARIABLE("var", "var", VariableNode.class),
     DEFINITION("def", "=", null),
     POINTER("pointer", "\\$[a-zA-Z0-9_.]+", null),
-    IDENTIFIER("identifier", "[a-zA-Z0-9_$.]+", null),
+    IDENTIFIER("identifier", "[a-zA-Z0-9_$./]+", null),
     SEPARATION("sep", ",", null),
     SEMICOLON("semicolon", ";", null),
     EOF(null, null, null);

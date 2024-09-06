@@ -113,6 +113,8 @@ public class CNetParser {
                 consume(type);
                 ASTNode node = type.createNode();
                 node.parse(this);
+                consume(CNetTokenType.SEMICOLON);
+
                 nodes.add(node);
                 continue parser;
             }

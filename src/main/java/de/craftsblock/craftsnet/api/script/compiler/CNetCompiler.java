@@ -1,10 +1,10 @@
 package de.craftsblock.craftsnet.api.script.compiler;
 
+import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftsnet.api.http.Exchange;
 import de.craftsblock.craftsnet.api.script.ast.ASTNode;
 import de.craftsblock.craftsnet.api.script.tokens.CNetToken;
 import de.craftsblock.craftsnet.api.script.tokens.CNetTokenType;
-import de.craftsblock.craftsnet.utils.Utils;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -102,7 +102,11 @@ public class CNetCompiler {
             CNetParser parser = new CNetParser(tokens);
             List<ASTNode> nodes = parser.parse();
 
-            if (!interpreter.interpret(nodes, exchange)) break;
+            try {
+                if (!interpreter.interpret(nodes, exchange)) break;
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
         }
         interpreter.reset();
     }

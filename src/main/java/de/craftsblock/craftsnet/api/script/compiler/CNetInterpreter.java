@@ -20,7 +20,7 @@ public class CNetInterpreter {
     /**
      * The current version of the CNetInterpreter.
      */
-    public static final String VERSION = "1";
+    public static final String VERSION = "2";
 
     private final ConcurrentHashMap<Class<? extends ASTNode>, Object> storage = new ConcurrentHashMap<>();
 
@@ -36,8 +36,10 @@ public class CNetInterpreter {
      *
      * @param nodes    the list of AST nodes to interpret
      * @param exchange the exchange context in which to interpret the nodes
+     * @return {@code true} if the after this interpretation the compiler should continue, {@code false} otherwise
+     * @throws Exception if there was an exception while interpreting the list of nodes.
      */
-    public boolean interpret(List<ASTNode> nodes, Exchange exchange) {
+    public boolean interpret(List<ASTNode> nodes, Exchange exchange) throws Exception {
         for (ASTNode node : nodes)
             if (!node.interpret(this, exchange))
                 return false;

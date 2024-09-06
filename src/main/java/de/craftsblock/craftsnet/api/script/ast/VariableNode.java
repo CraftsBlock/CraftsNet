@@ -31,7 +31,6 @@ public class VariableNode extends ASTNode {
         name = parser.consume(CNetTokenType.POINTER).value().substring(1);
         parser.consume(CNetTokenType.DEFINITION);
         value = parser.consume(CNetTokenType.IDENTIFIER, CNetTokenType.POINTER).value();
-        parser.consume(CNetTokenType.SEMICOLON);
     }
 
     /**

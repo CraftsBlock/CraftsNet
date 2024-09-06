@@ -26,7 +26,6 @@ public class PackageNode extends ASTNode {
     @Override
     public void parse(CNetParser parser) {
         target = parser.consume(CNetTokenType.IDENTIFIER, CNetTokenType.POINTER).value();
-        parser.consume(CNetTokenType.SEMICOLON);
     }
 
     /**
