@@ -1,7 +1,10 @@
 package de.craftsblock.craftsnet.api.http;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
+import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.http.cookies.Cookie;
 import de.craftsblock.craftsnet.logging.Logger;
@@ -71,6 +74,20 @@ public class Response implements AutoCloseable {
     public void print(Object object) throws IOException {
         if (!bodySend && !hasHeader("Content-Type")) setContentType("application/json");
         println(object.toString());
+    }
+
+
+    /**
+     * Sends the string representation of the provided json object as the response body while
+     * setting the pretty printing flag.
+     *
+     * @param json The json object to be sent as the response body.
+     * @throws IOException if an I/O error occurs.
+     */
+    public void print(Json json, boolean pretty) throws IOException {
+        GsonBuilder gson = new GsonBuilder();
+        if (pretty) gson.setPrettyPrinting();
+        println(gson.create().toJson(json.getObject()));
     }
 
     /**
