@@ -175,7 +175,9 @@ public class WebHandler implements HttpHandler {
                     continue;
 
                 // Call the method of the route handler
+                method.setAccessible(true);
                 method.invoke(handler, passingArgs);
+                method.setAccessible(false);
             }
 
             // Update the current process priority
