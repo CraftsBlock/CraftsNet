@@ -54,7 +54,7 @@ public class TransformerPerformer {
      * @param validator  The pattern used for validation.
      * @param argsOffset The offset for arguments.
      */
-    public TransformerPerformer(@NotNull CraftsNet craftsNet, @NotNull Pattern validator, int argsOffset) {
+    public TransformerPerformer(@NotNull CraftsNet craftsNet, @Nullable Pattern validator, int argsOffset) {
         this(craftsNet, validator, argsOffset, null);
     }
 
@@ -66,11 +66,17 @@ public class TransformerPerformer {
      * @param argsOffset The offset for arguments.
      * @param callback   The callback responsible for handling transformer exception.
      */
-    public TransformerPerformer(@NotNull CraftsNet craftsNet, @NotNull Pattern validator, int argsOffset, @Nullable TransformerErrorCallback callback) {
-        this.groupNames.addAll(getGroupNames(validator.pattern()));
+    public TransformerPerformer(@NotNull CraftsNet craftsNet, @Nullable Pattern validator, int argsOffset, @Nullable TransformerErrorCallback callback) {
+        setValidator(validator);
         this.argsOffset = argsOffset;
         this.callback = callback;
         this.logger = craftsNet.logger();
+    }
+
+    public void setValidator(@Nullable Pattern validator) {
+        if (validator == null) return;
+        this.groupNames.clear();
+        this.groupNames.addAll(getGroupNames(validator.pattern()));
     }
 
     /**

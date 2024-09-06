@@ -3,6 +3,7 @@ package de.craftsblock.craftsnet.api.websocket;
 import com.sun.net.httpserver.Headers;
 import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftscore.json.Json;
+import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
@@ -14,12 +15,12 @@ import de.craftsblock.craftsnet.api.utils.SessionStorage;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
 import de.craftsblock.craftsnet.events.sockets.*;
 import de.craftsblock.craftsnet.logging.Logger;
-import de.craftsblock.craftsnet.utils.Utils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.DatagramPacket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
@@ -49,10 +50,24 @@ import java.util.regex.Pattern;
  */
 public class WebSocketClient implements Runnable, RequireAble {
 
+    private static final String WEBSOCKET_HANDSHAKE_MAGIC_TEXT = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    private static final MessageDigest handshakeDigest;
+
+    static {
+        try {
+            // Set the digest algorithm for building the handshakes
+            handshakeDigest = MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private final WebSocketServer server;
     private final Socket socket;
     private final SessionStorage storage;
     private final List<WebSocketExtension> extensions;
+    private final ConcurrentHashMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappedMappings = new ConcurrentHashMap<>();
+    private final TransformerPerformer transformerPerformer;
 
     private SocketExchange exchange;
     private Headers headers;
@@ -94,6 +109,12 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.fragmentSize = -1;
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
+
+        // Create a transformer performer which handles all transformers
+        this.transformerPerformer = new TransformerPerformer(this.craftsNet, null, 2, e -> {
+            sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).asString());
+            disconnect();
+        });
     }
 
     /**
@@ -185,14 +206,10 @@ public class WebSocketClient implements Runnable, RequireAble {
             // If the event is not cancelled, process incoming messages from the client
             logger.info(ip + " connected to " + path);
 
-            // Create a transformer performer which handles all transformers
-            TransformerPerformer transformerPerformer = new TransformerPerformer(this.craftsNet, validator, 2, e -> {
-                sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).asString());
-                disconnect();
-            });
+            // Change the validator of the transformer performer
+            this.transformerPerformer.setValidator(validator);
 
             // Prepare mappings
-            ConcurrentHashMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappedMappings = new ConcurrentHashMap<>();
             for (RouteRegistry.EndpointMapping mapping : mappings)
                 mappedMappings.computeIfAbsent(mapping.priority(), m -> new ArrayList<>()).add(mapping);
 
@@ -221,7 +238,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 }
 
                 if (frame.getOpcode().equals(Opcode.TEXT) && !Utils.isEncodingValid(frame.getData(), StandardCharsets.UTF_8)) {
-                    closeInternally(ClosureCode.UNSUPPORTED, "Send negativ byte values while the control byte is set to utf8!", true);
+                    closeInternally(ClosureCode.UNSUPPORTED, "Send byte values are not utf8 valid!", true);
                     break;
                 }
 
@@ -260,16 +277,19 @@ public class WebSocketClient implements Runnable, RequireAble {
                         if (passingArgs == null)
                             continue;
 
-                        // Check if the second parameter is a string and converts the message data if so
-                        if (method.getParameterCount() >= 2 && method.getParameterTypes()[1].equals(String.class))
-                            passingArgs[1] = new String(data, StandardCharsets.UTF_8);
-
-                        // Check if the second parameter is a frame and overrides the passing args accordingly
-                        if (method.getParameterCount() >= 2 && method.getParameterTypes()[1].equals(Frame.class))
-                            passingArgs[1] = frame.clone();
+                        // Only check the parameter types if there are two parameters
+                        if (method.getParameterCount() >= 2)
+                            if (method.getParameterTypes()[1].equals(String.class))
+                                // Change the message to a string
+                                passingArgs[1] = new String(data, StandardCharsets.UTF_8);
+                            else if (method.getParameterTypes()[1].equals(Frame.class))
+                                // Change the message to a frame
+                                passingArgs[1] = frame.clone();
 
                         // Invoke the handler method
+                        method.setAccessible(true);
                         method.invoke(handler, passingArgs);
+                        method.setAccessible(false);
                     }
                 }
             }
@@ -350,10 +370,8 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     private void sendHandshake() {
         try {
-            String concatenated = getHeader("Sec-WebSocket-Key") + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-
-            MessageDigest digest = MessageDigest.getInstance("SHA-1");
-            byte[] hash = digest.digest(concatenated.getBytes(StandardCharsets.UTF_8));
+            String concatenated = getHeader("Sec-WebSocket-Key") + WEBSOCKET_HANDSHAKE_MAGIC_TEXT;
+            byte[] hash = handshakeDigest.digest(concatenated.getBytes(StandardCharsets.UTF_8));
 
             String extensions = String.join(",", this.extensions.parallelStream().map(WebSocketExtension::getProtocolName).toList());
             String response = "HTTP/1.1 101 Switching Protocols\r\n"
@@ -363,7 +381,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                     + (!extensions.isEmpty() ? "Sec-websocket-extensions: " + extensions + "\r\n" : "")
                     + "\r\n";
             writer.write(response.getBytes(StandardCharsets.UTF_8));
-        } catch (NoSuchAlgorithmException | IOException e) {
+        } catch (IOException e) {
             logger.error(e);
         }
     }
@@ -776,6 +794,8 @@ public class WebSocketClient implements Runnable, RequireAble {
 
                 headers = null;
                 mappings = null;
+                mappedMappings.clear();
+                transformerPerformer.clearCache();
                 storage.clear();
                 extensions.clear();
                 server.remove(this);
