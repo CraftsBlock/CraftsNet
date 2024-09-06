@@ -88,6 +88,10 @@ public class TransformerPerformer {
      * @throws InvocationTargetException if the underlying method throws an exception.
      */
     public Object[] perform(Handler handler, Method method, Object[] args) throws Exception {
+        // Return when no transformer is applied
+        if (!hasTransformers(handler) && !hasTransformers(method))
+            return args;
+
         // Copy args into a new array
         Object[] copiedArgs = new Object[args.length];
         System.arraycopy(args, 0, copiedArgs, 0, args.length);
@@ -114,7 +118,6 @@ public class TransformerPerformer {
                 if (!type.isAssignableFrom(value.getClass())) {
                     String name = type.getSimpleName();
 
-
                     // Gets and checks if a method for an alternative transformation is present.
                     // This allows for example the use of both Integer and int
                     Method converter = Utils.getMethod(value.getClass(), name + "Value");
@@ -129,24 +132,43 @@ public class TransformerPerformer {
     }
 
     /**
+     * Checks whether transformers are present in a method or class.
+     *
+     * @param obj The method or the handler which contains the information about the transformers.
+     * @return {@code true} if there are transformers present, {@code false} otherwise
+     */
+    public boolean hasTransformers(Object obj) {
+        return (obj instanceof Method method ? method : obj.getClass()).getAnnotation(TransformerCollection.class) != null ||
+                (obj instanceof Method method ? method : obj.getClass()).getAnnotation(Transformer.class) != null;
+    }
+
+    /**
      * Applies the transformation process to the obj.
      *
      * @param args The args which should be transformed.
      * @param obj  The method or the handler which contains the information about the transformers.
+     * @return {@code true} if a transformer was applied, {@code false} otherwise.
      * @throws NoSuchMethodException  if the transformer method could not be found.
      * @throws InstantiationException if no new instance of the Transformable can be created.
      * @throws IllegalAccessException if access to the constructor of Transformable or
      *                                access to the method Transformable.transform(String) is restricted.
      */
     @Experimental
-    private void applyTransformers(Object[] args, Object obj) throws NoSuchMethodException, InstantiationException, IllegalAccessException {
-        Transformer standaloneTransformer = (obj instanceof Method method ? method : obj.getClass()).getAnnotation(Transformer.class);
+    private boolean applyTransformers(Object[] args, Object obj) throws NoSuchMethodException, InstantiationException, IllegalAccessException {
         TransformerCollection transformers = (obj instanceof Method method ? method : obj.getClass()).getAnnotation(TransformerCollection.class);
-        if (transformers != null)
+        if (transformers != null) {
             for (Transformer transformer : transformers.value())
                 transform(groupNames, args, transformer);
-        else if (standaloneTransformer != null)
+            return true;
+        }
+
+        Transformer standaloneTransformer = (obj instanceof Method method ? method : obj.getClass()).getAnnotation(Transformer.class);
+        if (standaloneTransformer != null) {
             transform(groupNames, args, standaloneTransformer);
+            return true;
+        }
+
+        return false;
     }
 
     /**
