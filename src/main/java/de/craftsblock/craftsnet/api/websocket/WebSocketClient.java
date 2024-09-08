@@ -85,6 +85,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private boolean active = false;
     private boolean connected = false;
 
+    private boolean shouldMaskOutgoing = false;
     private boolean shouldFragment;
     private int fragmentSize;
 
@@ -238,7 +239,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 }
 
                 if (frame.getOpcode().equals(Opcode.TEXT) && !Utils.isEncodingValid(frame.getData(), StandardCharsets.UTF_8)) {
-                    closeInternally(ClosureCode.UNSUPPORTED, "Send byte values are not utf8 valid!", true);
+                    closeInternally(ClosureCode.UNSUPPORTED_PAYLOAD, "Send byte values are not utf8 valid!", true);
                     break;
                 }
 
@@ -401,6 +402,12 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         while (isConnected() && frame.get() == null || !frame.get().isFinalFrame()) {
             Frame read = Frame.read(inputStream);
+
+            if (read.getOpcode().isUnknown()) {
+                closeInternally(ClosureCode.PROTOCOL_ERROR, "Unknown opcode!", true);
+                throw new IOException("Unknown opcode received!");
+            }
+
             if (frame.get() == null) {
                 frame.set(read);
                 if (read.isFinalFrame()) break;
@@ -409,6 +416,9 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             frame.get().appendFrame(read);
         }
+
+        // Return, when the frame is null
+        if (frame.get() == null) return null;
 
         Frame read = frame.get();
         for (WebSocketExtension extension : this.extensions)
@@ -470,6 +480,20 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     public SessionStorage getStorage() {
         return storage;
+    }
+
+    /**
+     * @return
+     */
+    public boolean shouldMaskOutgoing() {
+        return shouldMaskOutgoing;
+    }
+
+    /**
+     *
+     */
+    public void setMaskingOutgoing(boolean shouldMaskOutgoing) {
+        this.shouldMaskOutgoing = shouldMaskOutgoing;
     }
 
     /**
@@ -695,7 +719,8 @@ public class WebSocketClient implements Runnable, RequireAble {
                     return;
             }
 
-            Frame frame = new Frame(true, false, false, false, event.getOpcode(), event.getData());
+            Frame frame = new Frame(true, false, false, false, false, event.getOpcode(), event.getData());
+            frame.setMasked(this.shouldMaskOutgoing);
 
             if (shouldFragment())
                 for (Frame send : frame.fragmentFrame(getFragmentSize())) {

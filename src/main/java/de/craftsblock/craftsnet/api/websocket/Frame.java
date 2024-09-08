@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -46,6 +48,7 @@ public class Frame implements RequireAble {
     private final boolean rsv1;
     private final boolean rsv2;
     private final boolean rsv3;
+    private boolean masked;
 
     /**
      * Constructs a new {@code Frame} with the specified parameters. This constructor initializes the frame
@@ -58,11 +61,12 @@ public class Frame implements RequireAble {
      * @param opcode the opcode of the frame, indicating the type of frame.
      * @param data   the payload data of the frame. This array should not be null and contains the actual message data.
      */
-    public Frame(boolean fin, boolean rsv1, boolean rsv2, boolean rsv3, @NotNull Opcode opcode, byte @NotNull [] data) {
+    public Frame(boolean fin, boolean rsv1, boolean rsv2, boolean rsv3, boolean masked, @NotNull Opcode opcode, byte @NotNull [] data) {
         this.fin = fin;
         this.rsv1 = rsv1;
         this.rsv2 = rsv2;
         this.rsv3 = rsv3;
+        this.masked = masked;
         this.opcode = opcode;
         this.data = data;
     }
@@ -83,6 +87,7 @@ public class Frame implements RequireAble {
         rsv1 = (frame[0] & 0x40) != 0;
         rsv2 = (frame[0] & 0x20) != 0;
         rsv3 = (frame[0] & 0x10) != 0;
+        masked = (frame[1] & 0x80) != 0;
 
         this.opcode = Opcode.fromByte((byte) (frame[0] & 0x0F));
         this.data = data;
@@ -122,6 +127,24 @@ public class Frame implements RequireAble {
      */
     public boolean isRsv3() {
         return rsv3;
+    }
+
+    /**
+     * Returns if the frame was masked (when received), or schuld be masked (when send)!
+     *
+     * @return {@code true} if the frame was masked, {@code false} otherwise.
+     */
+    public boolean isMasked() {
+        return masked;
+    }
+
+    /**
+     * Sets whether the frame should be masked when sent to the client.
+     *
+     * @param masked Set to {@code true} if masking should be enabled, otherwise to {@code false}
+     */
+    public void setMasked(boolean masked) {
+        this.masked = masked;
     }
 
     /**
@@ -213,7 +236,7 @@ public class Frame implements RequireAble {
             int end = Math.min(length, start + fragmentLength);
             byte[] chunk = new byte[end - start];
             System.arraycopy(data, start, chunk, 0, end - start);
-            result.add(new Frame(false, rsv1, rsv2, rsv3, Opcode.CONTINUATION, chunk));
+            result.add(new Frame(false, rsv1, rsv2, rsv3, masked, Opcode.CONTINUATION, chunk));
         }
 
         if (!result.isEmpty()) {
@@ -241,17 +264,36 @@ public class Frame implements RequireAble {
 
         byte @NotNull [] data = getData();
         int length = data.length;
+
+        byte maskBit = (byte) (isMasked() ? 0x80 : 0x00);
         if (length <= 125)
-            stream.write((byte) length);
+            stream.write((byte) (maskBit | length));
         else if (length <= 65535) {
-            stream.write((byte) 126);
+            stream.write((byte) (maskBit | 126));
             stream.write((byte) (length >> 8));
             stream.write((byte) length);
         } else {
-            stream.write((byte) 127);
+            stream.write((byte) (maskBit | 127));
             for (int j = 7; j >= 0; j--)
                 stream.write((byte) (length >> (8 * j)));
         }
+
+
+        if (isMasked())
+            try {
+                byte[] mask = new byte[4];
+                SecureRandom.getInstanceStrong().nextBytes(mask);
+
+                // Mask the data
+                byte[] masked = new byte[data.length];
+                for (int i = 0; i < data.length; i++)
+                    masked[i] = (byte) (data[i] ^ mask[i % 4]);
+
+                stream.write(masked);
+                return;
+            } catch (NoSuchAlgorithmException e) {
+                throw new RuntimeException(e);
+            }
 
         stream.write(data);
     }
@@ -276,28 +318,34 @@ public class Frame implements RequireAble {
 
         long payloadLength = getPayloadLengthValue(frame, rawPayloadLength);
 
+        boolean masked = (frame[1] & 0x80) != 0;
         byte[] masks = new byte[4];
-        if (stream.read(masks) < 0)
+        if (masked && stream.read(masks) < 0)
             throw new IOException("EOF: Failed to read the masks of the frame!");
 
         long bytesRead = 0;
-        long bytesToRead = payloadLength;
-
         byte[] chunk = new byte[4096];
-        int chunkSize;
 
         try (ByteArrayOutputStream payloadBuilder = new ByteArrayOutputStream()) {
-            while (bytesToRead > 0 && (chunkSize = stream.read(chunk, 0, (int) Math.min(chunk.length, bytesToRead))) >= 0) {
-                for (int i = 0; i < chunkSize; i++)
-                    chunk[i] ^= masks[(int) ((bytesRead + i) % 4)];
-                payloadBuilder.write(chunk, 0, chunkSize);
+            while (bytesRead < payloadLength) {
+                int toRead = (int) Math.min(chunk.length, payloadLength - bytesRead);
+                int chunkSize = stream.read(chunk, 0, toRead);
 
+                if (chunkSize < 0)
+                    throw new IOException("EOF: Failed to read the payload of the frame!");
+
+                // Unmask the data if it was masked
+                if (masked)
+                    for (int i = 0; i < chunkSize; i++)
+                        chunk[i] ^= masks[(int) ((bytesRead + i) % 4)];
+
+                payloadBuilder.write(chunk, 0, chunkSize);
                 bytesRead += chunkSize;
-                bytesToRead -= chunkSize;
             }
 
-            Arrays.fill(chunk, (byte) 0);
             return new Frame(frame, payloadBuilder.toByteArray());
+        } finally {
+            Arrays.fill(chunk, (byte) 0);
         }
     }
 
@@ -334,7 +382,7 @@ public class Frame implements RequireAble {
      */
     @Override
     protected Object clone() {
-        return new Frame(fin, rsv1, rsv2, rsv3, opcode, data.clone());
+        return new Frame(fin, rsv1, rsv2, rsv3, masked, opcode, data.clone());
     }
 
 }

@@ -55,7 +55,7 @@ public class PerMessageDeflateExtension extends WebSocketExtension {
         Frame result = new Frame(
                 frame.isFinalFrame(),
                 !frame.getOpcode().equals(Opcode.CONTINUATION),
-                frame.isRsv2(), frame.isRsv3(), frame.getOpcode(), new byte[0]
+                frame.isRsv2(), frame.isRsv3(), frame.isMasked(), frame.getOpcode(), new byte[0]
         );
 
         Deflater deflater = new Deflater(deflateLevel, true);
@@ -99,7 +99,7 @@ public class PerMessageDeflateExtension extends WebSocketExtension {
         if (frame.getOpcode().isControlCode() || !frame.isRsv1())
             return frame;
 
-        Frame result = new Frame(frame.isFinalFrame(), false, frame.isRsv2(), frame.isRsv3(), frame.getOpcode(), new byte[0]);
+        Frame result = new Frame(frame.isFinalFrame(), false, frame.isRsv2(), frame.isRsv3(), frame.isMasked(), frame.getOpcode(), new byte[0]);
         Inflater inflater = new Inflater(true);
         inflater.setInput(frame.getData());
 

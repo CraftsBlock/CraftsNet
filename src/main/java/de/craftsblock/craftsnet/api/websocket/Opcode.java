@@ -41,7 +41,9 @@ public enum Opcode {
     /**
      * Indicates a Close frame.
      */
-    CLOSE(0x08);
+    CLOSE(0x08),
+
+    UNKNOWN(null);
 
     private static final List<Opcode> DATA_CODES = List.of(TEXT, BINARY, CONTINUATION);
     private static final List<Opcode> CONTROL_CODES = List.of(CLOSE, PING, PONG);
@@ -53,7 +55,7 @@ public enum Opcode {
      *
      * @param intValue The int value representing the opcode.
      */
-    Opcode(int intValue) {
+    Opcode(Integer intValue) {
         this.intValue = intValue;
     }
 
@@ -94,6 +96,15 @@ public enum Opcode {
     }
 
     /**
+     * Checks if the opcode is not a valid opcode as defined in <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-5.2">RFC 6455</a>
+     *
+     * @return {@code true} if the opcode is defined, {@code false} otherwise
+     */
+    public boolean isUnknown() {
+        return this.equals(UNKNOWN);
+    }
+
+    /**
      * Retrieves the opcode corresponding to the given integer value.
      *
      * @param controlByte The integer value of the opcode.
@@ -101,9 +112,10 @@ public enum Opcode {
      */
     public static Opcode fromInt(int controlByte) {
         for (Opcode b : Opcode.values())
-            if ((b.byteValue() & 0x0F) == (controlByte & 0x0F))
+            if (b.equals(UNKNOWN)) continue;
+            else if ((b.byteValue() & 0x0F) == (controlByte & 0x0F))
                 return b;
-        return null;
+        return UNKNOWN;
     }
 
     /**
