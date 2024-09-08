@@ -60,13 +60,23 @@ public class Cookie {
      * @return The current Cookie object, for method chaining
      */
     public Cookie setFlag(@NotNull String flag, @Nullable String arg) {
-        if (flag.equalsIgnoreCase("path")) this.setPath(arg);
-        if (flag.equalsIgnoreCase("domain")) this.setDomain(arg);
-        if (flag.equalsIgnoreCase("expires")) this.setExpiresAt(arg);
-        if (flag.equalsIgnoreCase("max-age") && arg != null) this.setMaxAge(Long.parseLong(arg));
-        if (flag.equalsIgnoreCase("samesite")) this.setSameSite(arg);
-        if (flag.equalsIgnoreCase("secure")) this.setSecure(true);
-        if (flag.equalsIgnoreCase("httponly")) this.setHttpOnly(true);
+        switch (flag.toLowerCase()) {
+            case "path" -> this.setPath(arg);
+            case "domain" -> this.setDomain(arg);
+            case "expires" -> this.setExpiresAt(arg);
+            case "max-age", "maxage" -> {
+                if (arg != null) this.setMaxAge(Long.parseLong(arg));
+            }
+            case "samesite" -> this.setSameSite(arg);
+            case "secure" -> {
+                if (arg != null) this.setSecure(Boolean.parseBoolean(arg));
+                else this.setSecure(true);
+            }
+            case "httponly" -> {
+                if (arg != null) this.setHttpOnly(Boolean.parseBoolean(arg));
+                else this.setHttpOnly(true);
+            }
+        }
 
         return this;
     }
