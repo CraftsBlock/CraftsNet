@@ -214,8 +214,13 @@ public class WebSocketClient implements Runnable, RequireAble {
             for (RouteRegistry.EndpointMapping mapping : mappings)
                 mappedMappings.computeIfAbsent(mapping.priority(), m -> new ArrayList<>()).add(mapping);
 
-            Frame frame;
-            while (!Thread.currentThread().isInterrupted() && isConnected() && (frame = readMessage()) != null) {
+            while (!Thread.currentThread().isInterrupted() && isConnected()) {
+                Frame frame = readMessage();
+                if (frame == null || frame.getOpcode().isUnknown()) {
+                    logger.warning("Received invalid websocket packet!");
+                    return;
+                }
+
                 if (!this.connected || !this.socket.isConnected()) break;
                 // Process incoming messages from the client
                 byte[] data = frame.getData();
