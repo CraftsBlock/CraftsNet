@@ -77,17 +77,17 @@ public class WebHandler implements HttpHandler {
                 else domain = headers.getFirst("Host").split(":")[0];
 
                 // Create a Request object to encapsulate the incoming request information.
-                Request request = new Request(this.craftsNet, exchange, headers, url, ip, domain, httpMethod);
+                try (Request request = new Request(this.craftsNet, exchange, headers, url, ip, domain, httpMethod)) {
+                    if (handleRoute(response, request)) return;
+                    if (registry.isShare(url) && registry.canShareAccept(url, httpMethod)) {
+                        handleShare(exchange, response, request);
+                        return;
+                    }
 
-                if (handleRoute(response, request)) return;
-                if (registry.isShare(url) && registry.canShareAccept(url, httpMethod)) {
-                    handleShare(exchange, response, request);
-                    return;
+                    // Return an error as there is no route or share on the path
+                    respondWithError(response, "Path do not match any API endpoint!");
+                    logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[NOT FOUND]");
                 }
-
-                // Return an error as there is no route or share on the path
-                respondWithError(response, "Path do not match any API endpoint!");
-                logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[NOT FOUND]");
             } catch (Throwable t) {
                 if (craftsNet.fileLogger() != null) {
                     long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "http", url);

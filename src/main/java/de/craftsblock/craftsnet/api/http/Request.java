@@ -122,7 +122,6 @@ public class Request implements AutoCloseable, RequireAble {
     public void close() throws Exception {
         if (bodyLocation != null && bodyLocation.exists()) bodyLocation.delete();
         exchange.close();
-        headers.clear();
         Body.cleanUp(this);
         closed = true;
     }
