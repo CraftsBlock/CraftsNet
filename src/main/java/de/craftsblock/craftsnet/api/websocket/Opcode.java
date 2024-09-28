@@ -8,7 +8,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.0.5-SNAPSHOT
  */
 public enum Opcode {
@@ -48,7 +48,7 @@ public enum Opcode {
     private static final List<Opcode> DATA_CODES = List.of(TEXT, BINARY, CONTINUATION);
     private static final List<Opcode> CONTROL_CODES = List.of(CLOSE, PING, PONG);
 
-    private final int intValue;
+    private final Integer intValue;
 
     /**
      * Constructs an Opcode with the specified integer value.
@@ -65,7 +65,7 @@ public enum Opcode {
      * @return The integer value representing the opcode.
      */
     public int intValue() {
-        return intValue;
+        return intValue == null ? -1 : intValue;
     }
 
     /**
@@ -74,7 +74,7 @@ public enum Opcode {
      * @return The byte value representing the opcode.
      */
     public byte byteValue() {
-        return (byte) intValue;
+        return (byte) intValue();
     }
 
     /**

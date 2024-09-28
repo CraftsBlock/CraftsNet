@@ -36,7 +36,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.0.6-SNAPSHOT
  */
 public class Frame implements RequireAble {
@@ -310,23 +310,25 @@ public class Frame implements RequireAble {
      */
     protected static Frame read(InputStream stream) throws IOException {
         byte[] frame = new byte[10];
-        if (stream.read(frame, 0, 2) < 0) throw new IOException("EOF: Failed to read the header of the frame!");
+        ensureRead(stream, frame, 0, 2);
 
         byte rawPayloadLength = (byte) (frame[1] & 0x7F);
-        if (rawPayloadLength >= 126 && stream.read(frame, 2, rawPayloadLength == 126 ? 2 : 8) < 0)
-            throw new IOException("EOF: Failed to read the payload length of the frame!");
+        if (rawPayloadLength >= 126)
+            ensureRead(stream, frame, 2, rawPayloadLength == 126 ? 2 : 8);
 
         long payloadLength = getPayloadLengthValue(frame, rawPayloadLength);
+        if (payloadLength > Integer.MAX_VALUE)
+            throw new IOException("Payload size too large to be processed (" + payloadLength + " > " + Integer.MAX_VALUE + ")");
 
         boolean masked = (frame[1] & 0x80) != 0;
         byte[] masks = new byte[4];
-        if (masked && stream.read(masks) < 0)
-            throw new IOException("EOF: Failed to read the masks of the frame!");
+        if (masked)
+            ensureRead(stream, masks, 0, masks.length);
 
         long bytesRead = 0;
         byte[] chunk = new byte[4096];
 
-        try (ByteArrayOutputStream payloadBuilder = new ByteArrayOutputStream()) {
+        try (ByteArrayOutputStream payloadBuilder = new ByteArrayOutputStream((int) payloadLength)) {
             while (bytesRead < payloadLength) {
                 int toRead = (int) Math.min(chunk.length, payloadLength - bytesRead);
                 int chunkSize = stream.read(chunk, 0, toRead);
@@ -346,6 +348,28 @@ public class Frame implements RequireAble {
             return new Frame(frame, payloadBuilder.toByteArray());
         } finally {
             Arrays.fill(chunk, (byte) 0);
+        }
+    }
+
+    /**
+     * Ensures that the specified number of bytes is read from the given {@link InputStream}.
+     * The method repeatedly reads from the stream until the desired amount of bytes is read,
+     * or throws an {@link IOException} if the end of the stream is reached prematurely.
+     *
+     * @param stream the {@link InputStream} to read from.
+     * @param buffer the byte array where the data will be stored.
+     * @param offset the starting position in the buffer where the data should be written.
+     * @param length the number of bytes to read from the stream.
+     * @throws IOException if the end of the stream is reached before the expected number of bytes is read,
+     *                     or if an I/O error occurs.
+     */
+    private static void ensureRead(InputStream stream, byte[] buffer, int offset, int length) throws IOException {
+        int read = 0;
+        while (read < length) {
+            int result = stream.read(buffer, offset + read, length - read);
+            if (result < 0)
+                throw new IOException("EOF: Failed to read the expected amount of bytes (Expected: " + length + ", Actual: " + read + ")");
+            read += result;
         }
     }
 
