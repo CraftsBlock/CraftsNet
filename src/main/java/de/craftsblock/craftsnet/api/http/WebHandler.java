@@ -62,43 +62,43 @@ public class WebHandler implements HttpHandler {
         String requestMethod = exchange.getRequestMethod();
         HttpMethod httpMethod = HttpMethod.parse(requestMethod);
 
-        try (Response response = new Response(this.craftsNet, exchange)) {
-            String url = exchange.getRequestURI().toString();
-            Headers headers = exchange.getRequestHeaders();
+        String url = exchange.getRequestURI().toString();
+        Headers headers = exchange.getRequestHeaders();
 
-            try {
-                String ip;
-                if (headers.containsKey("Cf-connecting-ip")) ip = headers.getFirst("Cf-connecting-ip");
-                else if (headers.containsKey("X-forwarded-for")) ip = headers.getFirst("X-forwarded-for").split(", ")[0];
-                else ip = exchange.getRemoteAddress().getAddress().getHostAddress();
+        Response response = new Response(this.craftsNet, exchange);
+        try {
+            String ip;
+            if (headers.containsKey("Cf-connecting-ip")) ip = headers.getFirst("Cf-connecting-ip");
+            else if (headers.containsKey("X-forwarded-for")) ip = headers.getFirst("X-forwarded-for").split(", ")[0];
+            else ip = exchange.getRemoteAddress().getAddress().getHostAddress();
 
-                String domain;
-                if (headers.containsKey("X-Forwarded-Host")) domain = headers.getFirst("X-forwarded-Host").split(":")[0];
-                else domain = headers.getFirst("Host").split(":")[0];
+            String domain;
+            if (headers.containsKey("X-Forwarded-Host")) domain = headers.getFirst("X-forwarded-Host").split(":")[0];
+            else domain = headers.getFirst("Host").split(":")[0];
 
-                // Create a Request object to encapsulate the incoming request information.
-                try (Request request = new Request(this.craftsNet, exchange, headers, url, ip, domain, httpMethod)) {
-                    if (handleRoute(response, request)) return;
-                    if (registry.isShare(url) && registry.canShareAccept(url, httpMethod)) {
-                        handleShare(exchange, response, request);
-                        return;
-                    }
-
-                    // Return an error as there is no route or share on the path
-                    respondWithError(response, "Path do not match any API endpoint!");
-                    logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[NOT FOUND]");
+            // Create a Request object to encapsulate the incoming request information.
+            try (Request request = new Request(this.craftsNet, exchange, headers, url, ip, domain, httpMethod)) {
+                if (handleRoute(response, request)) return;
+                if (registry.isShare(url) && registry.canShareAccept(url, httpMethod)) {
+                    handleShare(exchange, response, request);
+                    return;
                 }
-            } catch (Throwable t) {
-                if (craftsNet.fileLogger() != null) {
-                    long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "http", url);
-                    logger.error(t, "Error: " + errorID);
-                    if (!httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN))
-                        response.println(Json.empty()
-                                .set("error.message", "An unexpected exception happened whilst processing your request!")
-                                .set("error.identifier", errorID)
-                                .asString());
-                } else logger.error(t);
+
+                // Return an error as there is no route or share on the path
+                respondWithError(response, "Path do not match any API endpoint!");
+                logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[NOT FOUND]");
             }
+        } catch (Throwable t) {
+            if (craftsNet.fileLogger() != null) {
+                long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "http", url);
+                logger.error(t, "Error: " + errorID);
+                if (!httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN))
+                    response.print(Json.empty()
+                            .set("error.message", "An unexpected exception happened whilst processing your request!")
+                            .set("error.identifier", errorID));
+            } else logger.error(t);
+        } finally {
+            response.close();
         }
     }
 
