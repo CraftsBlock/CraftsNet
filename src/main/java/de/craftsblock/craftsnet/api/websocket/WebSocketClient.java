@@ -15,6 +15,7 @@ import de.craftsblock.craftsnet.api.utils.SessionStorage;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
 import de.craftsblock.craftsnet.events.sockets.*;
 import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.utils.ByteBuffer;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -291,6 +292,9 @@ public class WebSocketClient implements Runnable, RequireAble {
                             else if (method.getParameterTypes()[1].equals(Frame.class))
                                 // Change the message to a frame
                                 passingArgs[1] = frame.clone();
+                            else if (method.getParameterTypes()[1].equals(ByteBuffer.class))
+                                // Change the message to a byte buffer
+                                passingArgs[1] = new ByteBuffer(frame.getData());
 
                         // Invoke the handler method
                         method.setAccessible(true);
@@ -558,6 +562,15 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     public void sendMessage(String data) {
         sendMessage(data.getBytes(StandardCharsets.UTF_8), Opcode.TEXT);
+    }
+
+    /**
+     * Sends a message to the connected WebSocket client.
+     *
+     * @param data The message to be sent, as a byte buffer.
+     */
+    public void sendMessage(ByteBuffer data) {
+        sendMessage(data.getSource(), Opcode.BINARY);
     }
 
     /**
