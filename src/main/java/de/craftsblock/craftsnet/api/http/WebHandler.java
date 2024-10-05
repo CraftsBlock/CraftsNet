@@ -10,7 +10,8 @@ import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.script.compiler.CNetCompiler;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.SessionStorage;
-import de.craftsblock.craftsnet.events.RequestEvent;
+import de.craftsblock.craftsnet.events.requests.PreRequestEvent;
+import de.craftsblock.craftsnet.events.requests.RequestEvent;
 import de.craftsblock.craftsnet.events.shares.ShareFileLoadedEvent;
 import de.craftsblock.craftsnet.events.shares.ShareRequestEvent;
 import de.craftsblock.craftsnet.logging.Logger;
@@ -29,9 +30,9 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.2.1
  * @see WebServer
- * @since CraftsNet-3.0.1
+ * @since 3.0.1-SNAPSHOT
  */
 public class WebHandler implements HttpHandler {
 
@@ -53,34 +54,40 @@ public class WebHandler implements HttpHandler {
     /**
      * Handles incoming HTTP requests and delegates them to the appropriate handlers.
      *
-     * @param exchange The HTTP exchange object representing the incoming request and outgoing response.
+     * @param httpExchange The HTTP exchange object representing the incoming request and outgoing response.
      * @throws IOException If an I/O error occurs during request processing.
      */
     @Override
-    public void handle(HttpExchange exchange) throws IOException {
+    public void handle(HttpExchange httpExchange) throws IOException {
         // Extract relevant information from the incoming request.
-        String requestMethod = exchange.getRequestMethod();
+        String requestMethod = httpExchange.getRequestMethod();
         HttpMethod httpMethod = HttpMethod.parse(requestMethod);
 
-        String url = exchange.getRequestURI().toString();
-        Headers headers = exchange.getRequestHeaders();
+        String url = httpExchange.getRequestURI().toString();
+        Headers headers = httpExchange.getRequestHeaders();
 
-        Response response = new Response(this.craftsNet, exchange);
+        Response response = new Response(this.craftsNet, httpExchange);
         try {
             String ip;
             if (headers.containsKey("Cf-connecting-ip")) ip = headers.getFirst("Cf-connecting-ip");
             else if (headers.containsKey("X-forwarded-for")) ip = headers.getFirst("X-forwarded-for").split(", ")[0];
-            else ip = exchange.getRemoteAddress().getAddress().getHostAddress();
+            else ip = httpExchange.getRemoteAddress().getAddress().getHostAddress();
 
             String domain;
             if (headers.containsKey("X-Forwarded-Host")) domain = headers.getFirst("X-forwarded-Host").split(":")[0];
             else domain = headers.getFirst("Host").split(":")[0];
 
             // Create a Request object to encapsulate the incoming request information.
-            try (Request request = new Request(this.craftsNet, exchange, headers, url, ip, domain, httpMethod)) {
-                if (handleRoute(response, request)) return;
+            try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod)) {
+                Exchange exchange = new Exchange(url, request, response, new SessionStorage());
+
+                PreRequestEvent event = new PreRequestEvent(exchange);
+                craftsNet.listenerRegistry().call(event);
+                if (event.isCancelled()) return;
+
+                if (handleRoute(exchange)) return;
                 if (registry.isShare(url) && registry.canShareAccept(url, httpMethod)) {
-                    handleShare(exchange, response, request);
+                    handleShare(exchange);
                     return;
                 }
 
@@ -105,13 +112,15 @@ public class WebHandler implements HttpHandler {
     /**
      * Handles route-specific requests by delegating to the appropriate route handler.
      *
-     * @param response The Response object for managing the outgoing response.
-     * @param request  The Request object for retrieving important information about the response.
+     * @param exchange The {@link Exchange} representing the request.
      * @throws IOException               If an I/O error occurs during request processing.
      * @throws InvocationTargetException If an error occurs while invoking the route handler.
      * @throws IllegalAccessException    If the route handler cannot be accessed.
      */
-    private boolean handleRoute(Response response, Request request) throws Exception {
+    private boolean handleRoute(Exchange exchange) throws Exception {
+        Request request = exchange.request();
+        Response response = exchange.response();
+
         HttpMethod requestMethod = request.getHttpMethod();
         String url = request.getUrl();
         String ip = request.getIp();
@@ -126,7 +135,7 @@ public class WebHandler implements HttpHandler {
         request.setRoutes(routes);
 
         // Create a RequestEvent and call listeners before invoking the API handler method.
-        RequestEvent event = new RequestEvent(new Exchange(url, request, response, new SessionStorage()), routes);
+        RequestEvent event = new RequestEvent(exchange, routes);
         craftsNet.listenerRegistry().call(event);
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "ABORTED";
@@ -145,7 +154,7 @@ public class WebHandler implements HttpHandler {
         // Prepare the argument array to be passed to the API handler method.
         Object[] args = new Object[matcher.groupCount()];
 
-        args[0] = new Exchange(url, request, response, event.getExchange().storage());
+        args[0] = exchange;
         for (int i = 2; i <= matcher.groupCount(); i++)
             args[i - 1] = matcher.group(i);
 
@@ -185,7 +194,7 @@ public class WebHandler implements HttpHandler {
         }
 
         // Clean up to free up memory
-        if (args.length == 1 && args[0] instanceof Exchange exchange) exchange.storage().clear();
+        if (args.length == 1 && args[0] instanceof Exchange e) e.storage().clear();
         transformerPerformer.clearCache();
 
         return true;
@@ -194,14 +203,15 @@ public class WebHandler implements HttpHandler {
     /**
      * Handles share-specific requests by delegating to the appropriate share handler.
      *
-     * @param exchange The HTTP exchange object representing the incoming request and outgoing response.
-     * @param response The Response object for managing the outgoing response.
-     * @param request  The request object for getting important information about the request.
+     * @param exchange The {@link Exchange} representing the request.
      * @throws IOException               If an I/O error occurs during request processing.
      * @throws InvocationTargetException If an error occurs while invoking the share handler.
      * @throws IllegalAccessException    If the share handler cannot be accessed.
      */
-    private void handleShare(HttpExchange exchange, Response response, Request request) throws InvocationTargetException, IllegalAccessException, IOException {
+    private void handleShare(Exchange exchange) throws InvocationTargetException, IllegalAccessException, IOException {
+        Request request = exchange.request();
+        Response response = exchange.response();
+
         String ip = request.getIp();
         String url = request.getUrl();
         String domain = request.getDomain();
@@ -239,12 +249,12 @@ public class WebHandler implements HttpHandler {
         if (!share.getCanonicalPath().startsWith(folder.getCanonicalPath() + File.separator)) {
             response.setCode(403);
             response.setContentType("text/html; charset=utf-8");
-            response.print(DefaultPages.notallowed(domain, exchange.getLocalAddress().getPort()));
+            response.print(DefaultPages.notallowed(domain, request.unsafe().getLocalAddress().getPort()));
             return;
         } else if (!share.exists()) {
             response.setCode(404);
             response.setContentType("text/html; charset=utf-8");
-            response.print(DefaultPages.notfound(domain, exchange.getLocalAddress().getPort()));
+            response.print(DefaultPages.notfound(domain, request.unsafe().getLocalAddress().getPort()));
             return;
         }
 

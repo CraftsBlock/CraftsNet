@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.events;
+package de.craftsblock.craftsnet.events.requests;
 
 import de.craftsblock.craftscore.event.Cancellable;
 import de.craftsblock.craftscore.event.Event;
