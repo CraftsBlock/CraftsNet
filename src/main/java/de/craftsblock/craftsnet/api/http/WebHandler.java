@@ -260,7 +260,7 @@ public class WebHandler implements HttpHandler {
         response.setContentType(fileLoadedEvent.getContentType(), "text/plain");
 
         if (CNetCompiler.canCompile(share))
-            CNetCompiler.compile(share, customExchange);
+            CNetCompiler.compile(share, exchange);
 
         else response.print(share);
         event.getExchange().storage().clear(); // Clear the session storage as it is no longer needed
