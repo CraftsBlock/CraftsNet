@@ -225,8 +225,7 @@ public class WebHandler implements HttpHandler {
         }
 
         String path = matcher.group(1);
-        Exchange customExchange = new Exchange(request.getUrl(), request, response, new SessionStorage());
-        ShareRequestEvent event = new ShareRequestEvent(url, path, customExchange, registry.getShare(url));
+        ShareRequestEvent event = new ShareRequestEvent(url, path, exchange, registry.getShare(url));
         craftsNet.listenerRegistry().call(event);
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "SHARE ABORTED";
