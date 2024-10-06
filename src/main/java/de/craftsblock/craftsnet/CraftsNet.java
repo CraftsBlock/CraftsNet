@@ -19,9 +19,11 @@ import de.craftsblock.craftsnet.command.commands.ShutdownCommand;
 import de.craftsblock.craftsnet.command.commands.VersionCommand;
 import de.craftsblock.craftsnet.events.ConsoleMessageEvent;
 import de.craftsblock.craftsnet.listeners.ConsoleListener;
+import de.craftsblock.craftsnet.logging.EmptyLogger;
 import de.craftsblock.craftsnet.logging.FileLogger;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.LoggerImpl;
+import de.craftsblock.craftsnet.utils.FileHelper;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedReader;
@@ -43,10 +45,11 @@ public class CraftsNet {
     // Global variables
     public static final String version = "3.0.7-SNAPSHOT";
 
-    // Lokal instance
+    // Local instance
     private Builder builder;
     private Logger logger;
     private FileLogger fileLogger;
+    private FileHelper fileHelper;
     private Thread consoleListener;
     private Thread shutdownThread;
     private Thread.UncaughtExceptionHandler oldDefaultUncaughtExceptionHandler;
@@ -75,6 +78,7 @@ public class CraftsNet {
         // Parse command-line arguments
         ArgumentParser parser = new ArgumentParser(args);
         boolean debug = parser.isPresent("debug");
+        boolean tempFilesOnNormal = parser.isPresent("placeTempFileInNormal");
         boolean ssl = parser.isPresent("ssl");
         int port = (parser.isPresent("http-port") ? parser.getAsInt("http-port") : 5000);
         int socketport = (parser.isPresent("socket-port") ? parser.getAsInt("socket-port") : 5001);
@@ -84,6 +88,7 @@ public class CraftsNet {
                 .withWebSocketServer(socketport)
                 .withSSL(ssl)
                 .withDebug(debug)
+                .withTempFilesOnNormalFileSystem(tempFilesOnNormal)
                 .build();
     }
 
@@ -129,6 +134,9 @@ public class CraftsNet {
             logger.error(e);
         });
         logger.debug("Injected the default uncaught exception handler");
+
+        // Setup the file helper
+        this.fileHelper = new FileHelper(this, builder.shouldPlaceTempFilesOnNormalFileSystem());
 
         // Initialize listener and route registries, and addon manager
         logger.info("Initialization of system variables");
@@ -413,6 +421,15 @@ public class CraftsNet {
     }
 
     /**
+     * Returns the {@link FileHelper} instance used for handling temporary files.
+     *
+     * @return the {@link FileHelper} instance.
+     */
+    public FileHelper fileHelper() {
+        return fileHelper;
+    }
+
+    /**
      * Creates a new builder instance for configuring CraftsNet.
      *
      * @return A new builder instance.
@@ -443,6 +460,7 @@ public class CraftsNet {
         private Logger logger;
 
         private boolean debug;
+        private boolean tempFilesOnNormalFileSystem;
         private boolean ssl;
 
         /**
@@ -454,6 +472,7 @@ public class CraftsNet {
             webServer = webSocketServer = ActivateType.DYNAMIC;
             addonSystem = commandSystem = fileLogger = ActivateType.ENABLED;
             debug = false;
+            tempFilesOnNormalFileSystem = false;
             ssl = false;
         }
 
@@ -556,6 +575,19 @@ public class CraftsNet {
          */
         public Builder withFileLogger(ActivateType type) {
             this.fileLogger = type;
+            return this;
+        }
+
+        /**
+         * Configures whether temporary files should be placed on the normal file system.
+         * When set to {@code true}, the application will store temporary files in the local
+         * file system instead of using the system's default temporary file location.
+         *
+         * @param tempFilesOnNormalFileSystem {@code true} to place temporary files in the normal file system, {@code false} otherwise.
+         * @return the current {@code Builder} instance for method chaining.
+         */
+        public Builder withTempFilesOnNormalFileSystem(boolean tempFilesOnNormalFileSystem) {
+            this.tempFilesOnNormalFileSystem = tempFilesOnNormalFileSystem;
             return this;
         }
 
@@ -711,6 +743,15 @@ public class CraftsNet {
          */
         public boolean isFileLogger(ActivateType type) {
             return fileLogger == type;
+        }
+
+        /**
+         * Determines whether temporary files should be placed in the normal file system.
+         *
+         * @return {@code true} if temporary files are placed on the normal file system, {@code false} otherwise.
+         */
+        public boolean shouldPlaceTempFilesOnNormalFileSystem() {
+            return tempFilesOnNormalFileSystem;
         }
 
         /**

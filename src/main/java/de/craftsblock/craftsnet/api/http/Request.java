@@ -88,7 +88,7 @@ public class Request implements AutoCloseable, RequireAble {
         InputStream input = exchange.getRequestBody();
         if (input == null) return;
         try {
-            bodyLocation = Files.createTempFile("craftsnet", ".body").toFile();
+            bodyLocation = craftsNet.fileHelper().createTempFile("craftsnet_", ".body").toFile();
             bodyLocation.deleteOnExit();
             try (FileOutputStream destination = new FileOutputStream(bodyLocation, true)) {
 
