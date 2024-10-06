@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class Request implements AutoCloseable, RequireAble {
 
     private final CraftsNet craftsNet;
-    private final HttpExchange exchange;
+    private final HttpExchange httpExchange;
     private final Headers headers;
     private final String domain;
     private final HttpMethod httpMethod;
@@ -43,6 +43,8 @@ public class Request implements AutoCloseable, RequireAble {
     private final ConcurrentHashMap<String, Cookie> cookies = new ConcurrentHashMap<>();
     private final String ip;
 
+    private Exchange exchange;
+
     private File bodyLocation;
     private List<RouteRegistry.EndpointMapping> routes;
     private boolean closed = false;
@@ -50,17 +52,17 @@ public class Request implements AutoCloseable, RequireAble {
     /**
      * Constructs a new Request object.
      *
-     * @param craftsNet  The CraftsNet instance to which the request was made.
-     * @param exchange   The HttpExchange object representing the incoming HTTP request.
-     * @param headers    The headers object representing the headers of the incoming http request.
-     * @param url        The query string extracted from the request URI.
-     * @param ip         The IP address of the client sending the request.
-     * @param domain     The domain used to make the http request.
-     * @param httpMethod The http method used to access the route.
+     * @param craftsNet    The CraftsNet instance to which the request was made.
+     * @param httpExchange The HttpExchange object representing the incoming HTTP request.
+     * @param headers      The headers object representing the headers of the incoming http request.
+     * @param url          The query string extracted from the request URI.
+     * @param ip           The IP address of the client sending the request.
+     * @param domain       The domain used to make the http request.
+     * @param httpMethod   The http method used to access the route.
      */
-    public Request(CraftsNet craftsNet, HttpExchange exchange, Headers headers, String url, String ip, String domain, HttpMethod httpMethod) {
+    public Request(CraftsNet craftsNet, HttpExchange httpExchange, Headers headers, String url, String ip, String domain, HttpMethod httpMethod) {
         this.craftsNet = craftsNet;
-        this.exchange = exchange;
+        this.httpExchange = httpExchange;
         this.headers = headers;
         this.rawUrl = url;
         this.ip = ip;
@@ -85,7 +87,7 @@ public class Request implements AutoCloseable, RequireAble {
      * Starts retrieving the request body.
      */
     private void retrieveBody() {
-        InputStream input = exchange.getRequestBody();
+        InputStream input = httpExchange.getRequestBody();
         if (input == null) return;
         try {
             bodyLocation = craftsNet.fileHelper().createTempFile("craftsnet_", ".body").toFile();
@@ -117,7 +119,7 @@ public class Request implements AutoCloseable, RequireAble {
     @Override
     public void close() throws Exception {
         if (bodyLocation != null && bodyLocation.exists()) bodyLocation.delete();
-        exchange.close();
+        httpExchange.close();
         cookies.clear();
         if (routes != null) routes.clear();
         Body.cleanUp(this);
@@ -131,6 +133,24 @@ public class Request implements AutoCloseable, RequireAble {
      */
     public boolean isClosed() {
         return closed;
+    }
+
+    /**
+     * Sets the {@link Exchange} managing this request.
+     *
+     * @param exchange The {@link Exchange} managing the request
+     */
+    protected void setExchange(Exchange exchange) {
+        this.exchange = exchange;
+    }
+
+    /**
+     * Gets the {@link Exchange} managing this request.
+     *
+     * @return The {@link Exchange} managing this request.
+     */
+    public Exchange getExchange() {
+        return exchange;
     }
 
     /**
@@ -367,7 +387,7 @@ public class Request implements AutoCloseable, RequireAble {
      * @return The RequestMethod enum representing the request method.
      */
     public HttpMethod getRequestMethod() {
-        return HttpMethod.parse(exchange.getRequestMethod());
+        return HttpMethod.parse(httpExchange.getRequestMethod());
     }
 
     /**
@@ -376,7 +396,7 @@ public class Request implements AutoCloseable, RequireAble {
      * @return The HttpExchange object.
      */
     public HttpExchange unsafe() {
-        return exchange;
+        return httpExchange;
     }
 
     /**

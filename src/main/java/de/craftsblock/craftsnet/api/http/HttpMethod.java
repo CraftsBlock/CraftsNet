@@ -18,6 +18,7 @@ import java.util.Arrays;
 public enum HttpMethod {
 
     ALL("POST", "GET", "PUT", "DELETE", "PATCH"), // Represents all request methods
+    ALL_RAW("POST", "GET", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"), // Represents all request methods + raw request methods
     CONNECT, // Represents the CONNECT request method
     POST, // Represents the POST request method
     GET, // Represents the GET request method
@@ -57,7 +58,7 @@ public enum HttpMethod {
      */
     @Override
     public String toString() {
-        if (this.equals(HttpMethod.ALL))
+        if (this.equals(HttpMethod.ALL) || this.equals(HttpMethod.ALL_RAW))
             return String.join("|", methods);
         return super.toString();
     }

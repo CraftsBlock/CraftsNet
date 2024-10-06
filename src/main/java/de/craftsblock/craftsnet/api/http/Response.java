@@ -6,6 +6,7 @@ import com.sun.net.httpserver.HttpExchange;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.http.cookies.Cookie;
+import de.craftsblock.craftsnet.api.http.cors.CorsPolicy;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,11 +36,14 @@ public class Response implements AutoCloseable {
     private final CraftsNet craftsNet;
     private final Logger logger;
 
-    private final HttpExchange exchange;
+    private final HttpExchange httpExchange;
     private OutputStream stream;
     private final Headers headers;
     private final ConcurrentHashMap<String, Cookie> cookies = new ConcurrentHashMap<>();
+    private final CorsPolicy corsPolicy;
     private final boolean bodyAble;
+
+    private Exchange exchange;
 
     private int code = 200;
     private boolean headersSend = false;
@@ -47,18 +51,20 @@ public class Response implements AutoCloseable {
     /**
      * Constructor for creating a new Response object.
      *
-     * @param craftsNet The CraftsNet instance which instantiates this
-     * @param exchange  The HttpExchange object representing the HTTP request-response exchange.
+     * @param craftsNet    The CraftsNet instance which instantiates this
+     * @param httpExchange The HttpExchange object representing the HTTP request-response exchange.
      */
-    protected Response(CraftsNet craftsNet, HttpExchange exchange) {
+    protected Response(CraftsNet craftsNet, HttpExchange httpExchange) {
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
 
-        this.exchange = exchange;
-        this.headers = exchange.getResponseHeaders();
+        this.httpExchange = httpExchange;
+        this.headers = httpExchange.getResponseHeaders();
 
-        HttpMethod method = HttpMethod.parse(exchange.getRequestMethod());
+        HttpMethod method = HttpMethod.parse(httpExchange.getRequestMethod());
         this.bodyAble = !method.equals(HttpMethod.HEAD) && !method.equals(HttpMethod.UNKNOWN);
+
+        corsPolicy = new CorsPolicy();
 
         setContentType("application/json");
     }
@@ -189,8 +195,10 @@ public class Response implements AutoCloseable {
         for (Cookie cookie : getCookies())
             addHeader("Set-Cookie", cookie.toString());
 
-        exchange.sendResponseHeaders(code, length);
-        this.stream = exchange.getResponseBody();
+        if (exchange != null) this.corsPolicy.apply(exchange);
+
+        httpExchange.sendResponseHeaders(code, length);
+        this.stream = httpExchange.getResponseBody();
         this.headersSend = true;
         System.out.println("Response headers send");
     }
@@ -204,7 +212,25 @@ public class Response implements AutoCloseable {
     public void close() throws IOException {
         // FIXME: Headers are not send when no body is send!
         ensureHeadersSend(-1);
-        exchange.close();
+        httpExchange.close();
+    }
+
+    /**
+     * Sets the {@link Exchange} managing this response.
+     *
+     * @param exchange The {@link Exchange} managing the response
+     */
+    protected void setExchange(Exchange exchange) {
+        this.exchange = exchange;
+    }
+
+    /**
+     * Gets the {@link Exchange} managing this response.
+     *
+     * @return The {@link Exchange} managing this response.
+     */
+    public Exchange getExchange() {
+        return exchange;
     }
 
     /**
@@ -289,6 +315,24 @@ public class Response implements AutoCloseable {
     }
 
     /**
+     * Updates the cors policy added to the header of the response.
+     *
+     * @param corsPolicy The cors policy which should be sent.
+     */
+    public void setCorsPolicy(CorsPolicy corsPolicy) {
+        this.corsPolicy.update(corsPolicy);
+    }
+
+    /**
+     * Returns the cors policy added to the header of the response.
+     *
+     * @return The modifiable cors policy.
+     */
+    public CorsPolicy getCorsPolicy() {
+        return corsPolicy;
+    }
+
+    /**
      * Sets a cookie with the specified name and no value.
      *
      * @param name The name of the cookie, cannot be null
@@ -346,7 +390,16 @@ public class Response implements AutoCloseable {
      * @return The HttpExchange object representing the HTTP request-response exchange.
      */
     public HttpExchange unsafe() {
-        return exchange;
+        return httpExchange;
+    }
+
+    /**
+     * Gets the instance of CraftsNet which will send the response.
+     *
+     * @return The CraftsNet instance.
+     */
+    public CraftsNet getCraftsNet() {
+        return craftsNet;
     }
 
 }

@@ -23,4 +23,9 @@ import org.jetbrains.annotations.NotNull;
  */
 public record Exchange(@NotNull String path, @NotNull Request request, @NotNull Response response, @NotNull SessionStorage storage) {
 
+    public Exchange {
+        request.setExchange(this);
+        response.setExchange(this);
+    }
+
 }
