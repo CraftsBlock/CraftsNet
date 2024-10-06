@@ -2,7 +2,6 @@ package de.craftsblock.craftsnet.api.http;
 
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
-import de.craftsblock.craftscore.id.Snowflake;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
@@ -14,7 +13,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -33,8 +31,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @since CraftsNet-1.0.0
  */
 public class Request implements AutoCloseable, RequireAble {
-
-    private final long identifier = Snowflake.generate();
 
     private final CraftsNet craftsNet;
     private final HttpExchange exchange;
@@ -122,6 +118,8 @@ public class Request implements AutoCloseable, RequireAble {
     public void close() throws Exception {
         if (bodyLocation != null && bodyLocation.exists()) bodyLocation.delete();
         exchange.close();
+        cookies.clear();
+        if (routes != null) routes.clear();
         Body.cleanUp(this);
         closed = true;
     }

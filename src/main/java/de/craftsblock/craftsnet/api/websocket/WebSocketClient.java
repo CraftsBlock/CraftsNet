@@ -114,7 +114,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         // Create a transformer performer which handles all transformers
         this.transformerPerformer = new TransformerPerformer(this.craftsNet, null, 2, e -> {
-            sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).asString());
+            sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).toString());
             disconnect();
         });
     }
@@ -176,7 +176,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             if (mappings == null || mappings.isEmpty()) {
                 // If the requested path has no corresponding endpoint, send an error message
                 logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[NOT FOUND]");
-                closeInternally(ClosureCode.BAD_GATEWAY, Json.empty().set("error", "Path do not match any API endpoint!").asString(), true);
+                closeInternally(ClosureCode.BAD_GATEWAY, Json.empty().set("error", "Path do not match any API endpoint!").toString(), true);
                 return;
             }
 
@@ -185,7 +185,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             if (!matcher.matches()) {
                 sendMessage(Json.empty()
                         .set("error", "There was an unexpected error while matching!")
-                        .asString());
+                        .toString());
                 return;
             }
 

@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.logging;
 
-import de.craftsblock.craftscore.id.Snowflake;
+import de.craftsblock.craftscore.utils.id.Snowflake;
 import de.craftsblock.craftsnet.CraftsNet;
 import org.jetbrains.annotations.Nullable;
 
@@ -8,7 +8,6 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.nio.file.attribute.PosixFilePermission;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;

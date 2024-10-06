@@ -160,7 +160,7 @@ public class WebHandler implements HttpHandler {
 
         // Create a transformer performer which handles all transformers
         TransformerPerformer transformerPerformer = new TransformerPerformer(this.craftsNet, validator, 1, e -> {
-            response.println(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).asString());
+            response.println(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).toString());
         });
 
         // Loop through all priorities
@@ -277,7 +277,7 @@ public class WebHandler implements HttpHandler {
         Json json = Json.empty();
         json.set("success", false);
         json.set("message", errorMessage);
-        response.print(json.asString());
+        response.print(json.toString());
     }
 
 }

@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.addon;
 
-import de.craftsblock.craftscore.id.Snowflake;
+import de.craftsblock.craftscore.utils.id.Snowflake;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;

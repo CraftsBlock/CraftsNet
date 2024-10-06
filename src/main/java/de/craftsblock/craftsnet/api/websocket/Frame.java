@@ -45,9 +45,7 @@ public class Frame implements RequireAble {
     private byte[] data;
 
     private boolean fin;
-    private final boolean rsv1;
-    private final boolean rsv2;
-    private final boolean rsv3;
+    private final boolean rsv1, rsv2, rsv3;
     private boolean masked;
 
     /**
