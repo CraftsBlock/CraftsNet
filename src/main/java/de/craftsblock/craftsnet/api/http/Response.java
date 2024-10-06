@@ -1,6 +1,5 @@
 package de.craftsblock.craftsnet.api.http;
 
-import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
@@ -37,13 +36,13 @@ public class Response implements AutoCloseable {
     private final Logger logger;
 
     private final HttpExchange exchange;
-    private final OutputStream stream;
+    private OutputStream stream;
     private final Headers headers;
     private final ConcurrentHashMap<String, Cookie> cookies = new ConcurrentHashMap<>();
     private final boolean bodyAble;
 
     private int code = 200;
-    private boolean bodySend = false;
+    private boolean headersSend = false;
 
     /**
      * Constructor for creating a new Response object.
@@ -56,7 +55,6 @@ public class Response implements AutoCloseable {
         this.logger = this.craftsNet.logger();
 
         this.exchange = exchange;
-        this.stream = exchange.getResponseBody();
         this.headers = exchange.getResponseHeaders();
 
         HttpMethod method = HttpMethod.parse(exchange.getRequestMethod());
@@ -72,7 +70,7 @@ public class Response implements AutoCloseable {
      * @throws IOException if an I/O error occurs.
      */
     public void print(Object object) throws IOException {
-        if (!bodySend && !hasHeader("Content-Type")) setContentType("application/json");
+        if (!headersSend && !hasHeader("Content-Type")) setContentType("application/json");
         println(object.toString());
     }
 
@@ -117,13 +115,12 @@ public class Response implements AutoCloseable {
      * @throws IOException if an I/O error occurs.
      */
     public void print(File file) throws IOException {
-        if (bodySend) {
-            logger.warning("A file was attempted to be sent while the text body has already begun to be written!");
+        if (headersSend) {
+            logger.warning("A file was attempted to be sent while the body has already begun to be written!");
             return;
         }
 
-        bodySend = true;
-        sendResponseHeaders(code, file.length());
+        ensureHeadersSend(file.length());
         try (FileInputStream input = new FileInputStream(file)) {
             print(input);
         }
@@ -164,13 +161,19 @@ public class Response implements AutoCloseable {
         if (!bodyAble)
             throw new IllegalStateException("Body is not printable as the request method cannot have a response body!");
 
-        if (!bodySend) {
-            sendResponseHeaders(code, 0);
-            bodySend = true;
-        }
-
+        ensureHeadersSend(0);
         stream.write(bytes, offset, length);
         stream.flush();
+    }
+
+    /**
+     * Ensures that the headers were send
+     *
+     * @throws IOException if an I/O error occurs.
+     */
+    private void ensureHeadersSend(long length) throws IOException {
+        if (headersSend) return;
+        sendResponseHeaders(code, length);
     }
 
     /**
@@ -181,10 +184,15 @@ public class Response implements AutoCloseable {
      * @throws IOException if an I/O error occurs
      */
     private void sendResponseHeaders(int code, long length) throws IOException {
+        if (headersSend) return;
+
         for (Cookie cookie : getCookies())
             addHeader("Set-Cookie", cookie.toString());
 
         exchange.sendResponseHeaders(code, length);
+        this.stream = exchange.getResponseBody();
+        this.headersSend = true;
+        System.out.println("Response headers send");
     }
 
     /**
@@ -196,6 +204,8 @@ public class Response implements AutoCloseable {
     public void close() throws IOException {
         if (!bodySend)
             sendResponseHeaders(code, -1);
+        // FIXME: Headers are not send when no body is send!
+        ensureHeadersSend(-1);
         exchange.close();
     }
 
@@ -227,7 +237,7 @@ public class Response implements AutoCloseable {
      * @throws IllegalStateException if the response headers have already been sent.
      */
     public void setCode(int code) {
-        if (bodySend)
+        if (headersSend)
             throw new IllegalStateException("Antwort Header wurden bereits gesendet!");
         this.code = code;
     }
@@ -260,7 +270,7 @@ public class Response implements AutoCloseable {
      * @throws IllegalStateException if the response headers have already been sent.
      */
     public void addHeader(String key, String value) {
-        if (bodySend)
+        if (headersSend)
             throw new IllegalStateException("Antwort Header wurden bereits gesendet!");
         if (key == null || value == null) return;
         headers.add(key, value);
@@ -274,7 +284,7 @@ public class Response implements AutoCloseable {
      * @throws IllegalStateException if the response headers have already been sent.
      */
     public void setHeader(String key, String value) {
-        if (bodySend)
+        if (headersSend)
             throw new IllegalStateException("Antwort Header wurden bereits gesendet!");
         if (key == null || value == null) return;
         headers.set(key, value);
