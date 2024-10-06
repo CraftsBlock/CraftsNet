@@ -202,8 +202,6 @@ public class Response implements AutoCloseable {
      */
     @Override
     public void close() throws IOException {
-        if (!bodySend)
-            sendResponseHeaders(code, -1);
         // FIXME: Headers are not send when no body is send!
         ensureHeadersSend(-1);
         exchange.close();
