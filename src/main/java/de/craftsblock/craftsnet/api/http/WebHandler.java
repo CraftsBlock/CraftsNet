@@ -10,6 +10,7 @@ import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.script.compiler.CNetCompiler;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.SessionStorage;
+import de.craftsblock.craftsnet.events.requests.PostRequestEvent;
 import de.craftsblock.craftsnet.events.requests.PreRequestEvent;
 import de.craftsblock.craftsnet.events.requests.RequestEvent;
 import de.craftsblock.craftsnet.events.shares.ShareFileLoadedEvent;
@@ -79,21 +80,30 @@ public class WebHandler implements HttpHandler {
 
             // Create a Request object to encapsulate the incoming request information.
             try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod)) {
+                boolean found = true;
+                boolean shared = false;
+
                 Exchange exchange = new Exchange(url, request, response, new SessionStorage());
 
                 PreRequestEvent event = new PreRequestEvent(exchange);
                 craftsNet.listenerRegistry().call(event);
                 if (event.isCancelled()) return;
 
-                if (handleRoute(exchange)) return;
-                if (registry.isShare(url) && registry.canShareAccept(url, httpMethod)) {
-                    handleShare(exchange);
-                    return;
-                }
+                try {
+                    if (handleRoute(exchange)) return;
+                    if (registry.isShare(url) && registry.canShareAccept(url, httpMethod)) {
+                        handleShare(exchange);
+                        shared = true;
+                        return;
+                    }
+                    found = false;
 
-                // Return an error as there is no route or share on the path
-                respondWithError(response, "Path do not match any API endpoint!");
-                logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[NOT FOUND]");
+                    // Return an error as there is no route or share on the path
+                    respondWithError(response, "Path do not match any API endpoint!");
+                    logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[NOT FOUND]");
+                } finally {
+                    craftsNet.listenerRegistry().call(new PostRequestEvent(exchange, found, shared));
+                }
             }
         } catch (Throwable t) {
             if (craftsNet.fileLogger() != null) {
