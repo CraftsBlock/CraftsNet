@@ -208,6 +208,9 @@ public class RouteRegistry {
 
                 String parent = retrieveValueOfAnnotation(handler, annotation, String.class, true);
 
+                // Continue if no handlers exists for this server type
+                if (!Utils.checkForMethodsWithAnnotation(handler.getClass(), annotation)) continue;
+
                 for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), annotation)) {
                     if (WebServer.class.isAssignableFrom(rawServer)) {
                         if (method.getParameterCount() <= 0)
@@ -347,6 +350,10 @@ public class RouteRegistry {
 
                 ConcurrentHashMap<Pattern, List<EndpointMapping>> endpoints = serverMappings.computeIfAbsent(mapping.rawServer(), c -> new ConcurrentHashMap<>());
                 String parent = retrieveValueOfAnnotation(handler, annotation, String.class, true);
+
+                // Continue if no handlers exists for this server type
+                if (!Utils.checkForMethodsWithAnnotation(handler.getClass(), annotation)) continue;
+
                 for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), annotation)) {
                     String child = retrieveValueOfAnnotation(method, annotation, String.class, true);
                     endpoints.entrySet().removeIf(validator -> validator.getKey().matcher(mergeUrl(parent != null ? parent : "", child)).matches());
