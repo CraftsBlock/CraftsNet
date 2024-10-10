@@ -29,7 +29,7 @@ import java.io.File;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.10
+ * @version 1.0.11
  * @see AddonLoader
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -38,6 +38,7 @@ public abstract class Addon {
 
     private CraftsNet craftsNet;
     private String name;
+    private AddonMeta meta;
 
     private BodyRegistry bodyRegistry;
     private CommandRegistry commandRegistry;
@@ -74,7 +75,7 @@ public abstract class Addon {
      * This method is marked as final to prevent subclasses from modifying the registry directly.
      *
      * @return The CraftsNet instance on which the addon was registered.
-     * @since CraftsNet-3.0.7
+     * @since 3.0.7-SNAPSHOT
      */
     public final CraftsNet craftsNet() {
         return craftsNet;
@@ -87,6 +88,16 @@ public abstract class Addon {
      */
     public final String getName() {
         return name;
+    }
+
+    /**
+     * Get the metadata of the addon.
+     *
+     * @return The metadata of the addon.
+     * @since 3.0.7-SNAPSHOT
+     */
+    public AddonMeta getMeta() {
+        return meta;
     }
 
     /**

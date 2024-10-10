@@ -6,7 +6,6 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.events.addons.AddonsLoadedEvent;
 import de.craftsblock.craftsnet.logging.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -27,10 +26,10 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.2
+ * @version 1.0.3
  * @see Addon
  * @see AddonManager
- * @since CraftsNet-1.0.0
+ * @since 1.0.0-SNAPSHOT
  */
 final class AddonLoader {
 
@@ -157,7 +156,7 @@ final class AddonLoader {
                 }
 
                 // Put the configuration in the configurations map
-                configurations.put(file, new Configuration(configuration.json(), dependencies, configuration.services, configuration.addon()));
+                configurations.put(file, new Configuration(configuration.json(), dependencies, configuration.services, configuration.addon(), configuration.meta));
             }
         }
         artifactLoader.stop();
@@ -176,7 +175,9 @@ final class AddonLoader {
                 if (configuration.json.contains("isfolder"))
                     continue;
 
-                String name = configuration.json.getString("name");
+                AddonMeta meta = AddonMeta.of(configuration);
+
+                String name = meta.name();
                 Pattern pattern = Pattern.compile("^[a-zA-Z0-9]*$");
                 if (!pattern.matcher(name).matches())
                     throw new IllegalArgumentException("Plugin names must not contain special characters / spaces! Plugin name: \"" + name + "\"");
@@ -191,7 +192,7 @@ final class AddonLoader {
                 AddonClassLoader classLoader = new AddonClassLoader(this.craftsNet, manager, configuration, addonUrls.toArray(URL[]::new));
 
                 // Load the main class of the addon using the class loader
-                String className = configuration.json.getString("main");
+                String className = meta.mainClass();
                 Class<?> clazz = classLoader.loadClass(className);
                 if (clazz == null)
                     throw new NullPointerException("The main class could not be found!");
@@ -201,6 +202,7 @@ final class AddonLoader {
                 // Create an instance of the main class and inject dependencies using reflection
                 Addon obj = (Addon) clazz.getDeclaredConstructor().newInstance();
                 setField("craftsNet", obj, craftsNet);
+                setField("meta", obj, meta);
                 setField("bodyRegistry", obj, craftsNet.bodyRegistry());
                 setField("commandRegistry", obj, craftsNet.commandRegistry());
                 setField("routeRegistry", obj, craftsNet.routeRegistry());
@@ -298,7 +300,7 @@ final class AddonLoader {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(entry)))) {
             StringBuilder json = new StringBuilder();
             reader.lines().forEach(json::append);
-            configuration = new Configuration(JsonParser.parse(json.toString()), null, new ConcurrentLinkedQueue<>(), new AtomicReference<>());
+            configuration = Configuration.of(JsonParser.parse(json.toString()), null, new ConcurrentLinkedQueue<>());
         }
 
         // Load the services from the file
@@ -377,8 +379,24 @@ final class AddonLoader {
      * @param classpath Classpath of the jar file
      * @param services  Services that should be registered
      * @param addon     The loaded addon instance
+     * @param meta      The metadata of the addon
      */
-    protected record Configuration(Json json, URL[] classpath, Collection<RegistrableService> services, AtomicReference<Addon> addon) {
+    protected record Configuration(Json json, URL[] classpath, Collection<RegistrableService> services, AtomicReference<Addon> addon,
+                                   AtomicReference<AddonMeta> meta) {
+
+        /**
+         * Creates an {@link Configuration} instance from the provided params.
+         *
+         * @param json      Content of the addon.json
+         * @param classpath Classpath of the jar file
+         * @param services  Services that should be registered
+         * @return A new instance of {@link Configuration}.
+         * @since 3.0.7-SNAPSHOT
+         */
+        private static Configuration of(Json json, URL[] classpath, Collection<RegistrableService> services) {
+            return new Configuration(json, classpath, services, new AtomicReference<>(), new AtomicReference<>());
+        }
+
     }
 
     /**
