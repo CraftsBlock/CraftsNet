@@ -26,8 +26,8 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
- * @since CraftsNet-2.1.1
+ * @version 1.2.1
+ * @since 2.1.1-SNAPSHOT
  */
 public class SSL {
 
@@ -69,7 +69,7 @@ public class SSL {
         keyStore.load(null);
 
         File privkeyFile = file(privkey);
-        String key = secureRandomPassphrase();
+        String key = Utils.secureRandomPassphrase();
         try (InputStream fullchainStream = new FileInputStream(file(fullchain));
              InputStream privateKeyStream = new FileInputStream(privkeyFile)) {
             X509Certificate[] certificates = getCertificateChain(fullchainStream);
@@ -212,35 +212,6 @@ public class SSL {
             }
         }
         return null;
-    }
-
-    /**
-     * This method generates a random passphrase using characters from a predefined set.
-     * The length of the passphrase is determined by the secureRandomPassphraseLength() method.
-     * The characters used for generating the passphrase include digits (0-9), lowercase letters (a-z),
-     * uppercase letters (A-Z), and a set of special characters (!, $, &, _, - and #).
-     *
-     * @return The randomly generated passphrase.
-     * @throws NoSuchAlgorithmException If a secure random number generator instance for the algorithm is not available.
-     */
-    private static String secureRandomPassphrase() throws NoSuchAlgorithmException {
-        String chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!$&_-#";
-        return SecureRandom.getInstanceStrong()
-                .ints(secureRandomPassphraseLength(), 0, chars.length())
-                .mapToObj(chars::charAt)
-                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
-                .toString();
-    }
-
-    /**
-     * This method generates a random length for a passphrase using a secure random number generator.
-     * The length is between 12 and 15 characters (inclusive).
-     *
-     * @return The randomly generated passphrase length.
-     * @throws NoSuchAlgorithmException If a secure random number generator instance for the algorithm is not available.
-     */
-    private static int secureRandomPassphraseLength() throws NoSuchAlgorithmException {
-        return SecureRandom.getInstanceStrong().nextInt(12, 16);
     }
 
 }

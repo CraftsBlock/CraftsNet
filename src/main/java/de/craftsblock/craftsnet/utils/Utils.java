@@ -1,10 +1,10 @@
 package de.craftsblock.craftsnet.utils;
 
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.nio.charset.Charset;
+import java.security.NoSuchAlgorithmException;
 import java.security.Permission;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -15,16 +15,40 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.2
- * @since CraftsNet-2.1.1
+ * @version 1.0.3
+ * @since 2.1.1-SNAPSHOT
  */
-public class Utils  {
+public class Utils {
 
     /**
      * A regular expression pattern used to extract group names from a regular expression pattern string.
      * This pattern matches named capturing groups defined in regular expression patterns.
      */
     public static final Pattern patternGroupNameExtractPattern = Pattern.compile("\\(\\?<([a-zA-Z][a-zA-Z0-9]*)>");
+
+    /**
+     * Converts a primitive byte array into a Byte object array.
+     *
+     * @param data The byte array to be converted.
+     * @return A Byte object array with the same values as the input byte array.
+     */
+    public static Byte[] convert(byte[] data) {
+        Byte[] output = new Byte[data.length];
+        System.arraycopy(data, 0, output, 0, output.length);
+        return output;
+    }
+
+    /**
+     * Converts a Byte object array into a primitive byte array.
+     *
+     * @param data The Byte array to be converted.
+     * @return A primitive byte array with the same values as the input Byte array.
+     */
+    public static byte[] convert(Byte[] data) {
+        byte[] output = new byte[data.length];
+        System.arraycopy(data, 0, output, 0, output.length);
+        return output;
+    }
 
     /**
      * Retrieves a thread by its name from the currently running threads.
@@ -69,6 +93,64 @@ public class Utils  {
         List<String> output = new ArrayList<>(groupNames);
         Collections.reverse(output);
         return output;
+    }
+
+    /**
+     * Generates a secure random passphrase with a default length between 12 and 16 characters.
+     * The passphrase can include digits, uppercase and lowercase letters, and special characters.
+     *
+     * @return a secure random passphrase as a {@link String}.
+     * @throws NoSuchAlgorithmException if no strong secure random algorithm is available.
+     */
+    public static String secureRandomPassphrase() throws NoSuchAlgorithmException {
+        return secureRandomPassphrase(true);
+    }
+
+    /**
+     * Generates a secure random passphrase with a default length between 12 and 16 characters.
+     * The passphrase can include digits, uppercase and lowercase letters, and optionally special
+     * characters.
+     *
+     * @param specialChars whether to include special characters in the passphrase.
+     * @return a secure random passphrase as a {@link String}.
+     * @throws NoSuchAlgorithmException if no strong secure random algorithm is available.
+     */
+    public static String secureRandomPassphrase(boolean specialChars) throws NoSuchAlgorithmException {
+        return secureRandomPassphrase(12, 16, specialChars);
+    }
+
+    /**
+     * Generates a secure random passphrase with a specified length range and
+     * the option to include special characters.
+     * The passphrase is generated from a character pool consisting of digits,
+     * lowercase and uppercase letters, and optionally special characters.
+     *
+     * @param origin       the minimum length of the generated passphrase (inclusive).
+     * @param bound        the maximum length of the generated passphrase (exclusive).
+     * @param specialChars whether to include special characters in the passphrase.
+     * @return a secure random passphrase as a {@link String}.
+     * @throws NoSuchAlgorithmException if no strong secure random algorithm is available.
+     */
+    public static String secureRandomPassphrase(int origin, int bound, boolean specialChars) throws NoSuchAlgorithmException {
+        String chars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ" + (specialChars ? "!$&_-#" : "");
+        return SecureRandom.getInstanceStrong()
+                .ints(secureRandomPassphraseLength(origin, bound), 0, chars.length())
+                .mapToObj(chars::charAt)
+                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+                .toString();
+    }
+
+    /**
+     * Generates a secure random passphrase length within a specified range.
+     * The length is chosen randomly from the given range using a secure random number generator.
+     *
+     * @param origin the minimum length (inclusive).
+     * @param bound  the maximum length (exclusive).
+     * @return a randomly generated length within the specified range.
+     * @throws NoSuchAlgorithmException if no strong secure random algorithm is available.
+     */
+    public static int secureRandomPassphraseLength(int origin, int bound) throws NoSuchAlgorithmException {
+        return SecureRandom.getInstanceStrong().nextInt(origin, bound);
     }
 
 }
