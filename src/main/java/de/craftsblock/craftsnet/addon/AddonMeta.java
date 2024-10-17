@@ -43,7 +43,7 @@ public record AddonMeta(String name, String mainClass, List<String> authors, Str
                 authors,
                 Optional.ofNullable(json.getString("website")).orElse(""),
                 Optional.ofNullable(json.getString("version")).orElse(""),
-                Optional.ofNullable(json.getStringList("dependencies").toArray(String[]::new)).orElse(new String[0])
+                Optional.ofNullable(json.getStringList("depends").toArray(String[]::new)).orElse(new String[0])
         );
     }
 

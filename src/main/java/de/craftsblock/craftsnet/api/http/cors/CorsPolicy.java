@@ -20,11 +20,12 @@ import java.util.List;
  * <p>
  * The policy can be customized to either allow or disallow specific origins, HTTP methods,
  * headers, and control headers exposure.
+ * <p>
+ * <b>Important: </b>The cors policy is applied to an exchange automatically. You don't need to take further actions!
  *
  * @author Philipp Maywald
  * @author CraftsBlock
  * @version 1.0.0
- * @implNote The cors policy is applied to an exchange automatically. You don't need to take further actions!
  * @since 3.0.7
  */
 public class CorsPolicy {

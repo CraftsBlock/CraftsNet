@@ -48,9 +48,9 @@ public class PostRequestEvent extends Event {
 
     /**
      * Checks whether the requested resource was shared successfully.
+     * This method returns {@code true} only if the resource was found and shared.
      *
      * @return {@code true} if the resource was found and shared, {@code false} otherwise.
-     * @implNote This method returns {@code true} only if the resource was found and shared.
      */
     public boolean wasShared() {
         return found && shared;
