@@ -345,8 +345,10 @@ public class CorsPolicy {
         Response response = exchange.response();
 
         if (allowAllOrigins) response.setHeader("Access-Control-Allow-Origin", "*");
-        else if (allowedOrigins.isEmpty() && allowedOrigins.contains(request.getDomain()))
-            response.setHeader("Access-Control-Allow-Origin", "http" + (response.getCraftsNet().webServer().isSSL() ? "s" : "") + "://" + request.getDomain());
+        else if (!allowedOrigins.isEmpty() && allowedOrigins.contains(getOrigin(request)))
+            response.setHeader("Access-Control-Allow-Origin", getOrigin(request, false));
+        else if (!allowedOrigins.isEmpty())
+            response.setHeader("Access-Control-Allow-Origin", allowedOrigins.get(0));
 
         if (allowAllMethods) response.setHeader("Access-Control-Allow-Methods", String.join(", ", HttpMethod.ALL_RAW.getMethods()));
         else if (!allowedMethods.isEmpty())
@@ -361,6 +363,40 @@ public class CorsPolicy {
 
         if (overrideCredentials) response.setHeader("Access-Control-Allow-Credentials", "" + allowCredentials);
         if (controlMaxAge >= 0) response.setHeader("Access-Control-Max-Age", "" + controlMaxAge);
+    }
+
+    /**
+     * Retrieves the origin (domain or URL) from a given {@link Request} object.
+     * This method defaults to stripping the protocol from the origin URL.
+     *
+     * @param request the {@link Request} object from which to extract the origin.
+     * @return the origin as a {@link String}, either with or without the protocol depending on the configuration.
+     */
+    private String getOrigin(Request request) {
+        return getOrigin(request, true);
+    }
+
+    /**
+     * Retrieves the origin (domain or URL) from a given {@link Request} object.
+     * Depending on the {@code strip} flag, the protocol can be removed from the origin URL.
+     *
+     * <p>If the request contains the "Origin" header, that value is used. If the {@code strip} flag is {@code true},
+     * the protocol is removed from the origin. If the header is not present, the method constructs the origin
+     * using the domain and the protocol based on the web server's SSL status.</p>
+     *
+     * @param request the {@link Request} object from which to extract the origin.
+     * @param strip   whether to remove the protocol from the origin.
+     * @return the origin as a {@link String}, either with or without the protocol depending on the {@code strip} flag.
+     */
+    private String getOrigin(Request request, boolean strip) {
+        if (request.hasHeader("Origin")) {
+            String origin = request.getHeader("Origin");
+            if (strip) return origin.replaceFirst(".*://", "");
+            return origin;
+        }
+
+        if (strip) return request.getDomain();
+        return "http" + (request.getCraftsNet().webServer().isSSL() ? "s" : "") + "://" + request.getDomain();
     }
 
 }
