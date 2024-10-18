@@ -200,7 +200,6 @@ public class Response implements AutoCloseable {
         httpExchange.sendResponseHeaders(code, length);
         this.stream = httpExchange.getResponseBody();
         this.headersSend = true;
-        System.out.println("Response headers send");
     }
 
     /**
