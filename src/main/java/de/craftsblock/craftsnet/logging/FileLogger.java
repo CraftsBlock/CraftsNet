@@ -3,6 +3,7 @@ package de.craftsblock.craftsnet.logging;
 import de.craftsblock.craftscore.utils.id.Snowflake;
 import de.craftsblock.craftsnet.CraftsNet;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Range;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -21,8 +22,8 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
- * @since CraftsNet-3.0.2
+ * @version 1.0.1
+ * @since 3.0.2-SNAPSHOT
  */
 public class FileLogger {
 
@@ -187,6 +188,24 @@ public class FileLogger {
     }
 
     /**
+     * Skips the next input on the {@link System#out} stream, if it is a file log stream.
+     */
+    public synchronized void skipNext() {
+        this.skipNext(1);
+    }
+
+
+    /**
+     * Skips the next n inputs on the {@link System#out} stream, if it is a file log stream.
+     *
+     * @param line the amount of inputs to be skipped
+     */
+    public synchronized void skipNext(@Range(from = 1, to = Integer.MAX_VALUE) int line) {
+        if (System.out instanceof LoggerPrintStream logStream)
+            logStream.skipNext(line);
+    }
+
+    /**
      * A subclass of {@link PrintStream} used for logging.
      * This class intercepts the output written to the stream and writes it to the provided output stream while removing any ASCII colors.
      */
@@ -195,8 +214,9 @@ public class FileLogger {
         // Regular expression pattern to match ANSI escape sequences for colors
         private static final Pattern pattern = Pattern.compile("\u001B\\[[;\\d]*m");
 
-        // The output stream where the log messages will be written
         private final FileOutputStream stream;
+
+        private int skipLines = 0;
 
         /**
          * Constructs a new {@code LoggerPrintStream} instance.
@@ -216,6 +236,11 @@ public class FileLogger {
          */
         @Override
         public void print(@Nullable String s) {
+            if (skipLines >= 1) {
+                skipLines--;
+                return;
+            }
+
             super.print(s);
             try {
                 stream.write(removeAsciiColors(s).getBytes(StandardCharsets.UTF_8));
@@ -263,6 +288,23 @@ public class FileLogger {
          */
         protected static String removeAsciiColors(String input) {
             return input == null ? "null" : pattern.matcher(input).replaceAll("");
+        }
+
+        /**
+         * Skips the next input.
+         */
+        public synchronized void skipNext() {
+            this.skipNext(1);
+        }
+
+
+        /**
+         * Skips the next n inputs.
+         *
+         * @param line the amount of inputs to be skipped
+         */
+        public synchronized void skipNext(@Range(from = 1, to = Integer.MAX_VALUE) int line) {
+            this.skipLines += line;
         }
 
     }
