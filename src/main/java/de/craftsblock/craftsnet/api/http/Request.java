@@ -26,9 +26,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.1
+ * @version 1.5.2
  * @see Exchange
- * @since CraftsNet-1.0.0
+ * @since 1.0.0-SNAPSHOT
  */
 public class Request implements AutoCloseable, RequireAble {
 
@@ -119,7 +119,6 @@ public class Request implements AutoCloseable, RequireAble {
     @Override
     public void close() throws Exception {
         if (bodyLocation != null && bodyLocation.exists()) bodyLocation.delete();
-        httpExchange.close();
         cookies.clear();
         if (routes != null) routes.clear();
         Body.cleanUp(this);

@@ -26,10 +26,10 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.0.2
  * @see Exchange
  * @see WebServer
- * @since CraftsNet-1.0.0
+ * @since 1.0.0-SNAPSHOT
  */
 public class Response implements AutoCloseable {
 
@@ -198,8 +198,10 @@ public class Response implements AutoCloseable {
         if (exchange != null) this.corsPolicy.apply(exchange);
 
         httpExchange.sendResponseHeaders(code, length);
-        this.stream = httpExchange.getResponseBody();
         this.headersSend = true;
+
+        if (length == -1) return;
+        this.stream = httpExchange.getResponseBody();
     }
 
     /**
@@ -209,7 +211,6 @@ public class Response implements AutoCloseable {
      */
     @Override
     public void close() throws IOException {
-        // FIXME: Headers are not send when no body is send!
         ensureHeadersSend(-1);
         httpExchange.close();
     }

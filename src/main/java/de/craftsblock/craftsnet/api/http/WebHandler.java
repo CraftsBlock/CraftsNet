@@ -23,6 +23,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -31,7 +32,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.1
+ * @version 1.2.2
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -60,63 +61,84 @@ public class WebHandler implements HttpHandler {
      */
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
-        // Extract relevant information from the incoming request.
-        String requestMethod = httpExchange.getRequestMethod();
-        HttpMethod httpMethod = HttpMethod.parse(requestMethod);
-
-        String url = httpExchange.getRequestURI().toString();
-        Headers headers = httpExchange.getRequestHeaders();
-
-        Response response = new Response(this.craftsNet, httpExchange);
         try {
-            String ip;
-            if (headers.containsKey("Cf-connecting-ip")) ip = headers.getFirst("Cf-connecting-ip");
-            else if (headers.containsKey("X-forwarded-for")) ip = headers.getFirst("X-forwarded-for").split(", ")[0];
-            else ip = httpExchange.getRemoteAddress().getAddress().getHostAddress();
+            // Extract relevant information from the incoming request.
+            String requestMethod = httpExchange.getRequestMethod();
+            HttpMethod httpMethod = HttpMethod.parse(requestMethod);
 
-            String domain;
-            if (headers.containsKey("X-Forwarded-Host")) domain = headers.getFirst("X-forwarded-Host").split(":")[0];
-            else domain = headers.getFirst("Host").split(":")[0];
+            String url = httpExchange.getRequestURI().toString();
+            Headers headers = httpExchange.getRequestHeaders();
 
-            // Create a Request object to encapsulate the incoming request information.
-            try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod)) {
-                boolean found = true;
-                boolean shared = false;
+            Response response = new Response(this.craftsNet, httpExchange);
+            try {
+                String ip;
+                if (headers.containsKey("Cf-connecting-ip")) ip = headers.getFirst("Cf-connecting-ip");
+                else if (headers.containsKey("X-forwarded-for")) ip = headers.getFirst("X-forwarded-for").split(", ")[0];
+                else ip = httpExchange.getRemoteAddress().getAddress().getHostAddress();
 
-                Exchange exchange = new Exchange(url, request, response, new SessionStorage());
+                String domain;
+                if (headers.containsKey("X-Forwarded-Host")) domain = headers.getFirst("X-forwarded-Host").split(":")[0];
+                else domain = headers.getFirst("Host").split(":")[0];
 
-                PreRequestEvent event = new PreRequestEvent(exchange);
-                craftsNet.listenerRegistry().call(event);
-                if (event.isCancelled()) return;
+                // Create a Request object to encapsulate the incoming request information.
+                try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod)) {
+                    Exchange exchange = new Exchange(url, request, response, new SessionStorage());
 
-                try {
-                    if (handleRoute(exchange)) return;
-                    if (registry.isShare(url) && registry.canShareAccept(url, httpMethod)) {
-                        handleShare(exchange);
-                        shared = true;
-                        return;
-                    }
-                    found = false;
+                    PreRequestEvent event = new PreRequestEvent(exchange);
+                    craftsNet.listenerRegistry().call(event);
+                    if (event.isCancelled()) return;
 
-                    // Return an error as there is no route or share on the path
-                    respondWithError(response, "Path do not match any API endpoint!");
-                    logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[NOT FOUND]");
-                } finally {
-                    craftsNet.listenerRegistry().call(new PostRequestEvent(exchange, found, shared));
+                    Map.Entry<Boolean, Boolean> result = handle(exchange);
+                    craftsNet.listenerRegistry().call(new PostRequestEvent(exchange, result.getKey(), result.getValue()));
                 }
+            } catch (Throwable t) {
+                if (craftsNet.fileLogger() != null) {
+                    long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "http", url);
+                    logger.error(t, "Error: " + errorID);
+                    if (!httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN))
+                        response.print(Json.empty()
+                                .set("error.message", "An unexpected exception happened whilst processing your request!")
+                                .set("error.identifier", errorID));
+                } else logger.error(t);
+            } finally {
+                response.close();
             }
         } catch (Throwable t) {
-            if (craftsNet.fileLogger() != null) {
-                long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "http", url);
-                logger.error(t, "Error: " + errorID);
-                if (!httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN))
-                    response.print(Json.empty()
-                            .set("error.message", "An unexpected exception happened whilst processing your request!")
-                            .set("error.identifier", errorID));
-            } else logger.error(t);
-        } finally {
-            response.close();
+            t.printStackTrace(System.err);
         }
+    }
+
+    /**
+     * Handles a http request and determines whether a valid route or share is available
+     * for the given exchange. If a matching route or share is found, the appropriate handler
+     * is invoked. Otherwise, an error is returned indicating the path is not found.
+     *
+     * @param exchange The {@link Exchange} containing the request and response.
+     * @return A {@link Map.Entry} where the first {@link Boolean} indicates if a route or share
+     * was found (true if found, false otherwise), and the second {@link Boolean} indicates
+     * if it was a shared file (true if so, false otherwise).
+     * @throws Exception If any error occurs during the handling of the exchange.
+     */
+    private Map.Entry<Boolean, Boolean> handle(Exchange exchange) throws Exception {
+        Request request = exchange.request();
+        Response response = exchange.response();
+
+        String url = request.getUrl();
+        HttpMethod httpMethod = request.getHttpMethod();
+
+        // Check if the route is registered and process it if so
+        if (handleRoute(exchange)) return Map.entry(true, false);
+
+        // Check if the URL can be handled as a shared resource and if it accepts the current http method
+        if (registry.isShare(url) && registry.canShareAccept(url, httpMethod)) {
+            handleShare(exchange);
+            return Map.entry(true, true);
+        }
+
+        // If no matching route or share is found, respond with an error message and log the failed request
+        respondWithError(response, "Path do not match any API endpoint!");
+        logger.info(httpMethod.toString() + " " + url + " from " + request.getIp() + " \u001b[38;5;9m[NOT FOUND]");
+        return Map.entry(false, false);
     }
 
     /**
