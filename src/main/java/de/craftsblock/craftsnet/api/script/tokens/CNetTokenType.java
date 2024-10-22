@@ -1,9 +1,6 @@
 package de.craftsblock.craftsnet.api.script.tokens;
 
-import de.craftsblock.craftsnet.api.script.ast.ASTNode;
-import de.craftsblock.craftsnet.api.script.ast.PackageNode;
-import de.craftsblock.craftsnet.api.script.ast.RunNode;
-import de.craftsblock.craftsnet.api.script.ast.VariableNode;
+import de.craftsblock.craftsnet.api.script.ast.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -30,12 +27,13 @@ public enum CNetTokenType {
     IDENTIFIER("identifier", "[a-zA-Z0-9_$./]+", null),
     SEPARATION("sep", ",", null),
     SEMICOLON("semicolon", ";", null),
+    LINE_BREAK("linebreak", "\n", null),
     EOF(null, null, null);
 
     /**
      * The current version of the CNetTokenType.
      */
-    public static final String VERSION = "3";
+    public static final String VERSION = "6";
 
     /**
      * List of token types that can be recognized by the lexer.
@@ -139,9 +137,9 @@ public enum CNetTokenType {
      * @return a new instance of the associated AST node
      * @throws RuntimeException if an error occurs during instantiation
      */
-    public ASTNode createNode() {
+    public ASTNode createNode(int line) {
         try {
-            return node.getDeclaredConstructor().newInstance();
+            return node.getDeclaredConstructor(int.class).newInstance(line);
         } catch (Throwable t) {
             throw new RuntimeException(t);
         }

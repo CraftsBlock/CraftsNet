@@ -20,7 +20,7 @@ public class CNetInterpreter {
     /**
      * The current version of the CNetInterpreter.
      */
-    public static final String VERSION = "2";
+    public static final String VERSION = "3";
 
     private final ConcurrentHashMap<Class<? extends ASTNode>, Object> storage = new ConcurrentHashMap<>();
 
@@ -41,9 +41,26 @@ public class CNetInterpreter {
      */
     public boolean interpret(List<ASTNode> nodes, Exchange exchange) throws Exception {
         for (ASTNode node : nodes)
-            if (!node.interpret(this, exchange))
-                return false;
+            try {
+                if (!node.interpret(this, exchange))
+                    return false;
+            } catch (Throwable throwable) {
+                wrapException(node, throwable);
+            }
         return true;
+    }
+
+    /**
+     * Wraps a given exception in an {@link RuntimeException} with additional context
+     * about the location of the error in the abstract syntax tree (AST).
+     *
+     * @param node      The {@link ASTNode} representing the node in the AST where the exception occurred.
+     * @param throwable The original {@link Throwable} exception that was caught.
+     * @throws IllegalStateException Always throws this exception, with a message indicating
+     *                               the line number of the node associated with the error.
+     */
+    private void wrapException(ASTNode node, Throwable throwable) {
+        throw new RuntimeException("There was an " + throwable.getClass().getSimpleName() + " at line " + node.getLine() + ": " + throwable.getLocalizedMessage());
     }
 
     /**

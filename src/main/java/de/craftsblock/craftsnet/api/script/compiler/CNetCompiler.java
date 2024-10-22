@@ -26,7 +26,7 @@ public class CNetCompiler {
      * and CNetTokenType.
      */
     public static final String VERSION = String.join(".", List.of(CNetInterpreter.VERSION, CNetParser.VERSION, CNetLexer.VERSION)) + "-" + CNetTokenType.VERSION;
-    private static final Pattern extractor = Pattern.compile("(?:\\s*\\n\\s*)?(?<cnetscript><\\?cnetscript(?<script>[^?]*)(?:\\?>)?)(?:\\s*\\n\\s*)?|(?<remaining>[^<]+|<(?!=\\?cnetscript))");
+    private static final Pattern extractor = Pattern.compile("(?<leading>\\s*\\n\\s*)?(?<cnetscript><\\?cnetscript(?<script>[^?]*)(?:\\?>)?)(?<trailing>\\s*\\n\\s*)?|(?<remaining>[^<]+|<(?!=\\?cnetscript))");
 
     /**
      * Checks if the given file can be compiled.
@@ -62,13 +62,17 @@ public class CNetCompiler {
      * @throws IOException if an I/O error occurs
      */
     public static void compile(File input, Exchange exchange) throws IOException {
-        byte[] data;
-        try (FileInputStream in = new FileInputStream(input)) {
-            data = in.readAllBytes();
-            if (!Utils.isEncodingValid(data, StandardCharsets.UTF_8))
-                throw new UnsupportedEncodingException("The file must not contain none utf8 chars! (At least one byte was negativ!)");
+        try {
+            byte[] data;
+            try (FileInputStream in = new FileInputStream(input)) {
+                data = in.readAllBytes();
+                if (!Utils.isEncodingValid(data, StandardCharsets.UTF_8))
+                    throw new UnsupportedEncodingException("The file must not contain none utf8 chars! (At least one byte was negativ!)");
+            }
+            compile(new String(data, StandardCharsets.UTF_8), exchange);
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Unable to finish compilation of file " + input.getAbsolutePath(), e);
         }
-        compile(new String(data, StandardCharsets.UTF_8), exchange);
     }
 
     /**
@@ -82,9 +86,11 @@ public class CNetCompiler {
 
         CNetLexer lexer = new CNetLexer();
         CNetInterpreter interpreter = new CNetInterpreter();
+        int lines = 1;
         while (matcher.find()) {
             String remaining = matcher.group("remaining");
             if (remaining != null) {
+                lines += countLines(remaining);
                 try {
                     exchange.response().print(remaining);
                 } catch (IOException e) {
@@ -96,8 +102,14 @@ public class CNetCompiler {
             String script = matcher.group("script");
             if (script == null) continue;
 
+            if (matcher.group("leading") != null)
+                lines += countLines(matcher.group("leading"));
+
             Pattern removeComments = Pattern.compile("//.*|/\\*.*\\*/|#.*", Pattern.DOTALL);
-            List<CNetToken> tokens = lexer.tokenize(removeComments.matcher(script).replaceAll("").replaceAll(";\\s+", ";"));
+            List<CNetToken> tokens = lexer.tokenize(lines, removeComments.matcher(script).replaceAll(""));
+
+            if (matcher.group("trailing") != null)
+                lines += countLines(matcher.group("trailing")) - 1;
 
             CNetParser parser = new CNetParser(tokens);
             List<ASTNode> nodes = parser.parse();
@@ -105,10 +117,28 @@ public class CNetCompiler {
             try {
                 if (!interpreter.interpret(nodes, exchange)) break;
             } catch (Exception e) {
+                if (e instanceof RuntimeException runtimeException)
+                    throw runtimeException;
                 throw new RuntimeException(e);
             }
         }
         interpreter.reset();
+    }
+
+    /**
+     * Counts the number of new lines (\n) in a given string.
+     *
+     * @param text the text in which to count new lines
+     * @return the number of new line characters found in the text
+     */
+    private static int countLines(String text) {
+        int newLines = 0;
+
+        for (char c : text.toCharArray())
+            if (c == '\n')
+                newLines++;
+
+        return newLines;
     }
 
 }

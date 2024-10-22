@@ -27,7 +27,7 @@ public abstract class CNetScript {
      * This version string is inherited from {@link CNetCompiler#VERSION}.
      * </p>
      */
-    public static String VERSION = CNetCompiler.VERSION;
+    public static final String VERSION = CNetCompiler.VERSION;
 
     /**
      * Executes the script logic.

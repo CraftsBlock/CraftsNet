@@ -11,12 +11,21 @@ import de.craftsblock.craftsnet.api.script.tokens.CNetTokenType;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.0.7-SNAPSHOT
  */
 public class PackageNode extends ASTNode {
 
     private String target;
+
+    /**
+     * Constructs an {@link PackageNode} with the specified line number.
+     *
+     * @param line the line number in the source code where this node is located
+     */
+    public PackageNode(int line) {
+        super(line);
+    }
 
     /**
      * Parses the package node, extracting the target package identifier or pointer.

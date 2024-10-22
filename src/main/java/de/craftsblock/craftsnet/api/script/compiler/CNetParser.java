@@ -3,6 +3,7 @@ package de.craftsblock.craftsnet.api.script.compiler;
 import de.craftsblock.craftsnet.api.script.ast.ASTNode;
 import de.craftsblock.craftsnet.api.script.tokens.CNetToken;
 import de.craftsblock.craftsnet.api.script.tokens.CNetTokenType;
+import org.jetbrains.annotations.Range;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +24,7 @@ public class CNetParser {
     /**
      * The current version of the CNetParser.
      */
-    public static final String VERSION = "0";
+    public static final String VERSION = "1";
 
     private final List<CNetToken> tokens;
     private int position;
@@ -62,6 +63,29 @@ public class CNetParser {
     }
 
     /**
+     * Returns a sublist of tokens starting from a given position and attempts to return the specified number of tokens.
+     * If there are not enough tokens from the position to the end of the list, it includes preceding tokens to ensure
+     * the total number of tokens is returned, unless there are fewer tokens in total than requested.
+     *
+     * @param tokens the number of tokens to return.
+     * @return a list containing the specified number of tokens from the current position or fewer if the list
+     * does not have enough elements.
+     * @throws IndexOutOfBoundsException if the position is out of bounds or tokens is negative.
+     */
+    private List<CNetToken> getNTokens(@Range(from = 0, to = Integer.MAX_VALUE) int tokens) {
+        int size = this.tokens.size();
+        if (position < 0 || position >= size)
+            throw new IndexOutOfBoundsException("Invalid position or tokens count");
+
+        int available = size - position;
+
+        int start = Math.max(0, position - (tokens - available));
+        int end = Math.min(position + tokens, size);
+
+        return this.tokens.subList(start, end);
+    }
+
+    /**
      * Checks if the current token matches any of the specified types.
      *
      * @param types the token types to check against
@@ -89,7 +113,7 @@ public class CNetParser {
         CNetToken token = getToken();
 
         if (!canConsume(types))
-            throw new IllegalStateException("Wrong token type: " + token.type() + "! (Required: " + String.join(" or ", Arrays.stream(types).map(CNetTokenType::toString).toList()) + ")");
+            throwExceptionForToken(token, types);
 
         move();
         return token;
@@ -110,8 +134,7 @@ public class CNetParser {
             for (CNetTokenType type : CNetTokenType.parsableTypes) {
                 if (token.type() != type) continue;
 
-                consume(type);
-                ASTNode node = type.createNode();
+                ASTNode node = type.createNode(consume(type).line());
                 node.parse(this);
                 consume(CNetTokenType.SEMICOLON);
 
@@ -119,11 +142,28 @@ public class CNetParser {
                 continue parser;
             }
 
-            throw new IllegalStateException("Found token " + token.type() + " while expecting " + String.join(" or ", CNetTokenType.parsableTypes.stream().map(CNetTokenType::toString).toList()));
+            throwExceptionForToken(token, CNetTokenType.parsableTypes.toArray(CNetTokenType[]::new));
         }
 
         reset();
         return Collections.unmodifiableList(nodes);
+    }
+
+    /**
+     * Throws an {@link IllegalStateException} in case of a token mismatch.
+     *
+     * @param token The {@link CNetToken} object representing the token that caused the error.
+     * @param valid An array of {@link CNetTokenType}, representing the valid token types expected in this context.
+     * @throws IllegalStateException Always throws this exception, with a message describing the token error and its context.
+     */
+    private void throwExceptionForToken(CNetToken token, CNetTokenType... valid) {
+        throw new IllegalStateException(
+                "Found token " + token.type() + " while expecting " +
+                        String.join(" or ", Arrays.stream(valid).map(CNetTokenType::toString).toList()) +
+                        "\nThe exception is near '" +
+                        String.join(" ", getNTokens(3).stream().map(CNetToken::value).toList()).replaceAll("\\s+;", ";") +
+                        "' at line " + token.line()
+        );
     }
 
 }

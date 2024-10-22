@@ -18,12 +18,21 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.0.7-SNAPSHOT
  */
 public class RunNode extends ASTNode {
 
     private final List<String> targets = new ArrayList<>();
+
+    /**
+     * Constructs an {@link RunNode} with the specified line number.
+     *
+     * @param line the line number in the source code where this node is located
+     */
+    public RunNode(int line) {
+        super(line);
+    }
 
     /**
      * Parses the run node, extracting the list of target identifiers or pointers.

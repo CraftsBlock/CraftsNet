@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.script.tokens;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Range;
 
 /**
  * A record representing a token in the CNet scripting language.
@@ -11,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
  * @version 1.0.0
  * @since 3.0.7-SNAPSHOT
  */
-public record CNetToken(@NotNull CNetTokenType type, @NotNull String value) {
+public record CNetToken(@Range(from = 1, to = Integer.MAX_VALUE) int line, @NotNull CNetTokenType type, @NotNull String value) {
 
     /**
      * Constructs a new CNetToken.
@@ -20,6 +21,16 @@ public record CNetToken(@NotNull CNetTokenType type, @NotNull String value) {
      * @param value the value of the token, must not be null
      */
     public CNetToken {
+    }
+
+    /**
+     * Gets the line in which the token is located.
+     *
+     * @return The line number
+     */
+    @Override
+    public int line() {
+        return line;
     }
 
     /**

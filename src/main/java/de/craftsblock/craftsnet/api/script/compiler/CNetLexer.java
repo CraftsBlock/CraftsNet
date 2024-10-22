@@ -21,7 +21,7 @@ public class CNetLexer {
     /**
      * The current version of the CNetLexer.
      */
-    public static final String VERSION = "0";
+    public static final String VERSION = "1";
 
     /**
      * Tokenizes the given script into a list of {@link CNetToken} objects.
@@ -29,9 +29,10 @@ public class CNetLexer {
      * @param script the script to tokenize
      * @return a list of tokens representing the script
      */
-    public List<CNetToken> tokenize(String script) {
+    public List<CNetToken> tokenize(int start, String script) {
         List<CNetToken> tokens = new ArrayList<>();
         Matcher matcher = CNetTokenType.lexerPattern.matcher(script);
+        int line = start;
 
         lexer:
         while (matcher.find()) {
@@ -39,12 +40,17 @@ public class CNetLexer {
                 String value = matcher.group(type.getGroupName());
                 if (value == null) continue;
 
-                tokens.add(new CNetToken(type, value));
+                if (type.equals(CNetTokenType.LINE_BREAK)) {
+                    line++;
+                    continue;
+                }
+
+                tokens.add(new CNetToken(line, type, value));
                 continue lexer;
             }
         }
-        tokens.add(new CNetToken(CNetTokenType.EOF, ""));
 
+        tokens.add(new CNetToken(line, CNetTokenType.EOF, ""));
         return tokens;
     }
 

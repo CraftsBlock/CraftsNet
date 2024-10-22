@@ -13,13 +13,22 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.0.7-SNAPSHOT
  */
 public class VariableNode extends ASTNode {
 
     private String name;
     private String value;
+
+    /**
+     * Constructs an {@link VariableNode} with the specified line number.
+     *
+     * @param line the line number in the source code where this node is located
+     */
+    public VariableNode(int line) {
+        super(line);
+    }
 
     /**
      * Parses the variable node, extracting the variable name and value.
