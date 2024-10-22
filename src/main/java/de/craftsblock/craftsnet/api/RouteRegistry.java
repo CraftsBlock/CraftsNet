@@ -163,41 +163,12 @@ public class RouteRegistry {
     }
 
     /**
-     * Registers an endpoint handler (route) by inspecting its annotated methods and adding it to the registry.
-     *
-     * @param handler The RequestHandler to be registered.
-     * @deprecated This method is only used for backwards compatibility, use the {@link RouteRegistry#register(Handler)} method instead, as this
-     * method will be removed in 4.0.0-SNAPSHOT!
-     */
-    @Deprecated(since = "3.0.5-SNAPSHOT", forRemoval = true)
-    public void register(RequestHandler handler) {
-        logger.warning("Found deprecated method call for registration of route " + handler.getClass().getSimpleName());
-        register((Handler) handler);
-    }
-
-    /**
-     * Registers an endpoint handler (websocket) by inspecting its annotated methods and adding it to the registry.
-     *
-     * @param handler The SocketHandler to be registered.
-     * @deprecated This method is only used for backwards compatibility, use the {@link RouteRegistry#register(Handler)} method instead, as this
-     * method will be removed in 4.0.0-SNAPSHOT!
-     */
-    @Deprecated(since = "3.0.5-SNAPSHOT", forRemoval = true)
-    public void register(SocketHandler handler) {
-        logger.warning("Found deprecated method call for registration of websocket " + handler.getClass().getSimpleName());
-        register((Handler) handler);
-    }
-
-    /**
      * Registers an endpoint handler (route or websocket) by inspecting its annotated methods and adding it to the registry.
      *
      * @param handler The Handler to be registered.
      */
     public void register(Handler handler) {
         ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = retrieveHandlerInfoMap(handler);
-
-        if (annotations.containsKey(Socket.class))
-            tryOldWebsocketRegister((SocketHandler) handler);
 
         for (Class<? extends Annotation> annotation : annotations.keySet())
             try {
@@ -265,45 +236,6 @@ public class RouteRegistry {
         for (ServerMapping mapping : annotations.values())
             if (mapping.server() != null)
                 mapping.server().awakeOrWarn();
-    }
-
-    /**
-     * Tries to register the old websocket handler format by inspecting its annotated methods and adding it to the registry.
-     * The method should be annotated with {@link Socket}.
-     *
-     * @param handler The SocketHandler to be registered.
-     */
-    @Deprecated(since = "3.0.5-SNAPSHOT", forRemoval = true)
-    private void tryOldWebsocketRegister(SocketHandler handler) {
-        ConcurrentHashMap<Pattern, List<EndpointMapping>> sockets = serverMappings.computeIfAbsent(WebSocketServer.class, c -> new ConcurrentHashMap<>());
-        List<Class<? extends Annotation>> annotations = new ArrayList<>(this.requirements.get(WebSocketServer.class)
-                .parallelStream().map(Requirement::getAnnotation).toList());
-
-        List<Method> outdatedMethods = Utils.getMethodsByAnnotation(handler.getClass(), MessageReceiver.class);
-        if (outdatedMethods.isEmpty()) return;
-
-        logger.warning("Found" + (outdatedMethods.size() == 1 ? " one" : " " + outdatedMethods.size()) +
-                " outdated websocket creation(s) in class " + handler.getClass().getSimpleName());
-
-        try {
-            Socket socket = retrieveRawAnnotation(handler, Socket.class);
-            Pattern validator = createOrGetValidator(socket.value(), sockets);
-
-            // Load requirements
-            ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements = new ConcurrentHashMap<>();
-            loadRequirements(requirements, annotations, null, handler);
-
-            // Remove empty requirements
-            requirements.forEach((aClass, objects) -> {
-                if (objects.isEmpty()) requirements.remove(aClass);
-            });
-
-            List<EndpointMapping> mappings = sockets.computeIfAbsent(validator, pattern -> new ArrayList<>());
-            for (Method method : outdatedMethods)
-                mappings.add(new EndpointMapping(ProcessPriority.Priority.NORMAL, method, handler, validator, requirements));
-        } catch (Exception e) {
-            logger.error(e);
-        }
     }
 
     /**
