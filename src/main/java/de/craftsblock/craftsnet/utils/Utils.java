@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.3
+ * @version 1.0.4
  * @since 2.1.1-SNAPSHOT
  */
 public class Utils {
@@ -120,6 +120,33 @@ public class Utils {
     }
 
     /**
+     * Generates a secure random passphrase with a specified length and the option to include
+     * special characters. The passphrase is generated from a character pool consisting of digits,
+     * lowercase and uppercase letters, and special characters.
+     *
+     * @param length the length of the generated passphrase.
+     * @return a secure random passphrase as a {@link String}.
+     * @throws NoSuchAlgorithmException if no strong secure random algorithm is available.
+     */
+    public static String secureRandomPassphrase(int length) throws NoSuchAlgorithmException {
+        return secureRandomPassphrase(length, true);
+    }
+
+    /**
+     * Generates a secure random passphrase with a specified length and the option to include
+     * special characters. The passphrase is generated from a character pool consisting of digits,
+     * lowercase and uppercase letters, and optionally special characters.
+     *
+     * @param length       the length of the generated passphrase.
+     * @param specialChars whether to include special characters in the passphrase.
+     * @return a secure random passphrase as a {@link String}.
+     * @throws NoSuchAlgorithmException if no strong secure random algorithm is available.
+     */
+    public static String secureRandomPassphrase(int length, boolean specialChars) throws NoSuchAlgorithmException {
+        return secureRandomPassphrase(length, length, specialChars);
+    }
+
+    /**
      * Generates a secure random passphrase with a specified length range and
      * the option to include special characters.
      * The passphrase is generated from a character pool consisting of digits,
@@ -150,6 +177,7 @@ public class Utils {
      * @throws NoSuchAlgorithmException if no strong secure random algorithm is available.
      */
     public static int secureRandomPassphraseLength(int origin, int bound) throws NoSuchAlgorithmException {
+        if (origin == bound) return origin;
         return SecureRandom.getInstanceStrong().nextInt(origin, bound);
     }
 
