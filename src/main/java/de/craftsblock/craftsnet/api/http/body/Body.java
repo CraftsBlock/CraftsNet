@@ -9,7 +9,8 @@ import de.craftsblock.craftsnet.api.http.body.bodies.StandardFormBody;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -168,8 +169,10 @@ public abstract class Body implements AutoCloseable {
             // Try to parse the body to the wanted type if it's not present
             BodyRegistry registry = this.request.getCraftsNet().bodyRegistry();
             if (!registry.isParserPresent(type)) return null;
-            return this.request.getCraftsNet().bodyRegistry().getParser(type).parse(this.request, this.request.getRawBody());
-        } catch (FileNotFoundException e) {
+            try (InputStream stream = this.request.getRawBody()) {
+                return this.request.getCraftsNet().bodyRegistry().getParser(type).parse(this.request, stream);
+            }
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
