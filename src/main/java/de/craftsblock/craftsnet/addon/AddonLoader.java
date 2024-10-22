@@ -4,7 +4,7 @@ import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
-import de.craftsblock.craftsnet.events.addons.AddonsLoadedEvent;
+import de.craftsblock.craftsnet.events.addons.AllAddonsLoadedEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 
 import java.io.*;
@@ -263,7 +263,7 @@ final class AddonLoader {
         configurations.clear();
 
         try {
-            craftsNet.listenerRegistry().call(new AddonsLoadedEvent());
+            craftsNet.listenerRegistry().call(new AllAddonsLoadedEvent());
         } catch (Exception e) {
             logger.error(e, "Can not fire addons loaded event!");
         }

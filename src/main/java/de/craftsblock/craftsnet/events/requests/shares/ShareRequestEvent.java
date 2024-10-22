@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.events.shares;
+package de.craftsblock.craftsnet.events.requests.shares;
 
 import com.sun.net.httpserver.Headers;
 import de.craftsblock.craftscore.event.Cancellable;

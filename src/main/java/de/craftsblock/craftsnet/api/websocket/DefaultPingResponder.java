@@ -3,7 +3,7 @@ package de.craftsblock.craftsnet.api.websocket;
 import de.craftsblock.craftscore.event.EventHandler;
 import de.craftsblock.craftscore.event.ListenerAdapter;
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.events.sockets.ReceivedPingMessageEvent;
+import de.craftsblock.craftsnet.events.sockets.message.ReceivedPingMessageEvent;
 
 /**
  * A default implementation of a ping responder for handling incoming ping messages.

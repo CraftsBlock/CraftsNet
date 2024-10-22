@@ -12,9 +12,9 @@ import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.SessionStorage;
 import de.craftsblock.craftsnet.events.requests.PostRequestEvent;
 import de.craftsblock.craftsnet.events.requests.PreRequestEvent;
-import de.craftsblock.craftsnet.events.requests.RequestEvent;
-import de.craftsblock.craftsnet.events.shares.ShareFileLoadedEvent;
-import de.craftsblock.craftsnet.events.shares.ShareRequestEvent;
+import de.craftsblock.craftsnet.events.requests.routes.RouteRequestEvent;
+import de.craftsblock.craftsnet.events.requests.shares.ShareFileLoadedEvent;
+import de.craftsblock.craftsnet.events.requests.shares.ShareRequestEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 
 import java.io.File;
@@ -167,7 +167,7 @@ public class WebHandler implements HttpHandler {
         request.setRoutes(routes);
 
         // Create a RequestEvent and call listeners before invoking the API handler method.
-        RequestEvent event = new RequestEvent(exchange, routes);
+        RouteRequestEvent event = new RouteRequestEvent(exchange, routes);
         craftsNet.listenerRegistry().call(event);
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "ABORTED";

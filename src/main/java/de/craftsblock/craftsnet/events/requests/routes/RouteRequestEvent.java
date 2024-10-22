@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.events.requests;
+package de.craftsblock.craftsnet.events.requests.routes;
 
 import de.craftsblock.craftscore.event.Cancellable;
 import de.craftsblock.craftscore.event.Event;
@@ -8,16 +8,16 @@ import de.craftsblock.craftsnet.api.http.Exchange;
 import java.util.List;
 
 /**
- * The RequestEvent class represents an event related to a request. It extends the base Event class and implements the Cancellable interface.
- * Events can be triggered during various stages of request processing. This class provides information about the Exchange and the RouteMapping
+ * The {@link RouteRequestEvent} class represents an event related to a route request.
+ * This class provides information about the {@link Exchange} and the {@link RouteRegistry.EndpointMapping}
  * involved in the request event.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
- * @since CraftsNet-1.0.0
+ * @version 1.1.0
+ * @since 1.0.0-SNAPSHOT
  */
-public class RequestEvent extends Event implements Cancellable {
+public class RouteRequestEvent extends Event implements Cancellable {
 
     private final Exchange exchange;
 
@@ -27,38 +27,38 @@ public class RequestEvent extends Event implements Cancellable {
     private boolean cancelled = false;
 
     /**
-     * Constructs a new RequestEvent with the specified Exchange and RouteMappings.
+     * Constructs a new {@link RouteRequestEvent} with the specified {@link Exchange} and {@link RouteRegistry.EndpointMapping}.
      *
-     * @param exchange The Exchange object representing the request and its associated data.
-     * @param mappings The RouteMapping objects associated with the request, can be null if not applicable.
+     * @param exchange The {@link Exchange} object representing the request and its associated data.
+     * @param mappings The {@link RouteRegistry.EndpointMapping} objects associated with the request, can be null if not applicable.
      */
-    public RequestEvent(Exchange exchange, List<RouteRegistry.EndpointMapping> mappings) {
+    public RouteRequestEvent(Exchange exchange, List<RouteRegistry.EndpointMapping> mappings) {
         this.exchange = exchange;
         this.mappings = mappings;
     }
 
     /**
-     * Gets the Exchange object associated with the request event.
+     * Gets the {@link Exchange} object associated with the request event.
      *
-     * @return The Exchange object representing the request and its associated data.
+     * @return The {@link Exchange} object representing the request and its associated data.
      */
     public Exchange getExchange() {
         return exchange;
     }
 
     /**
-     * Get the RouteMappings associated with the request event.
+     * Get a list of {@link RouteRegistry.EndpointMapping} associated with the request event.
      *
-     * @return The RouteMapping objects representing the mapping for the request route.
+     * @return A list of {@link RouteRegistry.EndpointMapping} representing the mappings for the request route.
      */
     public List<RouteRegistry.EndpointMapping> getMappings() {
         return mappings;
     }
 
     /**
-     * Checks if the request event has valid RouteMappings associated with it.
+     * Checks if the request event has at least one valid {@link RouteRegistry.EndpointMapping} associated with it.
      *
-     * @return true if the event has valid RouteMappings, false otherwise.
+     * @return true if the event has at least one valid {@link RouteRegistry.EndpointMapping}, false otherwise.
      */
     public boolean hasMappings() {
         return mappings != null && !mappings.isEmpty();

@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.events.shares;
+package de.craftsblock.craftsnet.events.requests.shares;
 
 import de.craftsblock.craftscore.event.Event;
 import org.jetbrains.annotations.Nullable;

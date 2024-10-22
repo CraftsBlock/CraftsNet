@@ -14,7 +14,7 @@ import java.util.List;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0
- * @since CraftsNet-2.1.1
+ * @since 2.1.1-SNAPSHOT
  */
 public class ClientConnectEvent extends Event implements Cancellable {
 

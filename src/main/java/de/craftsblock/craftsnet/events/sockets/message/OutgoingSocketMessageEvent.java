@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.events.sockets;
+package de.craftsblock.craftsnet.events.sockets.message;
 
 import de.craftsblock.craftscore.event.Cancellable;
 import de.craftsblock.craftscore.event.Event;
@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0
- * @since CraftsNet-2.1.1
+ * @since 2.1.1-SNAPSHOT
  */
 public class OutgoingSocketMessageEvent extends Event implements Cancellable {
 

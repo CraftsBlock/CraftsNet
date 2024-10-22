@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.events.sockets;
+package de.craftsblock.craftsnet.events.sockets.message;
 
 import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;

@@ -8,6 +8,11 @@ import de.craftsblock.craftsnet.api.http.Exchange;
  * This event is triggered after an HTTP request has been processed.
  * It contains information about the request, whether the requested resource was found,
  * and whether the resource was shared.
+ *
+ * @author Philipp Maywald
+ * @author CraftsBlock
+ * @version 1.0.0
+ * @since 3.0.7-SNAPSHOT
  */
 @Experimental
 public class PostRequestEvent extends Event {
