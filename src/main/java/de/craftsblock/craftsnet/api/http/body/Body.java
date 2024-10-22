@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version 2.0.0
  * @see FormBody
  * @see JsonBody
- * @since CraftsNet-2.2.0
+ * @since 2.2.0-SNAPSHOT
  */
 public abstract class Body implements AutoCloseable {
 
@@ -136,7 +136,6 @@ public abstract class Body implements AutoCloseable {
      *
      * @param type The type which should be checked.
      * @return true if the type is the type of the current request body, false otherwise.
-     * @since CraftsNet-3.0.4
      */
     @Beta
     @ApiStatus.Experimental
@@ -157,7 +156,6 @@ public abstract class Body implements AutoCloseable {
      * @param type The type which the current request body should be cast to.
      * @param <T>  The type of the request body.
      * @return The object after casting, or null if the current request body is not an instance of the type.
-     * @since CraftsNet-3.0.4
      */
     @Beta
     @ApiStatus.Experimental
@@ -181,7 +179,6 @@ public abstract class Body implements AutoCloseable {
      * <p><b>Important:</b> As it is only a preview it may change in a future release.</p>
      *
      * @return The set containing all body types as classes.
-     * @since CraftsNet-3.0.4
      */
     @Beta
     @ApiStatus.Experimental
@@ -195,7 +192,6 @@ public abstract class Body implements AutoCloseable {
      * <p><b>Important:</b> As it is only a preview it may change in a future release.</p>
      *
      * @return The {@link ConcurrentHashMap} containing all parsed bodies.
-     * @since CraftsNet-3.0.4
      */
     @Beta
     @ApiStatus.Experimental
@@ -209,7 +205,6 @@ public abstract class Body implements AutoCloseable {
      * <p><b>Important:</b> As it is only a preview it may change in a future release.</p>
      *
      * @param request The request which should be cleaned.
-     * @since CraftsNet-3.0.4
      */
     @Beta
     @ApiStatus.Internal
