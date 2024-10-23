@@ -13,12 +13,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Represents a run node in the AST of the CNet scripting language.
- * This node is responsible for executing specified targets.
+ * Represents a 'run' statement node in the Abstract Syntax Tree (AST) of the CNet scripting language.
+ * <p>
+ * The 'run' statement is used to dynamically execute one or more scripts or classes within the context of the script.
+ * It resolves class names and ensures that they implement {@link CNetScript}, then invokes the {@link CNetScript#execute(Exchange)} method
+ * on them, passing the current {@link Exchange} context.
+ * </p>
+ * <p>
+ * The node stores multiple targets, which represent the scripts or classes to be run, and handles
+ * reflection to load and execute the corresponding methods.
+ * </p>
  *
- * @author CraftsBlock
  * @author Philipp Maywald
+ * @author CraftsBlock
  * @version 1.0.1
+ * @see ASTNode
+ * @see CNetScript
+ * @see CNetInterpreter
+ * @see CNetParser
+ * @see VariableNode
  * @since 3.0.7-SNAPSHOT
  */
 public class RunNode extends ASTNode {
@@ -26,18 +39,22 @@ public class RunNode extends ASTNode {
     private final List<String> targets = new ArrayList<>();
 
     /**
-     * Constructs an {@link RunNode} with the specified line number.
+     * Constructs a {@link RunNode} with the specified line number.
      *
-     * @param line the line number in the source code where this node is located
+     * @param line the line number in the source code where the 'run' statement appears
      */
     public RunNode(int line) {
         super(line);
     }
 
     /**
-     * Parses the run node, extracting the list of target identifiers or pointers.
+     * Parses the 'run' statement and extracts the target classes or scripts.
+     * <p>
+     * This method consumes a list of identifiers or pointers from the {@link CNetParser},
+     * separated by commas, and adds them to the {@code targets} list.
+     * </p>
      *
-     * @param parser the parser used to parse the node
+     * @param parser the {@link CNetParser} used to extract the target class names or scripts
      */
     @Override
     public void parse(CNetParser parser) {
@@ -49,10 +66,23 @@ public class RunNode extends ASTNode {
     }
 
     /**
-     * Interprets the run node, executing each target in the context of an exchange.
+     * Interprets the 'run' statement and executes the target scripts or classes.
+     * <p>
+     * This method:
+     * <ul>
+     *     <li>Resolves the target class or script using {@link VariableNode#buildTarget}.</li>
+     *     <li>Attempts to load the class via reflection, first checking the standard class loader,
+     *         then trying addon class loaders via {@link AddonClassLoader}.</li>
+     *     <li>Verifies that the class implements {@link CNetScript} and invokes its {@code execute} method.</li>
+     * </ul>
+     * If the class cannot be found or does not conform to the expected {@code CNetScript} interface,
+     * a runtime exception is thrown.
+     * </p>
      *
-     * @param interpreter the interpreter used to execute the node
-     * @param exchange    the exchange context in which the node is interpreted
+     * @param interpreter the {@link CNetInterpreter} used to resolve variables and target paths
+     * @param exchange    the {@link Exchange} context passed to the script's {@code execute} method
+     * @return true if the execution is successful, false otherwise
+     * @throws RuntimeException if the class cannot be found, or if the reflection process encounters errors
      */
     @Override
     public boolean interpret(CNetInterpreter interpreter, Exchange exchange) {
@@ -97,9 +127,9 @@ public class RunNode extends ASTNode {
     }
 
     /**
-     * Gets the list of target identifiers or pointers.
+     * Returns the list of target class names or scripts defined by this node.
      *
-     * @return the list of targets
+     * @return a list of target names as {@link String}s
      */
     public List<String> getTargets() {
         return targets;
