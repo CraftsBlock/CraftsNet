@@ -135,7 +135,7 @@ final class ArtifactLoader {
             return new URL[0];
         }
 
-        ConcurrentLinkedQueue<URL> urls = new ConcurrentLinkedQueue<>();
+        List<URL> urls = new ArrayList<>();
         result.getArtifactResults().forEach(artifact -> {
             File file = artifact.getArtifact().getPath().toFile();
             try (JarFile jarFile = new JarFile(file, true, ZipFile.OPEN_READ, Runtime.version())) {

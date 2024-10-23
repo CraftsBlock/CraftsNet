@@ -22,6 +22,7 @@ public enum CNetTokenType {
     RUN("run", "run", RunNode.class),
     EXEC("exec", "exec", RunNode.class),
     VARIABLE("var", "var", VariableNode.class),
+    IMPORT("include", "include", IncludeNode.class),
     DEFINITION("def", "=", null),
     POINTER("pointer", "\\$[a-zA-Z0-9_.]+", null),
     IDENTIFIER("identifier", "[a-zA-Z0-9_$./]+", null),

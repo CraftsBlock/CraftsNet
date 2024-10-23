@@ -36,7 +36,7 @@ public class CNetInterpreter {
      *
      * @param nodes    the list of AST nodes to interpret
      * @param exchange the exchange context in which to interpret the nodes
-     * @return {@code true} if the after this interpretation the compiler should continue, {@code false} otherwise
+     * @return {@code true} if the compiler should continue after this interpretation, {@code false} otherwise
      * @throws Exception if there was an exception while interpreting the list of nodes.
      */
     public boolean interpret(List<ASTNode> nodes, Exchange exchange) throws Exception {

@@ -59,9 +59,10 @@ public class CNetCompiler {
      *
      * @param input    the input file containing the script to compile
      * @param exchange the exchange context in which the script is executed
+     * @return {@code true} if the compiler compiled the hole script without exiting, {@code false} otherwise
      * @throws IOException if an I/O error occurs
      */
-    public static void compile(File input, Exchange exchange) throws IOException {
+    public static boolean compile(File input, Exchange exchange) throws IOException {
         try {
             byte[] data;
             try (FileInputStream in = new FileInputStream(input)) {
@@ -69,7 +70,7 @@ public class CNetCompiler {
                 if (!Utils.isEncodingValid(data, StandardCharsets.UTF_8))
                     throw new UnsupportedEncodingException("The file must not contain none utf8 chars! (At least one byte was negativ!)");
             }
-            compile(new String(data, StandardCharsets.UTF_8), exchange);
+            return compile(new String(data, StandardCharsets.UTF_8), exchange);
         } catch (RuntimeException e) {
             throw new RuntimeException("Unable to finish compilation of file " + input.getAbsolutePath(), e);
         }
@@ -80,8 +81,9 @@ public class CNetCompiler {
      *
      * @param input    the input string containing the script to compile
      * @param exchange the exchange context in which the script is executed
+     * @return {@code true} if the compiler compiled the hole script without exiting, {@code false} otherwise
      */
-    public static void compile(String input, Exchange exchange) {
+    public static boolean compile(String input, Exchange exchange) {
         Matcher matcher = extractor.matcher(input);
 
         CNetLexer lexer = new CNetLexer();
@@ -115,7 +117,8 @@ public class CNetCompiler {
             List<ASTNode> nodes = parser.parse();
 
             try {
-                if (!interpreter.interpret(nodes, exchange)) break;
+                if (!interpreter.interpret(nodes, exchange))
+                    return false;
             } catch (Exception e) {
                 if (e instanceof RuntimeException runtimeException)
                     throw runtimeException;
@@ -123,6 +126,7 @@ public class CNetCompiler {
             }
         }
         interpreter.reset();
+        return true;
     }
 
     /**
