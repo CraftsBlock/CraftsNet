@@ -12,7 +12,6 @@ import de.craftsblock.craftsnet.api.script.tokens.CNetTokenType;
  * </p>
  * The {@link PackageNode} extracts the package or target namespace during parsing, and during interpretation,
  * it sets the package into the interpreter's storage for later use.
- * </p>
  *
  * @author Philipp Maywald
  * @author CraftsBlock
@@ -59,7 +58,6 @@ public class PackageNode extends ASTNode {
      *     <li>Stores the resolved package name in the interpreter for use by other nodes during script execution.</li>
      *     <li>If the target is ".", an empty string is stored instead, indicating the root package.</li>
      * </ul>
-     * </p>
      *
      * @param interpreter the {@link CNetInterpreter} used to store the current package
      * @param exchange    the {@link Exchange} context (not used in this specific node but required for the signature)

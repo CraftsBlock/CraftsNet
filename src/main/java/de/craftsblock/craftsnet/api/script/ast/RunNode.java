@@ -77,7 +77,6 @@ public class RunNode extends ASTNode {
      * </ul>
      * If the class cannot be found or does not conform to the expected {@code CNetScript} interface,
      * a runtime exception is thrown.
-     * </p>
      *
      * @param interpreter the {@link CNetInterpreter} used to resolve variables and target paths
      * @param exchange    the {@link Exchange} context passed to the script's {@code execute} method

@@ -70,7 +70,6 @@ public class IncludeNode extends ASTNode {
      *     <li>Checks if the target file can be compiled. If not, throws an {@link UnsupportedEncodingException}.</li>
      *     <li>Compiles the target file using the {@link CNetCompiler} and returns the compilation result.</li>
      * </ul>
-     * </p>
      *
      * @param interpreter the {@link CNetInterpreter} used for resolving the target file path
      * @param exchange    the {@link Exchange} context in which the included file is interpreted
