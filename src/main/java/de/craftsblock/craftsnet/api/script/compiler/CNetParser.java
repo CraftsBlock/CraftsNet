@@ -79,7 +79,7 @@ public class CNetParser {
 
         int available = size - position;
 
-        int start = Math.max(0, position - (tokens - available));
+        int start = Math.max(0, position - Math.max(0, tokens - available));
         int end = Math.min(position + tokens, size);
 
         return this.tokens.subList(start, end);

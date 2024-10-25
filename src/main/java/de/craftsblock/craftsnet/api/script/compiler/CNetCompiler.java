@@ -107,8 +107,7 @@ public class CNetCompiler {
             if (matcher.group("leading") != null)
                 lines += countLines(matcher.group("leading"));
 
-            Pattern removeComments = Pattern.compile("//.*|/\\*.*\\*/|#.*", Pattern.DOTALL);
-            List<CNetToken> tokens = lexer.tokenize(lines, removeComments.matcher(script).replaceAll(""));
+            List<CNetToken> tokens = lexer.tokenize(lines, script);
 
             if (matcher.group("trailing") != null)
                 lines += countLines(matcher.group("trailing")) - 1;
