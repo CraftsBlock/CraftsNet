@@ -134,14 +134,8 @@ public class CNetCompiler {
      * @param text the text in which to count new lines
      * @return the number of new line characters found in the text
      */
-    private static int countLines(String text) {
-        int newLines = 0;
-
-        for (char c : text.toCharArray())
-            if (c == '\n')
-                newLines++;
-
-        return newLines;
+    protected static int countLines(String text) {
+        return text.replaceAll("[^\\n]+", "").length();
     }
 
 }
