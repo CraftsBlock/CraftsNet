@@ -67,7 +67,7 @@ dependencies {
 
 2. HTTP endpoints can be created as shown in the following example.
 ```java
-package de.craftsblock.myaddon
+package de.craftsblock.myaddon;
 
 import de.craftsblock.backend.api.http.Exchange;
 import de.craftsblock.backend.api.http.RequestHandler;
