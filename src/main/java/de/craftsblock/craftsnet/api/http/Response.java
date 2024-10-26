@@ -26,7 +26,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.2
+ * @version 1.0.3
  * @see Exchange
  * @see WebServer
  * @since 1.0.0-SNAPSHOT
@@ -46,7 +46,7 @@ public class Response implements AutoCloseable {
     private Exchange exchange;
 
     private int code = 200;
-    private boolean headersSend = false;
+    private boolean headersSent = false;
 
     /**
      * Constructor for creating a new Response object.
@@ -76,7 +76,7 @@ public class Response implements AutoCloseable {
      * @throws IOException if an I/O error occurs.
      */
     public void print(Object object) throws IOException {
-        if (!headersSend && !hasHeader("Content-Type")) setContentType("application/json");
+        if (!headersSent && !hasHeader("Content-Type")) setContentType("application/json");
         println(object.toString());
     }
 
@@ -121,7 +121,7 @@ public class Response implements AutoCloseable {
      * @throws IOException if an I/O error occurs.
      */
     public void print(File file) throws IOException {
-        if (headersSend) {
+        if (headersSent) {
             logger.warning("A file was attempted to be sent while the body has already begun to be written!");
             return;
         }
@@ -178,7 +178,7 @@ public class Response implements AutoCloseable {
      * @throws IOException if an I/O error occurs.
      */
     private void ensureHeadersSend(long length) throws IOException {
-        if (headersSend) return;
+        if (headersSent) return;
         sendResponseHeaders(code, length);
     }
 
@@ -190,7 +190,7 @@ public class Response implements AutoCloseable {
      * @throws IOException if an I/O error occurs
      */
     private void sendResponseHeaders(int code, long length) throws IOException {
-        if (headersSend) return;
+        if (headersSent) return;
 
         for (Cookie cookie : getCookies())
             addHeader("Set-Cookie", cookie.toString());
@@ -198,7 +198,7 @@ public class Response implements AutoCloseable {
         if (exchange != null) this.corsPolicy.apply(exchange);
 
         httpExchange.sendResponseHeaders(code, length);
-        this.headersSend = true;
+        this.headersSent = true;
 
         if (length == -1) return;
         this.stream = httpExchange.getResponseBody();
@@ -261,8 +261,8 @@ public class Response implements AutoCloseable {
      * @throws IllegalStateException if the response headers have already been sent.
      */
     public void setCode(int code) {
-        if (headersSend)
-            throw new IllegalStateException("Antwort Header wurden bereits gesendet!");
+        if (headersSent)
+            throw new IllegalStateException("Response headers have already been sent!");
         this.code = code;
     }
 
@@ -294,8 +294,8 @@ public class Response implements AutoCloseable {
      * @throws IllegalStateException if the response headers have already been sent.
      */
     public void addHeader(String key, String value) {
-        if (headersSend)
-            throw new IllegalStateException("Antwort Header wurden bereits gesendet!");
+        if (headersSent)
+            throw new IllegalStateException("Response headers have already been sent!");
         if (key == null || value == null) return;
         headers.add(key, value);
     }
@@ -308,8 +308,8 @@ public class Response implements AutoCloseable {
      * @throws IllegalStateException if the response headers have already been sent.
      */
     public void setHeader(String key, String value) {
-        if (headersSend)
-            throw new IllegalStateException("Antwort Header wurden bereits gesendet!");
+        if (headersSent)
+            throw new IllegalStateException("Response headers have already been sent!");
         if (key == null || value == null) return;
         headers.set(key, value);
     }
@@ -382,6 +382,24 @@ public class Response implements AutoCloseable {
      */
     public ConcurrentLinkedQueue<Cookie> getCookies() {
         return new ConcurrentLinkedQueue<>(cookies.values());
+    }
+
+    /**
+     * Returns whether the response headers have already been sent or not.
+     *
+     * @return {@code true} if the response headers have been sent, {@code false} otherwise.
+     */
+    public boolean headersSent() {
+        return headersSent;
+    }
+
+    /**
+     * Returns whether the response can have a response body.
+     *
+     * @return {@code true} if the response can have a body, {@code false} otherwise.
+     */
+    public boolean isBodyAble() {
+        return bodyAble;
     }
 
     /**

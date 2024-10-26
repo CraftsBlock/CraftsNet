@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.2
+ * @version 1.2.3
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -95,6 +95,7 @@ public class WebHandler implements HttpHandler {
                 if (craftsNet.fileLogger() != null) {
                     long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "http", url);
                     logger.error(t, "Error: " + errorID);
+                    if (response.headersSent()) response.setCode(500);
                     if (!httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN))
                         response.print(Json.empty()
                                 .set("error.message", "An unexpected exception happened whilst processing your request!")
@@ -136,6 +137,7 @@ public class WebHandler implements HttpHandler {
         }
 
         // If no matching route or share is found, respond with an error message and log the failed request
+        response.setCode(404);
         respondWithError(response, "Path do not match any API endpoint!");
         logger.info(httpMethod.toString() + " " + url + " from " + request.getIp() + " \u001b[38;5;9m[NOT FOUND]");
         return Map.entry(false, false);
@@ -309,7 +311,7 @@ public class WebHandler implements HttpHandler {
         Json json = Json.empty();
         json.set("success", false);
         json.set("message", errorMessage);
-        response.print(json.toString());
+        response.print(json);
     }
 
 }
