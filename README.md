@@ -85,7 +85,7 @@ public class MyRoute implements RequestHandler {
 
 3. The following source code shows you how to create a WebSocket endpoint.
 ```java
-package de.craftsblock.myaddon
+package de.craftsblock.myaddon;
 
 import de.craftsblock.backend.api.websocket.MessageReceiver;
 import de.craftsblock.backend.api.websocket.Socket;
@@ -104,9 +104,9 @@ public class MySocket implements SocketHandler {
 
 4. Last but not least, you need the heart of your application, the Addon class. This is where all routes and endpoints are registered.
 ```java
-package de.craftsblock.myaddon
+package de.craftsblock.myaddon;
 
-import de.craftsblock.craftsnet.addon.Addon
+import de.craftsblock.craftsnet.addon.Addon;
 
 public class MyAddon extends Addon {
 
@@ -134,7 +134,6 @@ We are using some third party open source libraries. Below you find a list of al
 | Name                                                                   | Description                                                                                                                           | Licecnse                                                                                         |
 | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | [CraftsCore](https://github.com/CrAfTsArMy/CraftsCore)                 | https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/CraftsCore                                                           | [Apache License 2.0](https://github.com/CrAfTsArMy/CraftsCore/blob/master/LICENSE)               |
-| [MySQL Connector-J](https://github.com/mysql/mysql-connector-j)        | MySQL Connector/J                                                                                                                     | [GPLv2 with FOSS exception](https://github.com/mysql/mysql-connector-j/blob/release/8.x/LICENSE) |
 | [GSON](https://github.com/google/gson)                                 | A Java serialization/deserialization library to convert Java Objects into JSON and back                                               | [Apache License 2.0](https://github.com/google/gson/blob/main/LICENSE)                           |
 | [Apache Tika](https://github.com/apache/tika)                          | The Apache Tika toolkit detects and extracts metadata and text from over a thousand different file types (such as PPT, XLS, and PDF). | [Apache License 2.0](https://github.com/apache/tika/blob/main/LICENSE.txt)                       |
 | [JetBrains Annotations](https://github.com/JetBrains/java-annotations) | Annotations for JVM-based languages.                                                                                                  | [Apache License 2.0](https://github.com/JetBrains/java-annotations/blob/master/LICENSE.txt)      |
