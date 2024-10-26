@@ -22,9 +22,6 @@ dependencies {
 
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
-    // https://mvnrepository.com/artifact/com.mysql/mysql-connector-j
-    implementation 'com.mysql:mysql-connector-j:9.0.0'
-
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
     implementation 'com.google.code.gson:gson:2.11.0'
 
