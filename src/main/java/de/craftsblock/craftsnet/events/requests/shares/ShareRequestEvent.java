@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.events.requests.shares;
 
 import com.sun.net.httpserver.Headers;
 import de.craftsblock.craftscore.event.Cancellable;
+import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.Exchange;
@@ -20,7 +21,7 @@ import java.util.List;
  * @see de.craftsblock.craftscore.event.Cancellable
  * @since CraftsNet-2.3.2
  */
-public class ShareRequestEvent extends Event implements Cancellable {
+public class ShareRequestEvent extends CancellableEvent {
 
     private final Headers headers = new Headers();
     private final String httpPath;
@@ -30,7 +31,6 @@ public class ShareRequestEvent extends Event implements Cancellable {
     private String filePath;
 
     private String cancelReason;
-    private boolean cancelled;
 
     /**
      * Creates a new ShareRequestEvent with the specified path.
@@ -141,26 +141,6 @@ public class ShareRequestEvent extends Event implements Cancellable {
      */
     public boolean hasHeader(String key) {
         return headers.containsKey(key);
-    }
-
-    /**
-     * Sets whether the share request is canceled or not.
-     *
-     * @param cancelled True if the share request is to be canceled, otherwise false.
-     */
-    @Override
-    public void setCancelled(boolean cancelled) {
-        this.cancelled = cancelled;
-    }
-
-    /**
-     * Checks if the share request is canceled.
-     *
-     * @return True if the share request is canceled, otherwise false.
-     */
-    @Override
-    public boolean isCancelled() {
-        return cancelled;
     }
 
     /**

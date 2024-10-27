@@ -1,7 +1,6 @@
 package de.craftsblock.craftsnet.events.sockets;
 
-import de.craftsblock.craftscore.event.Cancellable;
-import de.craftsblock.craftscore.event.Event;
+import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
 
@@ -9,25 +8,24 @@ import java.util.List;
 
 /**
  * The ClientConnectEvent class represents an event related to a client connection to a socket.
- * It extends the base Event class and implements the Cancellable interface to support event cancellation.
+ * It extends the base {@link CancellableEvent} to support event cancellation.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0
  * @since 2.1.1-SNAPSHOT
  */
-public class ClientConnectEvent extends Event implements Cancellable {
+public class ClientConnectEvent extends CancellableEvent {
 
     private final SocketExchange exchange;
     private final List<RouteRegistry.EndpointMapping> mappings;
-    private boolean cancelled = false;
     private String reason;
 
     /**
      * Constructs a new ClientConnectEvent with the specified SocketExchange and SocketMapping.
      *
      * @param exchange The SocketExchange object representing the socket connection and its associated data.
-     * @param mappings  A list of SocketMapping objects associated with the client connection event.
+     * @param mappings A list of SocketMapping objects associated with the client connection event.
      */
     public ClientConnectEvent(SocketExchange exchange, List<RouteRegistry.EndpointMapping> mappings) {
         this.exchange = exchange;
@@ -77,26 +75,6 @@ public class ClientConnectEvent extends Event implements Cancellable {
      */
     public String getReason() {
         return reason;
-    }
-
-    /**
-     * Sets the cancelled flag for the event, indicating whether the event is cancelled or not.
-     *
-     * @param cancelled true to cancel the event, false to allow processing.
-     */
-    @Override
-    public void setCancelled(boolean cancelled) {
-        this.cancelled = cancelled;
-    }
-
-    /**
-     * Checks if the event has been cancelled.
-     *
-     * @return true if the event is cancelled, false otherwise.
-     */
-    @Override
-    public boolean isCancelled() {
-        return cancelled;
     }
 
 }

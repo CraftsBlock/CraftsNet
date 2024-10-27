@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.events.sockets.message;
 
 import de.craftsblock.craftscore.event.Cancellable;
+import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.websocket.Opcode;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
@@ -10,18 +11,17 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * The OutgoingSocketMessageEvent class represents an event related to an outgoing message on a websocket connection.
- * It extends the base Event class and implements the Cancellable interface to support event cancellation.
+ * It extends the base {@link CancellableEvent} to support event cancellation.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0
  * @since 2.1.1-SNAPSHOT
  */
-public class OutgoingSocketMessageEvent extends Event implements Cancellable {
+public class OutgoingSocketMessageEvent extends CancellableEvent {
 
     private final SocketExchange exchange;
 
-    private boolean cancelled = false;
     private Opcode opcode;
     private byte @NotNull [] data;
 
@@ -94,23 +94,4 @@ public class OutgoingSocketMessageEvent extends Event implements Cancellable {
         this.data = data;
     }
 
-    /**
-     * Sets the cancelled flag for the event, indicating whether the event is cancelled or not.
-     *
-     * @param cancelled true to cancel the event, false to allow processing.
-     */
-    @Override
-    public void setCancelled(boolean cancelled) {
-        this.cancelled = cancelled;
-    }
-
-    /**
-     * Checks if the event has been cancelled.
-     *
-     * @return true if the event is cancelled, false otherwise.
-     */
-    @Override
-    public boolean isCancelled() {
-        return cancelled;
-    }
 }

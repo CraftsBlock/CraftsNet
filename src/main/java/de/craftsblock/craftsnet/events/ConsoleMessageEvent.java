@@ -1,10 +1,9 @@
 package de.craftsblock.craftsnet.events;
 
-import de.craftsblock.craftscore.event.Cancellable;
-import de.craftsblock.craftscore.event.Event;
+import de.craftsblock.craftscore.event.CancellableEvent;
 
 /**
- * The ConsoleMessageEvent class represents an event related to a console message. It extends the base Event class,
+ * The ConsoleMessageEvent class represents an event related to a console message. It extends the base {@link CancellableEvent} class,
  * allowing it to be used within an event-driven system.
  *
  * @author CraftsBlock
@@ -12,9 +11,8 @@ import de.craftsblock.craftscore.event.Event;
  * @version 1.0
  * @since 1.0.0-SNAPSHOT
  */
-public class ConsoleMessageEvent extends Event implements Cancellable {
+public class ConsoleMessageEvent extends CancellableEvent {
 
-    private boolean cancelled = false;
     private final String message;
 
     /**
@@ -35,23 +33,4 @@ public class ConsoleMessageEvent extends Event implements Cancellable {
         return message;
     }
 
-    /**
-     * Sets the cancelled flag for the event, indicating whether the event is cancelled or not.
-     *
-     * @param cancelled true to cancel the event, false to allow processing.
-     */
-    @Override
-    public void setCancelled(boolean cancelled) {
-        this.cancelled = cancelled;
-    }
-
-    /**
-     * Checks if the event has been cancelled.
-     *
-     * @return true if the event is cancelled, false otherwise.
-     */
-    @Override
-    public boolean isCancelled() {
-        return cancelled;
-    }
 }
