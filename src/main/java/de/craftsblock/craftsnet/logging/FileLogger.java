@@ -1,13 +1,18 @@
 package de.craftsblock.craftsnet.logging;
 
+import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftscore.utils.id.Snowflake;
 import de.craftsblock.craftsnet.CraftsNet;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
-import java.io.*;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -15,6 +20,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * A utility class for logging to files.
@@ -27,11 +33,22 @@ import java.util.regex.Pattern;
  */
 public class FileLogger {
 
-    private final File folder = new File("logs");
+    private final Path folder = Path.of("logs");
+    private final long max;
 
-    private FileOutputStream stream;
+    private OutputStream stream;
     private PrintStream oldOut;
     private PrintStream oldErr;
+
+    /**
+     * Constructs a new {@link FileLogger} instance with a specified maximum number of log files.
+     *
+     * @param max the maximum number of log files to retain. Once this limit is reached, older log files
+     *            may be deleted or rotated out to maintain the limit.
+     */
+    public FileLogger(long max) {
+        this.max = max;
+    }
 
     /**
      * Starts logging to files.
@@ -44,29 +61,39 @@ public class FileLogger {
             oldOut = System.out;
             oldErr = System.err;
 
-            File file = new File(folder, "latest.log");
-            if (file.exists()) {
-                BasicFileAttributes attributes = Files.readAttributes(file.toPath(), BasicFileAttributes.class);
+            if (max == 0 && Files.exists(folder))
+                try (Stream<Path> stream = Files.walk(folder).parallel()) {
+                    long count = stream.count();
+                    if (count > max) {
+                        long diff = count - max;
+                        for (Path path : Utils.getOldestNFiles(folder, diff))
+                            Files.deleteIfExists(path);
+                    }
+                }
+
+            Path file = folder.resolve("latest.log");
+            if (Files.exists(folder.resolve("latest.log"))) {
+                BasicFileAttributes attributes = Files.readAttributes(file, BasicFileAttributes.class);
                 OffsetDateTime creationTime = OffsetDateTime.ofInstant(attributes.creationTime().toInstant(), ZoneId.systemDefault());
                 String prefix = creationTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
 
                 int i = 1;
                 while (true) {
-                    File newName = new File(folder, prefix + "_" + i + ".log");
-                    if (newName.exists()) {
+                    Path newName = folder.resolve(prefix + "_" + i + ".log");
+                    if (Files.exists(newName)) {
                         i++;
                         continue;
                     }
-                    file.renameTo(newName);
+                    Files.move(file, newName);
                     start();
                     return;
                 }
             }
 
             ensureParentFolder(file);
-            file.createNewFile();
+            Files.createFile(file);
 
-            stream = new FileOutputStream(file);
+            stream = Files.newOutputStream(file);
             System.setOut(new LoggerPrintStream(oldOut, stream));
             System.setErr(new LoggerPrintStream(oldErr, stream));
         } catch (IOException e) {
@@ -145,46 +172,54 @@ public class FileLogger {
      * @return The identifier of the error log file.
      */
     public synchronized long createErrorLog(CraftsNet craftsNet, Throwable throwable, Map<String, String> additional) {
-        File errors = new File(folder, "errors");
-        ensureParentFolder(errors);
-        if (!errors.exists()) errors.mkdirs();
+        try {
+            Path errors = folder.resolve("errors");
+            ensureParentFolder(errors);
+            if (Files.notExists(errors))
+                Files.createDirectory(errors);
 
-        long identifier = Snowflake.generate();
-        File errorFile = new File(errors, "error_" + identifier + ".log");
-        try (PrintStream stream = new PrintStream(new FileOutputStream(errorFile))) {
-            String date = OffsetDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd kk:mm:ss"));
-            stream.writeBytes((
-                    "Identifier: " + identifier + "\n" +
-                            "Time: " + date + "\n"
-            ).getBytes(StandardCharsets.UTF_8));
+            long identifier = Snowflake.generate();
+            Path errorFile = errors.resolve("error_" + identifier + ".log");
+            try (PrintStream stream = new PrintStream(Files.newOutputStream(errorFile))) {
+                String date = OffsetDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd kk:mm:ss"));
+                stream.writeBytes((
+                        "Identifier: " + identifier + "\n" +
+                                "Time: " + date + "\n"
+                ).getBytes(StandardCharsets.UTF_8));
 
-            for (Map.Entry<String, String> entry : additional.entrySet())
-                stream.writeBytes((entry.getKey() + ": " + entry.getValue() + "\n").getBytes(StandardCharsets.UTF_8));
+                for (Map.Entry<String, String> entry : additional.entrySet())
+                    stream.writeBytes((entry.getKey() + ": " + entry.getValue() + "\n").getBytes(StandardCharsets.UTF_8));
 
-            stream.writeBytes((
-                    "\n" +
-                            "-".repeat(60) + "[ Stacktrace ]" + "-".repeat(60) + "\n" +
-                            "\n"
-            ).getBytes(StandardCharsets.UTF_8));
+                stream.writeBytes((
+                        "\n" +
+                                "-".repeat(60) + "[ Stacktrace ]" + "-".repeat(60) + "\n" +
+                                "\n"
+                ).getBytes(StandardCharsets.UTF_8));
 
-            stream.flush();
+                stream.flush();
 
-            throwable.printStackTrace(stream);
-        } catch (FileNotFoundException e) {
-            craftsNet.logger().error(e, "Failed to create error log file");
+                throwable.printStackTrace(stream);
+            } catch (FileNotFoundException e) {
+                craftsNet.logger().error(e, "Failed to create error log file");
+            }
+
+            return identifier;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
-
-        return identifier;
     }
 
     /**
-     * Ensures that the parent folder of the given file exists.
-     * If the parent folder of the file does not exist, this method creates the necessary folder hierarchy.
+     * Ensures that the parent directory of the specified file path exists.
      *
-     * @param file The file whose parent folder needs to be ensured.
+     * @param file the {@link Path} of the file for which the parent directory should be verified.
      */
-    private void ensureParentFolder(File file) {
-        if (file.getParentFile() != null && !file.getParentFile().exists()) file.getParentFile().mkdirs();
+    private void ensureParentFolder(Path file) {
+        try {
+            if (file.getParent() != null && Files.notExists(file.getParent())) Files.createDirectories(file.getParent());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -214,7 +249,7 @@ public class FileLogger {
         // Regular expression pattern to match ANSI escape sequences for colors
         private static final Pattern pattern = Pattern.compile("\u001B\\[[;\\d]*m");
 
-        private final FileOutputStream stream;
+        private final OutputStream stream;
 
         private int skipLines = 0;
 
@@ -224,7 +259,7 @@ public class FileLogger {
          * @param console The original console print stream.
          * @param stream  The output stream where the log messages will be written.
          */
-        public LoggerPrintStream(PrintStream console, FileOutputStream stream) {
+        public LoggerPrintStream(PrintStream console, OutputStream stream) {
             super(console);
             this.stream = stream;
         }

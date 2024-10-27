@@ -18,7 +18,7 @@ repositories {
 dependencies {
     // CraftsBlock related dependencies ---------------------------------------------------------------------------------------
 
-    implementation 'de.craftsblock.craftscore:CraftsCore:3.7.61-SNAPSHOT'
+    implementation 'de.craftsblock.craftscore:CraftsCore:3.7.63-SNAPSHOT'
 
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
@@ -29,7 +29,7 @@ dependencies {
     implementation 'org.apache.tika:tika-core:3.0.0-BETA2'
 
     // https://mvnrepository.com/artifact/org.jetbrains/annotations
-    implementation 'org.jetbrains:annotations:24.1.0'
+    implementation 'org.jetbrains:annotations:26.0.1'
 
     // Artifact resolving dependencies ----------------------------------------------------------------------------------------
 

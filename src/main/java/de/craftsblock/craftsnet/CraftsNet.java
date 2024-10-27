@@ -25,6 +25,7 @@ import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.LoggerImpl;
 import de.craftsblock.craftsnet.utils.FileHelper;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Range;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -80,15 +81,18 @@ public class CraftsNet {
         boolean debug = parser.isPresent("debug");
         boolean tempFilesOnNormal = parser.isPresent("placeTempFileInNormal");
         boolean ssl = parser.isPresent("ssl");
-        int port = (parser.isPresent("http-port") ? parser.getAsInt("http-port") : 5000);
-        int socketport = (parser.isPresent("socket-port") ? parser.getAsInt("socket-port") : 5001);
+        boolean logRotationDisabled = parser.isPresent("disableLogRotate");
+        int http_port = (parser.isPresent("http-port") ? parser.getAsInt("http-port") : 5000);
+        int socket_port = (parser.isPresent("socket-port") ? parser.getAsInt("socket-port") : 5001);
+        int logRotation = parser.getAsInt("log-rotate");
 
         CraftsNet.create()
-                .withWebServer(port)
-                .withWebSocketServer(socketport)
+                .withWebServer(http_port)
+                .withWebSocketServer(socket_port)
                 .withSSL(ssl)
                 .withDebug(debug)
                 .withTempFilesOnNormalFileSystem(tempFilesOnNormal)
+                .withLogRotate(logRotationDisabled ? 0 : logRotation)
                 .build();
     }
 
@@ -113,14 +117,14 @@ public class CraftsNet {
 
         // Checks if the file logger was enabled and start it if so
         if (builder.isFileLogger(ActivateType.ENABLED)) {
-            fileLogger = new FileLogger();
+            fileLogger = new FileLogger(builder.getLogRotate());
             fileLogger.start();
         }
 
         // Log startup message
         logger.info("CraftsNet v" + version + " boots up");
-        Runtime.Version version = Runtime.version();
-        logger.debug("JVM Version: " + version.toString() + "; Max recognizable class file version: " + (version.feature() + 44) + "." + version.interim());
+        Runtime.Version jvmVersion = Runtime.version();
+        logger.debug("JVM Version: " + jvmVersion.toString() + "; Max recognizable class file version: " + (jvmVersion.feature() + 44) + "." + jvmVersion.interim());
 
         // Setup default uncaught exception handler
         this.oldDefaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
@@ -163,7 +167,7 @@ public class CraftsNet {
             // Register a default route if nothing has been registered.
             if (!routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
                 logger.debug("No routes and sockets found, creating the default route");
-                routeRegistry().register((Handler) new DefaultRoute());
+                routeRegistry().register(new DefaultRoute());
             }
 
             // Start the webserver if needed
@@ -463,6 +467,8 @@ public class CraftsNet {
         private boolean tempFilesOnNormalFileSystem;
         private boolean ssl;
 
+        private long logRotate;
+
         /**
          * Constructs a new Builder instance with default configuration settings.
          */
@@ -474,6 +480,7 @@ public class CraftsNet {
             debug = false;
             tempFilesOnNormalFileSystem = false;
             ssl = false;
+            logRotate = 200;
         }
 
         /**
@@ -641,6 +648,27 @@ public class CraftsNet {
         }
 
         /**
+         * Sets the log rotation size threshold for this builder.
+         *
+         * @param logRotate the log rotation size threshold, in bytes. A value of 0 disables log rotation.
+         *                  Must be non-negative.
+         * @return this {@code Builder} instance, enabling method chaining.
+         */
+        public Builder withLogRotate(@Range(from = 0, to = Long.MAX_VALUE) long logRotate) {
+            this.logRotate = logRotate;
+            return this;
+        }
+
+        /**
+         * Disables log rotation by setting the log rotation size threshold to 0.
+         *
+         * @return this {@code Builder} instance, enabling method chaining.
+         */
+        public Builder withoutLogRotate() {
+            return withLogRotate(0);
+        }
+
+        /**
          * Retrieves the port number configured for the web server.
          *
          * @return The port number for the web server.
@@ -780,6 +808,24 @@ public class CraftsNet {
          */
         public boolean isSSL() {
             return ssl;
+        }
+
+        /**
+         * Retrieves the log rotation size threshold.
+         *
+         * @return the log rotation size threshold in bytes, or 0 if log rotation is disabled.
+         */
+        public long getLogRotate() {
+            return logRotate;
+        }
+
+        /**
+         * Checks if log rotation is disabled.
+         *
+         * @return {@code true} if log rotation is disabled (i.e., the threshold is 0), {@code false} otherwise.
+         */
+        public boolean isLogRotate() {
+            return logRotate == 0;
         }
 
         /**
