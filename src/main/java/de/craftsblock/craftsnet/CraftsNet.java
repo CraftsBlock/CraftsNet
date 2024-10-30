@@ -126,6 +126,9 @@ public class CraftsNet {
         Runtime.Version jvmVersion = Runtime.version();
         logger.debug("JVM Version: " + jvmVersion.toString() + "; Max recognizable class file version: " + (jvmVersion.feature() + 44) + "." + jvmVersion.interim());
 
+        logger.debug("Preloading gson for faster processing");
+        Json.empty();
+
         // Setup default uncaught exception handler
         this.oldDefaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
