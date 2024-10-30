@@ -84,7 +84,7 @@ public class CraftsNet {
         boolean logRotationDisabled = parser.isPresent("disableLogRotate");
         int http_port = (parser.isPresent("http-port") ? parser.getAsInt("http-port") : 5000);
         int socket_port = (parser.isPresent("socket-port") ? parser.getAsInt("socket-port") : 5001);
-        int logRotation = parser.getAsInt("log-rotate");
+        int logRotation = (parser.isPresent("log-rotate") ? parser.getAsInt("log-rotate") : 0);
 
         CraftsNet.create()
                 .withWebServer(http_port)
