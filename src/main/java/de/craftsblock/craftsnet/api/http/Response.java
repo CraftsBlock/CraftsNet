@@ -53,18 +53,16 @@ public class Response implements AutoCloseable {
      *
      * @param craftsNet    The CraftsNet instance which instantiates this
      * @param httpExchange The HttpExchange object representing the HTTP request-response exchange.
+     * @param httpMethod   The http method used to access the route.
      */
-    protected Response(CraftsNet craftsNet, HttpExchange httpExchange) {
+    protected Response(CraftsNet craftsNet, HttpExchange httpExchange, HttpMethod httpMethod) {
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
 
         this.httpExchange = httpExchange;
         this.headers = httpExchange.getResponseHeaders();
-
-        HttpMethod method = HttpMethod.parse(httpExchange.getRequestMethod());
-        this.bodyAble = !method.equals(HttpMethod.HEAD) && !method.equals(HttpMethod.UNKNOWN);
-
-        corsPolicy = new CorsPolicy();
+        this.bodyAble = httpMethod.isResponseBodyAble();
+        this.corsPolicy = new CorsPolicy();
 
         setContentType("application/json");
     }

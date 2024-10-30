@@ -68,7 +68,7 @@ public class WebHandler implements HttpHandler {
             String url = httpExchange.getRequestURI().toString();
             Headers headers = httpExchange.getRequestHeaders();
 
-            Response response = new Response(this.craftsNet, httpExchange);
+            Response response = new Response(this.craftsNet, httpExchange, httpMethod);
             try {
                 String ip;
                 if (headers.containsKey("Cf-connecting-ip")) ip = headers.getFirst("Cf-connecting-ip");
