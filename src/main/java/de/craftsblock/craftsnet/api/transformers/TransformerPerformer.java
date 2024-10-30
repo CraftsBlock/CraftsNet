@@ -75,7 +75,7 @@ public class TransformerPerformer {
 
     public void setValidator(@Nullable Pattern validator) {
         if (validator == null) return;
-        this.groupNames.clear();
+        if (!this.groupNames.isEmpty()) this.groupNames.clear();
         this.groupNames.addAll(getGroupNames(validator.pattern()));
     }
 
