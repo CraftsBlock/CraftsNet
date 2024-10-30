@@ -4,6 +4,7 @@ import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.Exchange;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -20,7 +21,7 @@ public class RouteRequestEvent extends CancellableEvent {
 
     private final Exchange exchange;
 
-    private final List<RouteRegistry.EndpointMapping> mappings;
+    private final Collection<RouteRegistry.EndpointMapping> mappings;
 
     private String cancelReason;
 
@@ -28,11 +29,10 @@ public class RouteRequestEvent extends CancellableEvent {
      * Constructs a new {@link RouteRequestEvent} with the specified {@link Exchange} and {@link RouteRegistry.EndpointMapping}.
      *
      * @param exchange The {@link Exchange} object representing the request and its associated data.
-     * @param mappings The {@link RouteRegistry.EndpointMapping} objects associated with the request, can be null if not applicable.
      */
-    public RouteRequestEvent(Exchange exchange, List<RouteRegistry.EndpointMapping> mappings) {
+    public RouteRequestEvent(Exchange exchange) {
         this.exchange = exchange;
-        this.mappings = mappings;
+        this.mappings = exchange.request().getRoutes();
     }
 
     /**
@@ -49,7 +49,7 @@ public class RouteRequestEvent extends CancellableEvent {
      *
      * @return A list of {@link RouteRegistry.EndpointMapping} representing the mappings for the request route.
      */
-    public List<RouteRegistry.EndpointMapping> getMappings() {
+    public Collection<RouteRegistry.EndpointMapping> getMappings() {
         return mappings;
     }
 
