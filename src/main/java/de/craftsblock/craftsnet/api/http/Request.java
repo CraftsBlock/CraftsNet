@@ -89,6 +89,8 @@ public class Request implements AutoCloseable, RequireAble {
      * Starts retrieving the request body.
      */
     private void retrieveBody() {
+        if (!httpMethod.isRequestBodyAble()) return;
+
         InputStream input = httpExchange.getRequestBody();
         if (input == null) return;
         try {
