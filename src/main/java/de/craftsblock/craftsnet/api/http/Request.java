@@ -39,7 +39,7 @@ public class Request implements AutoCloseable, RequireAble {
     private final HttpMethod httpMethod;
     private final String rawUrl;
     private final String url;
-    private final Json queryParams = JsonParser.parse("{}");
+    private final ConcurrentHashMap<String, String> queryParams = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Cookie> cookies = new ConcurrentHashMap<>();
     private final String ip;
 
@@ -69,17 +69,19 @@ public class Request implements AutoCloseable, RequireAble {
         this.domain = domain;
         this.httpMethod = httpMethod;
 
-        // Extract relevant information from the incoming request.
-        String[] urlStripped = url.split("\\?");
-        String query = (urlStripped.length == 2 ? urlStripped[1] : "");
-        Arrays.stream(query.split("&")).forEach(pair -> {
-            String[] stripped = pair.split("=", 2);
-            queryParams.set(stripped[0], stripped.length == 2 ? stripped[1] : "");
-        });
-        this.url = urlStripped[0];
+        int queryIndex = url.indexOf("?");
+        this.url = queryIndex >= 0 ? url.substring(0, queryIndex) : url;
+        String query = queryIndex >= 0 ? url.substring(queryIndex + 1) : "";
 
-        for (Cookie cookie : parseCookies(headers))
-            this.cookies.put(cookie.getName(), cookie);
+        if (!query.isEmpty())
+            Arrays.stream(query.split("&"))
+                    .filter(pair -> !pair.isEmpty())
+                    .forEach(pair -> {
+                        String[] stripped = pair.split("=", 2);
+                        queryParams.put(stripped[0], stripped.length == 2 ? stripped[1] : "");
+                    });
+
+        parseCookies(headers).forEach(cookie -> this.cookies.put(cookie.getName(), cookie));
         retrieveBody();
     }
 
@@ -203,8 +205,6 @@ public class Request implements AutoCloseable, RequireAble {
      * @return The mapped query parameters.
      */
     public Map<String, String> getQueryParams() {
-        ConcurrentHashMap<String, String> queryParams = new ConcurrentHashMap<>();
-        this.queryParams.keySet().forEach(key -> queryParams.put(key, this.queryParams.getString(key)));
         return queryParams;
     }
 
@@ -215,7 +215,7 @@ public class Request implements AutoCloseable, RequireAble {
      * @return True if the request contains the specified query parameter, false otherwise.
      */
     public boolean hasParam(String key) {
-        return queryParams.contains(key);
+        return queryParams.containsKey(key);
     }
 
     /**
@@ -227,7 +227,7 @@ public class Request implements AutoCloseable, RequireAble {
     @Nullable
     public String retrieveParam(@NotNull String key) {
         if (hasParam(key))
-            return queryParams.getString(key);
+            return queryParams.get(key);
         return null;
     }
 
