@@ -20,7 +20,8 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.Iterator;
+import java.util.Collection;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -160,15 +161,18 @@ public class WebHandler implements HttpHandler {
 
         // Find the registered route mapping based on the request.
         List<RouteRegistry.EndpointMapping> routes = registry.getRoute(request);
+        EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> routes = registry.getRoute(request);
 
         // If no matching route is found abort with return false
         if (routes == null || routes.isEmpty()) return false;
 
         // Associate the matched route with the Request object.
         request.setRoutes(routes);
+        request.setRoutes(routes.values().stream().flatMap(Collection::stream).toList());
 
         // Create a RequestEvent and call listeners before invoking the API handler method.
         RouteRequestEvent event = new RouteRequestEvent(exchange, routes);
+        RouteRequestEvent event = new RouteRequestEvent(exchange);
         craftsNet.listenerRegistry().call(event);
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "ABORTED";
@@ -178,6 +182,7 @@ public class WebHandler implements HttpHandler {
         logger.info(requestMethod + " " + url + " from " + ip);
 
         Pattern validator = routes.get(0).validator();
+        Pattern validator = routes.get(routes.keySet().stream().findFirst().orElseThrow()).get(0).validator();
         Matcher matcher = validator.matcher(url);
         if (!matcher.matches()) {
             respondWithError(response, "There was an unexpected error while matching!");
@@ -198,16 +203,8 @@ public class WebHandler implements HttpHandler {
 
         // Loop through all priorities
         ProcessPriority.Priority priority = ProcessPriority.Priority.LOWEST;
-        while (priority != null) {
-            if (routes.isEmpty()) break;
-
-            // Loop through all registered routes
-            Iterator<RouteRegistry.EndpointMapping> iterator = routes.iterator();
-            while (iterator.hasNext()) {
-                RouteRegistry.EndpointMapping mapping = iterator.next();
-                if (!mapping.priority().equals(priority)) continue;
-                iterator.remove();
-
+        for (ProcessPriority.Priority priority : routes.keySet())
+            for (RouteRegistry.EndpointMapping mapping : routes.get(priority)) {
                 if (!(mapping.handler() instanceof RequestHandler handler)) continue;
                 Method method = mapping.method();
 
@@ -223,9 +220,6 @@ public class WebHandler implements HttpHandler {
             }
 
             // Update the current process priority
-            priority = priority.next();
-        }
-
         // Clean up to free up memory
         if (args.length == 1 && args[0] instanceof Exchange e) e.storage().clear();
         transformerPerformer.clearCache();

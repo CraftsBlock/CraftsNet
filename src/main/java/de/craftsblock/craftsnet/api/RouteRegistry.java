@@ -392,22 +392,19 @@ public class RouteRegistry {
      */
     @Nullable
     @SuppressWarnings("unchecked")
-    public List<EndpointMapping> getRoute(Request request) {
+    public EnumMap<ProcessPriority.Priority, List<EndpointMapping>> getRoute(Request request) {
         return getRoutes().entrySet().parallelStream()
+                .filter(entry -> entry.getKey().matcher(formatUrl(request.getUrl())).matches())
                 .map(Map.Entry::getValue)
-                .flatMap(Collection::parallelStream)
-                .filter(entry -> entry.validator().matcher(formatUrl(request.getUrl())).matches())
-                .filter(entry -> {
-                    if (requirements.containsKey(WebServer.class))
-                        for (Requirement requirement : requirements.get(WebServer.class)) {
-                            boolean applies = requirement.applies(request, entry);
-                            if (!applies) {
-                                return false;
-                            }
-                        }
-                    return true;
-                })
-                .collect(Collectors.toList());
+                .flatMap(Collection::stream)
+                .filter(entry -> requirements.getOrDefault(WebServer.class, new ConcurrentLinkedQueue<>()).stream()
+                        .map(WebRequirement.class::cast)
+                        .allMatch(requirement -> requirement.applies(request, entry))
+                ).collect(Collectors.groupingBy(
+                        mapping -> mapping.priority,
+                        () -> new EnumMap<>(ProcessPriority.Priority.class),
+                        Collectors.toList()
+                ));
     }
 
     /**

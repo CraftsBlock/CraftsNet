@@ -46,7 +46,7 @@ public class Request implements AutoCloseable, RequireAble {
     private Exchange exchange;
 
     private File bodyLocation;
-    private List<RouteRegistry.EndpointMapping> routes;
+    private Collection<RouteRegistry.EndpointMapping> routes;
     private boolean closed = false;
 
     /**
@@ -302,7 +302,7 @@ public class Request implements AutoCloseable, RequireAble {
      * @return The RouteMapping objects representing the matched route, or null if no route is matched.
      */
     @Nullable
-    public List<RouteRegistry.EndpointMapping> getRoutes() {
+    public Collection<RouteRegistry.EndpointMapping> getRoutes() {
         return routes;
     }
 
@@ -403,8 +403,8 @@ public class Request implements AutoCloseable, RequireAble {
      *
      * @param routes The RouteMapping objects representing the matched route.
      */
-    protected void setRoutes(List<RouteRegistry.EndpointMapping> routes) {
-        this.routes = routes;
+    protected void setRoutes(Collection<RouteRegistry.EndpointMapping> routes) {
+        this.routes = new ArrayList<>(routes);
     }
 
     /**
