@@ -323,7 +323,6 @@ public class Request implements AutoCloseable, RequireAble {
      */
     public Body getBody() {
         // Abort if request is closed or the body is not present.
-        if (isClosed()) throw new IllegalStateException("Could not retrieve the body as this request is already closed!");
         if (!hasBody()) throw new IllegalStateException("Could not retrieve the body as it does not exists!");
         // Returns a blank body with only the standard functionality.
         return new Body(this) {
@@ -337,7 +336,7 @@ public class Request implements AutoCloseable, RequireAble {
      * @throws FileNotFoundException If the save file which contains the bytes of the body was not found.
      */
     public InputStream getRawBody() throws FileNotFoundException {
-        if (isClosed()) throw new IllegalStateException("Could not retrieve the body as this request is already closed!");
+        if (!hasBody()) throw new IllegalStateException("Could not retrieve the body as it does not exists!");
         return new FileInputStream(bodyLocation);
     }
 
