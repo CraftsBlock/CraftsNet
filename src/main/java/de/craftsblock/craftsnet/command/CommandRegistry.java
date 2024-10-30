@@ -12,9 +12,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 1.0.1
  * @see Command
- * @since CraftsNet-2.2.0
+ * @since 2.2.0-SNAPSHOT
  */
 public class CommandRegistry {
 
@@ -59,12 +59,13 @@ public class CommandRegistry {
      */
     public void perform(String name, String[] args) {
         Logger logger = craftsNet.logger();
-        Command command = null;
-        for (Command tmp : commands.values())
-            if (tmp.getName().equalsIgnoreCase(name) || tmp.isAlias(name)) {
-                command = tmp;
-                break;
-            }
+        Command command;
+
+        if (commands.containsKey(name)) command = commands.get(name);
+        else command = commands.values().stream()
+                .filter(cmd -> cmd.isAlias(name))
+                .findFirst()
+                .orElse(null);
 
         if (command == null) {
             logger.warning("This command was not found!");
