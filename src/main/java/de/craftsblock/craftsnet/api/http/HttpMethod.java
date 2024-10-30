@@ -19,18 +19,20 @@ public enum HttpMethod {
 
     ALL("POST", "GET", "PUT", "DELETE", "PATCH"), // Represents all request methods
     ALL_RAW("POST", "GET", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"), // Represents all request methods + raw request methods
-    CONNECT, // Represents the CONNECT request method
-    POST, // Represents the POST request method
-    GET, // Represents the GET request method
-    PUT, // Represents the PUT request method
-    DELETE, // Represents the DELETE request method
-    PATCH, // Represents the PATCH request method
-    HEAD, // Represents the HEAD request method
-    OPTIONS, // Represents the OPTIONS request method
-    TRACE, // Represents the TRACE request method
-    UNKNOWN; // Represents an unrecognized request method
+    CONNECT(true, true), // Represents the CONNECT request method
+    POST(true, true), // Represents the POST request method
+    GET(false, true), // Represents the GET request method
+    PUT(true, true), // Represents the PUT request method
+    DELETE(true, true), // Represents the DELETE request method
+    PATCH(true, true), // Represents the PATCH request method
+    HEAD(false, false), // Represents the HEAD request method
+    OPTIONS(true, true), // Represents the OPTIONS request method
+    TRACE(false, true), // Represents the TRACE request method
+    UNKNOWN(false, true); // Represents an unrecognized request method
 
     final String[] methods;
+    final boolean requestBody;
+    final boolean responseBody;
 
     /**
      * Constructor to assign the request methods to each enum value
@@ -39,6 +41,19 @@ public enum HttpMethod {
      */
     HttpMethod(String... methods) {
         this.methods = methods;
+        this.requestBody = this.responseBody = false;
+    }
+
+    /**
+     * Constructor to assign the properties of requestBody and responseBody for HTTP methods.
+     *
+     * @param requestBody  specifies if the HTTP method accepts a request body
+     * @param responseBody specifies if the HTTP method returns a response body
+     */
+    HttpMethod(boolean requestBody, boolean responseBody) {
+        this.methods = null;
+        this.requestBody = requestBody;
+        this.responseBody = responseBody;
     }
 
     /**
@@ -48,6 +63,24 @@ public enum HttpMethod {
      */
     public String[] getMethods() {
         return methods;
+    }
+
+    /**
+     * Check if the HTTP method allows a request body.
+     *
+     * @return true if the HTTP method allows a request body, otherwise false.
+     */
+    public boolean isRequestBodyAble() {
+        return requestBody;
+    }
+
+    /**
+     * Check if the HTTP method allows a response body.
+     *
+     * @return true if the HTTP method allows a response body, otherwise false.
+     */
+    public boolean isResponseBodyAble() {
+        return responseBody;
     }
 
     /**
@@ -71,10 +104,11 @@ public enum HttpMethod {
      * @return The corresponding RequestMethod enum value or UNKNOWN if not recognized.
      */
     public static HttpMethod parse(String method) {
-        for (HttpMethod r : HttpMethod.values())
-            if (r.toString().equalsIgnoreCase(method.trim()))
-                return r;
-        return UNKNOWN;
+        try {
+            return HttpMethod.valueOf(method);
+        } catch (IllegalArgumentException e) {
+            return UNKNOWN;
+        }
     }
 
     /**
@@ -86,11 +120,10 @@ public enum HttpMethod {
      * @return The array of strings representing the request methods.
      */
     public static String[] convert(HttpMethod... methods) {
-        if (Arrays.asList(methods).contains(HttpMethod.ALL))
-            return HttpMethod.ALL.getMethods();
         return Arrays.stream(methods)
-                .filter(method -> !method.equals(HttpMethod.UNKNOWN) && !method.equals(HttpMethod.ALL))
-                .map(HttpMethod::toString)
+                .filter(method -> method != UNKNOWN && method != ALL)
+                .flatMap(method -> Arrays.stream(method.getMethods()))
+                .distinct()
                 .toArray(String[]::new);
     }
 
