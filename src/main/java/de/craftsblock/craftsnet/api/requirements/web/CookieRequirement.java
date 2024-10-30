@@ -4,7 +4,6 @@ import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.annotations.RequireCookie;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -36,9 +35,8 @@ public class CookieRequirement extends WebRequirement {
      */
     @Override
     public boolean applies(Request request, RouteRegistry.EndpointMapping endpointMapping) {
-        List<String> rawRequirements = endpointMapping.getRequirements(getAnnotation(), String.class);
-        if (rawRequirements == null) return true;
-        List<String> requirements = new ArrayList<>(rawRequirements);
+        List<String> requirements = endpointMapping.getRequirements(getAnnotation(), String.class);
+        if (requirements == null) return true;
 
         if (request.getCookies().isEmpty()) return false;
 

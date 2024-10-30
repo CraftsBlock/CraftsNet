@@ -4,7 +4,6 @@ import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.Domain;
 import de.craftsblock.craftsnet.api.http.Request;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -34,9 +33,8 @@ public class HTTPDomainRequirement extends WebRequirement {
      */
     @Override
     public boolean applies(Request request, RouteRegistry.EndpointMapping routeMapping) {
-        List<String> rawRequirements = routeMapping.getRequirements(getAnnotation(), String.class);
-        if (rawRequirements == null) return true;
-        List<String> requirements = new ArrayList<>(rawRequirements);
+        List<String> requirements = routeMapping.getRequirements(getAnnotation(), String.class);
+        if (requirements == null) return true;
 
         String domain = request.getDomain();
         if (domain == null) return false;

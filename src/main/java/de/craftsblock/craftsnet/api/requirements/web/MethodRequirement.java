@@ -5,7 +5,6 @@ import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.annotations.RequestMethod;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -37,9 +36,8 @@ public class MethodRequirement extends WebRequirement {
      */
     @Override
     public boolean applies(Request request, RouteRegistry.EndpointMapping routeMapping) {
-        List<HttpMethod> rawRequirements = routeMapping.getRequirements(getAnnotation(), HttpMethod.class);
-        if (rawRequirements == null) return true;
-        List<HttpMethod> requirements = new ArrayList<>(rawRequirements);
+        List<HttpMethod> requirements = routeMapping.getRequirements(getAnnotation(), HttpMethod.class);
+        if (requirements == null) return true;
 
         HttpMethod method = request.getHttpMethod();
         if (requirements.contains(HttpMethod.ALL)) {

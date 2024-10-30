@@ -5,7 +5,6 @@ import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.annotations.RequireHeaders;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,15 +28,14 @@ public class HeadersRequirement extends WebRequirement {
     /**
      * Checks if the requirement applies given the specified request and route mapping.
      *
-     * @param request       the HTTP request
-     * @param routeMapping  the route mapping
+     * @param request      the HTTP request
+     * @param routeMapping the route mapping
      * @return {@code true} if the requirement applies, {@code false} otherwise
      */
     @Override
     public boolean applies(Request request, RouteRegistry.EndpointMapping routeMapping) {
-        List<String> rawRequirements = routeMapping.getRequirements(getAnnotation(), String.class);
-        if (rawRequirements == null) return true;
-        List<String> requirements = new ArrayList<>(rawRequirements);
+        List<String> requirements = routeMapping.getRequirements(getAnnotation(), String.class);
+        if (requirements == null) return true;
 
         Headers headers = request.getHeaders();
         if (headers == null) return false;

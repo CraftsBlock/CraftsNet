@@ -17,6 +17,7 @@ import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
@@ -487,11 +488,14 @@ public class RouteRegistry {
     private void loadRequirements(ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements, List<Class<? extends Annotation>> annotations, Method method, Object handler) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
         for (Class<? extends Annotation> annotation : annotations) {
             Class<?> type = annotationMethodType(annotation, "value");
-            if (type == null) continue;
-
             List<Object> requirement = requirements.computeIfAbsent(annotation, aClass -> new ArrayList<>());
-            List<?> values = loadAnnotationValues(method, handler, annotation, type);
 
+            if (type == null) {
+                requirement.add(List.of());
+                continue;
+            }
+
+            List<?> values = loadAnnotationValues(method, handler, annotation, type);
             if (type.isArray()) {
                 values.forEach(o -> requirement.addAll(List.of((Object[]) o)));
                 continue;
@@ -756,10 +760,10 @@ public class RouteRegistry {
          * @return A list of requirements which are listed under the annotation.
          */
         @Override
-        public <A extends Annotation, T> List<T> getRequirements(Class<A> annotation, Class<T> type) {
+        public <A extends Annotation, T> @Unmodifiable List<T> getRequirements(@NotNull Class<A> annotation, @NotNull Class<T> type) {
             if (!requirements.containsKey(annotation)) return null;
             List<Object> requirement = requirements.get(annotation);
-            return requirement.parallelStream().filter(type::isInstance).map(type::cast).toList();
+            return requirement.stream().filter(type::isInstance).map(type::cast).toList();
         }
 
     }
@@ -797,7 +801,7 @@ public class RouteRegistry {
          * @param <T>        The expected return type.
          * @return A list of requirements which are listed under the annotation.
          */
-        default <A extends Annotation, T> List<T> getRequirements(Class<A> annotation, Class<T> type) {
+        default <A extends Annotation, T> @Unmodifiable List<T> getRequirements(@NotNull Class<A> annotation, @NotNull Class<T> type) {
             return List.of();
         }
 
