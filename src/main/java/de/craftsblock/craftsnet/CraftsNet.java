@@ -480,10 +480,10 @@ public class CraftsNet {
             webSocketServerPort = 5001;
             webServer = webSocketServer = ActivateType.DYNAMIC;
             addonSystem = commandSystem = fileLogger = ActivateType.ENABLED;
-            debug = false;
-            tempFilesOnNormalFileSystem = false;
-            ssl = false;
-            logRotate = 200;
+            withDebug(false);
+            withTempFilesOnNormalFileSystem(false);
+            withSSL(false);
+            withoutLogRotate();
         }
 
         /**
