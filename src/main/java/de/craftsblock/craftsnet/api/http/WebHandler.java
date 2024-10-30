@@ -160,18 +160,15 @@ public class WebHandler implements HttpHandler {
         String ip = request.getIp();
 
         // Find the registered route mapping based on the request.
-        List<RouteRegistry.EndpointMapping> routes = registry.getRoute(request);
         EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> routes = registry.getRoute(request);
 
         // If no matching route is found abort with return false
         if (routes == null || routes.isEmpty()) return false;
 
         // Associate the matched route with the Request object.
-        request.setRoutes(routes);
         request.setRoutes(routes.values().stream().flatMap(Collection::stream).toList());
 
         // Create a RequestEvent and call listeners before invoking the API handler method.
-        RouteRequestEvent event = new RouteRequestEvent(exchange, routes);
         RouteRequestEvent event = new RouteRequestEvent(exchange);
         craftsNet.listenerRegistry().call(event);
         if (event.isCancelled()) {
@@ -181,7 +178,6 @@ public class WebHandler implements HttpHandler {
         }
         logger.info(requestMethod + " " + url + " from " + ip);
 
-        Pattern validator = routes.get(0).validator();
         Pattern validator = routes.get(routes.keySet().stream().findFirst().orElseThrow()).get(0).validator();
         Matcher matcher = validator.matcher(url);
         if (!matcher.matches()) {
@@ -202,7 +198,6 @@ public class WebHandler implements HttpHandler {
         });
 
         // Loop through all priorities
-        ProcessPriority.Priority priority = ProcessPriority.Priority.LOWEST;
         for (ProcessPriority.Priority priority : routes.keySet())
             for (RouteRegistry.EndpointMapping mapping : routes.get(priority)) {
                 if (!(mapping.handler() instanceof RequestHandler handler)) continue;
@@ -219,7 +214,6 @@ public class WebHandler implements HttpHandler {
                 method.setAccessible(false);
             }
 
-            // Update the current process priority
         // Clean up to free up memory
         if (args.length == 1 && args[0] instanceof Exchange e) e.storage().clear();
         transformerPerformer.clearCache();
