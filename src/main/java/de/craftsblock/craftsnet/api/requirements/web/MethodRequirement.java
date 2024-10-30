@@ -40,24 +40,12 @@ public class MethodRequirement extends WebRequirement {
         if (requirements == null) return true;
 
         HttpMethod method = request.getHttpMethod();
-        if (requirements.contains(HttpMethod.ALL)) {
-            requirements.remove(HttpMethod.ALL);
-            Arrays.stream(HttpMethod.ALL.getMethods()).forEach(s -> requirements.add(HttpMethod.parse(s)));
-            removeDuplicates(requirements);
-        }
-        return requirements.contains(method);
-    }
+        if (requirements.contains(HttpMethod.ALL))
+            return Arrays.stream(HttpMethod.ALL.getMethods())
+                    .map(HttpMethod::parse)
+                    .anyMatch(httpMethod -> method.equals(httpMethod) || requirements.contains(httpMethod));
 
-    /**
-     * Removes duplicates from a list by converting it to a set and then back to a list.
-     *
-     * @param <T>  The type of elements in the list.
-     * @param list The list from which duplicates will be removed.
-     */
-    private <T> void removeDuplicates(List<T> list) {
-        HashSet<T> unique = new HashSet<>(list);
-        list.clear();
-        list.addAll(unique);
+        return requirements.contains(method);
     }
 
 }
