@@ -13,7 +13,6 @@ import de.craftsblock.craftsnet.api.requirements.websocket.MessageTypeRequiremen
 import de.craftsblock.craftsnet.api.requirements.websocket.WSDomainRequirement;
 import de.craftsblock.craftsnet.api.requirements.websocket.WebSocketRequirement;
 import de.craftsblock.craftsnet.api.websocket.*;
-import de.craftsblock.craftsnet.api.websocket.annotations.MessageReceiver;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -467,9 +466,11 @@ public class RouteRegistry {
      */
     @NotNull
     private Pattern createOrGetValidator(String url, ConcurrentHashMap<Pattern, ?> mappings) {
-        return mappings.keySet().parallelStream()
-                .filter(pattern -> pattern.matcher(url).matches())
-                .findFirst().orElse(createValidator(url));
+        // @FixMe: Check if the group Names also match before returning the same pattern!
+        return createValidator(url);
+//        return mappings.keySet().parallelStream()
+//                .filter(pattern -> pattern.matcher(url).matches())
+//                .findFirst().orElse(createValidator(url));
     }
 
     /**

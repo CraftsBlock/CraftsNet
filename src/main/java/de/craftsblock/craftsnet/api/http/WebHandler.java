@@ -7,7 +7,6 @@ import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
-import de.craftsblock.craftsnet.api.script.compiler.CNetCompiler;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.SessionStorage;
 import de.craftsblock.craftsnet.events.requests.PostRequestEvent;
@@ -293,10 +292,7 @@ public class WebHandler implements HttpHandler {
 
         response.setContentType(fileLoadedEvent.getContentType(), "text/plain");
 
-        if (CNetCompiler.canCompile(share))
-            CNetCompiler.compile(share, exchange);
-
-        else response.print(share);
+        response.print(share);
         event.getExchange().storage().clear(); // Clear the session storage as it is no longer needed
     }
 
