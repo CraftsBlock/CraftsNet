@@ -87,12 +87,10 @@ public class Utils {
      * @return A {@link List<String>} which contains the group names in the right order.
      */
     public static List<String> getGroupNames(String regex) {
-        Set<String> groupNames = new TreeSet<>();
+        Set<String> groupNames = new LinkedHashSet<>();
         Matcher matcher = patternGroupNameExtractPattern.matcher(regex);
         while (matcher.find()) groupNames.add(matcher.group(1));
-        List<String> output = new ArrayList<>(groupNames);
-        Collections.reverse(output);
-        return output;
+        return new ArrayList<>(groupNames);
     }
 
     /**
