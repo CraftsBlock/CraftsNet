@@ -29,7 +29,7 @@ import java.io.File;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.11
+ * @version 1.0.12
  * @see AddonLoader
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -40,12 +40,6 @@ public abstract class Addon {
     private String name;
     private AddonMeta meta;
 
-    private BodyRegistry bodyRegistry;
-    private CommandRegistry commandRegistry;
-    private ListenerRegistry listenerRegistry;
-    private RouteRegistry routeRegistry;
-
-    private ServiceManager serviceManager;
     private AddonClassLoader classLoader;
 
     private Logger logger;
@@ -108,7 +102,7 @@ public abstract class Addon {
      * @since CraftsNet-3.0.4
      */
     public BodyRegistry bodyRegistry() {
-        return bodyRegistry;
+        return craftsNet.bodyRegistry();
     }
 
     /**
@@ -118,7 +112,7 @@ public abstract class Addon {
      * @return The CommandRegistry instance used by the addon.
      */
     public final CommandRegistry commandRegistry() {
-        return commandRegistry;
+        return craftsNet.commandRegistry();
     }
 
     /**
@@ -128,7 +122,7 @@ public abstract class Addon {
      * @return The ListenerRegistry instance used by the addon.
      */
     public final ListenerRegistry listenerRegistry() {
-        return listenerRegistry;
+        return craftsNet.listenerRegistry();
     }
 
     /**
@@ -138,7 +132,7 @@ public abstract class Addon {
      * @return The RouteRegistry instance used by the addon.
      */
     public final RouteRegistry routeRegistry() {
-        return routeRegistry;
+        return craftsNet.routeRegistry();
     }
 
     /**
@@ -148,7 +142,7 @@ public abstract class Addon {
      * @return The ServiceManager instance used by the addon.
      */
     public final ServiceManager serviceManager() {
-        return serviceManager;
+        return craftsNet.serviceManager();
     }
 
     /**

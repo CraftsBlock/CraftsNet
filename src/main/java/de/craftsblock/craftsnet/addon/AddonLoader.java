@@ -26,7 +26,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.3
+ * @version 1.0.4
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -203,14 +203,9 @@ final class AddonLoader {
                 Addon obj = (Addon) clazz.getDeclaredConstructor().newInstance();
                 setField("craftsNet", obj, craftsNet);
                 setField("meta", obj, meta);
-                setField("bodyRegistry", obj, craftsNet.bodyRegistry());
-                setField("commandRegistry", obj, craftsNet.commandRegistry());
-                setField("routeRegistry", obj, craftsNet.routeRegistry());
-                setField("listenerRegistry", obj, craftsNet.listenerRegistry());
                 setField("logger", obj, logger.cloneWithName(name));
                 setField("name", obj, name);
                 setField("classLoader", obj, classLoader);
-                setField("serviceManager", obj, craftsNet.serviceManager());
 
                 loadOrder.addAddon(obj);
                 Json addon = configuration.json;
