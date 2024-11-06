@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.0.2
+ * @version 3.0.3
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -424,22 +424,20 @@ public class RouteRegistry {
      * @return A list of SocketMapping objects associated with the URL, or null if no mapping is found.
      */
     @Nullable
-    public List<EndpointMapping> getSocket(WebSocketClient client) {
-        return getSockets().entrySet().parallelStream()
+    @SuppressWarnings("unchecked")
+    public EnumMap<ProcessPriority.Priority, List<EndpointMapping>> getSocket(WebSocketClient client) {
+        return getRoutes().entrySet().parallelStream()
+                .filter(entry -> entry.getKey().matcher(formatUrl(client.getPath())).matches())
                 .map(Map.Entry::getValue)
-                .flatMap(Collection::parallelStream)
-                .filter(entry -> entry.validator().matcher(formatUrl(client.getPath())).matches())
-                .filter(entry -> {
-                    if (requirements.containsKey(WebSocketServer.class))
-                        for (Requirement requirement : requirements.get(WebSocketServer.class))
-                            try {
-                                Method method = requirement.getClass().getDeclaredMethod("applies", WebSocketClient.class, EndpointMapping.class);
-                                if (!((Boolean) method.invoke(requirement, client, entry))) return false;
-                            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
-                            }
-                    return true;
-                })
-                .collect(Collectors.toList());
+                .flatMap(Collection::stream)
+                .filter(entry -> requirements.getOrDefault(WebSocketServer.class, new ConcurrentLinkedQueue<>()).stream()
+                        .map(WebSocketRequirement.class::cast)
+                        .allMatch(requirement -> requirement.applies(client, entry))
+                ).collect(Collectors.groupingBy(
+                        mapping -> mapping.priority,
+                        () -> new EnumMap<>(ProcessPriority.Priority.class),
+                        Collectors.toList()
+                ));
     }
 
     /**

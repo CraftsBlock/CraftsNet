@@ -2,8 +2,10 @@ package de.craftsblock.craftsnet.events.sockets;
 
 import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
 
+import java.util.EnumMap;
 import java.util.List;
 
 /**
@@ -12,24 +14,23 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 1.0.1
  * @since 2.1.1-SNAPSHOT
  */
 public class ClientConnectEvent extends CancellableEvent {
 
     private final SocketExchange exchange;
-    private final List<RouteRegistry.EndpointMapping> mappings;
+    private final EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappings;
     private String reason;
 
     /**
      * Constructs a new ClientConnectEvent with the specified SocketExchange and SocketMapping.
      *
      * @param exchange The SocketExchange object representing the socket connection and its associated data.
-     * @param mappings A list of SocketMapping objects associated with the client connection event.
      */
-    public ClientConnectEvent(SocketExchange exchange, List<RouteRegistry.EndpointMapping> mappings) {
+    public ClientConnectEvent(SocketExchange exchange) {
         this.exchange = exchange;
-        this.mappings = mappings;
+        this.mappings = exchange.client().getEndpoint();
     }
 
     /**
@@ -42,11 +43,11 @@ public class ClientConnectEvent extends CancellableEvent {
     }
 
     /**
-     * Gets a list of all SocketMappings associated with the client connection event.
+     * Gets a {@link EnumMap} of all {@link RouteRegistry.EndpointMapping} associated with the client connection event.
      *
-     * @return A list of SocketMapping objects representing the mapping for the socket connection.
+     * @return A {@link EnumMap} of {@link RouteRegistry.EndpointMapping} objects representing the mapping for the socket connection.
      */
-    public List<RouteRegistry.EndpointMapping> getMappings() {
+    public EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> getMappings() {
         return mappings;
     }
 

@@ -2,9 +2,11 @@ package de.craftsblock.craftsnet.events.sockets;
 
 import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.websocket.ClosureCode;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
 
+import java.util.EnumMap;
 import java.util.List;
 
 /**
@@ -13,13 +15,13 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 1.0.1
  * @since 2.1.1-SNAPSHOT
  */
 public class ClientDisconnectEvent extends Event {
 
     private final SocketExchange exchange;
-    private final List<RouteRegistry.EndpointMapping> mappings;
+    private final EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappings;
 
     private final int rawCloseCode;
     private final ClosureCode closeCode;
@@ -30,11 +32,10 @@ public class ClientDisconnectEvent extends Event {
      * Constructs a new ClientDisconnectEvent with the specified SocketExchange and SocketMapping.
      *
      * @param exchange The SocketExchange object representing the socket connection and its associated data.
-     * @param mappings A list of all SocketMapping objects associated with the client disconnection event.
      */
-    public ClientDisconnectEvent(SocketExchange exchange, int closeCode, String closeReason, boolean closeByServer, List<RouteRegistry.EndpointMapping> mappings) {
+    public ClientDisconnectEvent(SocketExchange exchange, int closeCode, String closeReason, boolean closeByServer) {
         this.exchange = exchange;
-        this.mappings = mappings;
+        this.mappings = exchange.client().getEndpoint();
 
         this.rawCloseCode = closeCode;
         this.closeCode = ClosureCode.fromInt(closeCode);
@@ -43,11 +44,11 @@ public class ClientDisconnectEvent extends Event {
     }
 
     /**
-     * Gets a list of all SocketMappings associated with the client disconnection event.
+     * Gets a {@link EnumMap} of all {@link RouteRegistry.EndpointMapping} associated with the client disconnect event.
      *
-     * @return A list of all SocketMapping objects representing the mapping for the socket connection.
+     * @return A {@link EnumMap} of {@link RouteRegistry.EndpointMapping} objects representing the mapping for the socket connection.
      */
-    public List<RouteRegistry.EndpointMapping> getMappings() {
+    public EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> getMappings() {
         return mappings;
     }
 

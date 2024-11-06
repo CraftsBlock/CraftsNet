@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.0.0
+ * @version 3.0.1
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -78,7 +78,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private String ip;
     private String path;
     private String domain;
-    private List<RouteRegistry.EndpointMapping> mappings;
+    private EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappings;
 
     private BufferedReader reader;
     private OutputStream writer;
@@ -183,7 +183,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
-            Pattern validator = mappings.get(0).validator();
+            Pattern validator = mappings.get(mappings.keySet().stream().findFirst().orElseThrow()).get(0).validator();
             Matcher matcher = validator.matcher(path);
             if (!matcher.matches()) {
                 sendMessage(Json.empty()
@@ -196,7 +196,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             server.add(path, this);
 
             // Trigger the ClientConnectEvent to handle the client connection
-            ClientConnectEvent event = new ClientConnectEvent(exchange, mappings);
+            ClientConnectEvent event = new ClientConnectEvent(exchange);
             craftsNet.listenerRegistry().call(event);
 
             // If the event is cancelled, disconnect the client
@@ -213,10 +213,6 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             // Change the validator of the transformer performer
             this.transformerPerformer.setValidator(validator);
-
-            // Prepare mappings
-            for (RouteRegistry.EndpointMapping mapping : mappings)
-                mappedMappings.computeIfAbsent(mapping.priority(), m -> new ArrayList<>()).add(mapping);
 
             while (!Thread.currentThread().isInterrupted() && isConnected()) {
                 Frame frame = readMessage();
@@ -264,47 +260,43 @@ public class WebSocketClient implements Runnable, RequireAble {
                 args[1] = data;
                 for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
 
-                // Loop through all priorities
-                for (ProcessPriority.Priority priority : ProcessPriority.Priority.values()) {
-                    if (!mappedMappings.containsKey(priority)) continue;
+                for (ProcessPriority.Priority priority : mappings.keySet())
+                    inner:
+                            for (RouteRegistry.EndpointMapping mapping : mappings.get(priority)) {
+                                if (!(mapping.handler() instanceof SocketHandler handler)) continue;
+                                Method method = mapping.method();
 
-                    mappingLoop:
-                    for (RouteRegistry.EndpointMapping mapping : mappedMappings.get(priority)) {
-                        if (!(mapping.handler() instanceof SocketHandler handler)) continue;
-                        Method method = mapping.method();
+                                // Process the requirements
+                                if (craftsNet.routeRegistry().getRequirements().containsKey(WebSocketServer.class))
+                                    for (Requirement requirement : craftsNet.routeRegistry().getRequirements().get(WebSocketServer.class))
+                                        try {
+                                            Method m = requirement.getClass().getDeclaredMethod("applies", Frame.class, RouteRegistry.EndpointMapping.class);
+                                            if (!((Boolean) m.invoke(requirement, frame, mapping))) continue inner;
+                                        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
+                                        }
 
-                        // Process the requirements
-                        if (craftsNet.routeRegistry().getRequirements().containsKey(WebSocketServer.class))
-                            for (Requirement requirement : craftsNet.routeRegistry().getRequirements().get(WebSocketServer.class))
-                                try {
-                                    Method m = requirement.getClass().getDeclaredMethod("applies", Frame.class, RouteRegistry.EndpointMapping.class);
-                                    if (!((Boolean) m.invoke(requirement, frame, mapping))) continue mappingLoop;
-                                } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
-                                }
+                                // Perform all transformers and continue if passingArgs is null
+                                Object[] passingArgs = transformerPerformer.perform(mapping.handler(), method, args);
+                                if (passingArgs == null)
+                                    continue;
 
-                        // Perform all transformers and continue if passingArgs is null
-                        Object[] passingArgs = transformerPerformer.perform(mapping.handler(), method, args);
-                        if (passingArgs == null)
-                            continue;
+                                // Only check the parameter types if there are two parameters
+                                if (method.getParameterCount() >= 2)
+                                    if (method.getParameterTypes()[1].equals(String.class))
+                                        // Change the message to a string
+                                        passingArgs[1] = new String(data, StandardCharsets.UTF_8);
+                                    else if (method.getParameterTypes()[1].equals(Frame.class))
+                                        // Change the message to a frame
+                                        passingArgs[1] = frame.clone();
+                                    else if (method.getParameterTypes()[1].equals(ByteBuffer.class))
+                                        // Change the message to a byte buffer
+                                        passingArgs[1] = new ByteBuffer(frame.getData());
 
-                        // Only check the parameter types if there are two parameters
-                        if (method.getParameterCount() >= 2)
-                            if (method.getParameterTypes()[1].equals(String.class))
-                                // Change the message to a string
-                                passingArgs[1] = new String(data, StandardCharsets.UTF_8);
-                            else if (method.getParameterTypes()[1].equals(Frame.class))
-                                // Change the message to a frame
-                                passingArgs[1] = frame.clone();
-                            else if (method.getParameterTypes()[1].equals(ByteBuffer.class))
-                                // Change the message to a byte buffer
-                                passingArgs[1] = new ByteBuffer(frame.getData());
-
-                        // Invoke the handler method
-                        method.setAccessible(true);
-                        method.invoke(handler, passingArgs);
-                        method.setAccessible(false);
-                    }
-                }
+                                // Invoke the handler method
+                                method.setAccessible(true);
+                                method.invoke(handler, passingArgs);
+                                method.setAccessible(false);
+                            }
             }
 
             // Clear up transformer cache to free up memory
@@ -373,8 +365,8 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @return The corresponding list of SocketMappings if found, or null if not found.
      */
     @Nullable
-    private List<RouteRegistry.EndpointMapping> getEndpoint() {
-        return craftsNet.routeRegistry().getSocket(this);
+    public EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> getEndpoint() {
+        return this.mappings != null ? mappings : craftsNet.routeRegistry().getSocket(this);
     }
 
     /**
@@ -818,7 +810,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         if (this.connected || socket.isConnected())
             try {
                 if (reader == null || writer == null) return Thread.currentThread();
-                craftsNet.listenerRegistry().call(new ClientDisconnectEvent(new SocketExchange(server, this), closeCode, closeReason, closeByServer, mappings));
+                craftsNet.listenerRegistry().call(new ClientDisconnectEvent(new SocketExchange(server, this), closeCode, closeReason, closeByServer));
 
                 if (reader != null) reader.close();
                 reader = null;
