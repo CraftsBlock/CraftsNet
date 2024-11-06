@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.0.2-SNAPSHOT
  */
 public class FileLogger {
@@ -61,8 +61,8 @@ public class FileLogger {
             oldOut = System.out;
             oldErr = System.err;
 
-            if (max == 0 && Files.exists(folder))
-                try (Stream<Path> stream = Files.walk(folder).parallel()) {
+            if (max != 0 && Files.exists(folder))
+                try (Stream<Path> stream = Files.walk(folder, 1).parallel().filter(Files::isRegularFile)) {
                     long count = stream.count();
                     if (count > max) {
                         long diff = count - max;
