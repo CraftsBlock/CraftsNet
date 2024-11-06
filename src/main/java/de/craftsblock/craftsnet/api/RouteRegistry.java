@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.0.3
+ * @version 3.0.4
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -426,12 +426,14 @@ public class RouteRegistry {
     @Nullable
     @SuppressWarnings("unchecked")
     public EnumMap<ProcessPriority.Priority, List<EndpointMapping>> getSocket(WebSocketClient client) {
-        return getRoutes().entrySet().parallelStream()
+        return getSockets().entrySet().parallelStream()
                 .filter(entry -> entry.getKey().matcher(formatUrl(client.getPath())).matches())
                 .map(Map.Entry::getValue)
                 .flatMap(Collection::stream)
                 .filter(entry -> requirements.getOrDefault(WebSocketServer.class, new ConcurrentLinkedQueue<>()).stream()
                         .map(WebSocketRequirement.class::cast)
+                        .filter(requirement ->
+                                Utils.checkForMethod(client.getClass(), "applies", WebSocketClient.class, EndpointMapping.class))
                         .allMatch(requirement -> requirement.applies(client, entry))
                 ).collect(Collectors.groupingBy(
                         mapping -> mapping.priority,

@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.0.1
+ * @version 3.0.2
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -70,7 +70,6 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final Socket socket;
     private final SessionStorage storage;
     private final List<WebSocketExtension> extensions;
-    private final ConcurrentHashMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappedMappings = new ConcurrentHashMap<>();
     private final TransformerPerformer transformerPerformer;
 
     private SocketExchange exchange;
@@ -270,9 +269,10 @@ public class WebSocketClient implements Runnable, RequireAble {
                                 if (craftsNet.routeRegistry().getRequirements().containsKey(WebSocketServer.class))
                                     for (Requirement requirement : craftsNet.routeRegistry().getRequirements().get(WebSocketServer.class))
                                         try {
-                                            Method m = requirement.getClass().getDeclaredMethod("applies", Frame.class, RouteRegistry.EndpointMapping.class);
+                                            Method m = Utils.getMethod(requirement.getClass(), "applies", Frame.class, RouteRegistry.EndpointMapping.class);
+                                            assert m != null;
                                             if (!((Boolean) m.invoke(requirement, frame, mapping))) continue inner;
-                                        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
+                                        } catch (NullPointerException | AssertionError | IllegalAccessException | InvocationTargetException ignored) {
                                         }
 
                                 // Perform all transformers and continue if passingArgs is null
@@ -832,7 +832,6 @@ public class WebSocketClient implements Runnable, RequireAble {
 
                 headers = null;
                 mappings = null;
-                mappedMappings.clear();
                 transformerPerformer.clearCache();
                 storage.clear();
                 extensions.clear();
