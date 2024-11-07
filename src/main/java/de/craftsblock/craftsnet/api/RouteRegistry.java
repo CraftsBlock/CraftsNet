@@ -36,7 +36,7 @@ import java.util.stream.Collectors;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.0.4
+ * @version 3.1.0
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -381,7 +381,7 @@ public class RouteRegistry {
      */
     @NotNull
     public Map<Pattern, List<EndpointMapping>> getRoutes() {
-        return Map.copyOf(serverMappings.computeIfAbsent(WebServer.class, c -> new ConcurrentHashMap<>()));
+        return getEndpoints(WebServer.class);
     }
 
     /**
@@ -391,20 +391,8 @@ public class RouteRegistry {
      * @return A list of RouteMapping objects associated with the URL and HTTP method, or null if no mappings are found.
      */
     @Nullable
-    @SuppressWarnings("unchecked")
     public EnumMap<ProcessPriority.Priority, List<EndpointMapping>> getRoute(Request request) {
-        return getRoutes().entrySet().parallelStream()
-                .filter(entry -> entry.getKey().matcher(formatUrl(request.getUrl())).matches())
-                .map(Map.Entry::getValue)
-                .flatMap(Collection::stream)
-                .filter(entry -> requirements.getOrDefault(WebServer.class, new ConcurrentLinkedQueue<>()).stream()
-                        .map(WebRequirement.class::cast)
-                        .allMatch(requirement -> requirement.applies(request, entry))
-                ).collect(Collectors.groupingBy(
-                        mapping -> mapping.priority,
-                        () -> new EnumMap<>(ProcessPriority.Priority.class),
-                        Collectors.toList()
-                ));
+        return getEndpoint(WebServer.class, request.getUrl(), request);
     }
 
     /**
@@ -414,7 +402,7 @@ public class RouteRegistry {
      */
     @NotNull
     public Map<Pattern, List<EndpointMapping>> getSockets() {
-        return Map.copyOf(serverMappings.computeIfAbsent(WebSocketServer.class, c -> new ConcurrentHashMap<>()));
+        return getEndpoints(WebSocketServer.class);
     }
 
     /**
@@ -424,22 +412,8 @@ public class RouteRegistry {
      * @return A list of SocketMapping objects associated with the URL, or null if no mapping is found.
      */
     @Nullable
-    @SuppressWarnings("unchecked")
     public EnumMap<ProcessPriority.Priority, List<EndpointMapping>> getSocket(WebSocketClient client) {
-        return getSockets().entrySet().parallelStream()
-                .filter(entry -> entry.getKey().matcher(formatUrl(client.getPath())).matches())
-                .map(Map.Entry::getValue)
-                .flatMap(Collection::stream)
-                .filter(entry -> requirements.getOrDefault(WebSocketServer.class, new ConcurrentLinkedQueue<>()).stream()
-                        .map(WebSocketRequirement.class::cast)
-                        .filter(requirement ->
-                                Utils.checkForMethod(client.getClass(), "applies", WebSocketClient.class, EndpointMapping.class))
-                        .allMatch(requirement -> requirement.applies(client, entry))
-                ).collect(Collectors.groupingBy(
-                        mapping -> mapping.priority,
-                        () -> new EnumMap<>(ProcessPriority.Priority.class),
-                        Collectors.toList()
-                ));
+        return getEndpoint(WebSocketServer.class, client.getPath(), client);
     }
 
     /**
@@ -469,6 +443,49 @@ public class RouteRegistry {
 //        return mappings.keySet().parallelStream()
 //                .filter(pattern -> pattern.matcher(url).matches())
 //                .findFirst().orElse(createValidator(url));
+    }
+
+    /**
+     * Gets an immutable copy of the registered endpoints for the specific server type in the registry.
+     *
+     * @param server The {@link Server} from which the endpoints should be loaded.
+     * @return A {@link ConcurrentHashMap} containing the registered endpoints.
+     */
+    @NotNull
+    public Map<Pattern, List<EndpointMapping>> getEndpoints(Class<? extends Server> server) {
+        return Map.copyOf(serverMappings.computeIfAbsent(server, c -> new ConcurrentHashMap<>()));
+    }
+
+    /**
+     * Gets the {@link EndpointMapping} associated with specific endpoint information.
+     *
+     * @param server The {@link Server} from which the endpoints should be loaded.
+     * @param url    The url used to access the endpoint.
+     * @param target The {@link RequireAble} containing the data about the request.
+     * @return A {@link EnumMap} containing all matching {@link EndpointMapping} objects grouped by their corresponding {@link ProcessPriority.Priority}.
+     */
+    private EnumMap<ProcessPriority.Priority, List<EndpointMapping>> getEndpoint(Class<? extends Server> server, String url, RequireAble target) {
+        return getEndpoints(server).entrySet().parallelStream()
+                .filter(entry -> entry.getKey().matcher(formatUrl(url)).matches())
+                .map(Map.Entry::getValue)
+                .flatMap(Collection::stream)
+                .filter(entry -> requirements.getOrDefault(server, new ConcurrentLinkedQueue<>()).stream()
+                        .filter(requirement ->
+                                Utils.checkForMethod(requirement.getClass(), "applies", target.getClass(), EndpointMapping.class))
+                        .map(requirement ->
+                                Map.entry(requirement, Utils.getMethod(requirement.getClass(), "applies", target.getClass(), EndpointMapping.class)))
+                        .allMatch(requirement -> {
+                            try {
+                                return (boolean) requirement.getValue().invoke(requirement.getKey(), target, entry);
+                            } catch (IllegalAccessException | InvocationTargetException e) {
+                                throw new RuntimeException(e);
+                            }
+                        })
+                ).collect(Collectors.groupingBy(
+                        mapping -> mapping.priority,
+                        () -> new EnumMap<>(ProcessPriority.Priority.class),
+                        Collectors.toList()
+                ));
     }
 
     /**
