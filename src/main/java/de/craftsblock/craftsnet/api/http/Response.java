@@ -1,9 +1,11 @@
 package de.craftsblock.craftsnet.api.http;
 
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import de.craftsblock.craftscore.json.Json;
+import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.http.cookies.Cookie;
 import de.craftsblock.craftsnet.api.http.cors.CorsPolicy;
@@ -26,7 +28,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.3
+ * @version 1.0.4
  * @see Exchange
  * @see WebServer
  * @since 1.0.0-SNAPSHOT
@@ -74,7 +76,18 @@ public class Response implements AutoCloseable {
      * @throws IOException if an I/O error occurs.
      */
     public void print(Object object) throws IOException {
-        if (!headersSent && !hasHeader("Content-Type")) setContentType("application/json");
+        if (!headersSent() && !hasHeader("Content-Type")) setContentType("application/json");
+
+        if (exchange != null) {
+            Request r = exchange.request();
+            
+            if ("pretty".equalsIgnoreCase(r.retrieveParam("format"))) {
+                if (object instanceof Json json) print(json, true);
+                else if (object instanceof JsonElement json) print(JsonParser.parse(json), true);
+                return;
+            }
+        }
+
         println(object.toString());
     }
 
