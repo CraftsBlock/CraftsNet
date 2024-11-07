@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.3
+ * @version 1.2.4
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -287,15 +287,12 @@ public class WebHandler implements HttpHandler {
     /**
      * Responds to the client with an error message.
      *
-     * @param response     The Response object for managing the outgoing response.
-     * @param errorMessage The error message to be included in the response.
+     * @param response The Response object for managing the outgoing response.
+     * @param message  The error message to be included in the response.
      * @throws IOException If an I/O error occurs during response handling.
      */
-    private static void respondWithError(Response response, String errorMessage) throws IOException {
-        Json json = Json.empty();
-        json.set("success", false);
-        json.set("message", errorMessage);
-        response.print(json);
+    private static void respondWithError(Response response, String message) throws IOException {
+        response.print(Json.empty().set("success", false).set("message", message));
     }
 
 }
