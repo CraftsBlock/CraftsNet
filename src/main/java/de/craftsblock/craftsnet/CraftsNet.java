@@ -24,6 +24,7 @@ import de.craftsblock.craftsnet.logging.FileLogger;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.LoggerImpl;
 import de.craftsblock.craftsnet.utils.FileHelper;
+import de.craftsblock.craftsnet.utils.versions.Versions;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
 
@@ -80,6 +81,7 @@ public class CraftsNet {
         ArgumentParser parser = new ArgumentParser(args);
         boolean debug = parser.isPresent("debug");
         boolean tempFilesOnNormal = parser.isPresent("placeTempFileInNormal");
+        boolean skipVersionCheck = parser.isPresent("skipVersionCheck");
         boolean ssl = parser.isPresent("ssl");
         boolean logRotationDisabled = parser.isPresent("disableLogRotate");
         int http_port = (parser.isPresent("http-port") ? parser.getAsInt("http-port") : 5000);
@@ -92,6 +94,7 @@ public class CraftsNet {
                 .withSSL(ssl)
                 .withDebug(debug)
                 .withTempFilesOnNormalFileSystem(tempFilesOnNormal)
+                .withSkipVersionCheck(skipVersionCheck)
                 .withLogRotate(logRotationDisabled ? 0 : logRotation)
                 .build();
     }
@@ -125,6 +128,9 @@ public class CraftsNet {
         logger.info("CraftsNet v" + version + " boots up");
         Runtime.Version jvmVersion = Runtime.version();
         logger.debug("JVM Version: " + jvmVersion.toString() + "; Max recognizable class file version: " + (jvmVersion.feature() + 44) + "." + jvmVersion.interim());
+
+        if (!builder.shouldSkipVersionCheck() && version.endsWith("-SNAPSHOT"))
+            Versions.verbalCheck(this);
 
         logger.debug("Preloading gson for faster processing");
         Json.empty();
@@ -468,6 +474,7 @@ public class CraftsNet {
 
         private boolean debug;
         private boolean tempFilesOnNormalFileSystem;
+        private boolean skipVersionCheck;
         private boolean ssl;
 
         private long logRotate;
@@ -482,6 +489,7 @@ public class CraftsNet {
             addonSystem = commandSystem = fileLogger = ActivateType.ENABLED;
             withDebug(false);
             withTempFilesOnNormalFileSystem(false);
+            withSkipVersionCheck(false);
             withSSL(false);
             withoutLogRotate();
         }
@@ -598,6 +606,17 @@ public class CraftsNet {
          */
         public Builder withTempFilesOnNormalFileSystem(boolean tempFilesOnNormalFileSystem) {
             this.tempFilesOnNormalFileSystem = tempFilesOnNormalFileSystem;
+            return this;
+        }
+
+        /**
+         * Specifies whether the version check should be skipped on startup.
+         *
+         * @param skipVersionCheck true if the version check should be skipped, false otherwise.
+         * @return The Builder instance.
+         */
+        public Builder withSkipVersionCheck(boolean skipVersionCheck) {
+            this.skipVersionCheck = skipVersionCheck;
             return this;
         }
 
@@ -783,6 +802,15 @@ public class CraftsNet {
          */
         public boolean shouldPlaceTempFilesOnNormalFileSystem() {
             return tempFilesOnNormalFileSystem;
+        }
+
+        /**
+         * Determines whether the version check should be skipped on startup.
+         *
+         * @return {@code true} if the version check should be skipped, {@code false} otherwise.
+         */
+        public boolean shouldSkipVersionCheck() {
+            return skipVersionCheck;
         }
 
         /**
