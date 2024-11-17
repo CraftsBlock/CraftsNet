@@ -487,14 +487,18 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
-     * @return
+     * Returns whether the outgoing messages should be masked or not.
+     *
+     * @return {@code true} if the outgoing messages should be masked, {@code false} otherwise.
      */
     public boolean shouldMaskOutgoing() {
         return shouldMaskOutgoing;
     }
 
     /**
+     * Sets whether the outgoing message should be masked or not.
      *
+     * @param shouldMaskOutgoing {@code true} if the outgoing messages should be masked, {@code false} otherwise.
      */
     public void setMaskingOutgoing(boolean shouldMaskOutgoing) {
         this.shouldMaskOutgoing = shouldMaskOutgoing;
