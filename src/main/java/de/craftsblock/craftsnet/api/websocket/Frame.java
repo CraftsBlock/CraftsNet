@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
+import de.craftsblock.craftsnet.utils.ByteBuffer;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
@@ -42,7 +43,7 @@ import java.util.List;
 public class Frame implements RequireAble {
 
     private Opcode opcode;
-    private byte[] data;
+    private ByteBuffer data;
 
     private boolean fin;
     private final boolean rsv1, rsv2, rsv3;
@@ -66,7 +67,7 @@ public class Frame implements RequireAble {
         this.rsv3 = rsv3;
         this.masked = masked;
         this.opcode = opcode;
-        this.data = data;
+        this.data = new ByteBuffer(data);
     }
 
     /**
@@ -88,7 +89,7 @@ public class Frame implements RequireAble {
         masked = (frame[1] & 0x80) != 0;
 
         this.opcode = Opcode.fromByte((byte) (frame[0] & 0x0F));
-        this.data = data;
+        this.data = new ByteBuffer(data);
     }
 
     /**
@@ -155,12 +156,12 @@ public class Frame implements RequireAble {
     }
 
     /**
-     * Gets the payload data of this frame as a UTF-8 encoded string.
+     * Gets the payload data of this frame a {@link ByteBuffer}.
      *
-     * @return The payload data as a UTF-8 string.
+     * @return The payload data as a {@link ByteBuffer}
      */
-    public String getUtf8() {
-        return new String(data, StandardCharsets.UTF_8);
+    public ByteBuffer getBuffer() {
+        return data;
     }
 
     /**
@@ -169,7 +170,16 @@ public class Frame implements RequireAble {
      * @return The raw payload data.
      */
     public byte[] getData() {
-        return data;
+        return data.getSource();
+    }
+
+    /**
+     * Gets the payload data of this frame as a UTF-8 encoded string.
+     *
+     * @return The payload data as a UTF-8 string.
+     */
+    public String getUtf8() {
+        return new String(getData(), StandardCharsets.UTF_8);
     }
 
     /**
@@ -178,7 +188,7 @@ public class Frame implements RequireAble {
      * @param data The payload data to set.
      */
     public void setData(byte[] data) {
-        this.data = data;
+        this.data = new ByteBuffer(data);
     }
 
     /**
@@ -241,6 +251,7 @@ public class Frame implements RequireAble {
             result.get(result.size() - 1).fin = true;
             result.get(0).opcode = this.opcode;
         }
+
         return result;
     }
 
