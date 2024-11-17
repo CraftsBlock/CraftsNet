@@ -2,10 +2,7 @@ package de.craftsblock.craftsnet.api.http.annotations;
 
 import de.craftsblock.craftsnet.api.http.body.Body;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * Annotation used to indicate that a request handler method requires specific types of request bodies.
@@ -16,6 +13,7 @@ import java.lang.annotation.Target;
  * @version 1.0.0
  * @since CraftsNet-3.0.4
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
 public @interface RequireBody {

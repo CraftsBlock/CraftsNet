@@ -1,9 +1,6 @@
 package de.craftsblock.craftsnet.api.websocket.annotations;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * Custom annotation used to mark methods as message receivers in WebSocket handler classes.
@@ -18,6 +15,7 @@ import java.lang.annotation.Target;
  * developers are recommended to switch to the new websocket registration mechanism, as this mechanism
  * is only available up to release 4.0.0 of CraftsNet.
  */
+@Documented
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 @Deprecated(since = "3.0.3", forRemoval = true)

@@ -1,9 +1,6 @@
 package de.craftsblock.craftsnet.api.annotations;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * Annotation to define the processing priority of a method.
@@ -15,6 +12,7 @@ import java.lang.annotation.Target;
  * @version 1.0.0
  * @since CraftsNet-3.0.1
  */
+@Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
 public @interface ProcessPriority {
