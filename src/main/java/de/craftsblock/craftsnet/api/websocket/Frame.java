@@ -415,7 +415,7 @@ public class Frame implements RequireAble {
      */
     @Override
     protected Object clone() {
-        return new Frame(fin, rsv1, rsv2, rsv3, masked, opcode, data.clone());
+        return new Frame(fin, rsv1, rsv2, rsv3, masked, opcode, data.getSource().clone());
     }
 
 }
