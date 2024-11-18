@@ -72,10 +72,10 @@ public class WebSocketServer extends Server {
     }
 
     /**
-     * Binds this instance of the websocket server to a specific port and specifies the backlog.
+     * {@inheritDoc}
      *
-     * @param port    The port number to bind the server to.
-     * @param backlog The maximum number of pending connections the server's socket may have in the queue.
+     * @param port    {@inheritDoc}
+     * @param backlog {@inheritDoc}
      */
     @Override
     public void bind(int port, int backlog) {
@@ -84,7 +84,7 @@ public class WebSocketServer extends Server {
     }
 
     /**
-     * Starts the WebSocket server and waits for incoming connections.
+     * {@inheritDoc}
      */
     @Override
     public void start() {
@@ -156,15 +156,16 @@ public class WebSocketServer extends Server {
     }
 
     /**
-     * Stops the WebSocket server and closes all connections.
+     * {@inheritDoc}
      */
     @Override
     public void stop() {
         try {
-            connected.forEach((useless, client) -> client.forEach(webSocketClient -> {
-                if (webSocketClient.isConnected()) webSocketClient.close(ClosureCode.GOING_AWAY, "Server closed!");
-                webSocketClient.disconnect().interrupt();
-            }));
+            connected.values().stream().flatMap(ConcurrentLinkedQueue::stream)
+                    .forEach(client -> {
+                        if (client.isConnected()) client.close(ClosureCode.GOING_AWAY, "Server closed!");
+                        client.disconnect().interrupt();
+                    });
             connected.clear();
             serverSocket.close();
             if (connector != null)
@@ -177,7 +178,7 @@ public class WebSocketServer extends Server {
     }
 
     /**
-     * Starts the websocket server if it is required, or emits a warning if the websocket server is required but is deactivated.
+     * {@inheritDoc}
      */
     @Override
     public void awakeOrWarn() {
@@ -190,7 +191,7 @@ public class WebSocketServer extends Server {
     }
 
     /**
-     *
+     * {@inheritDoc}
      */
     @Override
     public void sleepIfNotNeeded() {
@@ -199,9 +200,9 @@ public class WebSocketServer extends Server {
     }
 
     /**
-     * Checks if the websocket server is enabled.
+     * {@inheritDoc}
      *
-     * @return true if it is enabled, false otherwise.
+     * @return {@inheritDoc}
      */
     @Override
     public boolean isEnabled() {

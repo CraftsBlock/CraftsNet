@@ -52,6 +52,12 @@ public class WebServer extends Server {
         this.logger = this.craftsNet.logger();
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @param port    The port number to bind the server to.
+     * @param backlog The maximum number of pending connections the server's socket may have in the queue.
+     */
     @Override
     public void bind(int port, int backlog) {
         super.bind(port, backlog);
@@ -59,7 +65,7 @@ public class WebServer extends Server {
     }
 
     /**
-     * Starts the web server.
+     * {@inheritDoc}
      */
     @Override
     public void start() {
@@ -117,7 +123,7 @@ public class WebServer extends Server {
     }
 
     /**
-     * Stops the web server.
+     * {@inheritDoc}
      */
     @Override
     public void stop() {
@@ -127,6 +133,9 @@ public class WebServer extends Server {
         super.stop();
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void awakeOrWarn() {
         if (!isRunning() && isEnabled())
@@ -137,17 +146,31 @@ public class WebServer extends Server {
             logger.warning("A route has been registered, but the web server is disabled!");
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     public void sleepIfNotNeeded() {
         if (isRunning() && !craftsNet.routeRegistry().hasRoutes() && isStatus(CraftsNet.ActivateType.DYNAMIC))
             stop();
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
     @Override
     public boolean isEnabled() {
         return !isStatus(CraftsNet.ActivateType.DISABLED);
     }
 
+    /**
+     * Checks if the websocket server has a certain activation status in the builder.
+     *
+     * @param type The activation which should be present.
+     * @return true if the activation status is equals, false otherwise.
+     */
     private boolean isStatus(CraftsNet.ActivateType type) {
         return craftsNet.getBuilder().isWebServer(type);
     }
