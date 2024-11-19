@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.events.requests.shares;
 
-import de.craftsblock.craftscore.event.Event;
+import de.craftsblock.craftscore.event.CancellableEvent;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -14,10 +14,10 @@ import java.net.URLConnection;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.1
- * @see de.craftsblock.craftscore.event.Event
+ * @see CancellableEvent
  * @since CraftsNet-2.3.2
  */
-public class ShareFileLoadedEvent extends Event {
+public class ShareFileLoadedEvent extends CancellableEvent {
 
     private static final FileNameMap contentTypes = URLConnection.getFileNameMap();
 

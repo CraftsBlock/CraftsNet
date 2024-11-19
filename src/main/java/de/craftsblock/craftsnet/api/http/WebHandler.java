@@ -263,6 +263,7 @@ public class WebHandler implements HttpHandler {
         File share = new File(folder, (path.isBlank() ? "index.html" : path));
         ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(share);
         craftsNet.listenerRegistry().call(fileLoadedEvent);
+        if (fileLoadedEvent.isCancelled()) return;
         share = fileLoadedEvent.getFile();
 
         assert share != null;
