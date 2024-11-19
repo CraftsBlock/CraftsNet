@@ -1,6 +1,8 @@
 package de.craftsblock.craftsnet.events.requests.shares;
 
 import de.craftsblock.craftscore.event.CancellableEvent;
+import de.craftsblock.craftsnet.api.http.Exchange;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
@@ -13,7 +15,7 @@ import java.net.URLConnection;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1
+ * @version 1.1.2
  * @see CancellableEvent
  * @since CraftsNet-2.3.2
  */
@@ -21,16 +23,28 @@ public class ShareFileLoadedEvent extends CancellableEvent {
 
     private static final FileNameMap contentTypes = URLConnection.getFileNameMap();
 
+    private final Exchange exchange;
     private File file;
     private String contentType;
 
     /**
      * Creates a new ShareFileLoadedEvent with the specified loaded file.
      *
-     * @param file The loaded file associated with this event.
+     * @param exchange The exchange used by the share to handle its connection
+     * @param file     The loaded file associated with this event.
      */
-    public ShareFileLoadedEvent(@Nullable File file) {
+    public ShareFileLoadedEvent(@NotNull Exchange exchange, @Nullable File file) {
+        this.exchange = exchange;
         this.file = file;
+    }
+
+    /**
+     * Gets the exchange which holds all http information about the connection with the shared location.
+     *
+     * @return The exchange object storing important information
+     */
+    public Exchange getExchange() {
+        return exchange;
     }
 
     /**

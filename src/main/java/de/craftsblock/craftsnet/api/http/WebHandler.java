@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.4
+ * @version 1.2.5
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -261,7 +261,7 @@ public class WebHandler implements HttpHandler {
         logger.info(httpMethod + " " + url + " from " + ip + " \u001b[38;5;205m[SHARED]");
 
         File share = new File(folder, (path.isBlank() ? "index.html" : path));
-        ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(share);
+        ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(exchange, share);
         craftsNet.listenerRegistry().call(fileLoadedEvent);
         if (fileLoadedEvent.isCancelled()) return;
         share = fileLoadedEvent.getFile();
