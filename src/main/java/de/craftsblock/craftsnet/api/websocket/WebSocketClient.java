@@ -200,10 +200,10 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             // If the event is cancelled, disconnect the client
             if (event.isCancelled()) {
-                if (event.getReason() != null)
-                    sendMessage(event.getReason());
+                if (event.hasCancelReason())
+                    sendMessage(event.getCancelReason());
                 disconnect();
-                logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[" + event.getReason() + "]");
+                logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[" + event.getCancelReason() + "]");
                 return;
             }
 

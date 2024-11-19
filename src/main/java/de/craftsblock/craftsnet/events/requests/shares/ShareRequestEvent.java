@@ -1,11 +1,9 @@
 package de.craftsblock.craftsnet.events.requests.shares;
 
 import com.sun.net.httpserver.Headers;
-import de.craftsblock.craftscore.event.Cancellable;
-import de.craftsblock.craftscore.event.CancellableEvent;
-import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.events.EventWithCancelReason;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -17,11 +15,10 @@ import java.util.List;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.2
- * @see de.craftsblock.craftscore.event.Event
- * @see de.craftsblock.craftscore.event.Cancellable
+ * @see EventWithCancelReason
  * @since CraftsNet-2.3.2
  */
-public class ShareRequestEvent extends CancellableEvent {
+public class ShareRequestEvent extends EventWithCancelReason {
 
     private final Headers headers = new Headers();
     private final String httpPath;
@@ -29,8 +26,6 @@ public class ShareRequestEvent extends CancellableEvent {
     private final RouteRegistry.ShareMapping mapping;
 
     private String filePath;
-
-    private String cancelReason;
 
     /**
      * Creates a new ShareRequestEvent with the specified path.
@@ -141,33 +136,6 @@ public class ShareRequestEvent extends CancellableEvent {
      */
     public boolean hasHeader(String key) {
         return headers.containsKey(key);
-    }
-
-    /**
-     * Sets a custom cancel reason which is printed to the console
-     *
-     * @param cancelReason The cancel reason which is printed to the console
-     */
-    public void setCancelReason(String cancelReason) {
-        this.cancelReason = cancelReason;
-    }
-
-    /**
-     * Gets the custom cancel reason which was set by one of the listeners.
-     *
-     * @return The cancel reason
-     */
-    public String getCancelReason() {
-        return cancelReason;
-    }
-
-    /**
-     * Checks and returns whether a custom cancel reason was set by one of the listeners.
-     *
-     * @return true if a custom cancel reason was set, false otherwise.
-     */
-    public boolean hasCancelReason() {
-        return this.cancelReason != null;
     }
 
 }

@@ -1,11 +1,10 @@
 package de.craftsblock.craftsnet.events.requests.routes;
 
-import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.events.EventWithCancelReason;
 
 import java.util.Collection;
-import java.util.List;
 
 /**
  * The {@link RouteRequestEvent} class represents an event related to a route request.
@@ -14,16 +13,15 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
+ * @see EventWithCancelReason
  * @version 1.1.0
  * @since 1.0.0-SNAPSHOT
  */
-public class RouteRequestEvent extends CancellableEvent {
+public class RouteRequestEvent extends EventWithCancelReason {
 
     private final Exchange exchange;
 
     private final Collection<RouteRegistry.EndpointMapping> mappings;
-
-    private String cancelReason;
 
     /**
      * Constructs a new {@link RouteRequestEvent} with the specified {@link Exchange} and {@link RouteRegistry.EndpointMapping}.
@@ -60,33 +58,6 @@ public class RouteRequestEvent extends CancellableEvent {
      */
     public boolean hasMappings() {
         return mappings != null && !mappings.isEmpty();
-    }
-
-    /**
-     * Sets a custom cancel reason which is printed to the console
-     *
-     * @param cancelReason The cancel reason which is printed to the console
-     */
-    public void setCancelReason(String cancelReason) {
-        this.cancelReason = cancelReason;
-    }
-
-    /**
-     * Gets the custom cancel reason which was set by one of the listeners.
-     *
-     * @return The cancel reason
-     */
-    public String getCancelReason() {
-        return cancelReason;
-    }
-
-    /**
-     * Checks and returns whether a custom cancel reason was set by one of the listeners.
-     *
-     * @return true if a custom cancel reason was set, false otherwise.
-     */
-    public boolean hasCancelReason() {
-        return this.cancelReason != null;
     }
 
 }

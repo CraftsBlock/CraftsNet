@@ -1,27 +1,27 @@
 package de.craftsblock.craftsnet.events.sockets;
 
-import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import de.craftsblock.craftsnet.events.EventWithCancelReason;
 
 import java.util.EnumMap;
 import java.util.List;
 
 /**
  * The ClientConnectEvent class represents an event related to a client connection to a socket.
- * It extends the base {@link CancellableEvent} to support event cancellation.
+ * It extends the base {@link EventWithCancelReason} to support event cancellation.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.1
+ * @see EventWithCancelReason
  * @since 2.1.1-SNAPSHOT
  */
-public class ClientConnectEvent extends CancellableEvent {
+public class ClientConnectEvent extends EventWithCancelReason {
 
     private final SocketExchange exchange;
     private final EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappings;
-    private String reason;
 
     /**
      * Constructs a new ClientConnectEvent with the specified SocketExchange and SocketMapping.
@@ -58,24 +58,6 @@ public class ClientConnectEvent extends CancellableEvent {
      */
     public boolean hasMappings() {
         return mappings != null && !mappings.isEmpty();
-    }
-
-    /**
-     * Sets the reason for the client connection event.
-     *
-     * @param reason The reason for the client connection.
-     */
-    public void setReason(String reason) {
-        this.reason = reason;
-    }
-
-    /**
-     * Gets the reason for the client connection event.
-     *
-     * @return The reason for the client connection.
-     */
-    public String getReason() {
-        return reason;
     }
 
 }
