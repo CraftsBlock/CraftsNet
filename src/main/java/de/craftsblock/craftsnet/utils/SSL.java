@@ -96,7 +96,7 @@ public class SSL {
 
             try {
                 if (!verify(certificates[0], privateKey))
-                    throw new InvalidKeyException("The value signed with the private key could be verified with the public key!");
+                    throw new InvalidKeyException("The value signed with the private key could not be verified with the public key!");
             } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException | NullPointerException e) {
                 craftsNet.logger().error(e, "Could not activate ssl: There was an unexpected exception while verifying the key pair!");
                 return null;
