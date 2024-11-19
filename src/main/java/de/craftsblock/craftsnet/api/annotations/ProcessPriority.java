@@ -58,33 +58,8 @@ public @interface ProcessPriority {
         /**
          * Indicates a monitoring priority. Will be executed last.
          */
-        MONITOR;
+        MONITOR
 
-        /**
-         * Returns the next priority level in the sequence.
-         *
-         * @return The next priority level in the sequence.
-         */
-        public Priority next() {
-            return Priority.next(this);
-        }
-
-        /**
-         * Returns the priority level that follows the given priority level.
-         *
-         * @param current The current priority level.
-         * @return The next priority level in the sequence after the given one.
-         */
-        public static Priority next(Priority current) {
-            return switch (current) {
-                case LOWEST -> LOW;
-                case LOW -> NORMAL;
-                case NORMAL -> HIGH;
-                case HIGH -> HIGHEST;
-                case HIGHEST -> MONITOR;
-                default -> null;
-            };
-        }
     }
 
 }
