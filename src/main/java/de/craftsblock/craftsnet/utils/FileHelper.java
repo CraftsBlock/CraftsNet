@@ -7,6 +7,10 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * A utility class that helps manage the creation of temporary files in the file system.
@@ -67,6 +71,10 @@ public class FileHelper {
      * Creates a temporary file with the given prefix and suffix in the appropriate directory.
      * If a custom directory was selected during initialization, the file will be created there.
      * Otherwise, the system's default temporary file directory is used.
+     * <p>
+     * If no POSIX file permissions are explicitly provided, the file will be created with default
+     * POSIX permissions: read and write access for the owner.
+     * </p>
      *
      * @param prefix the prefix string to be used in generating the file's name.
      * @param suffix the suffix string to be used in generating the file's name.
@@ -75,6 +83,15 @@ public class FileHelper {
      * @throws IOException if an I/O error occurs while creating the file.
      */
     public Path createTempFile(String prefix, String suffix, FileAttribute<?>... attrs) throws IOException {
+        if (Stream.of(attrs).noneMatch(attr -> "posix:permissions".equalsIgnoreCase(attr.name()))) {
+            FileAttribute<Set<PosixFilePermission>> defaultPerms = PosixFilePermissions.asFileAttribute(Set.of(
+                    PosixFilePermission.OWNER_READ,
+                    PosixFilePermission.OWNER_WRITE
+            ));
+
+            attrs = Stream.concat(Stream.of(attrs), Stream.of(defaultPerms)).toArray(FileAttribute[]::new);
+        }
+
         return tempDir == null
                 ? Files.createTempFile(prefix, suffix, attrs)
                 : Files.createTempFile(tempDir, prefix, suffix, attrs);
