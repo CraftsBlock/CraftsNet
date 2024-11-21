@@ -264,21 +264,6 @@ final class AddonLoader {
     }
 
     /**
-     * Sets a field in the given object using reflection.
-     *
-     * @param name The name of the field to set.
-     * @param obj  The object whose field needs to be set.
-     * @param arg  The value to set the field to.
-     * @throws IllegalAccessException if the field cannot be accessed.
-     */
-    private void setField(String name, Object obj, Object arg) throws IllegalAccessException {
-        Field field = getField(obj.getClass(), name); // Find the specified field in the object's class hierarchy using reflection
-        field.setAccessible(true); // Set the fields accessibility to true
-        field.set(obj, arg); // Set the field value to the provided argument
-        field.setAccessible(false); // Set the fields accessibility to false
-    }
-
-    /**
      * Loads the addon JAR file and extracts the configuration.
      *
      * @param file The addon JAR file to load.
@@ -343,6 +328,21 @@ final class AddonLoader {
         }
 
         return services;
+    }
+
+    /**
+     * Sets a field in the given object using reflection.
+     *
+     * @param name The name of the field to set.
+     * @param obj  The object whose field needs to be set.
+     * @param arg  The value to set the field to.
+     * @throws IllegalAccessException if the field cannot be accessed.
+     */
+    private void setField(String name, Object obj, Object arg) throws IllegalAccessException {
+        Field field = getField(obj.getClass(), name); // Find the specified field in the object's class hierarchy using reflection
+        field.setAccessible(true); // Set the fields accessibility to true
+        field.set(obj, arg); // Set the field value to the provided argument
+        field.setAccessible(false); // Set the fields accessibility to false
     }
 
 
