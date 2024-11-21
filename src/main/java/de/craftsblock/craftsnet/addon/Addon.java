@@ -81,7 +81,7 @@ public abstract class Addon {
      * @return The name of the addon.
      */
     public final String getName() {
-        return name;
+        return meta.name();
     }
 
     /**

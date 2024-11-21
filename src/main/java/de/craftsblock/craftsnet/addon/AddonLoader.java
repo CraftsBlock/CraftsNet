@@ -204,7 +204,6 @@ final class AddonLoader {
                 setField("craftsNet", obj, craftsNet);
                 setField("meta", obj, meta);
                 setField("logger", obj, logger.cloneWithName(name));
-                setField("name", obj, name);
                 setField("classLoader", obj, classLoader);
 
                 loadOrder.addAddon(obj);
