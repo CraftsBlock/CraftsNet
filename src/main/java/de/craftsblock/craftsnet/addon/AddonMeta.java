@@ -20,7 +20,7 @@ import java.util.Optional;
  * @param depends     The dependencies required by the addon.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.0.7-SNAPSHOT
  */
 public record AddonMeta(String name, String mainClass, String description, List<String> authors, String website, String version, String[] depends) {
@@ -39,8 +39,8 @@ public record AddonMeta(String name, String mainClass, String description, List<
         addAuthors(authors, json, "authors");
 
         return new AddonMeta(
-                configuration.json().getString("name"),
-                configuration.json().getString("main"),
+                json.getString("name"),
+                json.getString("main"),
                 Optional.ofNullable(json.getString("description")).orElse(""),
                 authors,
                 Optional.ofNullable(json.getString("website")).orElse(""),
