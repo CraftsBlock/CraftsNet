@@ -11,18 +11,19 @@ import java.util.Optional;
  * Represents metadata information for an addon, such as its name, main class, authors, website, version, and dependencies.
  * This metadata is typically loaded from a configuration file in JSON format.
  *
- * @param name      The name of the addon.
- * @param mainClass The main class responsible for initializing the addon.
- * @param authors   A list of authors of the addon.
- * @param website   The website associated with the addon.
- * @param version   The version of the addon.
- * @param depends   The dependencies required by the addon.
+ * @param name        The name of the addon.
+ * @param mainClass   The main class responsible for initializing the addon.
+ * @param description The description of the addon.
+ * @param authors     A list of authors of the addon.
+ * @param website     The website associated with the addon.
+ * @param version     The version of the addon.
+ * @param depends     The dependencies required by the addon.
  * @author Philipp Maywald
  * @author CraftsBlock
  * @version 1.0.0
  * @since 3.0.7-SNAPSHOT
  */
-public record AddonMeta(String name, String mainClass, List<String> authors, String website, String version, String[] depends) {
+public record AddonMeta(String name, String mainClass, String description, List<String> authors, String website, String version, String[] depends) {
 
     /**
      * Creates an {@link AddonMeta} instance from the configuration provided by the {@link AddonLoader.Configuration}.
@@ -40,6 +41,7 @@ public record AddonMeta(String name, String mainClass, List<String> authors, Str
         return new AddonMeta(
                 configuration.json().getString("name"),
                 configuration.json().getString("main"),
+                Optional.ofNullable(json.getString("description")).orElse(""),
                 authors,
                 Optional.ofNullable(json.getString("website")).orElse(""),
                 Optional.ofNullable(json.getString("version")).orElse(""),
