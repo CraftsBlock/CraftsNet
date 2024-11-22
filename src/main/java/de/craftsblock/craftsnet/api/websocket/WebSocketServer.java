@@ -3,6 +3,7 @@ package de.craftsblock.craftsnet.api.websocket;
 import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Server;
+import de.craftsblock.craftsnet.builder.ActivateType;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.SSL;
 
@@ -195,7 +196,7 @@ public class WebSocketServer extends Server {
      */
     @Override
     public void sleepIfNotNeeded() {
-        if (isRunning() && !craftsNet.routeRegistry().hasWebsockets() && isStatus(CraftsNet.ActivateType.DYNAMIC))
+        if (isRunning() && !craftsNet.routeRegistry().hasWebsockets() && isStatus(ActivateType.DYNAMIC))
             stop();
     }
 
@@ -206,7 +207,7 @@ public class WebSocketServer extends Server {
      */
     @Override
     public boolean isEnabled() {
-        return !isStatus(CraftsNet.ActivateType.DISABLED);
+        return !isStatus(ActivateType.DISABLED);
     }
 
     /**
@@ -215,7 +216,7 @@ public class WebSocketServer extends Server {
      * @param type The activation which should be present.
      * @return true if the activation status is equals, false otherwise.
      */
-    private boolean isStatus(CraftsNet.ActivateType type) {
+    private boolean isStatus(ActivateType type) {
         return craftsNet.getBuilder().isWebSocketServer(type);
     }
 
