@@ -12,6 +12,8 @@ import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
 import de.craftsblock.craftsnet.api.websocket.DefaultPingResponder;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegistry;
+import de.craftsblock.craftsnet.builder.ActivateType;
+import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.command.commands.PluginCommand;
 import de.craftsblock.craftsnet.command.commands.ReloadCommand;
@@ -19,14 +21,11 @@ import de.craftsblock.craftsnet.command.commands.ShutdownCommand;
 import de.craftsblock.craftsnet.command.commands.VersionCommand;
 import de.craftsblock.craftsnet.events.ConsoleMessageEvent;
 import de.craftsblock.craftsnet.listeners.ConsoleListener;
-import de.craftsblock.craftsnet.logging.EmptyLogger;
 import de.craftsblock.craftsnet.logging.FileLogger;
 import de.craftsblock.craftsnet.logging.Logger;
-import de.craftsblock.craftsnet.logging.LoggerImpl;
 import de.craftsblock.craftsnet.utils.FileHelper;
 import de.craftsblock.craftsnet.utils.versions.Versions;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Range;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -48,7 +47,7 @@ public class CraftsNet {
     public static final String version = "3.0.7-SNAPSHOT";
 
     // Local instance
-    private Builder builder;
+    private CraftsNetBuilder builder;
     private Logger logger;
     private FileLogger fileLogger;
     private FileHelper fileHelper;
@@ -105,7 +104,7 @@ public class CraftsNet {
      * @param builder The builder instance containing the configuration for starting CraftsNet.
      * @throws IOException If an I/O error occurs during the startup process.
      */
-    protected void start(Builder builder) throws IOException {
+    public void start(CraftsNetBuilder builder) throws IOException {
         // Check if the builder was set or CraftsNet is already running and throw an exception if needed.
         if (this.builder != null)
             throw new RuntimeException("The instance of CraftsNet has already been started!");
@@ -290,7 +289,7 @@ public class CraftsNet {
      * Restarts the CraftsNet framework.
      */
     public void restart(Runnable executeBetween) {
-        Builder builder = this.builder;
+        CraftsNetBuilder builder = this.builder;
         this.builder = null;
         new Thread(() -> {
             stop();
@@ -429,7 +428,7 @@ public class CraftsNet {
      *
      * @return The builder instance.
      */
-    public Builder getBuilder() {
+    public CraftsNetBuilder getBuilder() {
         return builder;
     }
 
@@ -447,460 +446,8 @@ public class CraftsNet {
      *
      * @return A new builder instance.
      */
-    public static CraftsNet.Builder create() {
-        return new Builder();
-    }
-
-    /**
-     * Builder class for configuring the CraftsNet framework.
-     *
-     * @author CraftsBlock
-     * @author Philipp Maywald
-     * @version 1.0.0
-     * @since 3.0.3
-     */
-    public final static class Builder {
-
-        private int webServerPort;
-        private int webSocketServerPort;
-
-        private ActivateType webServer;
-        private ActivateType webSocketServer;
-        private ActivateType addonSystem;
-        private ActivateType commandSystem;
-
-        private ActivateType fileLogger;
-        private Logger logger;
-
-        private boolean debug;
-        private boolean tempFilesOnNormalFileSystem;
-        private boolean skipVersionCheck;
-        private boolean ssl;
-
-        private long logRotate;
-
-        /**
-         * Constructs a new Builder instance with default configuration settings.
-         */
-        public Builder() {
-            webServerPort = 5000;
-            webSocketServerPort = 5001;
-            webServer = webSocketServer = ActivateType.DYNAMIC;
-            addonSystem = commandSystem = fileLogger = ActivateType.ENABLED;
-            withDebug(false);
-            withTempFilesOnNormalFileSystem(false);
-            withSkipVersionCheck(false);
-            withSSL(false);
-            withoutLogRotate();
-        }
-
-        /**
-         * Specifies the port for the web server.
-         *
-         * @param port The port number for the web server.
-         * @return The Builder instance.
-         */
-        public Builder withWebServer(int port) {
-            return withWebServer(ActivateType.DYNAMIC, port);
-        }
-
-        /**
-         * Specifies the port for the web server.
-         *
-         * @param type The activation type for the web server.
-         * @return The Builder instance.
-         * @since 3.0.5
-         */
-        public Builder withWebServer(ActivateType type) {
-            return withWebServer(type, this.webServerPort);
-        }
-
-        /**
-         * Specifies the activation type and port for the web server.
-         *
-         * @param type The activation type for the web server.
-         * @param port The port number for the web server.
-         * @return The Builder instance.
-         */
-        public Builder withWebServer(ActivateType type, int port) {
-            this.webServer = type;
-            this.webServerPort = port;
-            return this;
-        }
-
-        /**
-         * Specifies the port for the WebSocket server.
-         *
-         * @param port The port number for the WebSocket server.
-         * @return The Builder instance.
-         */
-        public Builder withWebSocketServer(int port) {
-            return withWebSocketServer(ActivateType.DYNAMIC, port);
-        }
-
-        /**
-         * Specifies the activation type and port for the WebSocket server.
-         *
-         * @param type The activation type for the WebSocket server.
-         * @return The Builder instance.
-         * @since 3.0.5
-         */
-        public Builder withWebSocketServer(ActivateType type) {
-            return withWebSocketServer(type, this.webSocketServerPort);
-        }
-
-        /**
-         * Specifies the activation type and port for the WebSocket server.
-         *
-         * @param type The activation type for the WebSocket server.
-         * @param port The port number for the WebSocket server.
-         * @return The Builder instance.
-         */
-        public Builder withWebSocketServer(ActivateType type, int port) {
-            this.webSocketServer = type;
-            this.webSocketServerPort = port;
-            return this;
-        }
-
-        /**
-         * Specifies the activation type for the addon system.
-         *
-         * @param type The activation type for the addon system.
-         * @return The Builder instance.
-         */
-        public Builder withAddonSystem(ActivateType type) {
-            this.addonSystem = type;
-            return this;
-        }
-
-        /**
-         * Specifies the activation type for the command system.
-         *
-         * @param type The activation type for the command system.
-         * @return The Builder instance.
-         */
-        public Builder withCommandSystem(ActivateType type) {
-            this.commandSystem = type;
-            return this;
-        }
-
-        /**
-         * Specifies the activation type for the file logger.
-         *
-         * @param type The activation type for the file logger.
-         * @return The Builder instance.
-         * @since 3.0.5
-         */
-        public Builder withFileLogger(ActivateType type) {
-            this.fileLogger = type;
-            return this;
-        }
-
-        /**
-         * Configures whether temporary files should be placed on the normal file system.
-         * When set to {@code true}, the application will store temporary files in the local
-         * file system instead of using the system's default temporary file location.
-         *
-         * @param tempFilesOnNormalFileSystem {@code true} to place temporary files in the normal file system, {@code false} otherwise.
-         * @return the current {@code Builder} instance for method chaining.
-         */
-        public Builder withTempFilesOnNormalFileSystem(boolean tempFilesOnNormalFileSystem) {
-            this.tempFilesOnNormalFileSystem = tempFilesOnNormalFileSystem;
-            return this;
-        }
-
-        /**
-         * Specifies whether the version check should be skipped on startup.
-         *
-         * @param skipVersionCheck true if the version check should be skipped, false otherwise.
-         * @return The Builder instance.
-         */
-        public Builder withSkipVersionCheck(boolean skipVersionCheck) {
-            this.skipVersionCheck = skipVersionCheck;
-            return this;
-        }
-
-        /**
-         * Sets a custom logger which will be used by CraftsNet. It can be null when the default logger should be used.
-         *
-         * @param logger The instance of the custom logger.
-         * @return The Builder instance.
-         * @since 3.0.5
-         */
-        public Builder withCustomLogger(Logger logger) {
-            this.logger = logger;
-            return this;
-        }
-
-        /**
-         * Specifies the activation type for the logger.
-         *
-         * @param type The activation type for the logger.
-         * @return The Builder instance.
-         * @since 3.0.5
-         */
-        public Builder withLogger(ActivateType type) {
-            if (type.equals(ActivateType.DISABLED))
-                this.logger = this.logger instanceof EmptyLogger ? this.logger : new EmptyLogger(this.logger);
-            else if (this.logger instanceof EmptyLogger logger)
-                this.logger = logger.previous();
-            return this;
-        }
-
-        /**
-         * Specifies whether debug mode should be enabled.
-         *
-         * @param enabled true if debug mode should be enabled, false otherwise.
-         * @return The Builder instance.
-         */
-        public Builder withDebug(boolean enabled) {
-            this.debug = enabled;
-            return this;
-        }
-
-        /**
-         * Specifies whether SSL should be enabled.
-         *
-         * @param enabled true if SSL should be enabled, false otherwise.
-         * @return The Builder instance.
-         */
-        public Builder withSSL(boolean enabled) {
-            ssl = enabled;
-            return this;
-        }
-
-        /**
-         * Sets the log rotation size threshold for this builder.
-         *
-         * @param logRotate the log rotation size threshold, in bytes. A value of 0 disables log rotation.
-         *                  Must be non-negative.
-         * @return this {@code Builder} instance, enabling method chaining.
-         */
-        public Builder withLogRotate(@Range(from = 0, to = Long.MAX_VALUE) long logRotate) {
-            this.logRotate = logRotate;
-            return this;
-        }
-
-        /**
-         * Disables log rotation by setting the log rotation size threshold to 0.
-         *
-         * @return this {@code Builder} instance, enabling method chaining.
-         */
-        public Builder withoutLogRotate() {
-            return withLogRotate(0);
-        }
-
-        /**
-         * Retrieves the port number configured for the web server.
-         *
-         * @return The port number for the web server.
-         */
-        public int getWebServerPort() {
-            return webServerPort;
-        }
-
-        /**
-         * Retrieves the activation type configured for the web server.
-         *
-         * @return The activation type for the web server.
-         */
-        public ActivateType getWebServer() {
-            return webServer;
-        }
-
-        /**
-         * Checks if the web server is configured with the specified activation type.
-         *
-         * @param type The activation type to check.
-         * @return true if the web server is configured with the specified activation type, false otherwise.
-         */
-        public boolean isWebServer(ActivateType type) {
-            return webServer == type;
-        }
-
-        /**
-         * Retrieves the port number configured for the WebSocket server.
-         *
-         * @return The port number for the WebSocket server.
-         */
-        public int getWebSocketServerPort() {
-            return webSocketServerPort;
-        }
-
-        /**
-         * Retrieves the activation type configured for the WebSocket server.
-         *
-         * @return The activation type for the WebSocket server.
-         */
-        public ActivateType getWebSocketServer() {
-            return webSocketServer;
-        }
-
-        /**
-         * Checks if the WebSocket server is configured with the specified activation type.
-         *
-         * @param type The activation type to check.
-         * @return true if the WebSocket server is configured with the specified activation type, false otherwise.
-         */
-        public boolean isWebSocketServer(ActivateType type) {
-            return webSocketServer == type;
-        }
-
-        /**
-         * Retrieves the activation type configured for the addon system.
-         *
-         * @return The activation type for the addon system.
-         */
-        public ActivateType getAddonSystem() {
-            return addonSystem;
-        }
-
-        /**
-         * Checks if the addon system is configured with the specified activation type.
-         *
-         * @param type The activation type to check.
-         * @return true if the addon system is configured with the specified activation type, false otherwise.
-         */
-        public boolean isAddonSystem(ActivateType type) {
-            return addonSystem == type;
-        }
-
-        /**
-         * Retrieves the activation type configured for the command system.
-         *
-         * @return The activation type for the command system.
-         */
-        public ActivateType getCommandSystem() {
-            return commandSystem;
-        }
-
-        /**
-         * Checks if the command system is configured with the specified activation type.
-         *
-         * @param type The activation type to check.
-         * @return true if the command system is configured with the specified activation type, false otherwise.
-         */
-        public boolean isCommandSystem(ActivateType type) {
-            return commandSystem == type;
-        }
-
-        /**
-         * Checks if the file logger is configured with the specified activation type.
-         *
-         * @param type The activation type to check.
-         * @return true if the file logger is configured with the specified activation type, false otherwise.
-         * @since 3.0.5
-         */
-        public boolean isFileLogger(ActivateType type) {
-            return fileLogger == type;
-        }
-
-        /**
-         * Determines whether temporary files should be placed in the normal file system.
-         *
-         * @return {@code true} if temporary files are placed on the normal file system, {@code false} otherwise.
-         */
-        public boolean shouldPlaceTempFilesOnNormalFileSystem() {
-            return tempFilesOnNormalFileSystem;
-        }
-
-        /**
-         * Determines whether the version check should be skipped on startup.
-         *
-         * @return {@code true} if the version check should be skipped, {@code false} otherwise.
-         */
-        public boolean shouldSkipVersionCheck() {
-            return skipVersionCheck;
-        }
-
-        /**
-         * Retrieves the custom logger which should be used by CraftsNet.
-         *
-         * @return The logger instance.
-         * @since 3.0.5
-         */
-        public Logger getCustomLogger() {
-            return logger;
-        }
-
-        /**
-         * Checks if debug mode is enabled.
-         *
-         * @return true if debug mode is enabled, false otherwise.
-         */
-        public boolean isDebug() {
-            return debug;
-        }
-
-        /**
-         * Checks if SSL is enabled.
-         *
-         * @return true if SSL is enabled, false otherwise.
-         */
-        public boolean isSSL() {
-            return ssl;
-        }
-
-        /**
-         * Retrieves the log rotation size threshold.
-         *
-         * @return the log rotation size threshold in bytes, or 0 if log rotation is disabled.
-         */
-        public long getLogRotate() {
-            return logRotate;
-        }
-
-        /**
-         * Checks if log rotation is disabled.
-         *
-         * @return {@code true} if log rotation is disabled (i.e., the threshold is 0), {@code false} otherwise.
-         */
-        public boolean isLogRotate() {
-            return logRotate == 0;
-        }
-
-        /**
-         * Builds and starts the CraftsNet framework with the configured settings.
-         *
-         * @return The constructed CraftsNet instance.
-         * @throws IOException If an I/O error occurs during the startup process.
-         */
-        public CraftsNet build() throws IOException {
-            // Set up the logger if no logger was given
-            if (logger == null) logger = new LoggerImpl(isDebug());
-
-            CraftsNet craftsNet = new CraftsNet();
-            craftsNet.start(this);
-            return craftsNet;
-        }
-
-    }
-
-    /**
-     * Enum representing activation types for various components in the CraftsNet framework.
-     *
-     * @author CraftsBlock
-     * @author Philipp Maywald
-     * @version 1.0.0
-     * @since 3.0.3
-     */
-    public enum ActivateType {
-
-        /**
-         * Indicates that the component is enabled.
-         */
-        ENABLED,
-
-        /**
-         * Indicates that the component is disabled.
-         */
-        DISABLED,
-
-        /**
-         * Indicates that the activation of the component is dynamic, possibly determined at runtime.
-         */
-        DYNAMIC
-
+    public static CraftsNetBuilder create() {
+        return new CraftsNetBuilder();
     }
 
 }
