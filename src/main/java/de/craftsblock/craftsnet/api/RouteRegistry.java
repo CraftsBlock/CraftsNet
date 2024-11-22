@@ -180,7 +180,7 @@ public class RouteRegistry {
                 String parent = retrieveValueOfAnnotation(handler, annotation, String.class, true);
 
                 // Continue if no handlers exists for this server type
-                if (!Utils.checkForMethodsWithAnnotation(handler.getClass(), annotation)) continue;
+                if (!Utils.hasMethodsWithAnnotation(handler.getClass(), annotation)) continue;
 
                 for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), annotation)) {
                     if (WebServer.class.isAssignableFrom(rawServer)) {
@@ -284,7 +284,7 @@ public class RouteRegistry {
                 String parent = retrieveValueOfAnnotation(handler, annotation, String.class, true);
 
                 // Continue if no handlers exists for this server type
-                if (!Utils.checkForMethodsWithAnnotation(handler.getClass(), annotation)) continue;
+                if (!Utils.hasMethodsWithAnnotation(handler.getClass(), annotation)) continue;
 
                 for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), annotation)) {
                     String child = retrieveValueOfAnnotation(method, annotation, String.class, true);

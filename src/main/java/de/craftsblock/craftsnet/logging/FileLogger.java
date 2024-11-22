@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.logging;
 
-import de.craftsblock.craftscore.utils.Utils;
+import de.craftsblock.craftscore.utils.FileUtils;
 import de.craftsblock.craftscore.utils.id.Snowflake;
 import de.craftsblock.craftsnet.CraftsNet;
 import org.jetbrains.annotations.Nullable;
@@ -66,7 +66,7 @@ public class FileLogger {
                     long count = stream.count();
                     if (count > max) {
                         long diff = count - max;
-                        for (Path path : Utils.getOldestNFiles(folder, diff))
+                        for (Path path : FileUtils.getOldestNFiles(folder, diff))
                             Files.deleteIfExists(path);
                     }
                 }
