@@ -1,6 +1,9 @@
 package de.craftsblock.craftsnet.api.http.annotations;
 
 import de.craftsblock.craftsnet.api.http.HttpMethod;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementMeta;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementStore;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementType;
 
 import java.lang.annotation.*;
 
@@ -10,14 +13,15 @@ import java.lang.annotation.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 1.1.0
  * @see Route
  * @see HttpMethod
- * @since CraftsNet-2.3.0
+ * @since 2.3.0-SNAPSHOT
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
+@RequirementMeta(type = RequirementType.STORING)
 public @interface RequestMethod {
 
     /**
@@ -25,6 +29,7 @@ public @interface RequestMethod {
      *
      * @return An array of HTTP methods.
      */
+    @RequirementStore
     HttpMethod[] value() default {HttpMethod.POST, HttpMethod.GET};
 
 }

@@ -1,5 +1,8 @@
 package de.craftsblock.craftsnet.api.websocket.annotations;
 
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementMeta;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementStore;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementType;
 import de.craftsblock.craftsnet.api.websocket.SocketHandler;
 
 import java.lang.annotation.*;
@@ -9,13 +12,14 @@ import java.lang.annotation.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.1.0
  * @see SocketHandler
- * @since CraftsNet-2.1.1
+ * @since 2.1.1-SNAPSHOT
  */
 @Documented
-@Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.TYPE, ElementType.METHOD})
+@RequirementMeta(type = RequirementType.STORING)
 public @interface Socket {
 
     /**
@@ -24,6 +28,7 @@ public @interface Socket {
      *
      * @return The WebSocket path associated with this handler.
      */
+    @RequirementStore
     String value() default "/";
 
 

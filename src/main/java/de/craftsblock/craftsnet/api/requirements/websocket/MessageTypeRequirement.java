@@ -6,7 +6,6 @@ import de.craftsblock.craftsnet.api.websocket.Frame;
 import de.craftsblock.craftsnet.api.websocket.Opcode;
 import de.craftsblock.craftsnet.api.websocket.annotations.RequireMessageType;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -14,7 +13,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.1.0
  * @see WebRequirement
  * @since 3.0.5-SNAPSHOT
  */
@@ -36,10 +35,9 @@ public class MessageTypeRequirement extends WebSocketRequirement<Frame> {
      */
     @Override
     public boolean applies(Frame frame, RouteRegistry.EndpointMapping endpointMapping) {
-        List<Opcode> rawRequirements = endpointMapping.getRequirements(getAnnotation(), Opcode.class);
-        if (rawRequirements == null) return true;
-        List<Opcode> requirements = new ArrayList<>(rawRequirements);
+        if (!endpointMapping.isPresent(getAnnotation(), "value")) return true;
 
+        List<Opcode> requirements = endpointMapping.getRequirements(getAnnotation(), "value");
         return requirements.contains(frame.getOpcode());
     }
 

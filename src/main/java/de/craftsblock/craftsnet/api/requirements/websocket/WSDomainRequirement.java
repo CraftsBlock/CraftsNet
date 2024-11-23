@@ -5,7 +5,6 @@ import de.craftsblock.craftsnet.api.annotations.Domain;
 import de.craftsblock.craftsnet.api.requirements.web.WebRequirement;
 import de.craftsblock.craftsnet.api.websocket.WebSocketClient;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -13,7 +12,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.1.0
  * @see WebRequirement
  * @since 3.0.5-SNAPSHOT
  */
@@ -35,10 +34,9 @@ public class WSDomainRequirement extends WebSocketRequirement<WebSocketClient> {
      */
     @Override
     public boolean applies(WebSocketClient client, RouteRegistry.EndpointMapping endpointMapping) {
-        List<String> rawRequirements = endpointMapping.getRequirements(getAnnotation(), String.class);
-        if (rawRequirements == null) return true;
-        List<String> requirements = new ArrayList<>(rawRequirements);
+        if (!endpointMapping.isPresent(getAnnotation(), "value")) return true;
 
+        List<String> requirements = endpointMapping.getRequirements(getAnnotation(), "value");
         String domain = client.getDomain();
         if (domain == null) return false;
 

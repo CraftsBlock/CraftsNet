@@ -13,7 +13,7 @@ import java.util.Set;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.1.0
  * @see WebRequirement
  * @since 3.0.6-SNAPSHOT
  */
@@ -35,9 +35,9 @@ public class QueryParameterRequirement extends WebRequirement {
      */
     @Override
     public boolean applies(Request request, RouteRegistry.EndpointMapping endpointMapping) {
-        List<String> requirements = endpointMapping.getRequirements(getAnnotation(), String.class);
-        if (requirements == null) return true;
+        if (!endpointMapping.isPresent(getAnnotation(), "value")) return true;
 
+        List<String> requirements = endpointMapping.getRequirements(getAnnotation(), "value");
         if (request.getQueryParams().isEmpty()) return false;
 
         Set<String> parameters = request.getQueryParams().keySet();

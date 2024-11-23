@@ -1,5 +1,9 @@
 package de.craftsblock.craftsnet.api.http.annotations;
 
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementMeta;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementStore;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementType;
+
 import java.lang.annotation.*;
 
 /**
@@ -9,12 +13,13 @@ import java.lang.annotation.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.1.0
  * @since 3.0.6-SNAPSHOT
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
+@RequirementMeta(type = RequirementType.STORING)
 public @interface RequireParameter {
 
     /**
@@ -22,6 +27,7 @@ public @interface RequireParameter {
      *
      * @return An array of strings representing the names of the required url parameter.
      */
+    @RequirementStore
     String[] value();
 
 }

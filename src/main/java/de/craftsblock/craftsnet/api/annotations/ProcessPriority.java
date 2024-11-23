@@ -1,5 +1,9 @@
 package de.craftsblock.craftsnet.api.annotations;
 
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementMeta;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementStore;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementType;
+
 import java.lang.annotation.*;
 
 /**
@@ -9,12 +13,13 @@ import java.lang.annotation.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
- * @since CraftsNet-3.0.1
+ * @version 1.1.0
+ * @since 3.0.1-SNAPSHOT
  */
 @Documented
-@Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@RequirementMeta(type = RequirementType.STORING)
 public @interface ProcessPriority {
 
     /**
@@ -23,6 +28,7 @@ public @interface ProcessPriority {
      *
      * @return The priority level for the annotated method.
      */
+    @RequirementStore
     Priority value() default Priority.NORMAL;
 
     /**

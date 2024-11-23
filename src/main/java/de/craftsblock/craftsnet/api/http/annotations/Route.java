@@ -2,6 +2,9 @@ package de.craftsblock.craftsnet.api.http.annotations;
 
 import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.http.WebServer;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementMeta;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementStore;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementType;
 
 import java.lang.annotation.*;
 
@@ -11,14 +14,15 @@ import java.lang.annotation.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 1.1.0
  * @see WebServer
  * @see HttpMethod
- * @since CraftsNet-1.0.0
+ * @since 1.0.0-SNAPSHOT
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
+@RequirementMeta(type = RequirementType.STORING)
 public @interface Route {
 
     /**
@@ -26,6 +30,7 @@ public @interface Route {
      *
      * @return The path as a string.
      */
+    @RequirementStore
     String value() default "/";
 
 }

@@ -8,6 +8,8 @@ import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementInfo;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementType;
 import de.craftsblock.craftsnet.api.requirements.web.*;
 import de.craftsblock.craftsnet.api.requirements.websocket.MessageTypeRequirement;
 import de.craftsblock.craftsnet.api.requirements.websocket.WSDomainRequirement;
@@ -31,12 +33,12 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * The RouteRegistry class manages the registration and unregistration of request handlers (routes) and socket handlers.
+ * The RouteRegistry class manages the registration and unregistration of {@link RequestHandler} (routes) and {@link SocketHandler} (websockets).
  * It stores and maps the registered routes and sockets based on their patterns, allowing for efficient handling of incoming requests.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.1.0
+ * @version 3.2.0
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -148,22 +150,14 @@ public class RouteRegistry {
 
         List<Class<? extends Annotation>> annotations = Collections.singletonList(requirement.getAnnotation());
         patternedMappings.forEach((pattern, mappings) -> mappings.forEach(mapping -> {
-            ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements = new ConcurrentHashMap<>();
-
-            try {
-                loadRequirements(requirements, annotations, mapping.method, mapping.handler);
-                requirements.forEach((aClass, objects) -> {
-                    if (objects.isEmpty()) requirements.remove(aClass);
-                });
-                mapping.requirements.putAll(requirements);
-            } catch (InvocationTargetException | NoSuchMethodException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
+            ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements = new ConcurrentHashMap<>();
+            loadRequirements(requirements, annotations, mapping.method, mapping.handler);
+            mapping.requirements.putAll(requirements);
         }));
     }
 
     /**
-     * Registers an endpoint handler (route or websocket) by inspecting its annotated methods and adding it to the registry.
+     * Registers an endpoint handler ({@link RequestHandler} and or {@link SocketHandler}) by inspecting its annotated methods and adding it to the registry.
      *
      * @param handler The Handler to be registered.
      */
@@ -202,13 +196,9 @@ public class RouteRegistry {
                     Pattern validator = createOrGetValidator(mergeUrl(parent != null ? parent : "", child), endpoints);
 
                     // Load requirements
-                    ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements = new ConcurrentHashMap<>();
+                    ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements = new ConcurrentHashMap<>();
                     loadRequirements(requirements, requirementAnnotations, method, handler);
-
-                    // Remove empty requirements
-                    requirements.forEach((aClass, objects) -> {
-                        if (objects.isEmpty()) requirements.remove(aClass);
-                    });
+                    System.out.println(requirements);
 
                     // Register the endpoint mapping
                     List<EndpointMapping> mappings = endpoints.computeIfAbsent(validator, pattern -> new ArrayList<>());
@@ -489,105 +479,49 @@ public class RouteRegistry {
     }
 
     /**
-     * Load all the requirements from a specific list of annotations
+     * Load all the requirements from a specific list of annotations for a method and its handler.
      *
-     * @param requirements A list where all the requirements should go.
-     * @param annotations  A list with all requirements as their annotation representations.
+     * @param requirements A concurrent map where all the processed requirements will be stored.
+     * @param annotations  A list of annotation classes to process as requirements.
      * @param method       The method for which the requirements should be loaded.
-     * @param handler      The handler which contains the method and acts as the parent.
-     * @throws InvocationTargetException If the attribute's getter method is not found.
-     * @throws NoSuchMethodException     If there is an issue invoking the getter method.
-     * @throws IllegalAccessException    If there is an access issue with the getter method.
+     * @param handler      The handler object that contains the method and acts as the parent context.
      */
-    private void loadRequirements(ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements, List<Class<? extends Annotation>> annotations, Method method, Object handler) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        for (Class<? extends Annotation> annotation : annotations) {
-            Class<?> type = annotationMethodType(annotation, "value");
-            List<Object> requirement = requirements.computeIfAbsent(annotation, aClass -> new ArrayList<>());
-
-            if (type == null) {
-                requirement.add(List.of());
-                continue;
-            }
-
-            List<?> values = loadAnnotationValues(method, handler, annotation, type);
-            if (type.isArray()) {
-                values.forEach(o -> requirement.addAll(List.of((Object[]) o)));
-                continue;
-            }
-
-            requirement.addAll(values);
-        }
+    private void loadRequirements(ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements, List<Class<? extends Annotation>> annotations, Method method, Object handler) {
+        loadRequirements(requirements, annotations, handler);
+        loadRequirements(requirements, annotations, method);
     }
 
     /**
-     * Loads all values of the annotation from the parent class and targeted method.
+     * Load all requirements from a specific list of annotations for a given object.
      *
-     * @param m          The targeted method.
-     * @param obj        The parent class.
-     * @param annotation The class of the annotation.
-     * @param type       The class of the targeted type.
-     * @param <A>        The type of the annotation.
-     * @param <T>        The type of the attribute value.
-     * @return A list with all the values of the parent and the method.
-     * @throws NoSuchMethodException     If the attribute's getter method is not found.
-     * @throws InvocationTargetException If there is an issue invoking the getter method.
-     * @throws IllegalAccessException    If there is an access issue with the getter method.
+     * @param requirements A concurrent map where all the processed requirements will be stored.
+     * @param annotations  A list of annotation classes to process as requirements.
+     * @param obj          The object (either a Method or another class instance) to process.
      */
-    @NotNull
-    private <A extends Annotation, T> List<T> loadAnnotationValues(Method m, Object obj, Class<A> annotation, Class<T> type) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        List<T> values = new ArrayList<>();
+    private void loadRequirements(ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements, List<Class<? extends Annotation>> annotations, Object obj) {
+        for (Class<? extends Annotation> type : annotations) {
+            Annotation annotation = retrieveRawAnnotation(obj, type);
+            if (annotation == null) continue;
 
-        if (obj != null) values.addAll(loadAnnotationValues(obj, annotation, type));
-        if (m != null) values.addAll(loadAnnotationValues(m, annotation, type));
+            RequirementInfo info = new RequirementInfo(annotation);
+            if (info.meta().type().equals(RequirementType.STORING) && info.values().isEmpty())
+                continue;
 
-        // Remove duplicates
-        removeDuplicates(values);
-        return values;
-    }
-
-    /**
-     * Loads all values of the annotation from the parent class or the targeted method.
-     *
-     * @param obj        The parent class or the method.
-     * @param annotation The class of the annotation.
-     * @param type       The class of the targeted type.
-     * @param <A>        The type of the annotation.
-     * @param <T>        The type of the attribute value.
-     * @return A list with all the values of the parent and the method.
-     * @throws NoSuchMethodException     If the attribute's getter method is not found.
-     * @throws InvocationTargetException If there is an issue invoking the getter method.
-     * @throws IllegalAccessException    If there is an access issue with the getter method.
-     */
-    @SuppressWarnings("unchecked")
-    private <A extends Annotation, T> List<T> loadAnnotationValues(Object obj, Class<A> annotation, Class<T> type) throws InvocationTargetException, NoSuchMethodException, IllegalAccessException {
-        List<T> values = new ArrayList<>();
-        Object value = retrieveValueOfAnnotation(obj, annotation, type, obj instanceof Method);
-
-        if (value != null) {
-            Class<?> clazz = value.getClass();
-
-            if (value instanceof List<?> && List.class.isAssignableFrom(type)) values.addAll((Collection<? extends T>) value);
-            else if (value instanceof Object[] array && type.isArray()) addArray(array, values, type);
-            else if (type.isInstance(value)) values.add(type.cast(value));
-            else logger.warning("Found no suitable type of annotation. " +
-                        "Found: " + clazz.getSimpleName() + (clazz.isArray() ? "[]" : "") + " " +
-                        "Expected: " + type.getSimpleName() + (type.isArray() ? "[]" : ""));
+            requirements.merge(type, info, RequirementInfo::merge);
         }
-
-        return values;
     }
 
     /**
      * This method searches for an annotation of the specified type in an object.
      *
-     * @param o          The object in which to search for the annotation.
+     * @param obj        The object in which to search for the annotation.
      * @param annotation The class of the annotation to search for.
      * @param <A>        The type of the annotation.
      * @return The found annotation or null if none is found.
      */
-    private <A extends Annotation> A retrieveRawAnnotation(Object o, Class<A> annotation) {
-        if (o instanceof Method method) return method.getAnnotation(annotation);
-        return o.getClass().getAnnotation(annotation);
+    private <A extends Annotation> A retrieveRawAnnotation(Object obj, Class<A> annotation) {
+        if (obj instanceof Method method) return method.getDeclaredAnnotation(annotation);
+        return obj.getClass().getDeclaredAnnotation(annotation);
     }
 
     /**
@@ -620,23 +554,6 @@ public class RouteRegistry {
             else return null;
 
         return castTo(value, type);
-    }
-
-    /**
-     * Returns the return type as it's class representation of a specific method of an annotation.
-     *
-     * @param annotation The class representation of the annotation.
-     * @param method     The name of the method
-     * @param <A>        The type of the annotation.
-     * @return The class representation of the return type.
-     */
-    private <A extends Annotation> Class<?> annotationMethodType(Class<A> annotation, String method) {
-        try {
-            if (annotation == null) return null;
-            return annotation.getDeclaredMethod(method).getReturnType();
-        } catch (NoSuchMethodException ignored) {
-        }
-        return null;
     }
 
     /**
@@ -711,30 +628,6 @@ public class RouteRegistry {
     }
 
     /**
-     * Removes duplicates from a list by converting it to a set and then back to a list.
-     *
-     * @param <T>  The type of elements in the list.
-     * @param list The list from which duplicates will be removed.
-     */
-    private <T> void removeDuplicates(List<T> list) {
-        HashSet<T> unique = new HashSet<>(list);
-        list.clear();
-        list.addAll(unique);
-    }
-
-    /**
-     * Adds elements from an array to a list.
-     *
-     * @param <T>  The type of elements in the array and list.
-     * @param t    The array containing elements to add.
-     * @param list The list to which elements will be added.
-     */
-    private <T> void addArray(Object[] t, List<T> list, Class<T> type) {
-        if (!type.isInstance(t)) return;
-        list.add(type.cast(t));
-    }
-
-    /**
      * Retrieves a map with information about the server types held by the handler.
      *
      * @param handler The handler from which the information should be retrieved.
@@ -754,30 +647,57 @@ public class RouteRegistry {
     }
 
     /**
-     * The EndpointMapping class represents the mapping of a registered handler.
-     * It stores information about the priority, method, handler, validator pattern, and requirements.
+     * Represents the mapping of a registered endpoint handler.
      *
-     * @version 1.0.0
+     * <p>This class stores information about the endpoint's processing priority, the associated handler method,
+     * its parent handler, a validation pattern, and any requirement-related metadata.</p>
+     *
+     * @param priority     The {@link ProcessPriority.Priority} level for this endpoint.
+     * @param method       The {@link Method} associated with the handler.
+     * @param handler      The {@link Handler} instance that owns the method.
+     * @param validator    The {@link Pattern} used for validating input related to the endpoint.
+     * @param requirements A concurrent map of requirements, indexed by their annotation class.
+     * @version 2.0.0
      * @since 3.0.5-SNAPSHOT
      */
     public record EndpointMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull Handler handler,
                                   @NotNull Pattern validator,
-                                  ConcurrentHashMap<Class<? extends Annotation>, List<Object>> requirements) implements Mapping {
+                                  ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements) implements Mapping {
 
         /**
-         * {@inheritDoc}
+         * Checks whether the given annotation is present in the requirements.
          *
-         * @param annotation The annotation as it's class representation used to find the requirements.
-         * @param type       The expected return type as it's class representation.
-         * @param <A>        The annotation used to find the requirements.
-         * @param <T>        The expected return type.
-         * @return A list of requirements which are listed under the annotation.
+         * @param annotation The annotation class to check for.
+         * @return {@code true} if the annotation is present, {@code false} otherwise.
          */
         @Override
-        public <A extends Annotation, T> @Unmodifiable List<T> getRequirements(@NotNull Class<A> annotation, @NotNull Class<T> type) {
+        public <A extends Annotation> boolean isPresent(@NotNull Class<A> annotation) {
+            return requirements.containsKey(annotation);
+        }
+
+        /**
+         * Checks whether a specific key within the given annotation's requirements is present.
+         *
+         * @param annotation The annotation class to check for.
+         * @param key        The specific key to check within the annotation's requirements.
+         * @return {@code true} if the key is present within the annotation's requirements, {@code false} otherwise.
+         */
+        @Override
+        public <A extends Annotation> boolean isPresent(@NotNull Class<A> annotation, @NotNull String key) {
+            return isPresent(annotation) && requirements.get(annotation).hasValue(key);
+        }
+
+        /**
+         * Retrieves a specific value from the requirements of the given annotation.
+         *
+         * @param annotation The annotation class to retrieve the value from.
+         * @param key        The specific key within the annotation's requirements.
+         * @return The value associated with the given key, or {@code null} if not present.
+         */
+        @Override
+        public <A extends Annotation, T> T getRequirements(@NotNull Class<A> annotation, @NotNull String key) {
             if (!requirements.containsKey(annotation)) return null;
-            List<Object> requirement = requirements.get(annotation);
-            return requirement.stream().filter(type::isInstance).map(type::cast).toList();
+            return requirements.get(annotation).getValue(key);
         }
 
     }
@@ -786,7 +706,7 @@ public class RouteRegistry {
      * The ShareMapping class represents the mapping of a registered shared endpoint.
      * It stores information about the filesystem path and if only get requests should be processed.
      *
-     * @since CraftsNet-3.0.3
+     * @since 3.0.3-SNAPSHOT
      */
     public record ShareMapping(@NotNull String filepath, boolean onlyGet) implements Mapping {
     }
@@ -794,7 +714,7 @@ public class RouteRegistry {
     /**
      * The ServerMapping class represents a mapping of a server, and it's instance.
      *
-     * @since CraftsNet-3.0.3
+     * @since 3.0.3-SNAPSHOT
      */
     private record ServerMapping(Class<? extends Server> rawServer, Server server) implements Mapping {
     }
@@ -802,21 +722,54 @@ public class RouteRegistry {
     /**
      * A universal interface for mappings.
      *
-     * @since CraftsNet-3.0.3
+     * <p>Provides default methods for checking and retrieving metadata about requirements
+     * indexed by annotation types.</p>
+     *
+     * @version 2.0.0
+     * @since 3.0.3-SNAPSHOT
      */
     public interface Mapping {
 
         /**
-         * Retrieves a list of requirements which were registered under a certain annotation class.
+         * Checks whether a specific annotation is present in the mapping's requirements.
          *
-         * @param annotation The annotation as it's class representation used to find the requirements.
-         * @param type       The expected return type as it's class representation.
-         * @param <A>        The annotation used to find the requirements.
-         * @param <T>        The expected return type.
-         * @return A list of requirements which are listed under the annotation.
+         * @param annotation The annotation class to check for.
+         * @return {@code true} if the annotation is present, {@code false} otherwise.
          */
-        default <A extends Annotation, T> @Unmodifiable List<T> getRequirements(@NotNull Class<A> annotation, @NotNull Class<T> type) {
-            return List.of();
+        default <A extends Annotation> boolean isPresent(@NotNull Class<A> annotation) {
+            return false;
+        }
+
+        /**
+         * Checks whether a specific key within an annotation's requirements is present.
+         *
+         * @param annotation The annotation class to check for.
+         * @param key        The specific key to check within the annotation's requirements.
+         * @return {@code true} if the key is present, {@code false} otherwise.
+         */
+        default <A extends Annotation> boolean isPresent(@NotNull Class<A> annotation, @NotNull String key) {
+            return isPresent(annotation);
+        }
+
+        /**
+         * Retrieves a value associated with a specific annotation's default key ("value").
+         *
+         * @param annotation The annotation class to retrieve the value from.
+         * @return The value associated with the annotation's default key, or {@code null} if not present.
+         */
+        default <A extends Annotation, T> @Unmodifiable T getRequirements(@NotNull Class<A> annotation) {
+            return getRequirements(annotation, "value");
+        }
+
+        /**
+         * Retrieves a value associated with a specific annotation's requirements key.
+         *
+         * @param annotation The annotation class to retrieve the value from.
+         * @param key        The specific key to retrieve from the annotation's requirements.
+         * @return The value associated with the given key, or {@code null} if not present.
+         */
+        default <A extends Annotation, T> @Unmodifiable T getRequirements(@NotNull Class<A> annotation, @NotNull String key) {
+            return null;
         }
 
     }

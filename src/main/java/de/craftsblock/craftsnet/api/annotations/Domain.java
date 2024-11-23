@@ -1,6 +1,9 @@
 package de.craftsblock.craftsnet.api.annotations;
 
 import de.craftsblock.craftsnet.api.http.WebServer;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementMeta;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementStore;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementType;
 
 import java.lang.annotation.*;
 
@@ -10,13 +13,14 @@ import java.lang.annotation.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 1.1.0
  * @see WebServer
- * @since CraftsNet-2.3.0
+ * @since 2.3.0-SNAPSHOT
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
+@RequirementMeta(type = RequirementType.STORING)
 public @interface Domain {
 
     /**
@@ -24,6 +28,7 @@ public @interface Domain {
      *
      * @return The domain as a string.
      */
+    @RequirementStore
     String[] value();
 
 }

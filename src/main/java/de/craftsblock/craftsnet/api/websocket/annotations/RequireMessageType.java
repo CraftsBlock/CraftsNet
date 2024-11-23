@@ -1,6 +1,9 @@
 package de.craftsblock.craftsnet.api.websocket.annotations;
 
 import de.craftsblock.craftsnet.api.http.WebServer;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementMeta;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementStore;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementType;
 import de.craftsblock.craftsnet.api.websocket.Opcode;
 
 import java.lang.annotation.*;
@@ -11,13 +14,14 @@ import java.lang.annotation.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 1.1.0
  * @see WebServer
  * @since 3.0.5-SNAPSHOT
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
+@RequirementMeta(type = RequirementType.STORING)
 public @interface RequireMessageType {
 
     /**
@@ -25,6 +29,7 @@ public @interface RequireMessageType {
      *
      * @return The domain as a string.
      */
+    @RequirementStore
     Opcode[] value() default {Opcode.TEXT, Opcode.BINARY};
 
 }
