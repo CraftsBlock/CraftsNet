@@ -1,6 +1,11 @@
 package de.craftsblock.craftsnet.addon.services;
 
+import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.services.builtin.IIOServiceLoader;
+import de.craftsblock.craftsnet.addon.services.builtin.handlers.GenericHandlerLoader;
+import de.craftsblock.craftsnet.addon.services.builtin.handlers.RequestHandlerLoader;
+import de.craftsblock.craftsnet.addon.services.builtin.handlers.SocketHandlerLoader;
+import de.craftsblock.craftsnet.addon.services.builtin.listeners.ListenerAdapterLoader;
 import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.InvocationTargetException;
@@ -17,8 +22,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
- * @since CraftsNet-3.0.0
+ * @version 1.0.1
+ * @since 3.0.0-SNAPSHOT
  */
 public class ServiceManager {
 
@@ -32,9 +37,15 @@ public class ServiceManager {
      * Constructs a new ServiceManager and registers default service loaders.
      * Default service loaders can be added during instantiation to provide immediate functionality.
      */
-    public ServiceManager() {
+    public ServiceManager(CraftsNet craftsNet) {
         // Register default service loaders
         register(new IIOServiceLoader());
+
+        register(new GenericHandlerLoader(craftsNet));
+        register(new RequestHandlerLoader(craftsNet));
+        register(new SocketHandlerLoader(craftsNet));
+
+        register(new ListenerAdapterLoader(craftsNet));
     }
 
     /**
@@ -90,7 +101,7 @@ public class ServiceManager {
             return success.get();
         }
 
-        List<ServiceLoader<T>> loaders = providers.get(spi).parallelStream()
+        List<ServiceLoader<T>> loaders = providers.get(spi).stream()
                 .filter(loader -> {
                     Class<T> loaderClass = (Class<T>) extractGeneric(loader);
                     return loaderClass != null && loaderClass.isAssignableFrom(provider);

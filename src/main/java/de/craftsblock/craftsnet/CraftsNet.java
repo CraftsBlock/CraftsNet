@@ -159,7 +159,7 @@ public class CraftsNet {
         logger.debug("Initialization of the command registry");
         commandRegistry = new CommandRegistry(this);
         logger.debug("Initialization of the service manager");
-        serviceManager = new ServiceManager();
+        serviceManager = new ServiceManager(this);
         logger.debug("Initialization of the addon manager");
         if (!builder.isAddonSystem(ActivateType.DISABLED)) addonManager = new AddonManager(this);
 

@@ -13,7 +13,7 @@ import javax.imageio.spi.IIOServiceProvider;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since CraftsNet-3.0.0
+ * @since 3.0.0-SNAPSHOT
  */
 public class IIOServiceLoader implements ServiceLoader<IIOServiceProvider> {
 
