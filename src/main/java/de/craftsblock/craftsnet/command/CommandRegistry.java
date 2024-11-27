@@ -1,6 +1,10 @@
 package de.craftsblock.craftsnet.command;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.command.commands.PluginCommand;
+import de.craftsblock.craftsnet.command.commands.ReloadCommand;
+import de.craftsblock.craftsnet.command.commands.ShutdownCommand;
+import de.craftsblock.craftsnet.command.commands.VersionCommand;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 
@@ -28,6 +32,16 @@ public class CommandRegistry {
      */
     public CommandRegistry(CraftsNet craftsNet) {
         this.craftsNet = craftsNet;
+
+        craftsNet.logger().debug("Registering the default commands");
+        getCommand("pl").setExecutor(new PluginCommand(craftsNet));
+        getCommand("pl").addAlias("plugin", "plugins", "addons");
+        getCommand("restart").setExecutor(new ReloadCommand(craftsNet));
+        getCommand("restart").addAlias("reload", "rl");
+        getCommand("shutdown").setExecutor(new ShutdownCommand(craftsNet));
+        getCommand("shutdown").addAlias("quit", "exit", "stop");
+        getCommand("ver").setExecutor(new VersionCommand());
+        getCommand("ver").addAlias("version", "v");
     }
 
     /**

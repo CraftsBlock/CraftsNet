@@ -17,10 +17,6 @@ import de.craftsblock.craftsnet.builder.ActivateType;
 import de.craftsblock.craftsnet.builder.AddonContainingBuilder;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.command.CommandRegistry;
-import de.craftsblock.craftsnet.command.commands.PluginCommand;
-import de.craftsblock.craftsnet.command.commands.ReloadCommand;
-import de.craftsblock.craftsnet.command.commands.ShutdownCommand;
-import de.craftsblock.craftsnet.command.commands.VersionCommand;
 import de.craftsblock.craftsnet.events.ConsoleMessageEvent;
 import de.craftsblock.craftsnet.listeners.ConsoleListener;
 import de.craftsblock.craftsnet.logging.FileLogger;
@@ -208,16 +204,6 @@ public class CraftsNet {
         if (!builder.isCommandSystem(ActivateType.DISABLED)) {
             logger.debug("Registering the console listener");
             listenerRegistry.register(new ConsoleListener(this));
-
-            logger.debug("Registering the default commands");
-            commandRegistry.getCommand("pl").setExecutor(new PluginCommand(this));
-            commandRegistry.getCommand("pl").addAlias("plugin", "plugins", "addons");
-            commandRegistry.getCommand("restart").setExecutor(new ReloadCommand(this));
-            commandRegistry.getCommand("restart").addAlias("reload", "rl");
-            commandRegistry.getCommand("shutdown").setExecutor(new ShutdownCommand(this));
-            commandRegistry.getCommand("shutdown").addAlias("quit", "exit", "stop");
-            commandRegistry.getCommand("ver").setExecutor(new VersionCommand());
-            commandRegistry.getCommand("ver").addAlias("version", "v");
 
             // Set up and start the console listener
             this.consoleListener = getConsoleReader();
