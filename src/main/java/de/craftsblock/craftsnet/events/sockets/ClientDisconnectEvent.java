@@ -31,7 +31,10 @@ public class ClientDisconnectEvent extends Event {
     /**
      * Constructs a new ClientDisconnectEvent with the specified SocketExchange and SocketMapping.
      *
-     * @param exchange The SocketExchange object representing the socket connection and its associated data.
+     * @param exchange      The SocketExchange object representing the socket connection and its associated data.
+     * @param closeCode     The close code.
+     * @param closeReason   The close reason.
+     * @param closeByServer Whether the connection was closed by the server or the client.
      */
     public ClientDisconnectEvent(SocketExchange exchange, int closeCode, String closeReason, boolean closeByServer) {
         this.exchange = exchange;

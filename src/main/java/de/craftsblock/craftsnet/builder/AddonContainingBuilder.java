@@ -52,6 +52,7 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
      *
      * @param type The addon class.
      * @param name The name to associate with the addon class.
+     * @return The {@link AddonContainingBuilder} instance.
      */
     public AddonContainingBuilder map(Class<? extends Addon> type, String name) {
         AddonConfiguration.map(type, name);

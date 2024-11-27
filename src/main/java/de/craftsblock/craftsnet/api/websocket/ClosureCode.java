@@ -136,6 +136,12 @@ public enum ClosureCode {
         return internal;
     }
 
+    /**
+     * Converts an int to the corresponding {@link ClosureCode}.
+     *
+     * @param code The int which should be converted.
+     * @return The corresponding {@link ClosureCode}.
+     */
     public static ClosureCode fromInt(int code) {
         for (ClosureCode closureCode : ClosureCode.values())
             if (closureCode.intValue() == code)

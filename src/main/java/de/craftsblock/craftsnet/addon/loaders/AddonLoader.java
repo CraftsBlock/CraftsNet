@@ -145,6 +145,8 @@ public final class AddonLoader {
 
     /**
      * Loads all the addons from the provided list of {@link AddonConfiguration}.
+     *
+     * @param configurations The list of {@link AddonConfiguration}.
      */
     public void load(List<AddonConfiguration> configurations) {
         AddonLoadOrder loadOrder = new AddonLoadOrder();

@@ -73,6 +73,11 @@ public class TransformerPerformer {
         this.logger = craftsNet.logger();
     }
 
+    /**
+     * Updates the validator which is used to load the group names from.
+     *
+     * @param validator The new validator.
+     */
     public void setValidator(@Nullable Pattern validator) {
         if (validator == null) return;
         if (!this.groupNames.isEmpty()) this.groupNames.clear();

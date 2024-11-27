@@ -57,6 +57,7 @@ public class Frame implements RequireAble {
      * @param rsv1   the first reserved bit. Should be false unless an extension uses it.
      * @param rsv2   the second reserved bit. Should be false unless an extension uses it.
      * @param rsv3   the third reserved bit. Should be false unless an extension uses it.
+     * @param masked whether the frame was masked, when it was received.
      * @param opcode the opcode of the frame, indicating the type of frame.
      * @param data   the payload data of the frame. This array should not be null and contains the actual message data.
      */

@@ -122,6 +122,11 @@ public final class AddonClassLoader extends URLClassLoader {
         return super.findClass(name);
     }
 
+    /**
+     * Get a list of all {@link AddonClassLoader} which are currently active.
+     *
+     * @return The set of {@link AddonClassLoader}.
+     */
     public static Set<AddonClassLoader> getAddonLoaders() {
         return Collections.unmodifiableSet(addonLoaders);
     }

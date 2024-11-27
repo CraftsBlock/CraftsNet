@@ -43,6 +43,9 @@ public enum Opcode {
      */
     CLOSE(0x08),
 
+    /**
+     * Indicates that an opcode is unknown.
+     */
     UNKNOWN(null);
 
     private static final List<Opcode> DATA_CODES = List.of(TEXT, BINARY, CONTINUATION);

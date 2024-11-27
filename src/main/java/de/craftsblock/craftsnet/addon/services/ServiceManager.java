@@ -36,6 +36,8 @@ public class ServiceManager {
     /**
      * Constructs a new ServiceManager and registers default service loaders.
      * Default service loaders can be added during instantiation to provide immediate functionality.
+     *
+     * @param craftsNet The {@link CraftsNet} instance for which the {@link ServiceManager} was created.
      */
     public ServiceManager(CraftsNet craftsNet) {
         // Register default service loaders

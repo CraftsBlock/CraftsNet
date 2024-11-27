@@ -12,7 +12,7 @@ import java.lang.annotation.*;
  * the annotated requirement should be handled, such as the methods
  * to extract data and its type.</p>
  *
- * <h3>Attributes:</h3>
+ * <p>Attributes:</p>
  * <ul>
  *     <li>{@code methods}: Specifies which method(s) to use when retrieving
  *     data from the annotated requirement.</li>

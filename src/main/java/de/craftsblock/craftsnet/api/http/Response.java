@@ -97,6 +97,7 @@ public class Response implements AutoCloseable {
      * setting the pretty printing flag.
      *
      * @param json The json object to be sent as the response body.
+     * @param pretty Whether the json should be printed pretty.
      * @throws IOException if an I/O error occurs.
      */
     public void print(Json json, boolean pretty) throws IOException {

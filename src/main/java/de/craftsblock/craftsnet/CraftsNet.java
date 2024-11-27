@@ -285,12 +285,14 @@ public class CraftsNet {
     /**
      * Restarts the CraftsNet framework.
      */
-    public void restart() throws IOException {
+    public void restart() {
         restart(null);
     }
 
     /**
      * Restarts the CraftsNet framework.
+     *
+     * @param executeBetween A {@link Runnable} which is before the new instance is started.
      */
     public void restart(Runnable executeBetween) {
         CraftsNetBuilder builder = this.builder;
