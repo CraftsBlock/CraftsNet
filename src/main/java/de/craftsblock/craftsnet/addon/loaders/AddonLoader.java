@@ -1,8 +1,13 @@
-package de.craftsblock.craftsnet.addon;
+package de.craftsblock.craftsnet.addon.loaders;
 
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.addon.Addon;
+import de.craftsblock.craftsnet.addon.AddonManager;
+import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
+import de.craftsblock.craftsnet.addon.meta.AddonMeta;
+import de.craftsblock.craftsnet.addon.meta.RegisteredService;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.events.addons.AllAddonsLoadedEvent;
 import de.craftsblock.craftsnet.logging.Logger;
@@ -11,10 +16,7 @@ import java.io.*;
 import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
@@ -26,15 +28,16 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.4
+ * @version 2.0.0
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
  */
-final class AddonLoader {
+public final class AddonLoader {
 
     private final Stack<File> addons = new Stack<>();
     private final CraftsNet craftsNet;
+    private final Logger logger;
 
     /**
      * Constructs a new instance of an addon loader
@@ -43,6 +46,7 @@ final class AddonLoader {
      */
     public AddonLoader(CraftsNet craftsNet) {
         this.craftsNet = craftsNet;
+        this.logger = this.craftsNet.logger();
     }
 
     /**
@@ -59,7 +63,7 @@ final class AddonLoader {
      *
      * @param file The addon file to add.
      */
-    void add(File file) {
+    public void add(File file) {
         if (!file.getParentFile().exists()) file.getParentFile().mkdirs();
         if (!file.exists()) throw new NullPointerException("The file (" + file.getPath() + ") does not exist!");
         if (!addons.contains(file))
@@ -71,7 +75,7 @@ final class AddonLoader {
      *
      * @throws IOException if there is an I/O error while loading the addons.
      */
-    public void load(AddonManager manager) throws IOException {
+    public void load() throws IOException {
         long start = System.currentTimeMillis();
         Logger logger = craftsNet.logger();
         logger.info("Load all available addons");
@@ -80,19 +84,15 @@ final class AddonLoader {
         ArtifactLoader artifactLoader = new ArtifactLoader();
 
         // Load all the dependencies and repositories from the addons
-        ConcurrentHashMap<File, Configuration> configurations = new ConcurrentHashMap<>();
-        ConcurrentHashMap<String, ConcurrentLinkedQueue<URL>> urls = new ConcurrentHashMap<>();
+        List<AddonConfiguration> configurations = new ArrayList<>();
         for (File file : addons) {
-            if (file.isDirectory()) {
-                logger.warning("");
-                continue;
-            }
+            if (file.isDirectory()) continue;
 
             try (JarFile jarFile = new JarFile(file, true, ZipFile.OPEN_READ, Runtime.version())) {
                 logger.debug("Loading jar file " + file.getAbsolutePath());
 
                 // Load the configuration file from the jar
-                Configuration configuration = loadConfig(jarFile);
+                AddonConfiguration configuration = loadConfig(jarFile);
                 if (configuration == null) {
                     logger.error(new FileNotFoundException("Could not locate the addon.json within " + file.getPath() + "!"));
                     continue;
@@ -103,44 +103,14 @@ final class AddonLoader {
                 // Check if the jar version is compatible
                 long checkStart = System.currentTimeMillis();
 
-                int maxMajor = Runtime.version().feature() + 44;
-                int maxMinor = Runtime.version().interim();
-                AtomicBoolean skip = new AtomicBoolean(false);
-                jarFile.stream().filter(jarEntry -> jarEntry.getName().endsWith(".class") && !jarEntry.isDirectory())
-                        .forEach(jarEntry -> {
-                            if (!jarEntry.getName().endsWith(".class")) return;
-                            if (skip.get()) return;
-                            try (DataInputStream dis = new DataInputStream(jarFile.getInputStream(jarEntry))) {
-                                if (dis.readInt() != 0xCAFEBABE) {
-                                    skip.set(true);
-                                    logger.error("Error loading addon " + name + " (" + file.getName() + "), skipping!");
-                                    logger.error(new RuntimeException(
-                                            jarEntry.getName() + " is not an valid class file! There was an magic number mismatch with the first 4 bytes!"
-                                    ));
-                                    return;
-                                }
-
-                                int minor = dis.readUnsignedShort();
-                                int major = dis.readUnsignedShort();
-                                skip.set(major > maxMajor || minor > maxMinor);
-                                if (skip.get()) {
-                                    logger.error("Error loading addon " + name + " (" + file.getName() + "), skipping!");
-                                    logger.error(new RuntimeException(
-                                            jarEntry.getName().replace(".class", "") + " " +
-                                                    "has been compiled by a more recent version of the Java Runtime (class file version " + major + "." + minor + "), " +
-                                                    "this version of the Java Runtime only recognizes class file versions up to " + maxMajor + "." + maxMinor)
-                                    );
-                                }
-                            } catch (IOException e) {
-                                logger.error(e);
-                            }
-                        });
-                if (skip.get()) {
+                try {
+                    compatibleOrThrow(jarFile);
+                    logger.debug(file.getAbsolutePath() + " is jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
+                } catch (RuntimeException e) {
+                    logger.error(e);
                     logger.error(file.getAbsolutePath() + " is not jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
                     continue;
                 }
-
-                logger.debug(file.getAbsolutePath() + " is jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
 
                 // Inject all repositories
                 artifactLoader.cleanup();
@@ -150,31 +120,37 @@ final class AddonLoader {
 
                 // Load all required dependencies
                 URL[] dependencies = new URL[0];
-                if (addon.contains("dependencies")) {
+                if (addon.contains("dependencies"))
                     dependencies = artifactLoader.loadLibraries(this.craftsNet, this, configuration, name, addon.getStringList("dependencies").toArray(String[]::new));
-                    urls.computeIfAbsent(name, s -> new ConcurrentLinkedQueue<>()).addAll(Arrays.asList(dependencies));
-                }
 
                 // Put the configuration in the configurations map
-                configurations.put(file, new Configuration(configuration.json(), dependencies, configuration.services, configuration.addon(), configuration.meta));
+                configurations.add(new AddonConfiguration(configuration.json(), dependencies, configuration.services(), configuration.addon(), configuration.meta()));
             }
         }
         artifactLoader.stop();
 
+        load(configurations);
+        configurations.clear();
+
+        if (addons.isEmpty()) logger.info("No addons found to load");
+        else logger.info("All addons were loaded within " + (System.currentTimeMillis() - start) + "ms");
+        addons.clear();
+
+        try {
+            craftsNet.listenerRegistry().call(new AllAddonsLoadedEvent());
+        } catch (Exception e) {
+            logger.error(e, "Can not fire addons loaded event!");
+        }
+    }
+
+    /**
+     * Loads all the addons from the provided list of {@link AddonConfiguration}.
+     */
+    public void load(List<AddonConfiguration> configurations) {
         AddonLoadOrder loadOrder = new AddonLoadOrder();
 
-        // Loop through each addon file and load its configuration and main class
-        for (File file : addons)
+        for (AddonConfiguration configuration : configurations)
             try {
-                // Load the addon's configuration from the addon JAR
-                if (!configurations.containsKey(file)) continue;
-                Configuration configuration = configurations.get(file);
-
-                if (configuration == null)
-                    throw new NullPointerException("The Plugin " + file.getName() + " does not contains a addon.json");
-                if (configuration.json.contains("isfolder"))
-                    continue;
-
                 AddonMeta meta = AddonMeta.of(configuration);
 
                 String name = meta.name();
@@ -187,9 +163,7 @@ final class AddonLoader {
                 logger.info("Found addon " + name + ", add it to load order");
 
                 // Create addon class loader
-                ConcurrentLinkedQueue<URL> addonUrls = urls.getOrDefault(name, new ConcurrentLinkedQueue<>());
-                addonUrls.add(file.toURI().toURL());
-                AddonClassLoader classLoader = new AddonClassLoader(this.craftsNet, manager, configuration, addonUrls.toArray(URL[]::new));
+                AddonClassLoader classLoader = new AddonClassLoader(this.craftsNet, configuration);
 
                 // Load the main class of the addon using the class loader
                 String className = meta.mainClass();
@@ -207,12 +181,12 @@ final class AddonLoader {
                 setField("classLoader", obj, classLoader);
 
                 loadOrder.addAddon(obj);
-                Json addon = configuration.json;
+                Json addon = configuration.json();
                 if (addon.contains("depends"))
                     for (String depended : addon.getStringList("depends"))
                         loadOrder.depends(obj, depended);
-                manager.register(obj);
-                configuration.addon.set(obj);
+                craftsNet.addonManager().register(obj);
+                configuration.addon().set(obj);
             } catch (Exception e) {
                 logger.error(e);
             }
@@ -230,19 +204,15 @@ final class AddonLoader {
             addon.onEnable();
         }
 
-        if (addons.isEmpty()) logger.info("No addons found to load");
-        else logger.info("All addons were loaded within " + (System.currentTimeMillis() - start) + "ms");
-        addons.clear();
-
         // Load all the registrable services
         ServiceManager serviceManager = craftsNet.serviceManager();
-        for (Configuration configuration : configurations.values()) {
+        for (AddonConfiguration configuration : configurations) {
             if (configuration.services() != null && !configuration.services().isEmpty() && configuration.addon().get() != null) {
                 if (!(configuration.addon().get().getClassLoader() instanceof AddonClassLoader classLoader)) continue;
                 configuration.services().forEach(service -> {
-                    for (String provider : service.provider.split(";"))
+                    for (String provider : service.provider().split(";"))
                         try {
-                            Class<?> spi = classLoader.loadClass(service.spi);
+                            Class<?> spi = classLoader.loadClass(service.spi());
                             Class<?> providerClass = classLoader.loadClass(provider);
                             if (serviceManager.load(spi, providerClass))
                                 logger.debug("Registered service " + provider + " for " + spi.getName());
@@ -254,13 +224,38 @@ final class AddonLoader {
                 });
             }
         }
-        configurations.clear();
+    }
 
-        try {
-            craftsNet.listenerRegistry().call(new AllAddonsLoadedEvent());
-        } catch (Exception e) {
-            logger.error(e, "Can not fire addons loaded event!");
-        }
+    /**
+     * Checks if a specific {@link JarFile} is compatible with the current version of the jvm.
+     *
+     * @param file The {@link JarFile} which should be checked.
+     * @throws RuntimeException If the jvm version is not compatible with the {@link JarFile}.
+     */
+    private void compatibleOrThrow(final JarFile file) {
+        final int maxMajor = Runtime.version().feature() + 44;
+        final int maxMinor = Runtime.version().interim();
+
+        file.stream().filter(jarEntry -> jarEntry.getName().endsWith(".class") && !jarEntry.isDirectory())
+                .forEach(jarEntry -> {
+                    if (!jarEntry.getName().endsWith(".class")) return;
+
+                    try (DataInputStream dis = new DataInputStream(file.getInputStream(jarEntry))) {
+                        if (dis.readInt() != 0xCAFEBABE)
+                            throw new RuntimeException(jarEntry.getName() + " is not an valid class file! There was an magic number mismatch with" +
+                                    "the first 4 bytes!");
+
+                        int minor = dis.readUnsignedShort();
+                        int major = dis.readUnsignedShort();
+
+                        if (major > maxMajor || minor > maxMinor)
+                            throw new RuntimeException(jarEntry.getName().replace(".class", "") + " " +
+                                    "has been compiled by a more recent version of the Java Runtime (class file version " + major + "." + minor + "), " +
+                                    "this version of the Java Runtime only recognizes class file versions up to " + maxMajor + "." + maxMinor);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
     }
 
     /**
@@ -270,8 +265,8 @@ final class AddonLoader {
      * @return The addon configuration if found, otherwise null.
      * @throws IOException if there is an I/O error while loading the JAR file.
      */
-    private Configuration loadConfig(JarFile file) throws IOException {
-        Configuration configuration;
+    private AddonConfiguration loadConfig(JarFile file) throws IOException {
+        AddonConfiguration configuration;
         JarEntry entry = file.getJarEntry("addon.json");
         if (entry == null) return null;
 
@@ -279,7 +274,7 @@ final class AddonLoader {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(entry)))) {
             StringBuilder json = new StringBuilder();
             reader.lines().forEach(json::append);
-            configuration = Configuration.of(JsonParser.parse(json.toString()), null, new ConcurrentLinkedQueue<>());
+            configuration = AddonConfiguration.of(JsonParser.parse(json.toString()), null, new ConcurrentLinkedQueue<>());
         }
 
         // Load the services from the file
@@ -293,10 +288,10 @@ final class AddonLoader {
      * @param file The JAR file from which to load RegistrableService instances.
      * @return A list of RegistrableService instances loaded from the specified JAR file.
      * @throws IOException If an I/O error occurs while processing the JAR file or reading its contents.
-     * @see RegistrableService
+     * @see RegisteredService
      */
-    List<RegistrableService> loadServices(JarFile file) throws IOException {
-        List<RegistrableService> services = new ArrayList<>();
+    List<RegisteredService> loadServices(JarFile file) throws IOException {
+        List<RegisteredService> services = new ArrayList<>();
 
         // Iterate over all entries in the JAR file
         Iterator<JarEntry> iterator = file.stream().iterator();
@@ -323,7 +318,7 @@ final class AddonLoader {
 
                 // Extract the name from the path and create a RegistrableService object
                 String[] splitName = entry.getName().split("/");
-                services.add(new RegistrableService(splitName[splitName.length - 1], provider.toString()));
+                services.add(new RegisteredService(splitName[splitName.length - 1], provider.toString()));
             }
         }
 
@@ -363,44 +358,6 @@ final class AddonLoader {
             clazz = clazz.getSuperclass(); // Move to the superclass for further field search
         }
         return field;
-    }
-
-    /**
-     * The Configuration class represents the configuration for an addon.
-     * It holds the configuration JSON data.
-     *
-     * @param json      Content of the addon.json
-     * @param classpath Classpath of the jar file
-     * @param services  Services that should be registered
-     * @param addon     The loaded addon instance
-     * @param meta      The metadata of the addon
-     */
-    protected record Configuration(Json json, URL[] classpath, Collection<RegistrableService> services, AtomicReference<Addon> addon,
-                                   AtomicReference<AddonMeta> meta) {
-
-        /**
-         * Creates an {@link Configuration} instance from the provided params.
-         *
-         * @param json      Content of the addon.json
-         * @param classpath Classpath of the jar file
-         * @param services  Services that should be registered
-         * @return A new instance of {@link Configuration}.
-         * @since 3.0.7-SNAPSHOT
-         */
-        private static Configuration of(Json json, URL[] classpath, Collection<RegistrableService> services) {
-            return new Configuration(json, classpath, services, new AtomicReference<>(), new AtomicReference<>());
-        }
-
-    }
-
-    /**
-     * Represents a registrable service, encapsulating the service provider interface (SPI)
-     * and the provider information in a concise record.
-     *
-     * @param spi      The name of the service provider interface (SPI).
-     * @param provider Information about the service provider.
-     */
-    protected record RegistrableService(String spi, String provider) {
     }
 
 }

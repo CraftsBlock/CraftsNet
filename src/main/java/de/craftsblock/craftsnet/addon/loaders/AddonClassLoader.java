@@ -1,10 +1,10 @@
-package de.craftsblock.craftsnet.addon;
+package de.craftsblock.craftsnet.addon.loaders;
 
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
 import de.craftsblock.craftsnet.logging.Logger;
 
-import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -14,8 +14,8 @@ import java.util.concurrent.CopyOnWriteArraySet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
- * @since CraftsNet-3.0.3
+ * @version 1.1.0
+ * @since 3.0.3-SNAPSHOT
  */
 public final class AddonClassLoader extends URLClassLoader {
 
@@ -28,29 +28,25 @@ public final class AddonClassLoader extends URLClassLoader {
     private final CraftsNet craftsNet;
     private final Logger logger;
 
-    private final Set<AddonLoader.Configuration> ignoreNotDepended = new HashSet<>();
-    private final AddonManager manager;
+    private final Set<AddonConfiguration> ignoreNotDepended = new HashSet<>();
 
     private final String addonName;
     private final List<String> depends;
-    private final AddonLoader.Configuration addon;
+    private final AddonConfiguration addon;
 
     /**
      * Constructs an AddonClassLoader with the specified addon manager, addon configuration, and URLs.
      *
-     * @param craftsNet The CraftsNet instance which instantiates this classloader
-     * @param manager   The addon manager.
-     * @param addon     The configuration of the addon.
-     * @param urls      The URLs from which to load classes and resources.
+     * @param craftsNet     The CraftsNet instance which instantiates this classloader
+     * @param configuration The configuration of the addon.
      */
-    AddonClassLoader(CraftsNet craftsNet, AddonManager manager, AddonLoader.Configuration addon, URL[] urls) {
-        super(urls, ClassLoader.getSystemClassLoader());
+    AddonClassLoader(CraftsNet craftsNet, AddonConfiguration configuration) {
+        super(configuration.classpath(), ClassLoader.getSystemClassLoader());
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
 
         addonLoaders.add(this);
-        this.manager = manager;
-        this.addon = addon;
+        this.addon = configuration;
 
         Json json = addon.json();
         this.addonName = json.getString("name");
@@ -94,7 +90,7 @@ public final class AddonClassLoader extends URLClassLoader {
                     Class<?> result = loader.loadClass0(name, resolve, false);
 
                     if (result.getClassLoader() instanceof AddonClassLoader usedClassLoader) {
-                        AddonLoader.Configuration usedAddonConfig = usedClassLoader.addon;
+                        AddonConfiguration usedAddonConfig = usedClassLoader.addon;
                         String usedAddonName = usedAddonConfig.json().getString("name");
 
                         if (usedAddonConfig != addon && !ignoreNotDepended.contains(addon) && !depends.contains(usedAddonName)) {

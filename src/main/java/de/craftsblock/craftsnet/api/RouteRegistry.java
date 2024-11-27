@@ -16,7 +16,6 @@ import de.craftsblock.craftsnet.api.requirements.websocket.WSDomainRequirement;
 import de.craftsblock.craftsnet.api.requirements.websocket.WebSocketRequirement;
 import de.craftsblock.craftsnet.api.websocket.*;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
-import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -44,7 +43,6 @@ import java.util.stream.Collectors;
 public class RouteRegistry {
 
     private final CraftsNet craftsNet;
-    private final Logger logger;
 
     private final ConcurrentHashMap<Class<? extends Server>, ConcurrentLinkedQueue<Requirement<? extends RequireAble, EndpointMapping>>> requirements = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<Class<? extends Server>, ConcurrentHashMap<Pattern, List<EndpointMapping>>> serverMappings = new ConcurrentHashMap<>();
@@ -58,7 +56,6 @@ public class RouteRegistry {
      */
     public RouteRegistry(CraftsNet craftsNet) {
         this.craftsNet = craftsNet;
-        this.logger = this.craftsNet.logger();
 
         // Built in http requirements
         registerRequirement(new BodyRequirement(), false);
@@ -198,7 +195,6 @@ public class RouteRegistry {
                     // Load requirements
                     ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements = new ConcurrentHashMap<>();
                     loadRequirements(requirements, requirementAnnotations, method, handler);
-                    System.out.println(requirements);
 
                     // Register the endpoint mapping
                     List<EndpointMapping> mappings = endpoints.computeIfAbsent(validator, pattern -> new ArrayList<>());

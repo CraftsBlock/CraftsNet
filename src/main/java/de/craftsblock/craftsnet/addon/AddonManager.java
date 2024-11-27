@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.addon;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,28 +18,40 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.1.0
  * @see Addon
  * @see AddonLoader
- * @since CraftsNet-1.0.0
+ * @since 1.0.0-SNAPSHOT
  */
 public final class AddonManager {
 
     private final CraftsNet craftsNet;
     private final Logger logger;
-
     private final ConcurrentHashMap<String, Addon> addons = new ConcurrentHashMap<>();
+
+    private boolean filesLoaded = false;
 
     /**
      * Constructor for the AddonManager class. It loads and initializes the addons present in the "./addons/" folder.
      * It also adds a shutdown hook to handle cleanup when the application is shut down.
      *
      * @param craftsNet The CraftsNet instance which instantiates this addon manager.
-     * @throws IOException if there is an I/O error while accessing the addons folder.
      */
-    public AddonManager(CraftsNet craftsNet) throws IOException {
+    public AddonManager(CraftsNet craftsNet) {
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
+    }
+
+    /**
+     * Load all addons from the addons folder.
+     *
+     * @throws IOException if there is an I/O error while accessing the addons folder.
+     */
+    public void loadAllFromFiles() throws IOException {
+        if (filesLoaded)
+            throw new IllegalStateException("");
+
+        filesLoaded = true;
 
         File folder = new File("./addons/");
         logger.debug("Addon folder set to " + folder.getAbsolutePath());
@@ -49,8 +62,8 @@ public final class AddonManager {
 
         AddonLoader addonLoader = new AddonLoader(craftsNet);
         for (File file : Objects.requireNonNull(folder.listFiles()))
-            if (file.getName().endsWith(".jar")) addonLoader.add(file);
-        addonLoader.load(this);
+            if (file.getName().endsWith(".jar") && file.isFile()) addonLoader.add(file);
+        addonLoader.load();
     }
 
     /**

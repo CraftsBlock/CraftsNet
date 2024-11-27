@@ -1,7 +1,10 @@
-package de.craftsblock.craftsnet.addon;
+package de.craftsblock.craftsnet.addon.meta;
 
 import com.google.gson.JsonElement;
 import de.craftsblock.craftscore.json.Json;
+import de.craftsblock.craftsnet.addon.Addon;
+import de.craftsblock.craftsnet.addon.meta.annotations.Meta;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,17 +29,20 @@ import java.util.Optional;
 public record AddonMeta(String name, String mainClass, String description, List<String> authors, String website, String version, String[] depends) {
 
     /**
-     * Creates an {@link AddonMeta} instance from the configuration provided by the {@link AddonLoader.Configuration}.
+     * Creates an {@link AddonMeta} instance from the configuration provided by the {@link AddonConfiguration}.
      *
      * @param configuration The configuration object containing the metadata in json format.
      * @return A new instance of {@link AddonMeta} populated with the values from the configuration.
      */
-    static AddonMeta of(AddonLoader.Configuration configuration) {
+    public static AddonMeta of(@NotNull AddonConfiguration configuration) {
+        assert configuration.json() != null;
+
+        Addon addon = configuration.addon().get();
         Json json = configuration.json();
 
         List<String> authors = new ArrayList<>();
-        addAuthors(authors, json, "author");
-        addAuthors(authors, json, "authors");
+        addMultiple(authors, json, "author");
+        addMultiple(authors, json, "authors");
 
         return new AddonMeta(
                 json.getString("name"),
@@ -50,31 +56,31 @@ public record AddonMeta(String name, String mainClass, String description, List<
     }
 
     /**
-     * Adds authors to the provided list based on a path in the json object. The path may represent
-     * a single author or an array of authors.
+     * Adds strings to the provided list based on a path in the json object. The path may represent
+     * a single representation or an array of strings.
      *
-     * @param authors The list to which the authors should be added.
-     * @param json    The json object containing the author information.
-     * @param path    The json path that represents the author or authors.
+     * @param destination The list to which the strings should be added.
+     * @param json        The json object containing the author information.
+     * @param path        The json path that represents the author or strings.
      */
-    private static void addAuthors(List<String> authors, Json json, String path) {
+    private static void addMultiple(List<String> destination, Json json, String path) {
         if (!json.contains(path)) return;
         JsonElement element = json.get(path);
 
         if (element.isJsonPrimitive()) {
-            String author = json.getString(path);
-            if (authors.contains(author)) return;
-            authors.add(author);
+            String value = json.getString(path);
+            if (destination.contains(value)) return;
+            destination.add(value);
             return;
         }
 
         if (!element.isJsonArray()) return;
 
-        for (JsonElement rawAuthor : element.getAsJsonArray()) {
-            if (!rawAuthor.isJsonPrimitive() || !rawAuthor.getAsJsonPrimitive().isString()) continue;
-            String author = rawAuthor.getAsJsonPrimitive().getAsString();
-            if (authors.contains(author)) continue;
-            authors.add(author);
+        for (JsonElement raw : element.getAsJsonArray()) {
+            if (!raw.isJsonPrimitive() || !raw.getAsJsonPrimitive().isString()) continue;
+            String value = raw.getAsJsonPrimitive().getAsString();
+            if (destination.contains(value)) continue;
+            destination.add(value);
         }
     }
 

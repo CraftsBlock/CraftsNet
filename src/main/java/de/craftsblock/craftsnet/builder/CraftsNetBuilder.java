@@ -14,7 +14,8 @@ import java.io.IOException;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since 3.0.3
+ * @see ActivateType
+ * @since 3.0.3-SNAPSHOT
  */
 public class CraftsNetBuilder {
 
@@ -37,7 +38,7 @@ public class CraftsNetBuilder {
     private long logRotate;
 
     /**
-     * Constructs a new Builder instance with default configuration settings.
+     * Constructs a new {@link CraftsNetBuilder} instance with default configuration settings.
      */
     public CraftsNetBuilder() {
         webServerPort = 5000;
@@ -55,7 +56,7 @@ public class CraftsNetBuilder {
      * Specifies the port for the web server.
      *
      * @param port The port number for the web server.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      */
     public CraftsNetBuilder withWebServer(int port) {
         return withWebServer(ActivateType.DYNAMIC, port);
@@ -65,7 +66,7 @@ public class CraftsNetBuilder {
      * Specifies the port for the web server.
      *
      * @param type The activation type for the web server.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      * @since 3.0.5
      */
     public CraftsNetBuilder withWebServer(ActivateType type) {
@@ -77,7 +78,7 @@ public class CraftsNetBuilder {
      *
      * @param type The activation type for the web server.
      * @param port The port number for the web server.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      */
     public CraftsNetBuilder withWebServer(ActivateType type, int port) {
         this.webServer = type;
@@ -89,7 +90,7 @@ public class CraftsNetBuilder {
      * Specifies the port for the WebSocket server.
      *
      * @param port The port number for the WebSocket server.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      */
     public CraftsNetBuilder withWebSocketServer(int port) {
         return withWebSocketServer(ActivateType.DYNAMIC, port);
@@ -99,7 +100,7 @@ public class CraftsNetBuilder {
      * Specifies the activation type and port for the WebSocket server.
      *
      * @param type The activation type for the WebSocket server.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      * @since 3.0.5
      */
     public CraftsNetBuilder withWebSocketServer(ActivateType type) {
@@ -111,7 +112,7 @@ public class CraftsNetBuilder {
      *
      * @param type The activation type for the WebSocket server.
      * @param port The port number for the WebSocket server.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      */
     public CraftsNetBuilder withWebSocketServer(ActivateType type, int port) {
         this.webSocketServer = type;
@@ -123,7 +124,7 @@ public class CraftsNetBuilder {
      * Specifies the activation type for the addon system.
      *
      * @param type The activation type for the addon system.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      */
     public CraftsNetBuilder withAddonSystem(ActivateType type) {
         this.addonSystem = type;
@@ -134,7 +135,7 @@ public class CraftsNetBuilder {
      * Specifies the activation type for the command system.
      *
      * @param type The activation type for the command system.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      */
     public CraftsNetBuilder withCommandSystem(ActivateType type) {
         this.commandSystem = type;
@@ -145,7 +146,7 @@ public class CraftsNetBuilder {
      * Specifies the activation type for the file logger.
      *
      * @param type The activation type for the file logger.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      * @since 3.0.5
      */
     public CraftsNetBuilder withFileLogger(ActivateType type) {
@@ -159,7 +160,7 @@ public class CraftsNetBuilder {
      * file system instead of using the system's default temporary file location.
      *
      * @param tempFilesOnNormalFileSystem {@code true} to place temporary files in the normal file system, {@code false} otherwise.
-     * @return the current {@code Builder} instance for method chaining.
+     * @return the current {@link CraftsNetBuilder} instance for method chaining.
      */
     public CraftsNetBuilder withTempFilesOnNormalFileSystem(boolean tempFilesOnNormalFileSystem) {
         this.tempFilesOnNormalFileSystem = tempFilesOnNormalFileSystem;
@@ -170,7 +171,7 @@ public class CraftsNetBuilder {
      * Specifies whether the version check should be skipped on startup.
      *
      * @param skipVersionCheck true if the version check should be skipped, false otherwise.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      */
     public CraftsNetBuilder withSkipVersionCheck(boolean skipVersionCheck) {
         this.skipVersionCheck = skipVersionCheck;
@@ -181,7 +182,7 @@ public class CraftsNetBuilder {
      * Sets a custom logger which will be used by CraftsNet. It can be null when the default logger should be used.
      *
      * @param logger The instance of the custom logger.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      * @since 3.0.5
      */
     public CraftsNetBuilder withCustomLogger(Logger logger) {
@@ -193,7 +194,7 @@ public class CraftsNetBuilder {
      * Specifies the activation type for the logger.
      *
      * @param type The activation type for the logger.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      * @since 3.0.5
      */
     public CraftsNetBuilder withLogger(ActivateType type) {
@@ -208,7 +209,7 @@ public class CraftsNetBuilder {
      * Specifies whether debug mode should be enabled.
      *
      * @param enabled true if debug mode should be enabled, false otherwise.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      */
     public CraftsNetBuilder withDebug(boolean enabled) {
         this.debug = enabled;
@@ -219,7 +220,7 @@ public class CraftsNetBuilder {
      * Specifies whether SSL should be enabled.
      *
      * @param enabled true if SSL should be enabled, false otherwise.
-     * @return The Builder instance.
+     * @return The {@link CraftsNetBuilder} instance.
      */
     public CraftsNetBuilder withSSL(boolean enabled) {
         ssl = enabled;
@@ -231,7 +232,7 @@ public class CraftsNetBuilder {
      *
      * @param logRotate the log rotation size threshold, in bytes. A value of 0 disables log rotation.
      *                  Must be non-negative.
-     * @return this {@code Builder} instance, enabling method chaining.
+     * @return this {@link CraftsNetBuilder} instance, enabling method chaining.
      */
     public CraftsNetBuilder withLogRotate(@Range(from = 0, to = Long.MAX_VALUE) long logRotate) {
         this.logRotate = logRotate;
@@ -241,7 +242,7 @@ public class CraftsNetBuilder {
     /**
      * Disables log rotation by setting the log rotation size threshold to 0.
      *
-     * @return this {@code Builder} instance, enabling method chaining.
+     * @return this {@link CraftsNetBuilder} instance, enabling method chaining.
      */
     public CraftsNetBuilder withoutLogRotate() {
         return withLogRotate(0);

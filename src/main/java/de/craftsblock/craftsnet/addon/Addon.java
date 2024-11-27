@@ -2,6 +2,9 @@ package de.craftsblock.craftsnet.addon;
 
 import de.craftsblock.craftscore.event.ListenerRegistry;
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.addon.loaders.AddonClassLoader;
+import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
+import de.craftsblock.craftsnet.addon.meta.AddonMeta;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.body.BodyRegistry;

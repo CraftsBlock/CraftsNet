@@ -3,6 +3,7 @@ package de.craftsblock.craftsnet;
 import de.craftsblock.craftscore.event.ListenerRegistry;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.utils.ArgumentParser;
+import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
@@ -13,6 +14,7 @@ import de.craftsblock.craftsnet.api.websocket.DefaultPingResponder;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegistry;
 import de.craftsblock.craftsnet.builder.ActivateType;
+import de.craftsblock.craftsnet.builder.AddonContainingBuilder;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.command.commands.PluginCommand;
@@ -31,6 +33,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
 
 /**
  * CraftsNet class represents the core component of the CraftsNet framework,
@@ -161,7 +164,8 @@ public class CraftsNet {
         logger.debug("Initialization of the service manager");
         serviceManager = new ServiceManager(this);
         logger.debug("Initialization of the addon manager");
-        if (!builder.isAddonSystem(ActivateType.DISABLED)) addonManager = new AddonManager(this);
+        addonManager = new AddonManager(this);
+        if (!builder.isAddonSystem(ActivateType.DISABLED)) addonManager.loadAllFromFiles();
 
         // Check if http routes are registered and start the web server if needed
         if (builder.isWebServer(ActivateType.ENABLED) || builder.isWebServer(ActivateType.DYNAMIC)) {
@@ -448,6 +452,27 @@ public class CraftsNet {
      */
     public static CraftsNetBuilder create() {
         return new CraftsNetBuilder();
+    }
+
+    /**
+     * Creates a new builder instance for configuring CraftsNet with the specified addons.
+     *
+     * @param addons An array of {@link Addon} classes to include in the configuration.
+     * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
+     */
+    @SafeVarargs
+    public static AddonContainingBuilder create(Class<? extends Addon>... addons) {
+        return new AddonContainingBuilder(addons);
+    }
+
+    /**
+     * Creates a new builder instance for configuring CraftsNet with the specified addons.
+     *
+     * @param addons A {@link Collection} of {@link Addon} classes to include in the configuration.
+     * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
+     */
+    public static AddonContainingBuilder create(Collection<Class<? extends Addon>> addons) {
+        return new AddonContainingBuilder(addons);
     }
 
 }

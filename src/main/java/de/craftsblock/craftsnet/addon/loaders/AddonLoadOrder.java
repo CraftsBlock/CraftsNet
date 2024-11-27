@@ -1,5 +1,6 @@
-package de.craftsblock.craftsnet.addon;
+package de.craftsblock.craftsnet.addon.loaders;
 
+import de.craftsblock.craftsnet.addon.Addon;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
@@ -13,8 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
- * @since CraftsNet-3.0.2
+ * @version 1.0.1
+ * @since 3.0.2-SNAPSHOT
  */
 final class AddonLoadOrder {
 
@@ -84,7 +85,7 @@ final class AddonLoadOrder {
         List<String> bootOrderList = new ArrayList<>(addonLoadOrder.keySet());
         bootOrderList.sort(Comparator.comparingInt(value -> addonLoadOrder.get(value.toString()).priority()).reversed());
 
-        return bootOrderList.parallelStream()
+        return bootOrderList.stream()
                 .map(addonLoadOrder::get)
                 .filter(Objects::nonNull)
                 .map(BootMapping::addon)
