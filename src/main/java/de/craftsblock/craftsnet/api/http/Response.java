@@ -1,6 +1,5 @@
 package de.craftsblock.craftsnet.api.http;
 
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
@@ -80,7 +79,7 @@ public class Response implements AutoCloseable {
 
         if (exchange != null) {
             Request r = exchange.request();
-            
+
             if ("pretty".equalsIgnoreCase(r.retrieveParam("format"))) {
                 if (object instanceof Json json) print(json, true);
                 else if (object instanceof JsonElement json) print(JsonParser.parse(json), true);
@@ -96,14 +95,12 @@ public class Response implements AutoCloseable {
      * Sends the string representation of the provided json object as the response body while
      * setting the pretty printing flag.
      *
-     * @param json The json object to be sent as the response body.
+     * @param json   The json object to be sent as the response body.
      * @param pretty Whether the json should be printed pretty.
      * @throws IOException if an I/O error occurs.
      */
     public void print(Json json, boolean pretty) throws IOException {
-        GsonBuilder gson = new GsonBuilder();
-        if (pretty) gson.setPrettyPrinting();
-        println(gson.create().toJson(json.getObject()));
+        println(json.toString(pretty));
     }
 
     /**
