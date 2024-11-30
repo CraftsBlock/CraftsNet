@@ -4,6 +4,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileAttribute;
@@ -25,6 +26,8 @@ import java.util.stream.Stream;
  * @since 3.0.7-SNAPSHOT
  */
 public class FileHelper {
+
+    private static final boolean posixSupported = FileSystems.getDefault().supportedFileAttributeViews().contains("posix");
 
     private final Path tempDir;
 
@@ -72,8 +75,8 @@ public class FileHelper {
      * If a custom directory was selected during initialization, the file will be created there.
      * Otherwise, the system's default temporary file directory is used.
      * <p>
-     * If no POSIX file permissions are explicitly provided, the file will be created with default
-     * POSIX permissions: read and write access for the owner.
+     * If no POSIX file permissions are explicitly provided and it is supported by the file system,
+     * the file will be created with default POSIX permissions: read and write access for the owner.
      * </p>
      *
      * @param prefix the prefix string to be used in generating the file's name.
@@ -83,7 +86,7 @@ public class FileHelper {
      * @throws IOException if an I/O error occurs while creating the file.
      */
     public Path createTempFile(String prefix, String suffix, FileAttribute<?>... attrs) throws IOException {
-        if (Stream.of(attrs).noneMatch(attr -> "posix:permissions".equalsIgnoreCase(attr.name()))) {
+        if (posixSupported && Stream.of(attrs).noneMatch(attr -> "posix:permissions".equalsIgnoreCase(attr.name()))) {
             FileAttribute<Set<PosixFilePermission>> defaultPerms = PosixFilePermissions.asFileAttribute(Set.of(
                     PosixFilePermission.OWNER_READ,
                     PosixFilePermission.OWNER_WRITE
