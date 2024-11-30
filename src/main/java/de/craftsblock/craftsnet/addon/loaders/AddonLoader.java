@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
 /**
@@ -119,12 +120,19 @@ public final class AddonLoader {
                         artifactLoader.addRepository(repo);
 
                 // Load all required dependencies
-                URL[] dependencies = new URL[0];
+                URL[] dependencies;
                 if (addon.contains("dependencies"))
                     dependencies = artifactLoader.loadLibraries(this.craftsNet, this, configuration, name, addon.getStringList("dependencies").toArray(String[]::new));
+                else dependencies = null;
+
+                // Generate classpath
+                URL[] classpath;
+                if (dependencies != null)
+                    classpath = Stream.concat(Arrays.stream(dependencies), Stream.of(file.toURI().toURL())).toArray(URL[]::new);
+                else classpath = new URL[]{file.toURI().toURL()};
 
                 // Put the configuration in the configurations map
-                configurations.add(new AddonConfiguration(configuration.json(), dependencies, configuration.services(), configuration.addon(), configuration.meta()));
+                configurations.add(new AddonConfiguration(configuration.json(), classpath, configuration.services(), configuration.addon(), configuration.meta()));
             }
         }
         artifactLoader.stop();
