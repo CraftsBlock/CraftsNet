@@ -72,9 +72,8 @@ public final class AddonManager {
     public void stop() {
         addons.values().forEach(addon -> {
             logger.info("Disabling addon " + addon.getName());
-            addon.onDisable();
+            this.unregister(addon);
         });
-        addons.values().forEach(this::unregister);
         addons.clear();
     }
 
@@ -94,6 +93,7 @@ public final class AddonManager {
      */
     public void unregister(Addon addon) {
         addons.remove(addon.getName());
+        addon.onDisable();
     }
 
     /**
