@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.api.http;
 
+import de.craftsblock.craftsnet.api.BaseExchange;
 import de.craftsblock.craftsnet.api.utils.SessionStorage;
 import org.jetbrains.annotations.NotNull;
 
@@ -12,12 +13,14 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.0
+ * @version 2.0.1
+ * @see BaseExchange
  * @see Request
  * @see Response
  * @since 1.0.0-SNAPSHOT
  */
-public record Exchange(@NotNull String path, @NotNull Request request, @NotNull Response response, @NotNull SessionStorage storage) {
+public record Exchange(@NotNull String path, @NotNull Request request, @NotNull Response response,
+                       @NotNull SessionStorage storage) implements BaseExchange {
 
     /**
      * @param path     The path the client connected to.
