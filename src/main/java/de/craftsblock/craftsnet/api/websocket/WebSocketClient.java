@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.0.2
+ * @version 3.0.3
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -814,14 +814,15 @@ public class WebSocketClient implements Runnable, RequireAble {
         if (this.connected || socket.isConnected())
             try {
                 if (reader == null || writer == null) return Thread.currentThread();
-                craftsNet.listenerRegistry().call(new ClientDisconnectEvent(new SocketExchange(server, this), closeCode, closeReason, closeByServer));
 
-                if (reader != null) reader.close();
+                reader.close();
                 reader = null;
-                if (writer != null) writer.close();
+                writer.close();
                 writer = null;
 
                 if (socket != null) socket.close();
+
+                craftsNet.listenerRegistry().call(new ClientDisconnectEvent(exchange, closeCode, closeReason, closeByServer));
 
                 if (!closeByServer && this.connected) logger.warning(ip + " disconnected abnormal: The underlying tcp connection has been killed!");
                 else if (!closeByServer && closeCode != -1 && closeCode != ClosureCode.NORMAL.intValue()) {
