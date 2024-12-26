@@ -279,7 +279,7 @@ public class WebSocketServer extends Server {
      * @param data The message to be sent.
      */
     public void broadcast(String data) {
-        connected.forEach((useless, clients) -> clients.forEach(client -> client.sendMessage(data)));
+        connected.values().forEach(clients -> clients.forEach(client -> client.sendMessage(data)));
     }
 
     /**
@@ -308,9 +308,8 @@ public class WebSocketServer extends Server {
      * @param client The WebSocket client that will be removed.
      */
     protected void remove(WebSocketClient client) {
-        connected.entrySet().parallelStream()
+        connected.entrySet().stream()
                 .filter(entry -> entry.getValue().contains(client))
-                .toList()
                 .forEach(entry -> {
                     try {
                         entry.getValue().removeIf(client::equals);
