@@ -219,7 +219,16 @@ public class WebSocketServer extends Server {
      */
     @Override
     public boolean isSSL() {
-        return super.isSSL() && this.serverSocket instanceof SSLServerSocket;
+        return this.serverSocket instanceof SSLServerSocket;
+    }
+
+    /**
+     * Checks if SSL should be enabled for the server.
+     *
+     * @return {@code true} if SSL should be enabled, {@code false} otherwise.
+     */
+    public boolean shouldUseSSL() {
+        return super.isSSL();
     }
 
     /**

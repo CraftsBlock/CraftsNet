@@ -161,7 +161,16 @@ public class WebServer extends Server {
      */
     @Override
     public boolean isSSL() {
-        return super.isSSL() && this.server instanceof HttpsServer;
+        return this.server instanceof HttpsServer;
+    }
+
+    /**
+     * Checks if SSL should be enabled for the server.
+     *
+     * @return {@code true} if SSL should be enabled, {@code false} otherwise.
+     */
+    public boolean shouldUseSSL() {
+        return super.isSSL();
     }
 
     /**

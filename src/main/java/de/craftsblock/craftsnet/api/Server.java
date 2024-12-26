@@ -73,7 +73,7 @@ public abstract class Server {
     /**
      * Sets whether SSL should be used for the server.
      *
-     * @param ssl true if SSL should be used, false otherwise.
+     * @param ssl {@code true} if SSL should be used, {@code false} otherwise.
      */
     public void shouldUseSSL(boolean ssl) {
         this.ssl = ssl;
@@ -142,7 +142,7 @@ public abstract class Server {
     /**
      * Checks if SSL is enabled for the server.
      *
-     * @return true if SSL is enabled, false otherwise.
+     * @return {@code true} if SSL is enabled, {@code false} otherwise.
      */
     public boolean isSSL() {
         return ssl;
