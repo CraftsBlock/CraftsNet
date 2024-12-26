@@ -18,7 +18,7 @@ import java.util.TreeSet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.1.0
  * @see CraftsNetBuilder
  * @since 3.0.7-SNAPSHOT
  */
@@ -56,6 +56,18 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
      */
     public AddonContainingBuilder map(Class<? extends Addon> type, String name) {
         AddonConfiguration.map(type, name);
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param args {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    public CraftsNetBuilder withArgs(String[] args) {
+        super.withArgs(args);
         return this;
     }
 

@@ -2,7 +2,6 @@ package de.craftsblock.craftsnet;
 
 import de.craftsblock.craftscore.event.ListenerRegistry;
 import de.craftsblock.craftscore.json.Json;
-import de.craftsblock.craftscore.utils.ArgumentParser;
 import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
@@ -37,7 +36,7 @@ import java.util.Collection;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.0.1
+ * @version 3.1.0
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -75,26 +74,7 @@ public class CraftsNet {
      * @throws IOException If an I/O error occurs while starting the servers.
      */
     public static void main(String[] args) throws IOException {
-        // Parse command-line arguments
-        ArgumentParser parser = new ArgumentParser(args);
-        boolean debug = parser.isPresent("debug");
-        boolean tempFilesOnNormal = parser.isPresent("placeTempFileInNormal");
-        boolean skipVersionCheck = parser.isPresent("skipVersionCheck");
-        boolean ssl = parser.isPresent("ssl");
-        boolean logRotationDisabled = parser.isPresent("disableLogRotate");
-        int http_port = (parser.isPresent("http-port") ? parser.getAsInt("http-port") : 5000);
-        int socket_port = (parser.isPresent("socket-port") ? parser.getAsInt("socket-port") : 5001);
-        int logRotation = (parser.isPresent("log-rotate") ? parser.getAsInt("log-rotate") : 0);
-
-        CraftsNet.create()
-                .withWebServer(http_port)
-                .withWebSocketServer(socket_port)
-                .withSSL(ssl)
-                .withDebug(debug)
-                .withTempFilesOnNormalFileSystem(tempFilesOnNormal)
-                .withSkipVersionCheck(skipVersionCheck)
-                .withLogRotate(logRotationDisabled ? 0 : logRotation)
-                .build();
+        CraftsNet.create().withArgs(args).build();
     }
 
     /**

@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.builder;
 
+import de.craftsblock.craftscore.utils.ArgumentParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.LoggerImpl;
@@ -7,13 +8,15 @@ import de.craftsblock.craftsnet.logging.PlainLogger;
 import org.jetbrains.annotations.Range;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.util.Map;
 
 /**
  * Builder class for configuring the CraftsNet.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.1.0
  * @see ActivateType
  * @since 3.0.3-SNAPSHOT
  */
@@ -50,6 +53,78 @@ public class CraftsNetBuilder {
         withSkipVersionCheck(false);
         withSSL(false);
         withoutLogRotate();
+    }
+
+    /**
+     * Configures the builder using a set of command-line arguments.
+     * <p>
+     * Parses the provided arguments and applies corresponding settings to the builder.
+     * If a specific argument is not recognized, an exception is thrown.
+     * </p>
+     *
+     * @param args An array of command-line arguments to parse.
+     * @return The current instance of {@link CraftsNetBuilder} for chaining.
+     * @throws RuntimeException If there is an error accessing the underlying argument parser's data.
+     */
+    public CraftsNetBuilder withArgs(String[] args) {
+        ArgumentParser parser = new ArgumentParser(args);
+
+        try {
+            Field field = parser.getClass().getDeclaredField("arguments");
+
+            try {
+                field.setAccessible(true);
+                @SuppressWarnings("unchecked")
+                Map<String, String> arguments = (Map<String, String>) field.get(parser);
+                arguments.forEach(this::setArg);
+            } finally {
+                field.setAccessible(false);
+            }
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+
+        return this;
+    }
+
+    /**
+     * Applies a single argument and its value to the builder.
+     * <p>
+     * Recognizes a predefined set of argument names and updates the corresponding settings.
+     * If the argument is not recognized, an {@link IllegalStateException} is thrown.
+     * </p>
+     *
+     * @param arg   The argument name, case-insensitive.
+     * @param value The argument value, used for arguments requiring additional data.
+     * @throws IllegalStateException If the argument name is not recognized.
+     */
+    protected void setArg(String arg, String value) {
+        switch (arg.toLowerCase()) {
+            // Flags
+            case "debug" -> withDebug(true);
+            case "placetempfileinnormal" -> withTempFilesOnNormalFileSystem(true);
+            case "skipversioncheck" -> withSkipVersionCheck(true);
+            case "ssl" -> withSSL(true);
+
+            case "disableaddonsystem" -> withAddonSystem(ActivateType.DISABLED);
+            case "disablecommandsystem" -> withCommandSystem(ActivateType.DISABLED);
+            case "disablefilelogger" -> withFileLogger(ActivateType.DISABLED);
+            case "disablelogger" -> withLogger(ActivateType.DISABLED);
+            case "disablelogrotate" -> withoutLogRotate();
+            case "disablewebserver" -> withWebServer(ActivateType.DISABLED);
+            case "disablewebsocketserver" -> withWebSocketServer(ActivateType.DISABLED);
+
+            case "forcewebserver" -> withWebServer(ActivateType.ENABLED);
+            case "forcewebsocketserver" -> withWebSocketServer(ActivateType.ENABLED);
+
+            // Arguments
+            case "http-port" -> withWebServer(Integer.parseInt(value));
+            case "log-rotate" -> withLogRotate(Integer.parseInt(value));
+            case "socket-port" -> withWebSocketServer(Integer.parseInt(value));
+
+            // Default
+            default -> throw new IllegalStateException("Unexpected argument in startup command: " + arg.toLowerCase());
+        }
     }
 
     /**
