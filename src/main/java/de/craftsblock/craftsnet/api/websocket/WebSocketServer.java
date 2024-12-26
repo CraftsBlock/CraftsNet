@@ -211,6 +211,16 @@ public class WebSocketServer extends Server {
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
+    public boolean isSSL() {
+        return super.isSSL() && this.serverSocket instanceof SSLServerSocket;
+    }
+
+    /**
      * Checks if the websocket server has a certain activation status in the builder.
      *
      * @param type The activation which should be present.
