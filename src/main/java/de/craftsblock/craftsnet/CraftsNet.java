@@ -42,7 +42,7 @@ import java.util.Collection;
 public class CraftsNet {
 
     // Global variables
-    public static final String version = "3.0.7-SNAPSHOT";
+    public static final String version = "3.1.0-SNAPSHOT";
 
     // Local instance
     private CraftsNetBuilder builder;
