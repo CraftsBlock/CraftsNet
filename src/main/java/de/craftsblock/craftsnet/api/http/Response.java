@@ -81,9 +81,15 @@ public class Response implements AutoCloseable {
             Request r = exchange.request();
 
             if ("pretty".equalsIgnoreCase(r.retrieveParam("format"))) {
-                if (object instanceof Json json) print(json, true);
-                else if (object instanceof JsonElement json) print(JsonParser.parse(json), true);
-                return;
+                if (object instanceof Json json) {
+                    print(json, true);
+                    return;
+                }
+
+                if (object instanceof JsonElement json) {
+                    print(JsonParser.parse(json), true);
+                    return;
+                }
             }
         }
 
