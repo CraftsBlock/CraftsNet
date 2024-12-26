@@ -71,7 +71,6 @@ public class WebServer extends Server {
     @Override
     public void start() {
         if (running) return;
-        HttpServer httpServer = null;
 
         logger.info("Starting web server on port " + port);
         try {
@@ -81,20 +80,21 @@ public class WebServer extends Server {
                 SSLContext sslContext = SSL.load(this.craftsNet);
                 if (sslContext != null) {
                     // Configure the HttpsServer with the SSL context.
-                    httpServer = HttpsServer.create(new InetSocketAddress(port), 0);
-                    ((HttpsServer) httpServer).setHttpsConfigurator(new HttpsConfigurator(sslContext));
+                    HttpsServer httpsServer = HttpsServer.create(new InetSocketAddress(port), 0);
+                    httpsServer.setHttpsConfigurator(new HttpsConfigurator(sslContext));
+                    server = httpsServer;
                 }
             }
         } catch (UnrecoverableKeyException | KeyManagementException | KeyStoreException | NoSuchAlgorithmException | CertificateException |
                  IOException e) {
             logger.error(e);
         } finally {
-            if (httpServer == null) {
+            if (server == null) {
                 if (ssl)
                     logger.warning("SSl was not activated properly, using an http server as fallback!");
 
                 try {
-                    httpServer = HttpServer.create(new InetSocketAddress(port), 0);
+                    server = HttpServer.create(new InetSocketAddress(port), 0);
                 } catch (IOException e) {
                     logger.error("Error while creating the " + (ssl ? "fallback" : "") + " http server.");
                     logger.error(e);
@@ -103,7 +103,6 @@ public class WebServer extends Server {
         }
 
         // Create a context for the root path ("/") and set its handler to process incoming requests.
-        server = httpServer;
         if (server == null) return;
 
         logger.debug("Creating the API handler");
