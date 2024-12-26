@@ -1,7 +1,5 @@
 package de.craftsblock.craftsnet.api.websocket.extensions;
 
-import de.craftsblock.craftsnet.api.websocket.extensions.builtin.PerMessageDeflateExtension;
-
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -23,7 +21,7 @@ public class WebSocketExtensionRegistry {
      * Constructs a new WebSocket extension registry and registers the default extensions.
      */
     public WebSocketExtensionRegistry() {
-        register(new PerMessageDeflateExtension());
+//        register(new PerMessageDeflateExtension());
     }
 
     /**
