@@ -72,7 +72,7 @@ public abstract class Addon {
      * This method is marked as final to prevent subclasses from modifying the registry directly.
      *
      * @return The CraftsNet instance on which the addon was registered.
-     * @since 3.0.7-SNAPSHOT
+     * @since 3.1.0-SNAPSHOT
      */
     public final CraftsNet craftsNet() {
         return craftsNet;
@@ -91,7 +91,7 @@ public abstract class Addon {
      * Get the metadata of the addon.
      *
      * @return The metadata of the addon.
-     * @since 3.0.7-SNAPSHOT
+     * @since 3.1.0-SNAPSHOT
      */
     public AddonMeta getMeta() {
         return meta;
@@ -102,7 +102,7 @@ public abstract class Addon {
      * This method is marked as final to prevent subclasses from modifying the registry directly.
      *
      * @return The BodyRegistry instance used by the addon.
-     * @since CraftsNet-3.0.4
+     * @since 3.0.4-SNAPSHOT
      */
     public BodyRegistry bodyRegistry() {
         return craftsNet.bodyRegistry();

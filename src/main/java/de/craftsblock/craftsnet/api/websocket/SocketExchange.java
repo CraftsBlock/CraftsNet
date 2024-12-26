@@ -14,7 +14,7 @@ import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
  * @see BaseExchange
  * @see Socket
  * @see SocketHandler
- * @since CraftsNet-2.1.1
+ * @since 2.1.1-SNAPSHOT
  */
 public record SocketExchange(WebSocketServer server, WebSocketClient client) implements BaseExchange {
 

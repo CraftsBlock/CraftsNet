@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
  * @author Philipp Maywald
  * @version 1.0.0
  * @see CommandExecutor
- * @since CraftsNet-3.0.0
+ * @since 3.0.0-SNAPSHOT
  */
 public class VersionCommand implements CommandExecutor {
 

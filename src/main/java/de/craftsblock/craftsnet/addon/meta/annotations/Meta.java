@@ -17,7 +17,7 @@ import java.lang.annotation.Target;
  * @author Philipp Maywald
  * @author CraftsBlock
  * @version 1.0.0
- * @since 3.0.7-SNAPSHOT
+ * @since 3.1.0-SNAPSHOT
  */
 @Experimental
 @Target(ElementType.TYPE)

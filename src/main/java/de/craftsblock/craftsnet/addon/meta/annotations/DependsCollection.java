@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
  * @author CraftsBlock
  * @version 1.0.0
  * @see Depends
- * @since 3.0.7-SNAPSHOT
+ * @since 3.1.0-SNAPSHOT
  */
 @Experimental
 @ApiStatus.Internal

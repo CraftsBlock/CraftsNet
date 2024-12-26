@@ -9,7 +9,7 @@ import java.lang.annotation.*;
  * @author Philipp Maywald
  * @version 1.0
  * @see Socket
- * @since CraftsNet-2.1.1
+ * @since 2.1.1-SNAPSHOT
  * @deprecated Will not do anything in the future, it was replaced by the {@link Socket} annotation,
  * which now works like the {@link de.craftsblock.craftsnet.api.http.annotations.Route} annotation. All
  * developers are recommended to switch to the new websocket registration mechanism, as this mechanism

@@ -24,7 +24,7 @@ import java.util.Optional;
  * @author Philipp Maywald
  * @author CraftsBlock
  * @version 1.0.1
- * @since 3.0.7-SNAPSHOT
+ * @since 3.1.0-SNAPSHOT
  */
 public record AddonMeta(String name, String mainClass, String description, List<String> authors, String website, String version, String[] depends) {
 

@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.addon.services.ServiceLoader;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since 3.0.7-SNAPSHOT
+ * @since 3.1.0-SNAPSHOT
  */
 public class ListenerAdapterLoader implements ServiceLoader<ListenerAdapter> {
 

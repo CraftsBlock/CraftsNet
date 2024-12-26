@@ -10,7 +10,7 @@ import de.craftsblock.craftscore.event.CancellableEvent;
  * @author Philipp Maywald
  * @version 1.0.0
  * @see CancellableEvent
- * @since 3.0.7-SNAPSHOT
+ * @since 3.1.0-SNAPSHOT
  */
 public abstract class EventWithCancelReason extends CancellableEvent {
 

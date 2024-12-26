@@ -24,7 +24,7 @@ import java.util.stream.Stream;
  * @version 1.0.0
  * @see RequirementMeta
  * @see RequirementStore
- * @since 3.0.7-SNAPSHOT
+ * @since 3.1.0-SNAPSHOT
  */
 public record RequirementInfo(Class<? extends Annotation> annotation, RequirementMeta meta, Map<String, Object> values) {
 

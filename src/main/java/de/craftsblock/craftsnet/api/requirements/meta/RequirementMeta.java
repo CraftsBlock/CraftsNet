@@ -24,7 +24,7 @@ import java.lang.annotation.*;
  * @author CraftsBlock
  * @version 1.0.0
  * @see RequirementType
- * @since 3.0.7-SNAPSHOT
+ * @since 3.1.0-SNAPSHOT
  */
 @Documented
 @Experimental

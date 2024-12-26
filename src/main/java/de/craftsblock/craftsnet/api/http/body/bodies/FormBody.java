@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see Body
  * @see MultipartFormBody
  * @see StandardFormBody
- * @since CraftsNet-2.2.0
+ * @since 2.2.0-SNAPSHOT
  */
 public abstract class FormBody<T> extends Body {
 

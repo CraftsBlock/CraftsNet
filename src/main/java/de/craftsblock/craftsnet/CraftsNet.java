@@ -308,7 +308,7 @@ public class CraftsNet {
      * Retrieves the body registry instance for manging body types.
      *
      * @return The body registry instance.
-     * @since CraftsNet-3.0.4
+     * @since 3.0.4-SNAPSHOT
      */
     public BodyRegistry bodyRegistry() {
         return bodyRegistry;

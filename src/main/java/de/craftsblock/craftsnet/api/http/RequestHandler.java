@@ -17,7 +17,7 @@ import de.craftsblock.craftsnet.api.Handler;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0
- * @since CraftsNet-1.0.0
+ * @since 1.0.0-SNAPSHOT
  */
 public interface RequestHandler extends Handler {
     // No methods are declared in this interface since it serves as a marker interface.

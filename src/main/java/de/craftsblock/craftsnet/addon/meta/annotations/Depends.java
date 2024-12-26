@@ -17,7 +17,7 @@ import java.lang.annotation.*;
  * @author CraftsBlock
  * @version 1.0.0
  * @see DependsCollection
- * @since 3.0.7-SNAPSHOT
+ * @since 3.1.0-SNAPSHOT
  */
 @Experimental
 @Target(ElementType.TYPE)

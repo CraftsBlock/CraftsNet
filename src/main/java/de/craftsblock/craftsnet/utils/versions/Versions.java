@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
  * @author CraftsBlock
  * @version 1.0
  * @see Comparison
- * @since 3.0.7-SNAPSHOT
+ * @since 3.1.0-SNAPSHOT
  */
 public class Versions {
 

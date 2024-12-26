@@ -54,7 +54,7 @@ public abstract class Body implements AutoCloseable {
      * the request to retrieve the estimated content type.
      *
      * @return The content type retrieved by the request.
-     * @since CraftsNet-3.0.4
+     * @since 3.0.4-SNAPSHOT
      */
     public final String getRawContentType() {
         return this.request.getContentType().replace("\"", "");

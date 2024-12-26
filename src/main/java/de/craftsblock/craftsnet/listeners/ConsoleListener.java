@@ -17,7 +17,7 @@ import static de.craftsblock.craftscore.event.EventPriority.MONITOR;
  * @author Philipp Maywald
  * @version 1.0
  * @see de.craftsblock.craftsnet.command.CommandRegistry
- * @since CraftsNet-2.2.0
+ * @since 2.2.0-SNAPSHOT
  */
 public class ConsoleListener implements ListenerAdapter {
 

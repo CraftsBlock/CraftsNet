@@ -18,7 +18,7 @@ import java.lang.annotation.*;
  * @version 1.0.0
  * @see Transformable
  * @see TransformerCollection
- * @since CraftsNet-3.0.2
+ * @since 3.0.2-SNAPSHOT
  */
 @Repeatable(TransformerCollection.class)
 @Retention(RetentionPolicy.RUNTIME)

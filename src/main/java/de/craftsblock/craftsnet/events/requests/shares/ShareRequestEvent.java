@@ -16,7 +16,7 @@ import java.util.List;
  * @author Philipp Maywald
  * @version 1.0.2
  * @see EventWithCancelReason
- * @since CraftsNet-2.3.2
+ * @since 2.3.2-SNAPSHOT
  */
 public class ShareRequestEvent extends EventWithCancelReason {
 

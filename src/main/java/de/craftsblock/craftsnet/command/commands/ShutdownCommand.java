@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since CraftsNet-2.2.0
+ * @since 2.2.0-SNAPSHOT
  */
 public class ShutdownCommand implements CommandExecutor {
 

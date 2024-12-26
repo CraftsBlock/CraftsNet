@@ -7,7 +7,7 @@ package de.craftsblock.craftsnet.api.transformers.exceptions;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since CraftsNet-3.0.2
+ * @since 3.0.2-SNAPSHOT
  */
 public class TransformerException extends RuntimeException {
 

@@ -19,7 +19,7 @@ import java.util.regex.Pattern;
  * @version 1.0.0
  * @see Body
  * @see BodyRegistry
- * @since CraftsNet-3.0.4
+ * @since 3.0.4-SNAPSHOT
  */
 public abstract class BodyParser<T extends Body> {
 

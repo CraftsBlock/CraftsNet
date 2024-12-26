@@ -19,7 +19,7 @@ import java.io.InputStreamReader;
  * @author Philipp Maywald
  * @version 2.0.0
  * @see Body
- * @since CraftsNet-2.2.0
+ * @since 2.2.0-SNAPSHOT
  */
 public final class JsonBody extends Body {
 

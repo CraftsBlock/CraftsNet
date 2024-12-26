@@ -17,7 +17,7 @@ import java.io.IOException;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since CraftsNet-3.0.3
+ * @since 3.0.3-SNAPSHOT
  */
 public class DefaultRoute implements RequestHandler {
 

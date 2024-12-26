@@ -9,7 +9,7 @@ import de.craftsblock.craftsnet.CraftsNet;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since CraftsNet-2.3.3
+ * @since 2.3.3-SNAPSHOT
  */
 class DefaultPages {
 

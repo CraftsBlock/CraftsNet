@@ -17,7 +17,7 @@ import java.io.InputStream;
  * @author Philipp Maywald
  * @version 1.0.0
  * @see BodyParser
- * @since CraftsNet-3.0.4
+ * @since 3.0.4-SNAPSHOT
  */
 public class MultipartFormBodyParser extends BodyParser<MultipartFormBody> {
 

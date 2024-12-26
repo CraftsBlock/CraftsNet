@@ -35,7 +35,7 @@ import static de.craftsblock.craftsnet.utils.Utils.getGroupNames;
  * @see Transformer
  * @see TransformerCollection
  * @see Transformable
- * @since CraftsNet-3.0.3
+ * @since 3.0.3-SNAPSHOT
  */
 public class TransformerPerformer {
 

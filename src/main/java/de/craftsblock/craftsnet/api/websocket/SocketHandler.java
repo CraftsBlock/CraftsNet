@@ -11,7 +11,7 @@ import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
  * @author Philipp Maywald
  * @version 1.0
  * @see Socket
- * @since CraftsNet-2.1.1
+ * @since 2.1.1-SNAPSHOT
  */
 public interface SocketHandler extends Handler {
 

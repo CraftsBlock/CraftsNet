@@ -7,7 +7,7 @@ package de.craftsblock.craftsnet.api.http.body;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since CraftsNet-3.0.4
+ * @since 3.0.4-SNAPSHOT
  */
 public interface ContentType {
 

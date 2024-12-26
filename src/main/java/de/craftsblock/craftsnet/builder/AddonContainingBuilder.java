@@ -20,7 +20,7 @@ import java.util.TreeSet;
  * @author Philipp Maywald
  * @version 1.1.0
  * @see CraftsNetBuilder
- * @since 3.0.7-SNAPSHOT
+ * @since 3.1.0-SNAPSHOT
  */
 public class AddonContainingBuilder extends CraftsNetBuilder {
 

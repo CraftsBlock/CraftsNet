@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 2.0
- * @since CraftsNet-1.0.0
+ * @since 1.0.0-SNAPSHOT
  */
 public interface Logger {
 

@@ -13,7 +13,7 @@ import java.util.Arrays;
  * @author Philipp Maywald
  * @version 1.1
  * @see Route
- * @since CraftsNet-1.0.0
+ * @since 1.0.0-SNAPSHOT
  */
 public enum HttpMethod {
 

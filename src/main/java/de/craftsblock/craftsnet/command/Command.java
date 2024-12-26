@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @version 1.1
  * @see CommandExecutor
  * @see CommandRegistry
- * @since CraftsNet-2.2.0
+ * @since 2.2.0-SNAPSHOT
  */
 public class Command {
 

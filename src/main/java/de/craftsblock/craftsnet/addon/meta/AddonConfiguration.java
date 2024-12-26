@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  * @author Philipp Maywald
  * @author CraftsBlock
  * @version 1.0.0
- * @since 3.0.7-SNAPSHOT
+ * @since 3.1.0-SNAPSHOT
  */
 public record AddonConfiguration(Json json, URL[] classpath, Collection<RegisteredService> services, AtomicReference<Addon> addon,
                                  AtomicReference<AddonMeta> meta) implements Comparable<AddonConfiguration> {

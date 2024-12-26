@@ -17,7 +17,7 @@ import java.net.URLConnection;
  * @author Philipp Maywald
  * @version 1.1.2
  * @see CancellableEvent
- * @since CraftsNet-2.3.2
+ * @since 2.3.2-SNAPSHOT
  */
 public class ShareFileLoadedEvent extends CancellableEvent {
 
