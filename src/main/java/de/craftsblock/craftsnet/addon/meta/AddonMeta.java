@@ -3,7 +3,6 @@ package de.craftsblock.craftsnet.addon.meta;
 import com.google.gson.JsonElement;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.addon.Addon;
-import de.craftsblock.craftsnet.addon.meta.annotations.Meta;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
