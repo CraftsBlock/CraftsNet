@@ -339,7 +339,7 @@ public class WebSocketServer extends Server {
      * @return The list of the connected {@link WebSocketClient}s.
      */
     public List<WebSocketClient> getClients() {
-        return connected.values().stream().flatMap(Collection::stream).toList();
+        return connected.values().stream().flatMap(Collection::stream).distinct().toList();
     }
 
 }
