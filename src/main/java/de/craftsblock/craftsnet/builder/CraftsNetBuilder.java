@@ -1,9 +1,9 @@
 package de.craftsblock.craftsnet.builder;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.logging.EmptyLogger;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.LoggerImpl;
+import de.craftsblock.craftsnet.logging.PlainLogger;
 import org.jetbrains.annotations.Range;
 
 import java.io.IOException;
@@ -199,8 +199,8 @@ public class CraftsNetBuilder {
      */
     public CraftsNetBuilder withLogger(ActivateType type) {
         if (type.equals(ActivateType.DISABLED))
-            this.logger = this.logger instanceof EmptyLogger ? this.logger : new EmptyLogger(this.logger);
-        else if (this.logger instanceof EmptyLogger logger)
+            this.logger = this.logger instanceof PlainLogger ? this.logger : new PlainLogger(this.logger);
+        else if (this.logger instanceof PlainLogger logger)
             this.logger = logger.previous();
         return this;
     }

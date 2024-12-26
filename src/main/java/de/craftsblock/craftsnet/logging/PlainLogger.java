@@ -8,7 +8,7 @@ import org.jetbrains.annotations.Nullable;
  * This can be used as a placeholder or default logger where logging functionality
  * is not required or should be ignored.
  * <p>
- * The {@code EmptyLogger} simply accepts log messages and errors but does not process
+ * The {@code PlainLogger} simply accepts log messages and errors but does not process
  * them in any way. It is a no-op logger.
  * </p>
  *
@@ -17,19 +17,19 @@ import org.jetbrains.annotations.Nullable;
  * @version 1.0.0
  * @since 3.0.7-SNAPSHOT
  */
-public record EmptyLogger(Logger previous) implements Logger {
+public record PlainLogger(Logger previous) implements Logger {
 
     /**
-     * Constructs an {@code EmptyLogger} with a reference to a previous {@code Logger}.
+     * Constructs an {@code PlainLogger} with a reference to a previous {@code Logger}.
      *
      * @param previous the previous {@code Logger} in the chain, can be used for chaining or fallback purposes.
      */
-    public EmptyLogger {
+    public PlainLogger {
     }
 
     /**
      * Returns the previous {@code Logger} in the chain.
-     * This can be used to access the logger that was previously used before this {@code EmptyLogger}.
+     * This can be used to access the logger that was previously used before this {@code PlainLogger}.
      *
      * @return the previous {@code Logger} instance.
      */
@@ -45,7 +45,7 @@ public record EmptyLogger(Logger previous) implements Logger {
      */
     @Override
     public void info(@Nullable String text) {
-        // Nothing to see...
+        System.out.println(text);
     }
 
     /**
@@ -56,7 +56,7 @@ public record EmptyLogger(Logger previous) implements Logger {
      */
     @Override
     public void warning(@Nullable String text) {
-        // Nothing to see...
+        System.out.println(text);
     }
 
     /**
@@ -67,7 +67,7 @@ public record EmptyLogger(Logger previous) implements Logger {
      */
     @Override
     public void error(@Nullable String text) {
-        // Nothing to see...
+        System.err.println(text);
     }
 
     /**
@@ -78,7 +78,7 @@ public record EmptyLogger(Logger previous) implements Logger {
      */
     @Override
     public void error(@NotNull Throwable throwable) {
-        // Nothing to see...
+        throwable.printStackTrace(System.err);
     }
 
     /**
@@ -86,11 +86,12 @@ public record EmptyLogger(Logger previous) implements Logger {
      * This implementation does nothing.
      *
      * @param throwable the {@link Throwable} to be logged, must not be null.
-     * @param comment an additional comment or message to be logged, can be null.
+     * @param comment   an additional comment or message to be logged, can be null.
      */
     @Override
     public void error(@NotNull Throwable throwable, @Nullable String comment) {
-        // Nothing to see...
+        System.err.println(comment);
+        throwable.printStackTrace(System.err);
     }
 
     /**
@@ -101,19 +102,19 @@ public record EmptyLogger(Logger previous) implements Logger {
      */
     @Override
     public void debug(@Nullable String text) {
-        // Nothing to see...
+        System.out.println(text);
     }
 
     /**
-     * Creates a new instance of {@code EmptyLogger} with a specified name.
-     * This implementation ignores the provided name and returns a new {@code EmptyLogger}
+     * Creates a new instance of {@code PlainLogger} with a specified name.
+     * This implementation ignores the provided name and returns a new {@code PlainLogger}
      * with the same previous logger.
      *
      * @param name the name for the new logger instance.
-     * @return a new instance of {@code EmptyLogger} with the same previous logger.
+     * @return a new instance of {@code PlainLogger} with the same previous logger.
      */
     @Override
     public Logger cloneWithName(String name) {
-        return new EmptyLogger(this.previous);
+        return new PlainLogger(this.previous);
     }
 }
