@@ -107,6 +107,7 @@ public class WebSocketServer extends Server {
             if (serverSocket == null) {
                 if (ssl)
                     logger.warning("SSl was not activated properly, using an socket server as fallback!");
+
                 try {
                     serverSocket = new ServerSocket(port, backlog);
                 } catch (IOException e) {
@@ -119,7 +120,6 @@ public class WebSocketServer extends Server {
         if (serverSocket == null) return;
 
         connected = new ConcurrentHashMap<>();
-        super.start();
 
         connector = new Thread(() -> {
             AtomicInteger i = new AtomicInteger();
@@ -140,8 +140,10 @@ public class WebSocketServer extends Server {
                 }
             }
         });
-        connector.setName("Websocket Server - Connector");
+        connector.setName("Websocket - Connector");
         connector.start();
+
+        super.start();
     }
 
     /**
