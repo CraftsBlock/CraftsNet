@@ -108,12 +108,6 @@ public class WebServer extends Server {
         logger.debug("Creating the API handler");
         HttpContext context = server.createContext("/");
         context.setHandler(new WebHandler(this.craftsNet));
-//        context.setAuthenticator(new Authenticator() {
-//            @Override
-//            public Result authenticate(HttpExchange exch) {
-//                return null;
-//            }
-//        });
 
         logger.debug("Setting up the executor and starting the web server");
         server.setExecutor(Executors.newCachedThreadPool());
