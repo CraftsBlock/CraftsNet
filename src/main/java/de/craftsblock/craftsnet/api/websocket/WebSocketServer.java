@@ -163,8 +163,11 @@ public class WebSocketServer extends Server {
         try {
             connected.values().stream().flatMap(ConcurrentLinkedQueue::stream)
                     .forEach(client -> {
-                        if (client.isConnected()) client.close(ClosureCode.GOING_AWAY, "Server closed!");
-                        client.disconnect().interrupt();
+                        try {
+                            if (client.isConnected()) client.close(ClosureCode.GOING_AWAY, "Server closed!");
+                            client.disconnect().interrupt();
+                        } catch (IllegalStateException ignored) {
+                        }
                     });
             connected.clear();
             serverSocket.close();

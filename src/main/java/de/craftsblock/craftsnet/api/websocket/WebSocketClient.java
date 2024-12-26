@@ -720,6 +720,8 @@ public class WebSocketClient implements Runnable, RequireAble {
     private synchronized void sendMessage(byte[] data, Opcode opcode) {
         if (!isConnected())
             throw new IllegalStateException("The websocket connection has already been closed!");
+        if (writer == null)
+            throw new IllegalStateException("The websocket writer has already been closed!");
 
         try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
             if (data == null || data.length == 0) {
