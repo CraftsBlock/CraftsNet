@@ -324,4 +324,13 @@ public class WebSocketServer extends Server {
                 });
     }
 
+    /**
+     * Retrieves the list of all currently connected {@link WebSocketClient}s.
+     *
+     * @return The list of the connected {@link WebSocketClient}s.
+     */
+    public List<WebSocketClient> getClients() {
+        return connected.values().stream().flatMap(Collection::stream).toList();
+    }
+
 }
