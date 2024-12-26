@@ -1,14 +1,20 @@
 package de.craftsblock.craftsnet.api;
 
+import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.logging.Logger;
+
 /**
  * Abstract class representing a server in the CraftsNet framework.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
- * @since CraftsNet-3.0.3
+ * @version 1.0.1
+ * @since 3.0.3-SNAPSHOT
  */
 public abstract class Server {
+
+    protected final CraftsNet craftsNet;
+    protected final Logger logger;
 
     protected int port;
     protected int backlog;
@@ -19,21 +25,26 @@ public abstract class Server {
     /**
      * Constructs a server with the specified port and SSL configuration.
      *
-     * @param port The port number for the server.
-     * @param ssl  true if SSL should be used, false otherwise.
+     * @param craftsNet The {@link CraftsNet} instance which instantiates this server.
+     * @param port      The port number for the server.
+     * @param ssl       true if SSL should be used, false otherwise.
      */
-    public Server(int port, boolean ssl) {
-        this(port, 0, ssl);
+    public Server(CraftsNet craftsNet, int port, boolean ssl) {
+        this(craftsNet, port, 0, ssl);
     }
 
     /**
      * Constructs a server with the specified port, backlog, and SSL configuration.
      *
-     * @param port    The port number for the server.
-     * @param backlog The maximum number of pending connections the server's socket may have in the queue.
-     * @param ssl     true if SSL should be used, false otherwise.
+     * @param craftsNet The {@link CraftsNet} instance which instantiates this server.
+     * @param port      The port number for the server.
+     * @param backlog   The maximum number of pending connections the server's socket may have in the queue.
+     * @param ssl       true if SSL should be used, false otherwise.
      */
-    public Server(int port, int backlog, boolean ssl) {
+    public Server(CraftsNet craftsNet, int port, int backlog, boolean ssl) {
+        this.craftsNet = craftsNet;
+        this.logger = this.craftsNet.logger();
+
         this.bind(port, backlog);
         this.ssl = ssl;
         this.running = false;
@@ -135,6 +146,15 @@ public abstract class Server {
      */
     public boolean isSSL() {
         return ssl;
+    }
+
+    /**
+     * Retrieves the instance of {@link CraftsNet} bound to the server.
+     *
+     * @return The instance of {@link CraftsNet} bound to the server.
+     */
+    public CraftsNet getCraftsNet() {
+        return craftsNet;
     }
 
 }

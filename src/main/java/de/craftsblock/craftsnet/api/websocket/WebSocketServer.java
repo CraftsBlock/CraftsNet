@@ -4,7 +4,6 @@ import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.builder.ActivateType;
-import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.SSL;
 
 import javax.net.ssl.SSLContext;
@@ -19,6 +18,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,14 +32,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1
+ * @version 1.1.1
  * @see WebSocketClient
- * @since CraftsNet-2.1.1
+ * @since 2.1.1-SNAPSHOT
  */
 public class WebSocketServer extends Server {
 
-    private final CraftsNet craftsNet;
-    private final Logger logger;
     private ConcurrentHashMap<String, ConcurrentLinkedQueue<WebSocketClient>> connected;
 
     private Thread connector;
@@ -50,7 +49,7 @@ public class WebSocketServer extends Server {
     /**
      * Constructs a WebSocketServer instance with the specified port number.
      *
-     * @param craftsNet The CraftsNet instance which instantiates this
+     * @param craftsNet The CraftsNet instance which instantiates this websocket server.
      * @param port      The port number on which the server will listen for incoming connections.
      * @param ssl       A boolean flag indicating whether SSL encryption should be used (true for HTTPS, false for HTTP).
      */
@@ -61,15 +60,13 @@ public class WebSocketServer extends Server {
     /**
      * Constructs a WebSocketServer instance with the specified port number and backlog size.
      *
-     * @param craftsNet The CraftsNet instance which instantiates this
+     * @param craftsNet The CraftsNet instance which instantiates this websocket server.
      * @param port      The port number on which the server will listen for incoming connections.
      * @param backlog   The size of the backlog for the server socket.
      * @param ssl       A boolean flag indicating whether SSL encryption should be used.
      */
     public WebSocketServer(CraftsNet craftsNet, int port, int backlog, boolean ssl) {
-        super(port, backlog, ssl);
-        this.craftsNet = craftsNet;
-        this.logger = this.craftsNet.logger();
+        super(craftsNet, port, backlog, ssl);
     }
 
     /**

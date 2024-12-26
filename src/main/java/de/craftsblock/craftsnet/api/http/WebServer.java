@@ -8,7 +8,6 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.builder.ActivateType;
-import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.SSL;
 
 import javax.net.ssl.SSLContext;
@@ -27,30 +26,26 @@ import java.util.concurrent.Executors;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.4
+ * @version 1.4.1
  * @see Exchange
  * @see RequestHandler
  * @see Route
  * @see WebHandler
- * @since CraftsNet-1.0.0
+ * @since 1.0.0-SNAPSHOT
  */
 public class WebServer extends Server {
 
-    private final CraftsNet craftsNet;
-    private final Logger logger;
     private HttpServer server;
 
     /**
      * Constructs a WebServer with the specified port and SSL settings.
      *
-     * @param craftsNet The CraftsNet instance which instantiates this webserver
+     * @param craftsNet The CraftsNet instance which instantiates this webserver.
      * @param port      The port number to listen on.
      * @param ssl       A boolean flag indicating whether SSL encryption should be used (true for HTTPS, false for HTTP).
      */
     public WebServer(CraftsNet craftsNet, int port, boolean ssl) {
-        super(port, ssl);
-        this.craftsNet = craftsNet;
-        this.logger = this.craftsNet.logger();
+        super(craftsNet, port, ssl);
     }
 
     /**
