@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.5
+ * @version 1.2.6
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -81,8 +81,9 @@ public class WebHandler implements HttpHandler {
                 else domain = headers.getFirst("Host").split(":")[0];
 
                 // Create a Request object to encapsulate the incoming request information.
-                try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod)) {
-                    Exchange exchange = new Exchange(url, request, response, new SessionStorage());
+                try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod);
+                     Exchange exchange = new Exchange(url, request, response, new SessionStorage())) {
+                    exchange.storage().setExchange(exchange);
 
                     PreRequestEvent event = new PreRequestEvent(exchange);
                     craftsNet.listenerRegistry().call(event);
@@ -215,7 +216,6 @@ public class WebHandler implements HttpHandler {
             }
 
         // Clean up to free up memory
-        if (args.length == 1 && args[0] instanceof Exchange e) e.storage().clear();
         transformerPerformer.clearCache();
 
         return true;

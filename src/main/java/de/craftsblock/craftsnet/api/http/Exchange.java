@@ -13,14 +13,15 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.1
+ * @version 2.1.0
  * @see BaseExchange
  * @see Request
  * @see Response
+ * @see SessionStorage
  * @since 1.0.0-SNAPSHOT
  */
 public record Exchange(@NotNull String path, @NotNull Request request, @NotNull Response response,
-                       @NotNull SessionStorage storage) implements BaseExchange {
+                       @NotNull SessionStorage storage) implements BaseExchange, AutoCloseable {
 
     /**
      * @param path     The path the client connected to.
@@ -31,6 +32,14 @@ public record Exchange(@NotNull String path, @NotNull Request request, @NotNull 
     public Exchange {
         request.setExchange(this);
         response.setExchange(this);
+    }
+
+    /**
+     * Performs last actions before the exchange is closed.
+     */
+    @Override
+    public void close() throws Exception {
+        storage.close();
     }
 
 }

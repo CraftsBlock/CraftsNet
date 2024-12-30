@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 /**
  * This utility class provides helper methods for thread-related operations.
@@ -18,7 +19,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.4
+ * @version 1.0.5
  * @since 2.1.1-SNAPSHOT
  */
 public class Utils {
@@ -36,9 +37,9 @@ public class Utils {
      * @return A Byte object array with the same values as the input byte array.
      */
     public static Byte[] convert(byte[] data) {
-        Byte[] output = new Byte[data.length];
-        System.arraycopy(data, 0, output, 0, output.length);
-        return output;
+        return IntStream.range(0, data.length)
+                .mapToObj(i -> data[i])
+                .toArray(Byte[]::new);
     }
 
     /**
@@ -49,7 +50,10 @@ public class Utils {
      */
     public static byte[] convert(Byte[] data) {
         byte[] output = new byte[data.length];
-        System.arraycopy(data, 0, output, 0, output.length);
+
+        for (int i = 0; i < data.length; i++)
+            output[i] = data[i];
+
         return output;
     }
 
