@@ -118,9 +118,9 @@ public class CraftsNetBuilder {
             case "forcewebsocketserver" -> withWebSocketServer(ActivateType.ENABLED);
 
             // Arguments
-            case "http-port" -> withWebServer(Integer.parseInt(value));
-            case "log-rotate" -> withLogRotate(Integer.parseInt(value));
-            case "socket-port" -> withWebSocketServer(Integer.parseInt(value));
+            case "http-port", "httpport" -> withWebServer(Integer.parseInt(value));
+            case "log-rotate", "logrotate" -> withLogRotate(Integer.parseInt(value));
+            case "socket-port", "socketport" -> withWebSocketServer(Integer.parseInt(value));
 
             // Default
             default -> throw new IllegalStateException("Unexpected argument in startup command: " + arg.toLowerCase());

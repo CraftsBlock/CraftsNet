@@ -66,7 +66,7 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
      * @return {@inheritDoc}
      */
     @Override
-    public CraftsNetBuilder withArgs(String[] args) {
+    public AddonContainingBuilder withArgs(String[] args) {
         super.withArgs(args);
         return this;
     }
