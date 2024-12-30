@@ -6,11 +6,9 @@ import de.craftsblock.craftsnet.addon.services.builtin.handlers.GenericHandlerLo
 import de.craftsblock.craftsnet.addon.services.builtin.handlers.RequestHandlerLoader;
 import de.craftsblock.craftsnet.addon.services.builtin.handlers.SocketHandlerLoader;
 import de.craftsblock.craftsnet.addon.services.builtin.listeners.ListenerAdapterLoader;
-import org.jetbrains.annotations.Nullable;
+import de.craftsblock.craftsnet.utils.ReflectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.ParameterizedType;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -22,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.0.0-SNAPSHOT
  */
 public class ServiceManager {
@@ -57,7 +55,7 @@ public class ServiceManager {
      * @param <T>    The type of service handled by the service loader.
      */
     public <T> void register(ServiceLoader<T> loader) {
-        Class<T> generic = extractGeneric(loader);
+        Class<T> generic = ReflectionUtils.extractGenericInterface(loader.getClass());
         if (generic == null) return;
         ConcurrentLinkedQueue<ServiceLoader<?>> loaders = providers.computeIfAbsent(generic, c -> new ConcurrentLinkedQueue<>());
         if (loaders.contains(loader)) return;
@@ -71,7 +69,7 @@ public class ServiceManager {
      * @param <T>    The type of service handled by the service loader.
      */
     public <T> void unregister(ServiceLoader<T> loader) {
-        Class<T> generic = extractGeneric(loader);
+        Class<T> generic = ReflectionUtils.extractGenericInterface(loader.getClass());
         if (generic == null) return;
         providers.computeIfAbsent(generic, c -> new ConcurrentLinkedQueue<>()).remove(loader);
     }
@@ -105,7 +103,7 @@ public class ServiceManager {
 
         List<ServiceLoader<T>> loaders = providers.get(spi).stream()
                 .filter(loader -> {
-                    Class<T> loaderClass = (Class<T>) extractGeneric(loader);
+                    Class<T> loaderClass = ReflectionUtils.extractGenericInterface(loader.getClass());
                     return loaderClass != null && loaderClass.isAssignableFrom(provider);
                 })
                 .map(loader -> (ServiceLoader<T>) loader)
@@ -122,35 +120,6 @@ public class ServiceManager {
             }
         });
         return success.get();
-    }
-
-    /**
-     * Extracts the generic type {@code T} from a given service loader instance.
-     *
-     * <p>This method analyzes the generic interfaces implemented by the provided service loader
-     * to extract and return the specific generic type {@code T}. It utilizes Java Reflection to inspect
-     * the type information and perform the extraction.</p>
-     *
-     * @param loader The service loader from which to extract the generic type.
-     * @param <T>    The type of service handled by the service loader.
-     * @return The {@code Class} object representing the generic type {@code T}, or null if unable to extract.
-     * @apiNote The method uses stream operations to filter and map the generic interfaces to find
-     * the actual type argument representing {@code T}. It returns null if no suitable type argument is found.
-     * @see ServiceLoader
-     * @see ParameterizedType
-     * @see Class#getGenericInterfaces()
-     * @see ParameterizedType#getActualTypeArguments()
-     */
-    @Nullable
-    @SuppressWarnings("unchecked")
-    private <T> Class<T> extractGeneric(ServiceLoader<T> loader) {
-        return Arrays.stream(loader.getClass().getGenericInterfaces())
-                .filter(type -> type instanceof ParameterizedType)
-                .map(type -> (ParameterizedType) type)
-                .filter(type -> type.getActualTypeArguments().length >= 1)
-                .map(type -> (Class<T>) type.getActualTypeArguments()[0])
-                .findFirst()
-                .orElse(null);
     }
 
 }

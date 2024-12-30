@@ -7,16 +7,15 @@ import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
 import de.craftsblock.craftsnet.addon.meta.AddonMeta;
-import de.craftsblock.craftsnet.addon.meta.Startup;
-import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import de.craftsblock.craftsnet.addon.meta.RegisteredService;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.autoregister.loaders.AutoRegisterLoader;
+import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import de.craftsblock.craftsnet.events.addons.AllAddonsLoadedEvent;
 import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.utils.ReflectionUtils;
 
 import java.io.*;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -32,7 +31,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.0
+ * @version 2.1.1
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -190,10 +189,10 @@ public final class AddonLoader {
 
                 // Create an instance of the main class and inject dependencies using reflection
                 Addon obj = (Addon) clazz.getDeclaredConstructor().newInstance();
-                setField("craftsNet", obj, craftsNet);
-                setField("meta", obj, meta);
-                setField("logger", obj, logger.cloneWithName(name));
-                setField("classLoader", obj, classLoader);
+                ReflectionUtils.setField("craftsNet", obj, craftsNet);
+                ReflectionUtils.setField("meta", obj, meta);
+                ReflectionUtils.setField("logger", obj, logger.cloneWithName(name));
+                ReflectionUtils.setField("classLoader", obj, classLoader);
 
                 loadOrder.addAddon(obj);
                 Json addon = configuration.json();
@@ -352,41 +351,6 @@ public final class AddonLoader {
         }
 
         return services;
-    }
-
-    /**
-     * Sets a field in the given object using reflection.
-     *
-     * @param name The name of the field to set.
-     * @param obj  The object whose field needs to be set.
-     * @param arg  The value to set the field to.
-     * @throws IllegalAccessException if the field cannot be accessed.
-     */
-    private void setField(String name, Object obj, Object arg) throws IllegalAccessException {
-        Field field = getField(obj.getClass(), name); // Find the specified field in the object's class hierarchy using reflection
-        field.setAccessible(true); // Set the fields accessibility to true
-        field.set(obj, arg); // Set the field value to the provided argument
-        field.setAccessible(false); // Set the fields accessibility to false
-    }
-
-
-    /**
-     * Finds a field with the given name in the specified class, including inherited classes.
-     *
-     * @param clazz The class to search for the field.
-     * @param name  The name of the field to find.
-     * @return The field if found, otherwise null.
-     */
-    private Field getField(Class<?> clazz, String name) {
-        Field field = null;
-        while (clazz != null && field == null) {
-            try {
-                field = clazz.getDeclaredField(name); // Attempt to get the specified field from the current class
-            } catch (Exception ignored) {
-            }
-            clazz = clazz.getSuperclass(); // Move to the superclass for further field search
-        }
-        return field;
     }
 
 }

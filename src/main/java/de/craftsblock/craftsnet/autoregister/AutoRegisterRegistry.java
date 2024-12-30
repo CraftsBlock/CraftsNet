@@ -2,10 +2,14 @@ package de.craftsblock.craftsnet.autoregister;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
+import de.craftsblock.craftsnet.utils.ReflectionUtils;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -46,7 +50,10 @@ public class AutoRegisterRegistry {
      * @param <T>     The type of handler to register.
      */
     public <T> void register(AutoRegisterHandler<? extends T> handler) {
-        autoRegisterHandlers.put(extractGeneric(handler), handler);
+        autoRegisterHandlers.put(
+                Objects.requireNonNull(ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class)),
+                handler
+        );
     }
 
     /**
@@ -69,7 +76,10 @@ public class AutoRegisterRegistry {
      * @return true if the handler was unregistered, false if the handler was not found.
      */
     public <T> boolean unregister(AutoRegisterHandler<T> handler) {
-        return autoRegisterHandlers.remove(extractGeneric(handler), handler);
+        return autoRegisterHandlers.remove(
+                ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class),
+                handler
+        );
     }
 
     /**
@@ -105,11 +115,11 @@ public class AutoRegisterRegistry {
 
         Constructor<?> constructor;
         Object[] args;
-        if (constructorPresent(clazz)) {
-            constructor = getConstructor(clazz);
+        if (ReflectionUtils.isConstructorPresent(clazz)) {
+            constructor = ReflectionUtils.getConstructor(clazz);
             args = new Object[0];
         } else {
-            constructor = getConstructor(CraftsNet.class);
+            constructor = ReflectionUtils.getConstructor(clazz, CraftsNet.class);
             args = new Object[]{craftsNet};
         }
 
@@ -122,7 +132,9 @@ public class AutoRegisterRegistry {
 
         for (AutoRegisterHandler<?> handler : handlers)
             try {
-                Method method = handler.getClass().getDeclaredMethod("handle", extractGeneric(handler), Object.class.arrayType());
+                Method method = handler.getClass().getDeclaredMethod("handle",
+                        ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class),
+                        Object.class.arrayType());
                 method.setAccessible(true);
                 method.invoke(handler, obj, args);
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
@@ -130,73 +142,6 @@ public class AutoRegisterRegistry {
             }
 
         return true;
-    }
-
-    /**
-     * Extracts the generic type parameter from an {@link AutoRegisterHandler} instance.
-     *
-     * @param handler The handler to extract the generic type from.
-     * @param <T>     The type of the handler.
-     * @return The class type corresponding to the handler's generic type.
-     */
-    private <T> Class<T> extractGeneric(AutoRegisterHandler<T> handler) {
-        return extractGeneric(handler.getClass());
-    }
-
-    /**
-     * Extracts the generic type parameter from a Class representing an {@link AutoRegisterHandler}.
-     *
-     * @param clazz The Class to extract the generic type from.
-     * @param <T>   The type of handler.
-     * @return The class type corresponding to the handler's generic type.
-     */
-    @SuppressWarnings("unchecked")
-    private <T> Class<T> extractGeneric(Class<?> clazz) {
-        try {
-            Type superclass = clazz.getGenericSuperclass();
-            if (superclass instanceof ParameterizedType type)
-                if (type.getActualTypeArguments().length >= 1)
-                    return (Class<T>) type.getActualTypeArguments()[0];
-        } catch (ClassCastException ignored) {
-            ignored.printStackTrace();
-        }
-
-        if (!Object.class.equals(clazz.getSuperclass()) && AutoRegisterHandler.class.isAssignableFrom(clazz.getSuperclass()))
-            return extractGeneric(clazz.getSuperclass());
-
-        return null;
-    }
-
-    /**
-     * Checks if a constructor is present in the specified class with the provided argument types.
-     *
-     * @param clazz The class to check for the constructor.
-     * @param args  The argument types to check for.
-     * @return true if the constructor is present, false otherwise.
-     */
-    private boolean constructorPresent(Class<?> clazz, Class<?>... args) {
-        try {
-            clazz.getDeclaredConstructor(args);
-            return true;
-        } catch (NoSuchMethodException e) {
-            return false;
-        }
-    }
-
-    /**
-     * Gets the constructor of the specified class with the provided argument types.
-     *
-     * @param clazz The class to get the constructor for.
-     * @param args  The argument types for the constructor.
-     * @return The constructor of the class.
-     * @throws RuntimeException If no constructor is found.
-     */
-    private Constructor getConstructor(Class<?> clazz, Class<?>... args) {
-        try {
-            return clazz.getDeclaredConstructor(args);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
     }
 
 }
