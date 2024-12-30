@@ -34,8 +34,6 @@ public @interface AutoRegister {
      * the addon has been enabled.
      *
      * @return The {@link Startup} value indicating when to enable auto-registration.
-     * @apiNote Is not taken into account when loading classes on the same level as {@link CraftsNet}.
-     * It is only used for addons!
      */
     Startup value() default Startup.ENABLE;
 
