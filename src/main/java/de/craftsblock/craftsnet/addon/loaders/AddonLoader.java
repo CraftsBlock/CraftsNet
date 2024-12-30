@@ -7,8 +7,11 @@ import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
 import de.craftsblock.craftsnet.addon.meta.AddonMeta;
+import de.craftsblock.craftsnet.addon.meta.Startup;
+import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import de.craftsblock.craftsnet.addon.meta.RegisteredService;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
+import de.craftsblock.craftsnet.autoregister.loaders.AutoRegisterLoader;
 import de.craftsblock.craftsnet.events.addons.AllAddonsLoadedEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 
@@ -29,7 +32,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.0
+ * @version 2.1.0
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -93,7 +96,7 @@ public final class AddonLoader {
                 logger.debug("Loading jar file " + file.getAbsolutePath());
 
                 // Load the configuration file from the jar
-                AddonConfiguration configuration = loadConfig(jarFile);
+                AddonConfiguration configuration = loadConfig(file, jarFile);
                 if (configuration == null) {
                     logger.error(new FileNotFoundException("Could not locate the addon.json within " + file.getPath() + "!"));
                     continue;
@@ -132,7 +135,7 @@ public final class AddonLoader {
                 else classpath = new URL[]{file.toURI().toURL()};
 
                 // Put the configuration in the configurations map
-                configurations.add(new AddonConfiguration(configuration.json(), classpath, configuration.services(), configuration.addon(), configuration.meta()));
+                configurations.add(new AddonConfiguration(file, configuration.json(), classpath, configuration.services(), configuration.addon(), configuration.meta()));
             }
         }
         artifactLoader.stop();
@@ -158,6 +161,8 @@ public final class AddonLoader {
      */
     public void load(List<AddonConfiguration> configurations) {
         AddonLoadOrder loadOrder = new AddonLoadOrder();
+        AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader();
+        List<AutoRegisterInfo> autoRegisterInfos = new ArrayList<>();
 
         for (AddonConfiguration configuration : configurations)
             try {
@@ -195,23 +200,36 @@ public final class AddonLoader {
                 if (addon.contains("depends"))
                     for (String depended : addon.getStringList("depends"))
                         loadOrder.depends(obj, depended);
+
                 craftsNet.addonManager().register(obj);
                 configuration.addon().set(obj);
+
+                // When the file is null, it is an in-app addon, so we can skip it
+                if (configuration.file() != null)
+                    // Load all with @AutoRegister annotated classes from the addons jar file
+                    try (JarFile file = new JarFile(configuration.file())) {
+                        autoRegisterInfos.addAll(autoRegisterLoader.loadFrom(classLoader, file));
+                    }
             } catch (Exception e) {
                 logger.error(e);
             }
+
+        // Remove duplicates from the auto register list
+        autoRegisterInfos = new ArrayList<>(autoRegisterInfos.stream().distinct().toList());
 
         // Loading all addons
         Collection<Addon> orderedLoad = loadOrder.getLoadOrder();
         for (Addon addon : orderedLoad) {
             logger.info("Loading addon " + addon.getName() + "...");
             addon.onLoad();
+            craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos);
         }
 
         // Enabling all addons
         for (Addon addon : orderedLoad) {
             logger.info("Enabling addon " + addon.getName() + "...");
             addon.onEnable();
+            craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos);
         }
 
         // Load all the registrable services
@@ -271,11 +289,12 @@ public final class AddonLoader {
     /**
      * Loads the addon JAR file and extracts the configuration.
      *
-     * @param file The addon JAR file to load.
+     * @param source The source {@link File} from which the addon is loaded.
+     * @param file   The addon {@link JarFile} to load.
      * @return The addon configuration if found, otherwise null.
      * @throws IOException if there is an I/O error while loading the JAR file.
      */
-    private AddonConfiguration loadConfig(JarFile file) throws IOException {
+    private AddonConfiguration loadConfig(File source, JarFile file) throws IOException {
         AddonConfiguration configuration;
         JarEntry entry = file.getJarEntry("addon.json");
         if (entry == null) return null;
@@ -284,7 +303,7 @@ public final class AddonLoader {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(entry)))) {
             StringBuilder json = new StringBuilder();
             reader.lines().forEach(json::append);
-            configuration = AddonConfiguration.of(JsonParser.parse(json.toString()), null, new ConcurrentLinkedQueue<>());
+            configuration = AddonConfiguration.of(source, JsonParser.parse(json.toString()), null, new ConcurrentLinkedQueue<>());
         }
 
         // Load the services from the file

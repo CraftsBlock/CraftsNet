@@ -3,7 +3,9 @@ package de.craftsblock.craftsnet.utils;
 import de.craftsblock.craftsnet.CraftsNet;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -11,6 +13,9 @@ import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.jar.JarOutputStream;
 import java.util.stream.Stream;
 
 /**
@@ -95,9 +100,54 @@ public class FileHelper {
             attrs = Stream.concat(Stream.of(attrs), Stream.of(defaultPerms)).toArray(FileAttribute[]::new);
         }
 
-        return tempDir == null
+        Path path = tempDir == null
                 ? Files.createTempFile(prefix, suffix, attrs)
                 : Files.createTempFile(tempDir, prefix, suffix, attrs);
+
+        path.toFile().deleteOnExit();
+        return path;
+    }
+
+    /**
+     * Creates and returns a {@link JarFile} instance from the provided directory or file path.
+     * <p>
+     * If the provided path is a regular file, a {@link JarFile} is created directly from the file.
+     * If the path is a directory, a temporary jar file is created by adding all files in the directory to the jar.
+     * The temporary jar file is deleted when the JVM exits.
+     * </p>
+     *
+     * @param path The path to the directory or file.
+     * @return A {@link JarFile} instance representing the contents of the specified file or directory.
+     * @throws IOException If an I/O error occurs while reading the file or creating the jar file.
+     * @since 3.2.0-SNAPSHOT
+     */
+    public JarFile getJarFileAt(Path path) throws IOException {
+        if (Files.isRegularFile(path)) return new JarFile(path.toFile());
+
+        Path tempFile = this.createTempFile("source", ".jar");
+        tempFile.toFile().deleteOnExit();
+        try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(tempFile));
+             Stream<Path> paths = Files.walk(path)) {
+            paths.forEach(location -> {
+                if (Files.isDirectory(location)) return;
+                Path name = path.relativize(location);
+
+                try {
+                    jos.putNextEntry(new JarEntry(name.toString()));
+                    try (InputStream is = new FileInputStream(location.toFile())) {
+                        byte[] buffer = new byte[1024];
+                        int length;
+                        while ((length = is.read(buffer)) != -1)
+                            jos.write(buffer, 0, length);
+                    }
+                    jos.closeEntry();
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+
+        return new JarFile(tempFile.toFile());
     }
 
 }

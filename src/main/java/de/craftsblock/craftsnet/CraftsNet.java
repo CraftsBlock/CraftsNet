@@ -12,6 +12,8 @@ import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
 import de.craftsblock.craftsnet.api.websocket.DefaultPingResponder;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegistry;
+import de.craftsblock.craftsnet.autoregister.AutoRegisterRegistry;
+import de.craftsblock.craftsnet.autoregister.loaders.AutoRegisterLoader;
 import de.craftsblock.craftsnet.builder.ActivateType;
 import de.craftsblock.craftsnet.builder.AddonContainingBuilder;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
@@ -28,7 +30,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.InvocationTargetException;
+import java.net.URISyntaxException;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
 import java.util.Collection;
+import java.util.jar.JarFile;
 
 /**
  * CraftsNet class represents the core component of the CraftsNet framework,
@@ -55,6 +61,7 @@ public class CraftsNet {
 
     // Manager instances
     private AddonManager addonManager;
+    private AutoRegisterRegistry autoRegisterRegistry;
     private BodyRegistry bodyRegistry;
     private CommandRegistry commandRegistry;
     private ListenerRegistry listenerRegistry;
@@ -133,12 +140,19 @@ public class CraftsNet {
         logger.info("Initialization of system variables");
         logger.debug("Initialization of the listener registry");
         listenerRegistry = new ListenerRegistry();
+
         logger.debug("Initialization of the route registry");
         routeRegistry = new RouteRegistry(this);
+
         logger.debug("Initialization of the command registry");
         commandRegistry = new CommandRegistry(this);
+
         logger.debug("Initialization of the service manager");
         serviceManager = new ServiceManager(this);
+
+        logger.debug("Initialization of the auto register registry");
+        autoRegisterRegistry = new AutoRegisterRegistry(this);
+
         logger.debug("Initialization of the addon manager");
         addonManager = new AddonManager(this);
         if (!builder.isAddonSystem(ActivateType.DISABLED)) addonManager.loadAllFromFiles();
@@ -194,6 +208,21 @@ public class CraftsNet {
         this.shutdownThread = new Thread(this::stop, "CraftsNet Shutdown");
         Runtime.getRuntime().addShutdownHook(this.shutdownThread);
         logger.debug("JVM Shutdown Hook is implemented");
+
+        // Add all with @AutoRegister annotated classes from the current jar file to the list
+        AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader();
+
+        try {
+            Path path = Path.of(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
+            try (JarFile file = fileHelper.getJarFileAt(path)) {
+                autoRegisterRegistry.handleAll(autoRegisterLoader.loadFrom(null, file));
+            } catch (NoSuchFileException ignored) {
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        } catch (URISyntaxException e) {
+            throw new RuntimeException(e);
+        }
 
         // Log successful startup message with elapsed time
         logger.info("CraftsNet was successfully started after " + (System.currentTimeMillis() - start) + "ms");
@@ -302,6 +331,16 @@ public class CraftsNet {
      */
     public AddonManager addonManager() {
         return addonManager;
+    }
+
+    /**
+     * Retrieves the auto register registry instance for auto registrable types.
+     *
+     * @return The auto register registry instance.
+     * @since 3.2.0-SNAPSHOT
+     */
+    public AutoRegisterRegistry autoRegisterRegistry() {
+        return autoRegisterRegistry;
     }
 
     /**

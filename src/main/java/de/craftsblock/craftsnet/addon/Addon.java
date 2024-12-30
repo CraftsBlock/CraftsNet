@@ -8,6 +8,7 @@ import de.craftsblock.craftsnet.addon.meta.AddonMeta;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
+import de.craftsblock.craftsnet.autoregister.AutoRegisterRegistry;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.logging.Logger;
 
@@ -32,7 +33,7 @@ import java.io.File;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.12
+ * @version 1.1.0
  * @see AddonLoader
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -98,51 +99,62 @@ public abstract class Addon {
     }
 
     /**
-     * Get the BodyRegistry instance used by the addon.
+     * Retrieves the {@link AutoRegisterRegistry} instance used by the addon.
      * This method is marked as final to prevent subclasses from modifying the registry directly.
      *
-     * @return The BodyRegistry instance used by the addon.
+     * @return The {@link AutoRegisterRegistry} instance used by the addon.
+     * @since 3.2.0-SNAPSHOT
+     */
+    public final AutoRegisterRegistry autoRegisterRegistry() {
+        return craftsNet.autoRegisterRegistry();
+    }
+
+    /**
+     * Get the {@link BodyRegistry} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the registry directly.
+     *
+     * @return The {@link BodyRegistry} instance used by the addon.
      * @since 3.0.4-SNAPSHOT
      */
-    public BodyRegistry bodyRegistry() {
+    public final BodyRegistry bodyRegistry() {
         return craftsNet.bodyRegistry();
     }
 
     /**
-     * Get the CommandRegistry instance used by the addon.
+     * Get the {@link CommandRegistry} instance used by the addon.
      * This method is marked as final to prevent subclasses from modifying the registry directly.
      *
-     * @return The CommandRegistry instance used by the addon.
+     * @return The {@link CommandRegistry} instance used by the addon.
      */
     public final CommandRegistry commandRegistry() {
         return craftsNet.commandRegistry();
     }
 
     /**
-     * Get the ListenerRegistry instance used by the addon.
+     * Get the {@link ListenerRegistry} instance used by the addon.
      * This method is marked as final to prevent subclasses from modifying the registry directly.
      *
-     * @return The ListenerRegistry instance used by the addon.
+     * @return The {@link ListenerRegistry} instance used by the addon.
      */
     public final ListenerRegistry listenerRegistry() {
         return craftsNet.listenerRegistry();
     }
 
     /**
-     * Get the RouteRegistry instance used by the addon.
+     * Get the {@link RouteRegistry} instance used by the addon.
      * This method is marked as final to prevent subclasses from modifying the handler directly.
      *
-     * @return The RouteRegistry instance used by the addon.
+     * @return The {@link RouteRegistry} instance used by the addon.
      */
     public final RouteRegistry routeRegistry() {
         return craftsNet.routeRegistry();
     }
 
     /**
-     * Get the ServiceManager instance used by the addon.
+     * Get the {@link ServiceManager} instance used by the addon.
      * This method is marked as final to prevent subclasses from modifying the handler directly.
      *
-     * @return The ServiceManager instance used by the addon.
+     * @return The {@link ServiceManager} instance used by the addon.
      */
     public final ServiceManager serviceManager() {
         return craftsNet.serviceManager();

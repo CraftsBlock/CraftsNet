@@ -8,6 +8,7 @@ import de.craftsblock.craftsnet.addon.meta.annotations.Meta;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -22,6 +23,7 @@ import java.util.stream.Collectors;
  * ensuring proper dependency management and validation of addon metadata.
  * </p>
  *
+ * @param file      The {@link File} which contains the addon.
  * @param json      {@link Json} representation of the addon configuration.
  * @param classpath Array of {@link URL}s representing the classpath of the addon.
  * @param services  Collection of {@link RegisteredService} instances associated with the addon.
@@ -29,10 +31,10 @@ import java.util.stream.Collectors;
  * @param meta      Reference to the {@link AddonMeta} metadata of the addon.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.1.0
  * @since 3.1.0-SNAPSHOT
  */
-public record AddonConfiguration(Json json, URL[] classpath, Collection<RegisteredService> services, AtomicReference<Addon> addon,
+public record AddonConfiguration(File file, Json json, URL[] classpath, Collection<RegisteredService> services, AtomicReference<Addon> addon,
                                  AtomicReference<AddonMeta> meta) implements Comparable<AddonConfiguration> {
 
     @ApiStatus.Internal
@@ -46,8 +48,8 @@ public record AddonConfiguration(Json json, URL[] classpath, Collection<Register
      * @param services  Services that should be registered
      * @return A new instance of {@link AddonConfiguration}.
      */
-    public static AddonConfiguration of(Json json, URL[] classpath, Collection<RegisteredService> services) {
-        return new AddonConfiguration(json, classpath, services, new AtomicReference<>(), new AtomicReference<>());
+    public static AddonConfiguration of(File file, Json json, URL[] classpath, Collection<RegisteredService> services) {
+        return new AddonConfiguration(file, json, classpath, services, new AtomicReference<>(), new AtomicReference<>());
     }
 
     /**
@@ -90,7 +92,7 @@ public record AddonConfiguration(Json json, URL[] classpath, Collection<Register
             classpath.addAll(Arrays.stream(subConfig.classpath()).collect(Collectors.toSet()));
         }
 
-        configurations.add(of(conf, classpath.toArray(URL[]::new), Collections.emptyList()));
+        configurations.add(of(null, conf, classpath.toArray(URL[]::new), Collections.emptyList()));
         return configurations;
     }
 
