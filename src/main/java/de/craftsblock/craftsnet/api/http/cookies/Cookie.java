@@ -202,9 +202,10 @@ public class Cookie {
      *
      * @param maxAge The number in seconds the cookie is valid.
      */
-    public void setMaxAge(long maxAge) {
-        if (maxAge < -1) return;
+    public Cookie setMaxAge(long maxAge) {
+        if (maxAge < -1) return this;
         this.maxAge = maxAge;
+        return this;
     }
 
     /**
