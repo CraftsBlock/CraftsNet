@@ -21,7 +21,7 @@ import java.util.stream.StreamSupport;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @see AutoRegisterInfo
  * @since 3.2.0-SNAPSHOT
  */
@@ -73,7 +73,6 @@ public class AutoRegisterLoader {
                 .filter(this::isValidClassEntry)
                 .map(JarEntry::getName)
                 .map(this::convertToJvmName)
-                .peek(System.out::println)
                 .map(jvmName -> executor.submit(() -> processClass(jvmName, classLoader, type, infos)))
                 .forEach(futures::add);
 
