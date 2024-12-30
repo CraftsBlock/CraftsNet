@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.autoregister;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.autoregister.buildin.*;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
 
@@ -40,6 +41,14 @@ public class AutoRegisterRegistry {
      */
     public AutoRegisterRegistry(CraftsNet craftsNet) {
         this.craftsNet = craftsNet;
+
+        register(new BodyAutoRegisterHandler(craftsNet));
+        register(new HandlerAutoRegisterHandler(craftsNet));
+        register(new ListenerAutoRegisterHandler(craftsNet));
+        register(new ServiceLoaderAutoRegisterHandler(craftsNet));
+        register(new WebRequirementAutoRegisterHandler(craftsNet));
+        register(new WebSocketExtensionAutoRegisterHandler(craftsNet));
+        register(new WebSocketRequirementAutoRegisterHandler(craftsNet));
     }
 
     /**
