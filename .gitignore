@@ -44,6 +44,7 @@ bin/
 addons/
 libraries/
 logs/
+sessions/
 test/
 
 ### Mac OS ###
