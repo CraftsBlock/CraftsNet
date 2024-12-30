@@ -26,8 +26,8 @@ public class Cookie {
     private OffsetDateTime expiresAt = null;
     private long maxAge = -2;
     private SameSite sameSite = null;
-    private boolean secure = true;
-    private boolean httpOnly = true;
+    private boolean secure = false;
+    private boolean httpOnly = false;
 
     /**
      * Constructs a new Cookie with the specified name and no value.
@@ -303,7 +303,7 @@ public class Cookie {
      * @return The current Cookie object, for method chaining
      */
     public Cookie markDeleted() {
-        setExpiresAt(OffsetDateTime.now().minusYears(5));
+        setExpiresAt((OffsetDateTime) null);
         setMaxAge(-1);
         return this;
     }

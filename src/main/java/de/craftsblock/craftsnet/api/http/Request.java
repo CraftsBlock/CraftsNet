@@ -2,8 +2,6 @@ package de.craftsblock.craftsnet.api.http;
 
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
-import de.craftsblock.craftscore.json.Json;
-import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.body.Body;
@@ -26,7 +24,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.2
+ * @version 1.5.3
  * @see Exchange
  * @since 1.0.0-SNAPSHOT
  */
@@ -425,14 +423,7 @@ public class Request implements AutoCloseable, RequireAble {
                 if (args.length < 1) return;
                 String[] nameValue = args[0].split("=", 2);
 
-                Cookie cookie = new Cookie(nameValue[0], nameValue.length == 2 ? nameValue[1] : "");
-                for (int i = 0; i < args.length; i++) {
-                    if (i == 0) continue;
-                    String[] arg = args[i].split("=");
-                    if (arg.length == 0) continue;
-                    cookie.setFlag(arg[0], arg.length == 2 ? arg[1] : null);
-                }
-                cookies.add(cookie);
+                cookies.add(new Cookie(nameValue[0], nameValue.length == 2 ? nameValue[1] : ""));
             });
         return cookies;
     }

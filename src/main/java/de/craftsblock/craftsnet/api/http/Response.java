@@ -376,8 +376,8 @@ public class Response implements AutoCloseable {
      */
     public Cookie setCookie(Cookie cookie) {
         String name = cookie.getName();
-        if (!cookies.containsKey(name)) cookies.put(name, cookie);
-        else cookies.get(name).override(cookie);
+        if (cookies.containsKey(name)) cookies.get(name).override(cookie);
+        else cookies.put(name, cookie);
         return cookie;
     }
 
