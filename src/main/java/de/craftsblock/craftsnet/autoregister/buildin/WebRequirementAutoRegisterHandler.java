@@ -1,9 +1,12 @@
 package de.craftsblock.craftsnet.autoregister.buildin;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.addon.meta.Startup;
 import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
 import de.craftsblock.craftsnet.api.requirements.web.WebRequirement;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
+import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
+import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 
 /**
  * A handler for automatically registering {@link WebRequirement} implementations. This class extends
@@ -12,7 +15,7 @@ import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.2.0-SNAPSHOT
  */
 public class WebRequirementAutoRegisterHandler extends AutoRegisterHandler<WebRequirement> {
@@ -43,9 +46,12 @@ public class WebRequirementAutoRegisterHandler extends AutoRegisterHandler<WebRe
      * @throws RuntimeException If an error occurs during the registration process.
      */
     @Override
-    protected boolean handle(WebRequirement webRequirement, Object... args) {
+    protected boolean handle(WebRequirement webRequirement, AutoRegisterInfo info, Object... args) {
         try {
             if (requirementRegistry.isRegistered(webRequirement)) return true;
+            if (args.length == 1 && info.annotation() instanceof AutoRegister annotation && args[0] instanceof Startup startup
+                    && startup != annotation.value()) return false;
+
             requirementRegistry.register(webRequirement, true);
             return true;
         } catch (Exception e) {

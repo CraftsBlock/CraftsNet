@@ -3,7 +3,10 @@ package de.craftsblock.craftsnet.autoregister.buildin;
 import de.craftsblock.craftscore.event.ListenerAdapter;
 import de.craftsblock.craftscore.event.ListenerRegistry;
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.addon.meta.Startup;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
+import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
+import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 
 /**
  * A handler for automatically registering {@link ListenerAdapter} implementations. This class extends
@@ -12,7 +15,7 @@ import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.2.0-SNAPSHOT
  */
 public class ListenerAutoRegisterHandler extends AutoRegisterHandler<ListenerAdapter> {
@@ -43,9 +46,11 @@ public class ListenerAutoRegisterHandler extends AutoRegisterHandler<ListenerAda
      * @throws RuntimeException If an error occurs during the registration process.
      */
     @Override
-    protected boolean handle(ListenerAdapter adapter, Object... args) {
+    protected boolean handle(ListenerAdapter adapter, AutoRegisterInfo info, Object... args) {
         try {
             if (listenerRegistry.isRegistered(adapter)) return true;
+            if (args.length == 1 && info.annotation() instanceof AutoRegister annotation && args[0] instanceof Startup startup
+                    && startup != annotation.value()) return false;
 
             listenerRegistry.register(adapter);
             return true;

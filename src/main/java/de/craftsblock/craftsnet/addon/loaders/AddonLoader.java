@@ -8,6 +8,7 @@ import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
 import de.craftsblock.craftsnet.addon.meta.AddonMeta;
 import de.craftsblock.craftsnet.addon.meta.RegisteredService;
+import de.craftsblock.craftsnet.addon.meta.Startup;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.autoregister.loaders.AutoRegisterLoader;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
@@ -31,7 +32,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.1
+ * @version 2.1.2
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -221,14 +222,14 @@ public final class AddonLoader {
         for (Addon addon : orderedLoad) {
             logger.info("Loading addon " + addon.getName() + "...");
             addon.onLoad();
-            craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos);
+            craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos, Startup.LOAD);
         }
 
         // Enabling all addons
         for (Addon addon : orderedLoad) {
             logger.info("Enabling addon " + addon.getName() + "...");
             addon.onEnable();
-            craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos);
+            craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos, Startup.ENABLE);
         }
 
         // Load all the registrable services

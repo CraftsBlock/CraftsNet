@@ -1,10 +1,13 @@
 package de.craftsblock.craftsnet.autoregister.buildin;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.addon.meta.Startup;
 import de.craftsblock.craftsnet.addon.services.ServiceLoader;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.http.body.BodyParser;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
+import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
+import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 
 /**
  * A handler for automatically registering {@link ServiceLoader} implementations. This class extends
@@ -13,7 +16,7 @@ import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.2.0-SNAPSHOT
  */
 public class ServiceLoaderAutoRegisterHandler extends AutoRegisterHandler<ServiceLoader<?>> {
@@ -44,9 +47,11 @@ public class ServiceLoaderAutoRegisterHandler extends AutoRegisterHandler<Servic
      * @throws RuntimeException If an error occurs during the registration process.
      */
     @Override
-    protected boolean handle(ServiceLoader<?> serviceLoader, Object... args) {
+    protected boolean handle(ServiceLoader<?> serviceLoader, AutoRegisterInfo info, Object... args) {
         try {
             if (serviceManager.isRegistered(serviceLoader)) return true;
+            if (args.length == 1 && info.annotation() instanceof AutoRegister annotation && args[0] instanceof Startup startup
+                    && startup != annotation.value()) return false;
 
             serviceManager.register(serviceLoader);
             return true;
