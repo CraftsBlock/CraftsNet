@@ -266,8 +266,8 @@ public class WebSocketClient implements Runnable, RequireAble {
                                 Method method = mapping.method();
 
                                 // Process the requirements
-                                if (craftsNet.routeRegistry().getRequirements().containsKey(WebSocketServer.class))
-                                    for (Requirement requirement : craftsNet.routeRegistry().getRequirements().get(WebSocketServer.class))
+                                if (craftsNet.requirementRegistry().getRequirements().containsKey(WebSocketServer.class))
+                                    for (Requirement requirement : craftsNet.requirementRegistry().getRequirements().get(WebSocketServer.class))
                                         try {
                                             Method m = Utils.getMethod(requirement.getClass(), "applies", Frame.class, RouteRegistry.EndpointMapping.class);
                                             assert m != null;

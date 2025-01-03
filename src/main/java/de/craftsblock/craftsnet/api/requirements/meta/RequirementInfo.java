@@ -145,7 +145,7 @@ public record RequirementInfo(Class<? extends Annotation> annotation, Requiremen
                 if (value.getClass().isArray()) {
                     // Merge arrays into a single list
                     Object merged = Stream.concat(
-                            Arrays.stream((Object[]) first.getValue(key)),
+                            Arrays.stream((Object[]) Objects.requireNonNull(first.getValue(key))),
                             Arrays.stream((Object[]) value)
                     ).toList();
 

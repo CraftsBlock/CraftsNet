@@ -8,6 +8,7 @@ import de.craftsblock.craftsnet.addon.meta.AddonMeta;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
+import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterRegistry;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.logging.Logger;
@@ -33,7 +34,7 @@ import java.io.File;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @see AddonLoader
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -138,6 +139,17 @@ public abstract class Addon {
      */
     public final ListenerRegistry listenerRegistry() {
         return craftsNet.listenerRegistry();
+    }
+
+    /**
+     * Get the {@link RequirementRegistry} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the registry directly.
+     *
+     * @return The {@link RequirementRegistry} instance used by the addon.
+     * @since 3.2.1-SNAPSHOT
+     */
+    public final RequirementRegistry requirementRegistry() {
+        return craftsNet.requirementRegistry();
     }
 
     /**

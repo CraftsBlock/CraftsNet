@@ -9,6 +9,7 @@ import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.WebServer;
 import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
 import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
+import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
 import de.craftsblock.craftsnet.api.websocket.DefaultPingResponder;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegistry;
@@ -65,6 +66,7 @@ public class CraftsNet {
     private BodyRegistry bodyRegistry;
     private CommandRegistry commandRegistry;
     private ListenerRegistry listenerRegistry;
+    private RequirementRegistry requirementRegistry;
     private RouteRegistry routeRegistry;
     private ServiceManager serviceManager;
     private WebSocketExtensionRegistry webSocketExtensionRegistry;
@@ -143,6 +145,9 @@ public class CraftsNet {
 
         logger.debug("Initialization of the route registry");
         routeRegistry = new RouteRegistry(this);
+
+        logger.debug("Initialization of the requirement registry");
+        requirementRegistry = new RequirementRegistry(this);
 
         logger.debug("Initialization of the command registry");
         commandRegistry = new CommandRegistry(this);
@@ -369,6 +374,16 @@ public class CraftsNet {
      */
     public ListenerRegistry listenerRegistry() {
         return listenerRegistry;
+    }
+
+    /**
+     * Retrieves the route registry instance for managing web and web requirements.
+     *
+     * @return The requirement registry instance.
+     * @since 3.2.1-SNAPSHOT
+     */
+    public RequirementRegistry requirementRegistry() {
+        return requirementRegistry;
     }
 
     /**

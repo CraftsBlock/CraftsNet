@@ -2,10 +2,8 @@ package de.craftsblock.craftsnet.utils;
 
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.*;
 import java.util.Arrays;
 
 /**
@@ -13,7 +11,7 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
@@ -133,6 +131,63 @@ public class ReflectionUtils {
                 .map(type -> (Class<T>) type.getActualTypeArguments()[0])
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * This method searches for an annotation of the specified type in an object.
+     *
+     * @param obj        The object in which to search for the annotation.
+     * @param annotation The class of the annotation to search for.
+     * @param <A>        The type of the annotation.
+     * @return The found annotation or null if none is found.
+     */
+    public static <A extends Annotation> A retrieveRawAnnotation(Object obj, Class<A> annotation) {
+        if (obj instanceof Method method) return method.getDeclaredAnnotation(annotation);
+        return obj.getClass().getDeclaredAnnotation(annotation);
+    }
+
+    /**
+     * Retrieves the value of a specified annotation attribute from an object.
+     *
+     * @param <A>             The type of the annotation.
+     * @param <T>             The type of the attribute value.
+     * @param o               The object containing the annotation.
+     * @param annotationClass The class of the annotation.
+     * @param type            The class of the targeted type.
+     * @param fallback        Defines if the default value should be returned.
+     * @return The value of the specified annotation attribute.
+     * @throws NoSuchMethodException     If the attribute's getter method is not found.
+     * @throws InvocationTargetException If there is an issue invoking the getter method.
+     * @throws IllegalAccessException    If there is an access issue with the getter method.
+     */
+    public static <A extends Annotation, T> T retrieveValueOfAnnotation(Object o, Class<A> annotationClass, Class<T> type, boolean fallback) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        A annotation = retrieveRawAnnotation(o, annotationClass);
+        if (annotation == null)
+            if (fallback) {
+                Method method = annotationClass.getDeclaredMethod("value");
+                if (method.getDefaultValue() == null) return null;
+                return castTo(method.getDefaultValue(), type);
+            } else return null;
+
+        Method method = annotation.getClass().getDeclaredMethod("value");
+        Object value = method.invoke(annotation);
+        if (value == null)
+            if (fallback) value = method.getDefaultValue();
+            else return null;
+
+        return castTo(value, type);
+    }
+
+    /**
+     * Checks if the object can be cast to a targeted type and casts it.
+     *
+     * @param o    The value which should be cast to the targeted type.
+     * @param type The class of the targeted type
+     * @param <T>  The targeted type
+     * @return Returns the cast value or null if not cast able.
+     */
+    public static @Nullable <T> T castTo(Object o, Class<T> type) {
+        return type.isInstance(o) ? type.cast(o) : null;
     }
 
 }
