@@ -3,6 +3,7 @@ package de.craftsblock.craftsnet.autoregister.buildin;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.http.body.Body;
 import de.craftsblock.craftsnet.api.http.body.BodyParser;
+import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
 
 /**
@@ -17,6 +18,8 @@ import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
  */
 public class BodyAutoRegisterHandler extends AutoRegisterHandler<BodyParser<? extends Body>> {
 
+    private final BodyRegistry bodyRegistry;
+
     /**
      * Constructs a new {@link BodyAutoRegisterHandler}.
      *
@@ -24,6 +27,7 @@ public class BodyAutoRegisterHandler extends AutoRegisterHandler<BodyParser<? ex
      */
     public BodyAutoRegisterHandler(CraftsNet craftsNet) {
         super(craftsNet);
+        this.bodyRegistry = craftsNet.bodyRegistry();
     }
 
     /**
@@ -42,7 +46,9 @@ public class BodyAutoRegisterHandler extends AutoRegisterHandler<BodyParser<? ex
     @Override
     protected boolean handle(BodyParser<? extends Body> bodyParser, Object... args) {
         try {
-            craftsNet.bodyRegistry().register(bodyParser);
+            if (bodyRegistry.isRegistered(bodyParser)) return true;
+
+            bodyRegistry.register(bodyParser);
             return true;
         } catch (Exception e) {
             throw new RuntimeException(e);

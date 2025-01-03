@@ -45,6 +45,7 @@ public class WebRequirementAutoRegisterHandler extends AutoRegisterHandler<WebRe
     @Override
     protected boolean handle(WebRequirement webRequirement, Object... args) {
         try {
+            if (requirementRegistry.isRegistered(webRequirement)) return true;
             requirementRegistry.register(webRequirement, true);
             return true;
         } catch (Exception e) {

@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.autoregister.buildin;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Handler;
+import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
 
 /**
@@ -16,6 +17,8 @@ import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
  */
 public class HandlerAutoRegisterHandler extends AutoRegisterHandler<Handler> {
 
+    private final RouteRegistry routeRegistry;
+
     /**
      * Constructs a new {@link HandlerAutoRegisterHandler}.
      *
@@ -23,6 +26,7 @@ public class HandlerAutoRegisterHandler extends AutoRegisterHandler<Handler> {
      */
     public HandlerAutoRegisterHandler(CraftsNet craftsNet) {
         super(craftsNet);
+        this.routeRegistry = craftsNet.routeRegistry();
     }
 
     /**
@@ -41,7 +45,9 @@ public class HandlerAutoRegisterHandler extends AutoRegisterHandler<Handler> {
     @Override
     protected boolean handle(Handler handler, Object... args) {
         try {
-            craftsNet.routeRegistry().register(handler);
+            if (routeRegistry.isRegistered(handler)) return true;
+
+            routeRegistry.register(handler);
             return true;
         } catch (Exception e) {
             throw new RuntimeException(e);

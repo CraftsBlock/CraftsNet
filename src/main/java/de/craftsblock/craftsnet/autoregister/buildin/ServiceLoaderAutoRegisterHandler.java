@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.autoregister.buildin;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.services.ServiceLoader;
+import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.http.body.BodyParser;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
 
@@ -17,6 +18,8 @@ import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
  */
 public class ServiceLoaderAutoRegisterHandler extends AutoRegisterHandler<ServiceLoader<?>> {
 
+    private final ServiceManager serviceManager;
+
     /**
      * Constructs a new {@link ServiceLoaderAutoRegisterHandler}.
      *
@@ -24,6 +27,7 @@ public class ServiceLoaderAutoRegisterHandler extends AutoRegisterHandler<Servic
      */
     public ServiceLoaderAutoRegisterHandler(CraftsNet craftsNet) {
         super(craftsNet);
+        this.serviceManager = craftsNet.serviceManager();
     }
 
     /**
@@ -42,7 +46,9 @@ public class ServiceLoaderAutoRegisterHandler extends AutoRegisterHandler<Servic
     @Override
     protected boolean handle(ServiceLoader<?> serviceLoader, Object... args) {
         try {
-            craftsNet.serviceManager().register(serviceLoader);
+            if (serviceManager.isRegistered(serviceLoader)) return true;
+
+            serviceManager.register(serviceLoader);
             return true;
         } catch (Exception e) {
             throw new RuntimeException(e);

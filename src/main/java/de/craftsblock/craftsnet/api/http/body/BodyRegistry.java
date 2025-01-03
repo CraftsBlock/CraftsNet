@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @see BodyParser
  * @since 3.0.4-SNAPSHOT
  */
@@ -41,7 +41,33 @@ public class BodyRegistry {
      * @param <T>        The type of body being parsed.
      */
     public <T extends Body> void register(@NotNull BodyParser<T> bodyParser) {
+        if (isRegistered(bodyParser)) return;
         this.bodyParser.put(Objects.requireNonNull(ReflectionUtils.extractGeneric(bodyParser.getClass(), BodyParser.class)), bodyParser);
+    }
+
+    /**
+     * Checks if the given {@link BodyParser} is registered.
+     * This class is a wrapper for {@link BodyRegistry#isRegistered(Class)}.
+     *
+     * @param loader The {@link BodyParser} to check.
+     * @return {@code true} when the {@link BodyParser} was registered, {@code false} otherwise.
+     * @since 3.2.1-SNAPSHOT
+     */
+    @SuppressWarnings("unchecked")
+    public boolean isRegistered(BodyParser<? extends Body> loader) {
+        return isRegistered((Class<? extends BodyParser<? extends Body>>) loader.getClass());
+    }
+
+    /**
+     * Checks if the given class representation of the {@link BodyParser} is registered.
+     *
+     * @param type The class representation of the {@link BodyParser} to check.
+     * @return {@code true} when the {@link BodyParser} was registered, {@code false} otherwise.
+     * @since 3.2.1-SNAPSHOT
+     */
+    public boolean isRegistered(Class<? extends BodyParser<? extends Body>> type) {
+        if (bodyParser.isEmpty()) return false;
+        return bodyParser.values().stream().anyMatch(type::isInstance);
     }
 
     /**

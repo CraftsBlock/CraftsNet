@@ -46,6 +46,7 @@ public class WebSocketRequirementAutoRegisterHandler extends AutoRegisterHandler
     @Override
     protected boolean handle(WebSocketRequirement<? extends RequireAble> webSocketRequirement, Object... args) {
         try {
+            if (requirementRegistry.isRegistered(webSocketRequirement)) return true;
             requirementRegistry.register(webSocketRequirement, true);
             return true;
         } catch (Exception e) {

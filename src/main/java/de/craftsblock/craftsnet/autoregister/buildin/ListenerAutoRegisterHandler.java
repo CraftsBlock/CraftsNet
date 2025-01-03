@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.autoregister.buildin;
 
 import de.craftsblock.craftscore.event.ListenerAdapter;
+import de.craftsblock.craftscore.event.ListenerRegistry;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
 
@@ -16,6 +17,8 @@ import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
  */
 public class ListenerAutoRegisterHandler extends AutoRegisterHandler<ListenerAdapter> {
 
+    private final ListenerRegistry listenerRegistry;
+
     /**
      * Constructs a new {@link ListenerAutoRegisterHandler}.
      *
@@ -23,6 +26,7 @@ public class ListenerAutoRegisterHandler extends AutoRegisterHandler<ListenerAda
      */
     public ListenerAutoRegisterHandler(CraftsNet craftsNet) {
         super(craftsNet);
+        this.listenerRegistry = craftsNet.listenerRegistry();
     }
 
     /**
@@ -41,7 +45,9 @@ public class ListenerAutoRegisterHandler extends AutoRegisterHandler<ListenerAda
     @Override
     protected boolean handle(ListenerAdapter adapter, Object... args) {
         try {
-            craftsNet.listenerRegistry().register(adapter);
+            if (listenerRegistry.isRegistered(adapter)) return true;
+
+            listenerRegistry.register(adapter);
             return true;
         } catch (Exception e) {
             throw new RuntimeException(e);

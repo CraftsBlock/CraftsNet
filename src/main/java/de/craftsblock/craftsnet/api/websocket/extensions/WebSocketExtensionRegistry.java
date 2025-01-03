@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.0.6-SNAPSHOT
  */
 public class WebSocketExtensionRegistry {
@@ -31,6 +31,7 @@ public class WebSocketExtensionRegistry {
      * @param extension the WebSocket extension to be registered. Must not be null.
      */
     public void register(WebSocketExtension extension) {
+        if (hasExtension(extension)) return;
         extensions.put(extension.getProtocolName(), extension);
     }
 

@@ -6,10 +6,14 @@ import de.craftsblock.craftsnet.addon.services.builtin.handlers.GenericHandlerLo
 import de.craftsblock.craftsnet.addon.services.builtin.handlers.RequestHandlerLoader;
 import de.craftsblock.craftsnet.addon.services.builtin.handlers.SocketHandlerLoader;
 import de.craftsblock.craftsnet.addon.services.builtin.listeners.ListenerAdapterLoader;
+import de.craftsblock.craftsnet.api.Handler;
+import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.Collection;
 import java.util.List;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -20,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.0.0-SNAPSHOT
  */
 public class ServiceManager {
@@ -72,6 +76,34 @@ public class ServiceManager {
         Class<T> generic = ReflectionUtils.extractGenericInterface(loader.getClass());
         if (generic == null) return;
         providers.computeIfAbsent(generic, c -> new ConcurrentLinkedQueue<>()).remove(loader);
+    }
+
+    /**
+     * Checks if the given {@link ServiceLoader} is registered.
+     * This class is a wrapper for {@link ServiceManager#isRegistered(Class)}.
+     *
+     * @param loader The {@link ServiceLoader} to check.
+     * @return {@code true} when the {@link ServiceLoader} was registered, {@code false} otherwise.
+     * @since 3.2.1-SNAPSHOT
+     */
+    @SuppressWarnings("unchecked")
+    public boolean isRegistered(ServiceLoader<?> loader) {
+        return isRegistered((Class<? extends ServiceLoader<?>>) loader.getClass());
+    }
+
+    /**
+     * Checks if the given class representation of the {@link ServiceLoader} is registered.
+     *
+     * @param type The class representation of the {@link ServiceLoader} to check.
+     * @return {@code true} when the {@link ServiceLoader} was registered, {@code false} otherwise.
+     * @since 3.2.1-SNAPSHOT
+     */
+    public boolean isRegistered(Class<? extends ServiceLoader<?>> type) {
+        if (providers.isEmpty()) return false;
+
+        return providers.values().stream()
+                .flatMap(Queue::stream)
+                .anyMatch(type::isInstance);
     }
 
     /**

@@ -1,8 +1,8 @@
 package de.craftsblock.craftsnet.autoregister.buildin;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.api.http.body.BodyParser;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
+import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
 
 /**
@@ -17,6 +17,8 @@ import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
  */
 public class WebSocketExtensionAutoRegisterHandler extends AutoRegisterHandler<WebSocketExtension> {
 
+    private final WebSocketExtensionRegistry webSocketExtensionRegistry;
+
     /**
      * Constructs a new {@link WebSocketExtensionAutoRegisterHandler}.
      *
@@ -24,6 +26,7 @@ public class WebSocketExtensionAutoRegisterHandler extends AutoRegisterHandler<W
      */
     public WebSocketExtensionAutoRegisterHandler(CraftsNet craftsNet) {
         super(craftsNet);
+        this.webSocketExtensionRegistry = craftsNet.webSocketExtensionRegistry();
     }
 
     /**
@@ -42,7 +45,9 @@ public class WebSocketExtensionAutoRegisterHandler extends AutoRegisterHandler<W
     @Override
     protected boolean handle(WebSocketExtension extension, Object... args) {
         try {
-            craftsNet.webSocketExtensionRegistry().register(extension);
+            if (webSocketExtensionRegistry.hasExtension(extension)) return true;
+
+            webSocketExtensionRegistry.register(extension);
             return true;
         } catch (Exception e) {
             throw new RuntimeException(e);
