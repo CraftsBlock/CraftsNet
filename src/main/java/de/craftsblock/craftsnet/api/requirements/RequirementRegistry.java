@@ -3,6 +3,7 @@ package de.craftsblock.craftsnet.api.requirements;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.Server;
+import de.craftsblock.craftsnet.api.http.RequestHandler;
 import de.craftsblock.craftsnet.api.http.WebServer;
 import de.craftsblock.craftsnet.api.requirements.meta.RequirementInfo;
 import de.craftsblock.craftsnet.api.requirements.meta.RequirementType;
@@ -10,6 +11,7 @@ import de.craftsblock.craftsnet.api.requirements.web.*;
 import de.craftsblock.craftsnet.api.requirements.websocket.MessageTypeRequirement;
 import de.craftsblock.craftsnet.api.requirements.websocket.WSDomainRequirement;
 import de.craftsblock.craftsnet.api.requirements.websocket.WebSocketRequirement;
+import de.craftsblock.craftsnet.api.websocket.SocketHandler;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
 import org.jetbrains.annotations.ApiStatus;
@@ -23,6 +25,14 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Pattern;
 
+/**
+ * The {@link RequirementRegistry} class manages the registration and unregistration of {@link Requirement}.
+ *
+ * @author Philipp Maywald
+ * @author CraftsBlock
+ * @version 1.0.0
+ * @since 3.2.1-SNAPSHOT
+ */
 public class RequirementRegistry {
 
     private final CraftsNet craftsNet;
@@ -30,6 +40,11 @@ public class RequirementRegistry {
 
     private final ConcurrentHashMap<Class<? extends Server>, ConcurrentLinkedQueue<Requirement<? extends RequireAble, RouteRegistry.EndpointMapping>>> requirements = new ConcurrentHashMap<>();
 
+    /**
+     * Constructs a new instance of the {@link RequirementRegistry}
+     *
+     * @param craftsNet The CraftsNet instance which instantiates this requirement registry
+     */
     public RequirementRegistry(CraftsNet craftsNet) {
         this.craftsNet = craftsNet;
         this.routeRegistry = craftsNet.routeRegistry();

@@ -201,6 +201,7 @@ public class Cookie {
      * Sets the maximum age of this cookie. Set to -2 to disable this flag.
      *
      * @param maxAge The number in seconds the cookie is valid.
+     * @return The current Cookie object, for method chaining
      */
     public Cookie setMaxAge(long maxAge) {
         if (maxAge < -1) return this;

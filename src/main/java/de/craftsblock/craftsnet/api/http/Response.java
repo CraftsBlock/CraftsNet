@@ -385,6 +385,7 @@ public class Response implements AutoCloseable {
      * Marks a cookie for deletion by invoking the mark deleted method on the specific cookie.
      *
      * @param name The name of the cookie to delete
+     * @return The deleted Cookie object
      */
     public Cookie deleteCookie(String name) {
         return cookies.computeIfAbsent(name, n -> exchange.request().retrieveCookie(n, new Cookie(n))).markDeleted();
