@@ -215,6 +215,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             while (!Thread.currentThread().isInterrupted() && isConnected()) {
                 Frame frame = readMessage();
+
                 if (frame == null || frame.getOpcode().isUnknown()) {
                     logger.warning("Received invalid websocket packet!");
                     return;
@@ -423,6 +424,8 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         // Return, when the frame is null
         if (frame.get() == null) return null;
+
+        if (this.extensions.isEmpty()) return frame.get();
 
         Frame read = frame.get();
         for (WebSocketExtension extension : this.extensions)
