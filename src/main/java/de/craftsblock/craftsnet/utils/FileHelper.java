@@ -27,7 +27,7 @@ import java.util.stream.Stream;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.1.0-SNAPSHOT
  */
 public class FileHelper {
@@ -129,17 +129,20 @@ public class FileHelper {
         try (JarOutputStream jos = new JarOutputStream(Files.newOutputStream(tempFile));
              Stream<Path> paths = Files.walk(path)) {
             paths.forEach(location -> {
-                if (Files.isDirectory(location)) return;
-                Path name = path.relativize(location);
+                Path relativized = path.relativize(location);
+                String name = relativized.toString().replace("\\", "/");
+                boolean directory = Files.isDirectory(location);
 
                 try {
-                    jos.putNextEntry(new JarEntry(name.toString()));
-                    try (InputStream is = new FileInputStream(location.toFile())) {
-                        byte[] buffer = new byte[1024];
-                        int length;
-                        while ((length = is.read(buffer)) != -1)
-                            jos.write(buffer, 0, length);
-                    }
+                    String suffix = directory && !name.endsWith("/") ? "/" : "";
+                    jos.putNextEntry(new JarEntry(name + suffix));
+                    if (!directory)
+                        try (InputStream is = new FileInputStream(location.toFile())) {
+                            byte[] buffer = new byte[1024];
+                            int length;
+                            while ((length = is.read(buffer)) != -1)
+                                jos.write(buffer, 0, length);
+                        }
                     jos.closeEntry();
                 } catch (IOException e) {
                     throw new RuntimeException(e);
