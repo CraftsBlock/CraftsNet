@@ -1,11 +1,9 @@
 package de.craftsblock.craftsnet.autoregister.buildin;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.addon.meta.Startup;
 import de.craftsblock.craftsnet.api.Handler;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
-import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 
 /**
@@ -15,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.2.0-SNAPSHOT
  */
 public class HandlerAutoRegisterHandler extends AutoRegisterHandler<Handler> {
@@ -49,8 +47,6 @@ public class HandlerAutoRegisterHandler extends AutoRegisterHandler<Handler> {
     protected boolean handle(Handler handler, AutoRegisterInfo info, Object... args) {
         try {
             if (routeRegistry.isRegistered(handler)) return true;
-            if (args.length == 1 && info.annotation() instanceof AutoRegister annotation && args[0] instanceof Startup startup
-                    && startup != annotation.value()) return false;
 
             routeRegistry.register(handler);
             return true;

@@ -1,7 +1,9 @@
 package de.craftsblock.craftsnet.autoregister;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.addon.meta.Startup;
 import de.craftsblock.craftsnet.autoregister.buildin.*;
+import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
 
@@ -24,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.0
+ * @version 1.1.1
  * @see AutoRegisterInfo
  * @see AutoRegisterHandler
  * @since 3.2.0-SNAPSHOT
@@ -110,6 +112,13 @@ public class AutoRegisterRegistry {
      * @return true if the AutoRegisterInfo was successfully handled, false otherwise.
      */
     public boolean handle(AutoRegisterInfo info, Object... args) {
+        // Pre-check if the auto register info is from @AutoRegister
+        if (args.length >= 1)
+            if (info.annotation() instanceof AutoRegister annotation && args[0] instanceof Startup startup)
+                // Cancel if it was called on the wrong startup.
+                if (startup != annotation.value())
+                    return false;
+
         List<? extends AutoRegisterHandler<?>> handlers = autoRegisterHandlers.entrySet().stream()
                 .filter(entry -> info.parentTypes().contains(entry.getKey().getName()))
                 .map(Map.Entry::getValue)

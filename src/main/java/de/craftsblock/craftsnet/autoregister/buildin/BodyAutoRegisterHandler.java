@@ -1,12 +1,10 @@
 package de.craftsblock.craftsnet.autoregister.buildin;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.addon.meta.Startup;
 import de.craftsblock.craftsnet.api.http.body.Body;
 import de.craftsblock.craftsnet.api.http.body.BodyParser;
 import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
-import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 
 /**
@@ -16,7 +14,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.2.0-SNAPSHOT
  */
 public class BodyAutoRegisterHandler extends AutoRegisterHandler<BodyParser<? extends Body>> {
@@ -50,8 +48,6 @@ public class BodyAutoRegisterHandler extends AutoRegisterHandler<BodyParser<? ex
     protected boolean handle(BodyParser<? extends Body> bodyParser, AutoRegisterInfo info, Object... args) {
         try {
             if (bodyRegistry.isRegistered(bodyParser)) return true;
-            if (args.length == 1 && info.annotation() instanceof AutoRegister annotation && args[0] instanceof Startup startup
-                    && startup != annotation.value()) return false;
 
             bodyRegistry.register(bodyParser);
             return true;

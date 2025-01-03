@@ -1,12 +1,10 @@
 package de.craftsblock.craftsnet.autoregister.buildin;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.addon.meta.Startup;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
 import de.craftsblock.craftsnet.api.requirements.websocket.WebSocketRequirement;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
-import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 
 /**
@@ -16,7 +14,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.2.0-SNAPSHOT
  */
 public class WebSocketRequirementAutoRegisterHandler extends AutoRegisterHandler<WebSocketRequirement<? extends RequireAble>> {
@@ -50,8 +48,6 @@ public class WebSocketRequirementAutoRegisterHandler extends AutoRegisterHandler
     protected boolean handle(WebSocketRequirement<? extends RequireAble> webSocketRequirement, AutoRegisterInfo info, Object... args) {
         try {
             if (requirementRegistry.isRegistered(webSocketRequirement)) return true;
-            if (args.length == 1 && info.annotation() instanceof AutoRegister annotation && args[0] instanceof Startup startup
-                    && startup != annotation.value()) return false;
 
             requirementRegistry.register(webSocketRequirement, true);
             return true;
