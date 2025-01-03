@@ -8,6 +8,7 @@ import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.Range;
 
 import java.io.IOException;
+import java.security.CodeSource;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -18,7 +19,7 @@ import java.util.TreeSet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @see CraftsNetBuilder
  * @since 3.1.0-SNAPSHOT
  */
@@ -68,6 +69,30 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
     @Override
     public AddonContainingBuilder withArgs(String[] args) {
         super.withArgs(args);
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param codeSource {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    public CraftsNetBuilder addCodeSource(CodeSource codeSource) {
+        super.addCodeSource(codeSource);
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param codeSource {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    public AddonContainingBuilder removeCodeSource(CodeSource codeSource) {
+        super.removeCodeSource(codeSource);
         return this;
     }
 

@@ -9,18 +9,21 @@ import org.jetbrains.annotations.Range;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.Map;
+import java.security.CodeSource;
+import java.util.*;
 
 /**
  * Builder class for configuring the CraftsNet.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @see ActivateType
  * @since 3.0.3-SNAPSHOT
  */
 public class CraftsNetBuilder {
+
+    private final List<CodeSource> codeSources = new ArrayList<>();
 
     private int webServerPort;
     private int webSocketServerPort;
@@ -53,6 +56,8 @@ public class CraftsNetBuilder {
         withSkipVersionCheck(false);
         withSSL(false);
         withoutLogRotate();
+
+        addCodeSource(this.getClass().getProtectionDomain().getCodeSource());
     }
 
     /**
@@ -125,6 +130,29 @@ public class CraftsNetBuilder {
             // Default
             default -> throw new IllegalStateException("Unexpected argument in startup command: " + arg.toLowerCase());
         }
+    }
+
+    /**
+     * Adds a {@link CodeSource} to the code sources list.
+     *
+     * @param codeSource The {@link CodeSource} that should be added.
+     * @return The {@link CraftsNetBuilder} instance.
+     */
+    public CraftsNetBuilder addCodeSource(CodeSource codeSource) {
+        if (codeSources.contains(codeSource)) return this;
+        this.codeSources.add(codeSource);
+        return this;
+    }
+
+    /**
+     * Removes a {@link CodeSource} from the code sources list.
+     *
+     * @param codeSource The {@link CodeSource} that should be removed.
+     * @return The {@link CraftsNetBuilder} instance.
+     */
+    public CraftsNetBuilder removeCodeSource(CodeSource codeSource) {
+        this.codeSources.remove(codeSource);
+        return this;
     }
 
     /**
@@ -321,6 +349,15 @@ public class CraftsNetBuilder {
      */
     public CraftsNetBuilder withoutLogRotate() {
         return withLogRotate(0);
+    }
+
+    /**
+     * Retrieves the list of {@link CodeSource} that should be taken into account.
+     *
+     * @return The list containing {@link CodeSource}.
+     */
+    public Collection<CodeSource> getCodeSources() {
+        return Collections.unmodifiableCollection(codeSources);
     }
 
     /**

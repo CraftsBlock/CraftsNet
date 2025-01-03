@@ -34,6 +34,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.security.CodeSource;
 import java.util.Collection;
 import java.util.jar.JarFile;
 
@@ -43,7 +44,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.1.0
+ * @version 3.1.1
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -217,17 +218,18 @@ public class CraftsNet {
         // Add all with @AutoRegister annotated classes from the current jar file to the list
         AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader();
 
-        try {
-            Path path = Path.of(this.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
-            try (JarFile file = fileHelper.getJarFileAt(path)) {
-                autoRegisterRegistry.handleAll(autoRegisterLoader.loadFrom(null, file));
-            } catch (NoSuchFileException ignored) {
-            } catch (IOException e) {
+        for (CodeSource codeSource : builder.getCodeSources())
+            try {
+                Path path = Path.of(codeSource.getLocation().toURI());
+                try (JarFile file = fileHelper.getJarFileAt(path)) {
+                    autoRegisterRegistry.handleAll(autoRegisterLoader.loadFrom(null, file));
+                } catch (NoSuchFileException ignored) {
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
-        } catch (URISyntaxException e) {
-            throw new RuntimeException(e);
-        }
 
         // Log successful startup message with elapsed time
         logger.info("CraftsNet was successfully started after " + (System.currentTimeMillis() - start) + "ms");
