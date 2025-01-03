@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.1.0
  * @see AutoRegisterInfo
  * @see AutoRegisterHandler
  * @since 3.2.0-SNAPSHOT
@@ -96,18 +96,20 @@ public class AutoRegisterRegistry {
      * Each {@link AutoRegisterInfo} is passed to the matching handler based on its parent types.
      *
      * @param infos The list of AutoRegisterInfo to handle.
+     * @param args  The args that should be applied to the {@link AutoRegisterHandler}.
      */
-    public void handleAll(List<AutoRegisterInfo> infos) {
-        infos.forEach(this::handle);
+    public void handleAll(List<AutoRegisterInfo> infos, Object... args) {
+        infos.forEach(info -> handle(info, args));
     }
 
     /**
      * Handles a single {@link AutoRegisterInfo} by invoking the appropriate handler(s) based on its parent types.
      *
      * @param info The AutoRegisterInfo to handle.
+     * @param args The args that should be applied to the {@link AutoRegisterHandler}.
      * @return true if the AutoRegisterInfo was successfully handled, false otherwise.
      */
-    public boolean handle(AutoRegisterInfo info) {
+    public boolean handle(AutoRegisterInfo info, Object... args) {
         List<? extends AutoRegisterHandler<?>> handlers = autoRegisterHandlers.entrySet().stream()
                 .filter(entry -> info.parentTypes().contains(entry.getKey().getName()))
                 .map(Map.Entry::getValue)
@@ -123,18 +125,18 @@ public class AutoRegisterRegistry {
         }
 
         Constructor<?> constructor;
-        Object[] args;
+        Object[] constructorArgs;
         if (ReflectionUtils.isConstructorPresent(clazz)) {
             constructor = ReflectionUtils.getConstructor(clazz);
-            args = new Object[0];
+            constructorArgs = new Object[0];
         } else {
             constructor = ReflectionUtils.getConstructor(clazz, CraftsNet.class);
-            args = new Object[]{craftsNet};
+            constructorArgs = new Object[]{craftsNet};
         }
 
         Object obj;
         try {
-            obj = constructor.newInstance(args);
+            obj = constructor.newInstance(constructorArgs);
         } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
             throw new RuntimeException(e);
         }
@@ -143,9 +145,12 @@ public class AutoRegisterRegistry {
             try {
                 Method method = handler.getClass().getDeclaredMethod("handle",
                         ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class),
-                        Object.class.arrayType());
+                        AutoRegisterInfo.class, Object.class.arrayType());
+
                 method.setAccessible(true);
-                method.invoke(handler, obj, args);
+                boolean result = (boolean) method.invoke(handler, obj, info, args);
+                if (result)
+                    craftsNet.logger().debug("Auto registered " + info.className() + " with " + handler.getClass().getSimpleName());
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
