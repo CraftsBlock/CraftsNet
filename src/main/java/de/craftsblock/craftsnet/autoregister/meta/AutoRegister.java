@@ -1,7 +1,6 @@
 package de.craftsblock.craftsnet.autoregister.meta;
 
 import de.craftsblock.craftscore.annotations.Experimental;
-import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.meta.Startup;
 
 import java.lang.annotation.*;
@@ -19,13 +18,13 @@ import java.lang.annotation.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.2.0-SNAPSHOT
  */
 @Documented
 @Experimental
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.METHOD, ElementType.TYPE})
+@Target(ElementType.TYPE)
 public @interface AutoRegister {
 
     /**
