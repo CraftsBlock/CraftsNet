@@ -18,6 +18,7 @@ import de.craftsblock.craftsnet.utils.ReflectionUtils;
 
 import java.io.*;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.jar.JarEntry;
@@ -32,7 +33,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.2
+ * @version 2.1.3
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -204,10 +205,18 @@ public final class AddonLoader {
                 craftsNet.addonManager().register(obj);
                 configuration.addon().set(obj);
 
-                // When the file is null, it is an in-app addon, so we can skip it
-                if (configuration.file() != null)
-                    // Load all with @AutoRegister annotated classes from the addons jar file
-                    try (JarFile file = new JarFile(configuration.file())) {
+                // Load the file the addon is located in
+                JarFile file;
+                if (configuration.file() != null) file = new JarFile(configuration.file());
+                else {
+                    // Use the code source of the addon when it is not located in the addons folder
+                    Path path = Path.of(obj.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
+                    file = craftsNet.fileHelper().getJarFileAt(path);
+                }
+
+                // Perform the actual load of the jar file if it is not null
+                if (file != null)
+                    try (file) {
                         autoRegisterInfos.addAll(autoRegisterLoader.loadFrom(classLoader, file));
                     }
             } catch (Exception e) {
