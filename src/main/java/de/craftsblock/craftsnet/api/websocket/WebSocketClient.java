@@ -806,7 +806,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @return True if the websocket is connected, false otherwise or if the connection failed
      */
     public boolean isConnected() {
-        return this.connected && this.socket.isConnected();
+        return this.connected && this.socket.isConnected() && this.writer != null && this.reader != null;
     }
 
     /**
