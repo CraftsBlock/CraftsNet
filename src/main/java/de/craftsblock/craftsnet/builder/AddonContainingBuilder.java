@@ -79,7 +79,7 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
      * @return {@inheritDoc}
      */
     @Override
-    public CraftsNetBuilder addCodeSource(CodeSource codeSource) {
+    public AddonContainingBuilder addCodeSource(CodeSource codeSource) {
         super.addCodeSource(codeSource);
         return this;
     }
