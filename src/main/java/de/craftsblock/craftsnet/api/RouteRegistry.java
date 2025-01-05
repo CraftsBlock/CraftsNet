@@ -85,7 +85,7 @@ public class RouteRegistry {
                             throw new IllegalStateException("The method " + method.getName() + " has the annotation " + annotation.getName() +
                                     " but does not require " + Exchange.class.getName() + " as the first parameter!");
                     } else {
-                        if (method.getParameterCount() <= 2)
+                        if (method.getParameterCount() <= 1)
                             throw new IllegalStateException("The method " + method.getName() + " has the annotation " + annotation.getName() +
                                     " but does not require " + SocketExchange.class.getName() + " and a data type as parameters!");
 
