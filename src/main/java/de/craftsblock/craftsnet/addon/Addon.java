@@ -60,14 +60,16 @@ public abstract class Addon {
      * Called when the addon is being enabled.
      * This method must be implemented by subclasses to define the addon's functionality.
      */
-    public abstract void onEnable();
+    public void onEnable() {
+    }
 
     /**
      * Called when the addon is being disabled.
      * This method must be implemented by subclasses to clean up any resources or perform
      * any necessary shutdown tasks.
      */
-    public abstract void onDisable();
+    public void onDisable() {
+    }
 
     /**
      * Get the CraftsNet instance on which the addon was registered.
