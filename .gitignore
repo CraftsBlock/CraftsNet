@@ -41,10 +41,12 @@ bin/
 .vscode/
 
 ### Addons ###
-addons/
-libraries/
-logs/
-sessions/
+/addons/
+/libraries/
+/logs/
+/sessions/
+
+### Test Stuff ###
 test/
 
 ### Mac OS ###
