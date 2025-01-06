@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.autoregister.buildin;
+package de.craftsblock.craftsnet.autoregister.builtin.events;
 
 import de.craftsblock.craftscore.event.ListenerAdapter;
 import de.craftsblock.craftscore.event.ListenerRegistry;

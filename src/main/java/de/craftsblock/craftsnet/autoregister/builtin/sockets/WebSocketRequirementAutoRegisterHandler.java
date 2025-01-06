@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.autoregister.buildin;
+package de.craftsblock.craftsnet.autoregister.builtin.sockets;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;

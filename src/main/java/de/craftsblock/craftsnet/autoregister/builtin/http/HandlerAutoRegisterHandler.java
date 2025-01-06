@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.autoregister.buildin;
+package de.craftsblock.craftsnet.autoregister.builtin.http;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Handler;

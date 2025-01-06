@@ -2,7 +2,13 @@ package de.craftsblock.craftsnet.autoregister;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.meta.Startup;
-import de.craftsblock.craftsnet.autoregister.buildin.*;
+import de.craftsblock.craftsnet.autoregister.builtin.addons.ServiceLoaderAutoRegisterHandler;
+import de.craftsblock.craftsnet.autoregister.builtin.events.ListenerAutoRegisterHandler;
+import de.craftsblock.craftsnet.autoregister.builtin.http.BodyAutoRegisterHandler;
+import de.craftsblock.craftsnet.autoregister.builtin.http.HandlerAutoRegisterHandler;
+import de.craftsblock.craftsnet.autoregister.builtin.http.WebRequirementAutoRegisterHandler;
+import de.craftsblock.craftsnet.autoregister.builtin.sockets.WebSocketExtensionAutoRegisterHandler;
+import de.craftsblock.craftsnet.autoregister.builtin.sockets.WebSocketRequirementAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;

@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.autoregister.buildin;
+package de.craftsblock.craftsnet.autoregister.builtin.addons;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.services.ServiceLoader;
