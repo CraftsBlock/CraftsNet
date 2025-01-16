@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.0.3
+ * @version 3.0.4
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -213,6 +213,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             // Change the validator of the transformer performer
             this.transformerPerformer.setValidator(validator);
 
+            readLoop:
             while (!Thread.currentThread().isInterrupted() && isConnected()) {
                 Frame frame = readMessage();
 
@@ -225,27 +226,30 @@ public class WebSocketClient implements Runnable, RequireAble {
                 // Process incoming messages from the client
                 byte[] data = frame.getData();
 
-                if (frame.getOpcode().equals(Opcode.CLOSE)) {
-                    if (data == null || data.length <= 2) break;
-                    closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
-                    closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
-                    closeInternally(ClosureCode.NORMAL, "Acknowledged close", false);
-                    break;
-                }
+                switch (frame.getOpcode()) {
+                    case CLOSE -> {
+                        if (data == null || data.length <= 2) break;
+                        closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
+                        closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
+                        closeInternally(ClosureCode.NORMAL, "Acknowledged close", false);
+                        break readLoop;
+                    }
 
-                if (frame.getOpcode().equals(Opcode.PING)) {
-                    craftsNet.listenerRegistry().call(new ReceivedPingMessageEvent(exchange, data));
-                    continue;
-                }
+                    case PING -> {
+                        craftsNet.listenerRegistry().call(new ReceivedPingMessageEvent(exchange, data));
+                        continue;
+                    }
 
-                if (frame.getOpcode().equals(Opcode.PONG)) {
-                    craftsNet.listenerRegistry().call(new ReceivedPongMessageEvent(exchange, data));
-                    continue;
-                }
+                    case PONG -> {
+                        craftsNet.listenerRegistry().call(new ReceivedPongMessageEvent(exchange, data));
+                        continue;
+                    }
 
-                if (frame.getOpcode().equals(Opcode.TEXT) && !Utils.isEncodingValid(frame.getData(), StandardCharsets.UTF_8)) {
-                    closeInternally(ClosureCode.UNSUPPORTED_PAYLOAD, "Send byte values are not utf8 valid!", true);
-                    break;
+                    case TEXT -> {
+                        if (Utils.isEncodingValid(frame.getData(), StandardCharsets.UTF_8)) break;
+                        closeInternally(ClosureCode.UNSUPPORTED_PAYLOAD, "Send byte values are not utf8 valid!", true);
+                        break readLoop;
+                    }
                 }
 
                 // Fire an incoming socket message event and continue if it was cancelled
