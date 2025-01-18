@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.autoregister.loaders;
 
+import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import org.jetbrains.annotations.NotNull;
@@ -21,7 +22,7 @@ import java.util.stream.StreamSupport;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.1.0
  * @see AutoRegisterInfo
  * @since 3.2.0-SNAPSHOT
  */
@@ -50,8 +51,8 @@ public class AutoRegisterLoader {
      * @return A list of {@link AutoRegisterInfo} objects containing metadata about the classes.
      * @since 1.0.0
      */
-    public List<AutoRegisterInfo> loadFrom(@Nullable ClassLoader loader, @NotNull JarFile file) {
-        return loadFrom(loader, file, AutoRegister.class);
+    public List<AutoRegisterInfo> loadFrom(@Nullable ClassLoader loader, @Nullable Addon bounding, @NotNull JarFile file) {
+        return loadFrom(loader, bounding, file, AutoRegister.class);
     }
 
     /**
@@ -62,7 +63,8 @@ public class AutoRegisterLoader {
      * @param type   The annotation type that classes should be annotated with.
      * @return A list of {@link AutoRegisterInfo} objects containing metadata about the classes.
      */
-    protected List<AutoRegisterInfo> loadFrom(@Nullable ClassLoader loader, @NotNull JarFile file, @NotNull Class<? extends Annotation> type) {
+    protected List<AutoRegisterInfo> loadFrom(@Nullable ClassLoader loader, @Nullable Addon bounding, @NotNull JarFile file,
+                                              @NotNull Class<? extends Annotation> type) {
         Set<AutoRegisterInfo> infos = Collections.newSetFromMap(new ConcurrentHashMap<>());
         ClassLoader classLoader = (loader != null ? loader : ClassLoader.getSystemClassLoader());
 
@@ -73,7 +75,7 @@ public class AutoRegisterLoader {
                 .filter(this::isValidClassEntry)
                 .map(JarEntry::getName)
                 .map(this::convertToJvmName)
-                .map(jvmName -> executor.submit(() -> processClass(jvmName, classLoader, type, infos)))
+                .map(jvmName -> executor.submit(() -> processClass(jvmName, bounding, classLoader, type, infos)))
                 .forEach(futures::add);
 
         // Wait for all futures to complete
@@ -122,7 +124,8 @@ public class AutoRegisterLoader {
      * @param type        The annotation type to look for.
      * @param infos       A set to collect {@link AutoRegisterInfo} instances.
      */
-    private void processClass(String jvmName, ClassLoader classLoader, Class<? extends Annotation> type, Set<AutoRegisterInfo> infos) {
+    private void processClass(@NotNull String jvmName, @Nullable Addon bounding, @NotNull ClassLoader classLoader,
+                              @NotNull Class<? extends Annotation> type, @NotNull Set<AutoRegisterInfo> infos) {
         try {
             Class<?> clazz = Class.forName(jvmName, false, classLoader);
             if (!clazz.isAnnotationPresent(type)) return;
@@ -132,7 +135,7 @@ public class AutoRegisterLoader {
             parentTypes.addAll(loadSuperclasses(clazz));
             parentTypes.addAll(loadInterfaces(clazz));
 
-            infos.add(AutoRegisterInfo.of(jvmName, annotation, classLoader, parentTypes.stream().distinct().toList()));
+            infos.add(AutoRegisterInfo.of(jvmName, bounding, annotation, classLoader, parentTypes.stream().distinct().toList()));
         } catch (ClassNotFoundException | NoClassDefFoundError ignored) {
         }
     }

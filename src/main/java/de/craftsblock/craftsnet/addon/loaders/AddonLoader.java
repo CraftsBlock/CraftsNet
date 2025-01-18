@@ -33,7 +33,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.3
+ * @version 2.1.4
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -217,7 +217,7 @@ public final class AddonLoader {
                 // Perform the actual load of the jar file if it is not null
                 if (file != null)
                     try (file) {
-                        autoRegisterInfos.addAll(autoRegisterLoader.loadFrom(classLoader, file));
+                        autoRegisterInfos.addAll(autoRegisterLoader.loadFrom(classLoader, obj, file));
                     }
             } catch (Exception e) {
                 logger.error(e);

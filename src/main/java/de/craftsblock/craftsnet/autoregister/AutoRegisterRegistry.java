@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.autoregister;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.meta.Startup;
 import de.craftsblock.craftsnet.autoregister.builtin.addons.ServiceLoaderAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.events.ListenerAutoRegisterHandler;
@@ -32,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.1
+ * @version 1.1.2
  * @see AutoRegisterInfo
  * @see AutoRegisterHandler
  * @since 3.2.0-SNAPSHOT
@@ -144,6 +145,9 @@ public class AutoRegisterRegistry {
         if (ReflectionUtils.isConstructorPresent(clazz)) {
             constructor = ReflectionUtils.getConstructor(clazz);
             constructorArgs = new Object[0];
+        } else if (ReflectionUtils.isConstructorPresent(clazz, Addon.class)) {
+            constructor = ReflectionUtils.getConstructor(clazz, Addon.class);
+            constructorArgs = new Object[]{info.bounding()};
         } else {
             constructor = ReflectionUtils.getConstructor(clazz, CraftsNet.class);
             constructorArgs = new Object[]{craftsNet};

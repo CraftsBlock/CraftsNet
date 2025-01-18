@@ -44,7 +44,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.1.1
+ * @version 3.1.2
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -222,7 +222,7 @@ public class CraftsNet {
             try {
                 Path path = Path.of(codeSource.getLocation().toURI());
                 try (JarFile file = fileHelper.getJarFileAt(path)) {
-                    autoRegisterRegistry.handleAll(autoRegisterLoader.loadFrom(null, file));
+                    autoRegisterRegistry.handleAll(autoRegisterLoader.loadFrom(null, null, file));
                 } catch (NoSuchFileException ignored) {
                 } catch (IOException e) {
                     throw new RuntimeException(e);
