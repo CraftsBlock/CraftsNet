@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.2.0-SNAPSHOT
  */
 public class ListenerAutoRegisterHandler extends AutoRegisterHandler<ListenerAdapter> {
@@ -46,7 +46,7 @@ public class ListenerAutoRegisterHandler extends AutoRegisterHandler<ListenerAda
     @Override
     protected boolean handle(ListenerAdapter adapter, AutoRegisterInfo info, Object... args) {
         try {
-            if (listenerRegistry.isRegistered(adapter)) return true;
+            if (listenerRegistry.isRegistered(adapter)) return false;
 
             listenerRegistry.register(adapter);
             return true;

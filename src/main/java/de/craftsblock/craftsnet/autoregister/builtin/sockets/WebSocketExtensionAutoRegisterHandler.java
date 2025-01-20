@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.2.0-SNAPSHOT
  */
 public class WebSocketExtensionAutoRegisterHandler extends AutoRegisterHandler<WebSocketExtension> {
@@ -46,7 +46,7 @@ public class WebSocketExtensionAutoRegisterHandler extends AutoRegisterHandler<W
     @Override
     protected boolean handle(WebSocketExtension extension, AutoRegisterInfo info, Object... args) {
         try {
-            if (webSocketExtensionRegistry.hasExtension(extension)) return true;
+            if (webSocketExtensionRegistry.hasExtension(extension)) return false;
 
             webSocketExtensionRegistry.register(extension);
             return true;

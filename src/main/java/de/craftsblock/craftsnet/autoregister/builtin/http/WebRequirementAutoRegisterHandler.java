@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.2.0-SNAPSHOT
  */
 public class WebRequirementAutoRegisterHandler extends AutoRegisterHandler<WebRequirement> {
@@ -46,7 +46,7 @@ public class WebRequirementAutoRegisterHandler extends AutoRegisterHandler<WebRe
     @Override
     protected boolean handle(WebRequirement webRequirement, AutoRegisterInfo info, Object... args) {
         try {
-            if (requirementRegistry.isRegistered(webRequirement)) return true;
+            if (requirementRegistry.isRegistered(webRequirement)) return false;
 
             requirementRegistry.register(webRequirement, true);
             return true;

@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.2.0-SNAPSHOT
  */
 public class ServiceLoaderAutoRegisterHandler extends AutoRegisterHandler<ServiceLoader<?>> {
@@ -46,7 +46,7 @@ public class ServiceLoaderAutoRegisterHandler extends AutoRegisterHandler<Servic
     @Override
     protected boolean handle(ServiceLoader<?> serviceLoader, AutoRegisterInfo info, Object... args) {
         try {
-            if (serviceManager.isRegistered(serviceLoader)) return true;
+            if (serviceManager.isRegistered(serviceLoader)) return false;
 
             serviceManager.register(serviceLoader);
             return true;

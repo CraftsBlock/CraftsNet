@@ -14,7 +14,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.2.0-SNAPSHOT
  */
 public class WebSocketRequirementAutoRegisterHandler extends AutoRegisterHandler<WebSocketRequirement<? extends RequireAble>> {
@@ -47,7 +47,7 @@ public class WebSocketRequirementAutoRegisterHandler extends AutoRegisterHandler
     @Override
     protected boolean handle(WebSocketRequirement<? extends RequireAble> webSocketRequirement, AutoRegisterInfo info, Object... args) {
         try {
-            if (requirementRegistry.isRegistered(webSocketRequirement)) return true;
+            if (requirementRegistry.isRegistered(webSocketRequirement)) return false;
 
             requirementRegistry.register(webSocketRequirement, true);
             return true;

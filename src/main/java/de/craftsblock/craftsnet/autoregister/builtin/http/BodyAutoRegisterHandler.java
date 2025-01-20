@@ -14,7 +14,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.2.0-SNAPSHOT
  */
 public class BodyAutoRegisterHandler extends AutoRegisterHandler<BodyParser<? extends Body>> {
@@ -47,7 +47,7 @@ public class BodyAutoRegisterHandler extends AutoRegisterHandler<BodyParser<? ex
     @Override
     protected boolean handle(BodyParser<? extends Body> bodyParser, AutoRegisterInfo info, Object... args) {
         try {
-            if (bodyRegistry.isRegistered(bodyParser)) return true;
+            if (bodyRegistry.isRegistered(bodyParser)) return false;
 
             bodyRegistry.register(bodyParser);
             return true;

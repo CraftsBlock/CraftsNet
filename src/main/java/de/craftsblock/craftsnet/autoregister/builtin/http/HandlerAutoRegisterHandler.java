@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.2.0-SNAPSHOT
  */
 public class HandlerAutoRegisterHandler extends AutoRegisterHandler<Handler> {
@@ -46,7 +46,7 @@ public class HandlerAutoRegisterHandler extends AutoRegisterHandler<Handler> {
     @Override
     protected boolean handle(Handler handler, AutoRegisterInfo info, Object... args) {
         try {
-            if (routeRegistry.isRegistered(handler)) return true;
+            if (routeRegistry.isRegistered(handler)) return false;
 
             routeRegistry.register(handler);
             return true;
