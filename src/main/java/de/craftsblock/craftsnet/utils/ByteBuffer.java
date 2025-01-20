@@ -18,7 +18,7 @@ import java.util.UUID;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.1.0-SNAPSHOT
  */
 public class ByteBuffer {
@@ -351,7 +351,7 @@ public class ByteBuffer {
     }
 
     /**
-     * Marks the current reader index so it can be restored later.
+     * Marks the current reader index, so it can be restored later.
      */
     public void markReaderIndex() {
         this.rememberedReaderIndex = this.readerIndex;
@@ -371,7 +371,7 @@ public class ByteBuffer {
      * @return the number of readable bytes.
      */
     public int readableBytes() {
-        return this.source.length - this.readerIndex;
+        return this.size() - this.readerIndex;
     }
 
     /**
@@ -390,7 +390,7 @@ public class ByteBuffer {
      * @return {@code true} if the buffer has at least {@code length} readable bytes, otherwise {@code false}.
      */
     public boolean isReadable(int length) {
-        return this.writerIndex - (this.readerIndex + length) > 0;
+        return this.size() - (this.readerIndex + length) > 0;
     }
 
     /**
@@ -689,7 +689,7 @@ public class ByteBuffer {
      * @return the size of the buffer in bytes.
      */
     public int size() {
-        return source.length;
+        return this.source.length;
     }
 
     /**
@@ -698,7 +698,7 @@ public class ByteBuffer {
      * @return the byte array representing the buffer's contents.
      */
     public byte[] getSource() {
-        return source;
+        return this.source;
     }
 
 }
