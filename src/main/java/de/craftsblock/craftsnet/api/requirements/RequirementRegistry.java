@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.2.1-SNAPSHOT
  */
 public class RequirementRegistry {
@@ -113,14 +113,14 @@ public class RequirementRegistry {
      */
     private void registerRaw(Class<? extends Server> target, Requirement<? extends RequireAble, RouteRegistry.EndpointMapping> requirement, boolean process) {
         this.requirements.computeIfAbsent(target, c -> new ConcurrentLinkedQueue<>()).add(requirement);
-        ConcurrentHashMap<Class<? extends Server>, ConcurrentHashMap<Pattern, List<RouteRegistry.EndpointMapping>>> serverMappings = routeRegistry.getServerMappings();
+        ConcurrentHashMap<Class<? extends Server>, ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<RouteRegistry.EndpointMapping>>> serverMappings = routeRegistry.getServerMappings();
         if (!process || !serverMappings.containsKey(target)) return;
 
-        ConcurrentHashMap<Pattern, List<RouteRegistry.EndpointMapping>> patternedMappings = serverMappings.get(target);
+        ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<RouteRegistry.EndpointMapping>> patternedMappings = serverMappings.get(target);
         if (patternedMappings.isEmpty()) return;
 
         List<Class<? extends Annotation>> annotations = Collections.singletonList(requirement.getAnnotation());
-        patternedMappings.values().stream().flatMap(List::stream).forEach(mapping -> {
+        patternedMappings.values().stream().flatMap(Collection::stream).forEach(mapping -> {
             ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements = new ConcurrentHashMap<>();
             loadRequirements(requirements, annotations, mapping.method(), mapping.handler());
             if (requirements.isEmpty()) return;

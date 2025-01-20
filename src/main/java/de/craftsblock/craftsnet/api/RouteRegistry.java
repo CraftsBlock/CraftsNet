@@ -24,6 +24,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -34,14 +35,14 @@ import java.util.stream.Collectors;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.0
+ * @version 3.3.1
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
 
     private final CraftsNet craftsNet;
 
-    private final ConcurrentHashMap<Class<? extends Server>, ConcurrentHashMap<Pattern, List<EndpointMapping>>> serverMappings = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Class<? extends Server>, ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<EndpointMapping>>> serverMappings = new ConcurrentHashMap<>();
 
     private final ConcurrentHashMap<Pattern, ShareMapping> shares = new ConcurrentHashMap<>();
 
@@ -66,7 +67,7 @@ public class RouteRegistry {
         for (Class<? extends Annotation> annotation : annotations.keySet())
             try {
                 Class<? extends Server> rawServer = annotations.get(annotation).rawServer();
-                ConcurrentHashMap<Pattern, List<EndpointMapping>> endpoints = serverMappings.computeIfAbsent(rawServer, c -> new ConcurrentHashMap<>());
+                ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<EndpointMapping>> endpoints = serverMappings.computeIfAbsent(rawServer, c -> new ConcurrentHashMap<>());
                 List<Class<? extends Annotation>> requirementAnnotations = new ArrayList<>(craftsNet.requirementRegistry().getRequirements(rawServer)
                         .parallelStream().map(Requirement::getAnnotation).toList());
 
@@ -110,7 +111,7 @@ public class RouteRegistry {
                     craftsNet.requirementRegistry().loadRequirements(requirements, requirementAnnotations, method, handler);
 
                     // Register the endpoint mapping
-                    List<EndpointMapping> mappings = endpoints.computeIfAbsent(validator, pattern -> new ArrayList<>());
+                    ConcurrentLinkedQueue<EndpointMapping> mappings = endpoints.computeIfAbsent(validator, pattern -> new ConcurrentLinkedQueue<>());
                     mappings.add(new EndpointMapping(
                             priority != null ? priority.value() : ProcessPriority.Priority.NORMAL,
                             method, handler, validator, requirements
@@ -163,7 +164,7 @@ public class RouteRegistry {
                 .filter(map -> !map.isEmpty())
                 .flatMap(map -> map.values().stream())
                 .filter(list -> !list.isEmpty())
-                .flatMap(List::stream)
+                .flatMap(Collection::stream)
                 .map(EndpointMapping::handler)
                 .anyMatch(type::isInstance);
     }
@@ -203,7 +204,7 @@ public class RouteRegistry {
      *
      * @param handler The RequestHandler to be unregistered.
      */
-    public void unregister(Handler handler) {
+    public void unregister(final Handler handler) {
         if (!isRegistered(handler)) return;
 
         ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = retrieveHandlerInfoMap(handler);
@@ -212,7 +213,7 @@ public class RouteRegistry {
             try {
                 ServerMapping mapping = annotations.get(annotation);
 
-                ConcurrentHashMap<Pattern, List<EndpointMapping>> endpoints = serverMappings.computeIfAbsent(mapping.rawServer(), c -> new ConcurrentHashMap<>());
+                ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<EndpointMapping>> endpoints = serverMappings.computeIfAbsent(mapping.rawServer(), c -> new ConcurrentHashMap<>());
                 String parent = ReflectionUtils.retrieveValueOfAnnotation(handler, annotation, String.class, true);
 
                 // Continue if no handlers exists for this server type
@@ -220,13 +221,18 @@ public class RouteRegistry {
 
                 for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), annotation)) {
                     String child = ReflectionUtils.retrieveValueOfAnnotation(method, annotation, String.class, true);
-                    endpoints.entrySet().removeIf(validator -> validator.getKey().matcher(mergeUrl(parent != null ? parent : "", child)).matches());
+                    endpoints.entrySet().stream()
+                            .filter(entry -> entry.getKey().matcher(mergeUrl(parent != null ? parent : "", child)).matches())
+                            .peek(entry -> entry.getValue().removeIf(endpointMapping -> endpointMapping.handler().equals(handler)))
+                            .forEach(entry -> {
+                                if (!endpoints.containsKey(entry.getKey()) || !entry.getValue().isEmpty()) return;
+                                endpoints.remove(entry.getKey());
+                            });
                 }
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
-
 
         // Loop through all active servers and turn them off if they are not needed.
         for (ServerMapping mapping : annotations.values())
@@ -312,7 +318,7 @@ public class RouteRegistry {
      * @return A ConcurrentHashMap containing the registered routes.
      */
     @NotNull
-    public Map<Pattern, List<EndpointMapping>> getRoutes() {
+    public Map<Pattern, ConcurrentLinkedQueue<EndpointMapping>> getRoutes() {
         return getEndpoints(WebServer.class);
     }
 
@@ -333,7 +339,7 @@ public class RouteRegistry {
      * @return A ConcurrentHashMap containing the registered socket handlers.
      */
     @NotNull
-    public Map<Pattern, List<EndpointMapping>> getSockets() {
+    public Map<Pattern, ConcurrentLinkedQueue<EndpointMapping>> getSockets() {
         return getEndpoints(WebSocketServer.class);
     }
 
@@ -384,7 +390,7 @@ public class RouteRegistry {
      * @return A {@link ConcurrentHashMap} containing the registered endpoints.
      */
     @NotNull
-    public Map<Pattern, List<EndpointMapping>> getEndpoints(Class<? extends Server> server) {
+    public Map<Pattern, ConcurrentLinkedQueue<EndpointMapping>> getEndpoints(Class<? extends Server> server) {
         return Map.copyOf(serverMappings.computeIfAbsent(server, c -> new ConcurrentHashMap<>()));
     }
 
@@ -505,7 +511,7 @@ public class RouteRegistry {
      * @since 3.2.1-SNAPSHOT
      */
     @ApiStatus.Internal
-    public ConcurrentHashMap<Class<? extends Server>, ConcurrentHashMap<Pattern, List<EndpointMapping>>> getServerMappings() {
+    public ConcurrentHashMap<Class<? extends Server>, ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<EndpointMapping>>> getServerMappings() {
         return new ConcurrentHashMap<>(Collections.unmodifiableMap(serverMappings));
     }
 
