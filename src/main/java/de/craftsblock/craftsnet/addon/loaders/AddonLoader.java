@@ -33,7 +33,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.4
+ * @version 2.1.5
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -163,7 +163,7 @@ public final class AddonLoader {
     public void load(List<AddonConfiguration> configurations) {
         AddonLoadOrder loadOrder = new AddonLoadOrder();
         AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader();
-        List<AutoRegisterInfo> autoRegisterInfos = new ArrayList<>();
+        HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos = new HashMap<>();
 
         for (AddonConfiguration configuration : configurations)
             try {
@@ -217,28 +217,29 @@ public final class AddonLoader {
                 // Perform the actual load of the jar file if it is not null
                 if (file != null)
                     try (file) {
-                        autoRegisterInfos.addAll(autoRegisterLoader.loadFrom(classLoader, obj, file));
+                        autoRegisterInfos.put(obj, autoRegisterLoader.loadFrom(classLoader, obj, file));
                     }
             } catch (Exception e) {
                 logger.error(e);
             }
-
-        // Remove duplicates from the auto register list
-        autoRegisterInfos = new ArrayList<>(autoRegisterInfos.stream().distinct().toList());
 
         // Loading all addons
         Collection<Addon> orderedLoad = loadOrder.getLoadOrder();
         for (Addon addon : orderedLoad) {
             logger.info("Loading addon " + addon.getName() + "...");
             addon.onLoad();
-            craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos, Startup.LOAD);
+
+            if (!autoRegisterInfos.containsKey(addon)) break;
+            craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.LOAD);
         }
 
         // Enabling all addons
         for (Addon addon : orderedLoad) {
             logger.info("Enabling addon " + addon.getName() + "...");
             addon.onEnable();
-            craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos, Startup.ENABLE);
+
+            if (!autoRegisterInfos.containsKey(addon)) break;
+            craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.ENABLE);
         }
 
         // Load all the registrable services

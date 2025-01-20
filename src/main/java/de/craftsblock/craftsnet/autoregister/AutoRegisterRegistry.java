@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.2
+ * @version 1.1.3
  * @see AutoRegisterInfo
  * @see AutoRegisterHandler
  * @since 3.2.0-SNAPSHOT
@@ -108,6 +108,7 @@ public class AutoRegisterRegistry {
      * @param args  The args that should be applied to the {@link AutoRegisterHandler}.
      */
     public void handleAll(List<AutoRegisterInfo> infos, Object... args) {
+        if (infos.isEmpty()) return;
         infos.forEach(info -> handle(info, args));
     }
 
@@ -145,8 +146,11 @@ public class AutoRegisterRegistry {
         if (ReflectionUtils.isConstructorPresent(clazz)) {
             constructor = ReflectionUtils.getConstructor(clazz);
             constructorArgs = new Object[0];
-        } else if (ReflectionUtils.isConstructorPresent(clazz, Addon.class)) {
+        } else if (info.bounding() != null && ReflectionUtils.isConstructorPresent(clazz, Addon.class)) {
             constructor = ReflectionUtils.getConstructor(clazz, Addon.class);
+            constructorArgs = new Object[]{info.bounding()};
+        } else if (info.bounding() != null && ReflectionUtils.isConstructorPresent(clazz, info.bounding().getClass())) {
+            constructor = ReflectionUtils.getConstructor(clazz, info.bounding().getClass());
             constructorArgs = new Object[]{info.bounding()};
         } else {
             constructor = ReflectionUtils.getConstructor(clazz, CraftsNet.class);
