@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.4
+ * @version 1.0.5
  * @see Exchange
  * @see WebServer
  * @since 1.0.0-SNAPSHOT
@@ -93,7 +93,7 @@ public class Response implements AutoCloseable {
             }
         }
 
-        println(object.toString());
+        print(object.toString());
     }
 
 
@@ -106,7 +106,7 @@ public class Response implements AutoCloseable {
      * @throws IOException if an I/O error occurs.
      */
     public void print(Json json, boolean pretty) throws IOException {
-        println(json.toString(pretty));
+        print(json.toString(pretty));
     }
 
     /**
