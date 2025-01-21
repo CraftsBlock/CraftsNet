@@ -25,6 +25,7 @@ import de.craftsblock.craftsnet.listeners.ConsoleListener;
 import de.craftsblock.craftsnet.logging.FileLogger;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.FileHelper;
+import de.craftsblock.craftsnet.utils.ReflectionUtils;
 import de.craftsblock.craftsnet.utils.versions.Versions;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,6 +38,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.CodeSource;
 import java.util.Collection;
+import java.util.List;
 import java.util.jar.JarFile;
 
 /**
@@ -45,7 +47,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.1.2
+ * @version 3.1.3
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -495,7 +497,8 @@ public class CraftsNet {
      * @return A new builder instance.
      */
     public static CraftsNetBuilder create() {
-        return new CraftsNetBuilder();
+        return new CraftsNetBuilder()
+                .addCodeSource(ReflectionUtils.getCallerClass().getProtectionDomain().getCodeSource());
     }
 
     /**
@@ -506,7 +509,7 @@ public class CraftsNet {
      */
     @SafeVarargs
     public static AddonContainingBuilder create(Class<? extends Addon>... addons) {
-        return new AddonContainingBuilder(addons);
+        return CraftsNet.create(List.of(addons));
     }
 
     /**
@@ -516,7 +519,8 @@ public class CraftsNet {
      * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
      */
     public static AddonContainingBuilder create(Collection<Class<? extends Addon>> addons) {
-        return new AddonContainingBuilder(addons);
+        return new AddonContainingBuilder(addons)
+                .addCodeSource(ReflectionUtils.getCallerClass().getProtectionDomain().getCodeSource());
     }
 
 }

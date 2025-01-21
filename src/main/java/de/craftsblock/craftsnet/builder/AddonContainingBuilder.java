@@ -19,24 +19,13 @@ import java.util.TreeSet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.2.1
  * @see CraftsNetBuilder
  * @since 3.1.0-SNAPSHOT
  */
 public class AddonContainingBuilder extends CraftsNetBuilder {
 
     private final Collection<Class<? extends Addon>> addons;
-
-    /**
-     * Creates a new instance of {@link AddonContainingBuilder} with providing
-     * an array containing {@link Addon} classes.
-     *
-     * @param addons An array containing all {@link Addon} classes which should be loaded.
-     */
-    @SafeVarargs
-    public AddonContainingBuilder(Class<? extends Addon>... addons) {
-        this(List.of(addons));
-    }
 
     /**
      * Creates a new instance of {@link AddonContainingBuilder} with providing

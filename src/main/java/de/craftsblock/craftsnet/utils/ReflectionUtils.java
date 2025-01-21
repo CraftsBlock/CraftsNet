@@ -11,10 +11,33 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
+
+    /**
+     * Retrieves the class of the immediate caller of the method in which this utility is used.
+     * This is achieved by traversing the current thread's stack trace using the {@link StackWalker} API.
+     *
+     * <p>The method skips the first two frames to get to the actual caller:
+     * <ul>
+     *     <li>The first frame corresponds to the execution of {@link ReflectionUtils#getCallerClass} itself.</li>
+     *     <li>The second frame corresponds to the method that invoked {@link ReflectionUtils#getCallerClass}}.</li>
+     *     <li>The third frame is the immediate caller.</li>
+     * </ul>
+     *
+     * @return The {@link Class} object of the immediate caller.
+     * @throws SecurityException if a security manager is present and denies access to the stack trace.
+     */
+    public static Class<?> getCallerClass() {
+        return StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
+                .walk(frames -> frames.skip(2)
+                        .findFirst()
+                        .map(StackWalker.StackFrame::getDeclaringClass)
+                        .orElseThrow()
+                );
+    }
 
     /**
      * Checks if a constructor is present in the specified class with the provided argument types.
