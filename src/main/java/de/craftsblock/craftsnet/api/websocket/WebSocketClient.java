@@ -742,7 +742,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             Frame frame = new Frame(true, false, false, false, false, opcode, data);
             frame.setMasked(this.shouldMaskOutgoing);
 
-            OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(new SocketExchange(server, this), frame);
+            OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(exchange, frame);
             if (!opcode.equals(Opcode.CLOSE) && !opcode.equals(Opcode.CONTINUATION)) {
                 craftsNet.listenerRegistry().call(event);
                 if (event.isCancelled())
