@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.0.4
+ * @version 3.1.0
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -173,26 +173,8 @@ public class WebSocketClient implements Runnable, RequireAble {
             // Reverse the extension list as it is required to process the more important one's at the end
             Collections.reverse(extensions);
 
-            // Check if the requested path has a corresponding endpoint registered in the server
+            // Load the endpoint mappings
             this.mappings = getEndpoint();
-            if (mappings == null || mappings.isEmpty()) {
-                // If the requested path has no corresponding endpoint, send an error message
-                logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[NOT FOUND]");
-                closeInternally(ClosureCode.BAD_GATEWAY, Json.empty().set("error", "Path do not match any API endpoint!").toString(), true);
-                return;
-            }
-
-            Pattern validator = mappings.get(mappings.keySet().stream().findFirst().orElseThrow()).get(0).validator();
-            Matcher matcher = validator.matcher(path);
-            if (!matcher.matches()) {
-                sendMessage(Json.empty()
-                        .set("error", "There was an unexpected error while matching!")
-                        .toString());
-                return;
-            }
-
-            // Add this WebSocket client to the server's collection and mark it as connected
-            server.add(path, this);
 
             // Trigger the ClientConnectEvent to handle the client connection
             ClientConnectEvent event = new ClientConnectEvent(exchange);
@@ -207,11 +189,34 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
+            // Check if the requested path has a corresponding endpoint registered in the server
+            if (!event.isAllowedWithoutMapping() && (mappings == null || mappings.isEmpty())) {
+                // If the requested path has no corresponding endpoint, send an error message
+                logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[NOT FOUND]");
+                closeInternally(ClosureCode.BAD_GATEWAY, Json.empty().set("error", "Path do not match any API endpoint!").toString(), true);
+                return;
+            }
+
+            Matcher matcher;
+            if (mappings != null) {
+                Pattern validator = mappings.get(mappings.keySet().stream().findFirst().orElseThrow()).get(0).validator();
+                matcher = validator.matcher(path);
+                if (!matcher.matches()) {
+                    sendMessage(Json.empty()
+                            .set("error", "There was an unexpected error while matching!")
+                            .toString());
+                    return;
+                }
+
+                // Change the validator of the transformer performer
+                this.transformerPerformer.setValidator(validator);
+            } else matcher = null;
+
+            // Add this WebSocket client to the server's collection and mark it as connected
+            server.add(path, this);
+
             // If the event is not cancelled, process incoming messages from the client
             logger.info(ip + " connected to " + path);
-
-            // Change the validator of the transformer performer
-            this.transformerPerformer.setValidator(validator);
 
             readLoop:
             while (!Thread.currentThread().isInterrupted() && isConnected()) {
@@ -265,44 +270,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 args[1] = data;
                 for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
 
-                for (ProcessPriority.Priority priority : mappings.keySet())
-                    inner:
-                            for (RouteRegistry.EndpointMapping mapping : mappings.get(priority)) {
-                                if (!(mapping.handler() instanceof SocketHandler handler)) continue;
-                                Method method = mapping.method();
-
-                                // Process the requirements
-                                if (craftsNet.requirementRegistry().getRequirements().containsKey(WebSocketServer.class))
-                                    for (Requirement requirement : craftsNet.requirementRegistry().getRequirements().get(WebSocketServer.class))
-                                        try {
-                                            Method m = Utils.getMethod(requirement.getClass(), "applies", Frame.class, RouteRegistry.EndpointMapping.class);
-                                            assert m != null;
-                                            if (!((Boolean) m.invoke(requirement, frame, mapping))) continue inner;
-                                        } catch (NullPointerException | AssertionError | IllegalAccessException | InvocationTargetException ignored) {
-                                        }
-
-                                // Perform all transformers and continue if passingArgs is null
-                                Object[] passingArgs = transformerPerformer.perform(mapping.handler(), method, args);
-                                if (passingArgs == null)
-                                    continue;
-
-                                // Only check the parameter types if there are two parameters
-                                if (method.getParameterCount() >= 2)
-                                    if (method.getParameterTypes()[1].equals(String.class))
-                                        // Change the message to a string
-                                        passingArgs[1] = new String(data, StandardCharsets.UTF_8);
-                                    else if (method.getParameterTypes()[1].equals(Frame.class))
-                                        // Change the message to a frame
-                                        passingArgs[1] = frame.clone();
-                                    else if (method.getParameterTypes()[1].equals(ByteBuffer.class))
-                                        // Change the message to a byte buffer
-                                        passingArgs[1] = new ByteBuffer(frame.getData());
-
-                                // Invoke the handler method
-                                method.setAccessible(true);
-                                method.invoke(handler, passingArgs);
-                                method.setAccessible(false);
-                            }
+                handleMappings(frame, args);
             }
 
             // Clear up transformer cache to free up memory
@@ -317,6 +285,58 @@ public class WebSocketClient implements Runnable, RequireAble {
         } finally {
             disconnect();
         }
+    }
+
+    /**
+     * Passes a socket message frame down the endpoints.
+     *
+     * @param frame The {@link Frame} received.
+     * @param args  The args that should be passed down.
+     */
+    private void handleMappings(Frame frame, Object[] args) {
+        mappings.keySet().forEach(priority -> {
+            try {
+                inner:
+                for (RouteRegistry.EndpointMapping mapping : mappings.get(priority)) {
+                    if (!(mapping.handler() instanceof SocketHandler handler)) continue;
+                    Method method = mapping.method();
+
+                    // Process the requirements
+                    if (craftsNet.requirementRegistry().getRequirements().containsKey(WebSocketServer.class))
+                        for (Requirement requirement : craftsNet.requirementRegistry().getRequirements().get(WebSocketServer.class))
+                            try {
+                                Method m = Utils.getMethod(requirement.getClass(), "applies", Frame.class, RouteRegistry.EndpointMapping.class);
+                                assert m != null;
+                                if (!((Boolean) m.invoke(requirement, frame, mapping))) continue inner;
+                            } catch (NullPointerException | AssertionError | IllegalAccessException | InvocationTargetException ignored) {
+                            }
+
+                    // Perform all transformers and continue if passingArgs is null
+                    Object[] passingArgs = transformerPerformer.perform(mapping.handler(), method, args);
+                    if (passingArgs == null)
+                        continue;
+
+                    // Only check the parameter types if there are two parameters
+                    if (method.getParameterCount() >= 2)
+                        switch (method.getParameterTypes()[1].getName()) {
+                            case "java.lang.String" -> passingArgs[1] = new String(frame.getData(), StandardCharsets.UTF_8);
+                            case "de.craftsblock.craftsnet.api.websocket.Frame" -> passingArgs[1] = frame.clone();
+                            case "de.craftsblock.craftsnet.utils.ByteBuffer" -> passingArgs[1] = new ByteBuffer(frame.getData());
+                        }
+
+
+                    // Invoke the handler method
+                    try {
+                        method.setAccessible(true);
+                        method.invoke(handler, passingArgs);
+                    } finally {
+                        method.setAccessible(false);
+                    }
+                }
+            } catch (Throwable t) {
+                throw new RuntimeException("Unexpected exception whilst handling websocket mappings", t);
+            }
+        });
     }
 
     /**

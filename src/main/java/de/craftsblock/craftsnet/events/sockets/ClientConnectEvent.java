@@ -14,7 +14,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.1.0
  * @see EventWithCancelReason
  * @since 2.1.1-SNAPSHOT
  */
@@ -22,6 +22,8 @@ public class ClientConnectEvent extends EventWithCancelReason {
 
     private final SocketExchange exchange;
     private final EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappings;
+
+    private boolean allowWithoutMapping = false;
 
     /**
      * Constructs a new ClientConnectEvent with the specified SocketExchange and SocketMapping.
@@ -60,4 +62,21 @@ public class ClientConnectEvent extends EventWithCancelReason {
         return mappings != null && !mappings.isEmpty();
     }
 
+    /**
+     * Sets whether the websocket client is allowed to connect to the server without a valid endpoint or not.
+     *
+     * @param allowWithoutMapping {@code true} if the client is allowed to connect without a valid endpoint, {@code false} otherwise.
+     */
+    public void allowWithoutMapping(boolean allowWithoutMapping) {
+        this.allowWithoutMapping = allowWithoutMapping;
+    }
+
+    /**
+     * Retrieves whether the websocket client is allowed to connect without a valid endpoint or not.
+     *
+     * @return {@code true} if the client is allowed to connect without a valid endpoint, {@code false} otherwise.
+     */
+    public boolean isAllowedWithoutMapping() {
+        return allowWithoutMapping;
+    }
 }
