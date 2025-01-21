@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.utils;
 
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Range;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
@@ -11,28 +12,39 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
+ * @version 1.1.0
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
 
     /**
-     * Retrieves the class of the immediate caller of the method in which this utility is used.
-     * This is achieved by traversing the current thread's stack trace using the {@link StackWalker} API.
-     *
-     * <p>The method skips the first two frames to get to the actual caller:
-     * <ul>
-     *     <li>The first frame corresponds to the execution of {@link ReflectionUtils#getCallerClass} itself.</li>
-     *     <li>The second frame corresponds to the method that invoked {@link ReflectionUtils#getCallerClass}}.</li>
-     *     <li>The third frame is the immediate caller.</li>
-     * </ul>
+     * Retrieves the class of the immediate caller of the method in which this method is called.
      *
      * @return The {@link Class} object of the immediate caller.
      * @throws SecurityException if a security manager is present and denies access to the stack trace.
+     * @since 3.3.1-SNAPSHOT
      */
     public static Class<?> getCallerClass() {
+        return getCallerClass(2);
+    }
+
+    /**
+     * Retrieves the class of the caller at a specified depth in the current thread's stack trace.
+     *
+     * <p>The depth is controlled by the {@code level} parameter, which specifies how many
+     * frames to skip in the stack trace. A {@code level} of 1 corresponds to the immediate caller
+     * of this method, a {@code level} of 2 corresponds to the caller's caller, and so on.</p>
+     *
+     * @param level The number of stack frames to skip to find the desired caller's class.
+     *              Must be greater than or equal to 1. Usually needs to be 2.
+     * @return The {@link Class} object of the caller at the specified depth.
+     * @throws IllegalArgumentException If the provided {@code level} is less than 1.
+     * @throws SecurityException        If a security manager is present and denies access to the stack trace.
+     * @since 3.3.1-SNAPSHOT
+     */
+    public static Class<?> getCallerClass(@Range(from = 1, to = Integer.MAX_VALUE) int level) {
         return StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-                .walk(frames -> frames.skip(2)
+                .walk(frames -> frames.skip(level)
                         .findFirst()
                         .map(StackWalker.StackFrame::getDeclaringClass)
                         .orElseThrow()
