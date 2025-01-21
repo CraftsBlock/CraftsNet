@@ -37,7 +37,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.0.6-SNAPSHOT
  */
 public class Frame implements RequireAble {
@@ -157,6 +157,15 @@ public class Frame implements RequireAble {
     }
 
     /**
+     * Sets the {@link Opcode} for the frame.
+     *
+     * @param opcode The new {@link Opcode}.
+     */
+    public void setOpcode(@NotNull Opcode opcode) {
+        this.opcode = opcode;
+    }
+
+    /**
      * Gets the payload data of this frame a {@link ByteBuffer}.
      *
      * @return The payload data as a {@link ByteBuffer}
@@ -170,7 +179,7 @@ public class Frame implements RequireAble {
      *
      * @return The raw payload data.
      */
-    public byte[] getData() {
+    public byte @NotNull [] getData() {
         return data.getSource();
     }
 

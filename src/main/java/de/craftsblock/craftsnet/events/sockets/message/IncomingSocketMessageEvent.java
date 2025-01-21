@@ -1,7 +1,10 @@
 package de.craftsblock.craftsnet.events.sockets.message;
 
 import de.craftsblock.craftscore.event.CancellableEvent;
+import de.craftsblock.craftsnet.api.websocket.Frame;
+import de.craftsblock.craftsnet.api.websocket.Opcode;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import de.craftsblock.craftsnet.utils.ByteBuffer;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -10,24 +13,24 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 1.1.0
  * @since 2.1.1-SNAPSHOT
  */
 public class IncomingSocketMessageEvent extends CancellableEvent {
 
     private final SocketExchange exchange;
 
-    private final byte @NotNull [] data;
+    private final Frame frame;
 
     /**
      * Constructs a new IncomingSocketMessageEvent with the specified SocketExchange and incoming message data.
      *
      * @param exchange The SocketExchange object representing the socket connection and its associated data.
-     * @param data     The incoming message data for this event.
+     * @param frame    The incoming message frame for this event.
      */
-    public IncomingSocketMessageEvent(SocketExchange exchange, byte @NotNull [] data) {
+    public IncomingSocketMessageEvent(SocketExchange exchange, @NotNull Frame frame) {
         this.exchange = exchange;
-        this.data = data;
+        this.frame = frame;
     }
 
     /**
@@ -40,12 +43,41 @@ public class IncomingSocketMessageEvent extends CancellableEvent {
     }
 
     /**
-     * Gets the incoming message data associated with the event.
+     * Gets the incoming message as a {@link Frame} object.
+     *
+     * @return The incoming message.
+     */
+    public Frame getFrame() {
+        return frame;
+    }
+
+    /**
+     * Gets the incoming message as a {@link ByteBuffer} object.
+     *
+     * @return The incoming message.
+     */
+    public ByteBuffer getBuffer() {
+        return frame.getBuffer();
+    }
+
+    /**
+     * Gets the incoming message as a byte array.
      *
      * @return The incoming message data.
      */
     public byte @NotNull [] getData() {
-        return data;
+        return frame.getData();
+    }
+
+
+    /**
+     * Gets the incoming message as an utf8 encoded string.
+     *
+     * @return The incoming message.
+     */
+    public String getUtf8() {
+        if (!frame.getOpcode().equals(Opcode.TEXT)) return null;
+        return frame.getUtf8();
     }
 
 }

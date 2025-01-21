@@ -253,10 +253,11 @@ public class WebSocketClient implements Runnable, RequireAble {
                 }
 
                 // Fire an incoming socket message event and continue if it was cancelled
-                IncomingSocketMessageEvent event2 = new IncomingSocketMessageEvent(exchange, data);
-                craftsNet.listenerRegistry().call(event2);
-                if (event2.isCancelled())
-                    continue;
+                IncomingSocketMessageEvent incomingMessageEvent = new IncomingSocketMessageEvent(exchange, frame);
+                craftsNet.listenerRegistry().call(incomingMessageEvent);
+                if (incomingMessageEvent.isCancelled()) continue;
+
+                if (mappings == null || matcher == null) continue;
 
                 // Extract and pass the message parameters to the endpoint handler
                 Object[] args = new Object[matcher.groupCount() + 1];
@@ -738,15 +739,17 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
-            OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(new SocketExchange(server, this), opcode, data);
+            Frame frame = new Frame(true, false, false, false, false, opcode, data);
+            frame.setMasked(this.shouldMaskOutgoing);
+
+            OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(new SocketExchange(server, this), frame);
             if (!opcode.equals(Opcode.CLOSE) && !opcode.equals(Opcode.CONTINUATION)) {
                 craftsNet.listenerRegistry().call(event);
                 if (event.isCancelled())
                     return;
             }
 
-            Frame frame = new Frame(true, false, false, false, false, event.getOpcode(), event.getData());
-            frame.setMasked(this.shouldMaskOutgoing);
+            frame = event.getFrame();
 
             if (shouldFragment())
                 for (Frame send : frame.fragmentFrame(getFragmentSize())) {

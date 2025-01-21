@@ -1,13 +1,11 @@
 package de.craftsblock.craftsnet.events.sockets.message;
 
-import de.craftsblock.craftscore.event.Cancellable;
 import de.craftsblock.craftscore.event.CancellableEvent;
-import de.craftsblock.craftscore.event.Event;
+import de.craftsblock.craftsnet.api.websocket.Frame;
 import de.craftsblock.craftsnet.api.websocket.Opcode;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import de.craftsblock.craftsnet.utils.ByteBuffer;
 import org.jetbrains.annotations.NotNull;
-
-import java.nio.charset.StandardCharsets;
 
 /**
  * The OutgoingSocketMessageEvent class represents an event related to an outgoing message on a websocket connection.
@@ -15,38 +13,24 @@ import java.nio.charset.StandardCharsets;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 1.0.1
  * @since 2.1.1-SNAPSHOT
  */
 public class OutgoingSocketMessageEvent extends CancellableEvent {
 
-    private final SocketExchange exchange;
+    private final @NotNull SocketExchange exchange;
 
-    private Opcode opcode;
-    private byte @NotNull [] data;
-
-    /**
-     * Constructs a new OutgoingSocketMessageEvent with the specified SocketExchange and message data.
-     *
-     * @param exchange The SocketExchange object representing the socket connection and its associated data.
-     * @param opcode   The opcode that will be used to identify the message content.
-     * @param data     The outgoing message data as it's string representation
-     */
-    public OutgoingSocketMessageEvent(@NotNull SocketExchange exchange, Opcode opcode, @NotNull String data) {
-        this(exchange, opcode, data.getBytes(StandardCharsets.UTF_8));
-    }
+    private Frame frame;
 
     /**
      * Constructs a new OutgoingSocketMessageEvent with the specified SocketExchange and message data.
      *
      * @param exchange The SocketExchange object representing the socket connection and its associated data.
-     * @param opcode   The opcode that will be used to identify the message content.
-     * @param data     The outgoing message data as a byte array
+     * @param frame    The {@link Frame} that contains the message information.
      */
-    public OutgoingSocketMessageEvent(@NotNull SocketExchange exchange, Opcode opcode, byte @NotNull [] data) {
+    public OutgoingSocketMessageEvent(@NotNull SocketExchange exchange, @NotNull Frame frame) {
         this.exchange = exchange;
-        this.opcode = opcode;
-        this.data = data;
+        this.frame = frame;
     }
 
     /**
@@ -54,7 +38,7 @@ public class OutgoingSocketMessageEvent extends CancellableEvent {
      *
      * @return The SocketExchange object representing the socket connection and its associated data.
      */
-    public SocketExchange getExchange() {
+    public @NotNull SocketExchange getExchange() {
         return exchange;
     }
 
@@ -63,8 +47,8 @@ public class OutgoingSocketMessageEvent extends CancellableEvent {
      *
      * @return The opcode of the message.
      */
-    public Opcode getOpcode() {
-        return opcode;
+    public @NotNull Opcode getOpcode() {
+        return frame.getOpcode();
     }
 
     /**
@@ -72,17 +56,8 @@ public class OutgoingSocketMessageEvent extends CancellableEvent {
      *
      * @param opcode The opcode which should be used.
      */
-    public void setOpcode(Opcode opcode) {
-        this.opcode = opcode;
-    }
-
-    /**
-     * Gets the outgoing message data associated with the event.
-     *
-     * @return The outgoing message data.
-     */
-    public byte @NotNull [] getData() {
-        return data;
+    public void setOpcode(@NotNull Opcode opcode) {
+        this.frame.setOpcode(opcode);
     }
 
     /**
@@ -91,7 +66,54 @@ public class OutgoingSocketMessageEvent extends CancellableEvent {
      * @param data The outgoing message data to be set.
      */
     public void setData(byte @NotNull [] data) {
-        this.data = data;
+        this.frame.setData(data);
+    }
+
+    /**
+     * Sets the outgoing message frame.
+     *
+     * @param frame The outgoing message frame.
+     */
+    public void setFrame(@NotNull Frame frame) {
+        this.frame = frame;
+    }
+
+    /**
+     * Gets the outgoing message as a {@link Frame} object.
+     *
+     * @return The outgoing message.
+     */
+    public @NotNull Frame getFrame() {
+        return frame;
+    }
+
+    /**
+     * Gets the outgoing message as a {@link ByteBuffer} object.
+     *
+     * @return The outgoing message.
+     */
+    public @NotNull ByteBuffer getBuffer() {
+        return frame.getBuffer();
+    }
+
+    /**
+     * Gets the outgoing message as a byte array.
+     *
+     * @return The outgoing message data.
+     */
+    public byte @NotNull [] getData() {
+        return frame.getData();
+    }
+
+
+    /**
+     * Gets the outgoing message as an utf8 encoded string.
+     *
+     * @return The outgoing message.
+     */
+    public String getUtf8() {
+        if (!frame.getOpcode().equals(Opcode.TEXT)) return null;
+        return frame.getUtf8();
     }
 
 }
