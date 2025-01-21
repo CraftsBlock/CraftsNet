@@ -7,8 +7,9 @@ import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
+import de.craftsblock.craftsnet.api.session.SessionInfo;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
-import de.craftsblock.craftsnet.api.utils.SessionStorage;
+import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.events.requests.PostRequestEvent;
 import de.craftsblock.craftsnet.events.requests.PreRequestEvent;
 import de.craftsblock.craftsnet.events.requests.routes.RouteRequestEvent;
@@ -32,7 +33,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.6
+ * @version 1.3.0
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -82,8 +83,9 @@ public class WebHandler implements HttpHandler {
 
                 // Create a Request object to encapsulate the incoming request information.
                 try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod);
-                     Exchange exchange = new Exchange(url, request, response, new SessionStorage())) {
-                    exchange.storage().setExchange(exchange);
+                     Session session = craftsNet.sessionCache().getOrNew(SessionInfo.extractSession(request));
+                     Exchange exchange = new Exchange(url, request, response, session)) {
+                    exchange.session().setExchange(exchange);
 
                     PreRequestEvent event = new PreRequestEvent(exchange);
                     craftsNet.listenerRegistry().call(event);
@@ -282,7 +284,6 @@ public class WebHandler implements HttpHandler {
         response.setContentType(fileLoadedEvent.getContentType(), "text/plain");
 
         response.print(share);
-        event.getExchange().storage().clear(); // Clear the session storage as it is no longer needed
     }
 
     /**

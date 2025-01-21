@@ -10,6 +10,7 @@ import de.craftsblock.craftsnet.api.http.WebServer;
 import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
 import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
 import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
+import de.craftsblock.craftsnet.api.session.SessionCache;
 import de.craftsblock.craftsnet.api.websocket.DefaultPingResponder;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegistry;
@@ -70,6 +71,7 @@ public class CraftsNet {
     private RequirementRegistry requirementRegistry;
     private RouteRegistry routeRegistry;
     private ServiceManager serviceManager;
+    private SessionCache sessionCache;
     private WebSocketExtensionRegistry webSocketExtensionRegistry;
 
     // Server instances
@@ -141,6 +143,9 @@ public class CraftsNet {
 
         // Initialize listener and route registries, and addon manager
         logger.info("Initialization of system variables");
+        logger.debug("Initialization of the session cache");
+        this.sessionCache = new SessionCache(builder.getSessionCacheSize());
+
         logger.debug("Initialization of the listener registry");
         listenerRegistry = new ListenerRegistry();
 
@@ -259,6 +264,11 @@ public class CraftsNet {
         if (this.addonManager != null) {
             this.addonManager.stop();
             this.addonManager = null;
+        }
+
+        if (this.sessionCache != null) {
+            this.sessionCache.clear();
+            this.sessionCache = null;
         }
 
         if (this.oldDefaultUncaughtExceptionHandler != null) {
@@ -404,6 +414,16 @@ public class CraftsNet {
      */
     public ServiceManager serviceManager() {
         return serviceManager;
+    }
+
+
+    /**
+     * Retrieves the session cache instance which is in charge of caching session.
+     *
+     * @return The session cache instance.
+     */
+    public SessionCache sessionCache() {
+        return sessionCache;
     }
 
     /**

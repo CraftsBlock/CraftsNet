@@ -5,8 +5,8 @@ package de.craftsblock.craftsnet.api;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.1.0
  * @since 1.0.0-SNAPSHOT
  */
-public interface BaseExchange {
+public interface BaseExchange extends AutoCloseable {
 }

@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.api.http;
 
 import de.craftsblock.craftsnet.api.BaseExchange;
-import de.craftsblock.craftsnet.api.utils.SessionStorage;
+import de.craftsblock.craftsnet.api.session.Session;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -13,21 +13,21 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.0
+ * @version 2.2.0
  * @see BaseExchange
  * @see Request
  * @see Response
- * @see SessionStorage
+ * @see Session
  * @since 1.0.0-SNAPSHOT
  */
 public record Exchange(@NotNull String path, @NotNull Request request, @NotNull Response response,
-                       @NotNull SessionStorage storage) implements BaseExchange, AutoCloseable {
+                       @NotNull Session session) implements BaseExchange {
 
     /**
      * @param path     The path the client connected to.
      * @param request  The {@link Request} object containing the incoming data from the client.
      * @param response The {@link Response} object used to send data back to the client.
-     * @param storage  A storage for this request designed for storing request specific data.
+     * @param session  The {@link Session} object used to store session related things.
      */
     public Exchange {
         request.setExchange(this);
@@ -39,7 +39,6 @@ public record Exchange(@NotNull String path, @NotNull Request request, @NotNull 
      */
     @Override
     public void close() throws Exception {
-        storage.close();
     }
 
 }

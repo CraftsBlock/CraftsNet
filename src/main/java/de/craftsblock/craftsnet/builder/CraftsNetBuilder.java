@@ -17,7 +17,7 @@ import java.util.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
+ * @version 1.2.0
  * @see ActivateType
  * @since 3.0.3-SNAPSHOT
  */
@@ -32,6 +32,8 @@ public class CraftsNetBuilder {
     private ActivateType webSocketServer;
     private ActivateType addonSystem;
     private ActivateType commandSystem;
+
+    private int sessionCacheSize;
 
     private ActivateType fileLogger;
     private Logger logger;
@@ -51,6 +53,7 @@ public class CraftsNetBuilder {
         webSocketServerPort = 5001;
         webServer = webSocketServer = ActivateType.DYNAMIC;
         addonSystem = commandSystem = fileLogger = ActivateType.ENABLED;
+        withSessionCache(5);
         withDebug(false);
         withTempFilesOnNormalFileSystem(false);
         withSkipVersionCheck(false);
@@ -126,6 +129,8 @@ public class CraftsNetBuilder {
             case "http-port", "httpport" -> withWebServer(Integer.parseInt(value));
             case "log-rotate", "logrotate" -> withLogRotate(Integer.parseInt(value));
             case "socket-port", "socketport" -> withWebSocketServer(Integer.parseInt(value));
+
+            case "sessioncache", "sessioncachesize" -> withSessionCache(Integer.parseInt(value));
 
             // Default
             default -> throw new IllegalStateException("Unexpected argument in startup command: " + arg.toLowerCase());
@@ -242,6 +247,17 @@ public class CraftsNetBuilder {
      */
     public CraftsNetBuilder withCommandSystem(ActivateType type) {
         this.commandSystem = type;
+        return this;
+    }
+
+    /**
+     * Specifies the size of the session cache.
+     *
+     * @param size The size of the session cache.
+     * @return The {@link CraftsNetBuilder} instance.
+     */
+    public CraftsNetBuilder withSessionCache(int size) {
+        this.sessionCacheSize = size;
         return this;
     }
 
@@ -452,6 +468,15 @@ public class CraftsNetBuilder {
      */
     public boolean isCommandSystem(ActivateType type) {
         return commandSystem == type;
+    }
+
+    /**
+     * Retrieves the session cache size configured.
+     *
+     * @return The session cache size.
+     */
+    public int getSessionCacheSize() {
+        return sessionCacheSize;
     }
 
     /**

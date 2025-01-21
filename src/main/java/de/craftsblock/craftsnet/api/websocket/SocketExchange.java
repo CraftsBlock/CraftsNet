@@ -10,7 +10,7 @@ import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.1.0
  * @see BaseExchange
  * @see Socket
  * @see SocketHandler
@@ -28,6 +28,13 @@ public record SocketExchange(WebSocketServer server, WebSocketClient client) imp
         if (client.getPath() == null)
             return;
         server.broadcast(client.getPath(), data);
+    }
+
+    /**
+     * Performs last actions before the exchange is closed.
+     */
+    @Override
+    public void close() throws Exception {
     }
 
 }

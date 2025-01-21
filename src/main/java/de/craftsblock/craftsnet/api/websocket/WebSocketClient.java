@@ -10,8 +10,8 @@ import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
+import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
-import de.craftsblock.craftsnet.api.utils.SessionStorage;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
 import de.craftsblock.craftsnet.events.sockets.ClientConnectEvent;
 import de.craftsblock.craftsnet.events.sockets.ClientDisconnectEvent;
@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.1.0
+ * @version 3.2.0
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -68,7 +68,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
     private final WebSocketServer server;
     private final Socket socket;
-    private final SessionStorage storage;
+    private final Session session;
     private final List<WebSocketExtension> extensions;
     private final TransformerPerformer transformerPerformer;
 
@@ -106,7 +106,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     public WebSocketClient(CraftsNet craftsNet, Socket socket, WebSocketServer server) {
         this.socket = socket;
         this.server = server;
-        this.storage = new SessionStorage();
+        this.session = new Session();
         this.extensions = new ArrayList<>();
 
         this.shouldFragment = server.shouldFragment();
@@ -198,7 +198,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
 
             Matcher matcher;
-            if (mappings != null) {
+            if (mappings != null && !mappings.isEmpty()) {
                 Pattern validator = mappings.get(mappings.keySet().stream().findFirst().orElseThrow()).get(0).validator();
                 matcher = validator.matcher(path);
                 if (!matcher.matches()) {
@@ -262,7 +262,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 craftsNet.listenerRegistry().call(incomingMessageEvent);
                 if (incomingMessageEvent.isCancelled()) continue;
 
-                if (mappings == null || matcher == null) continue;
+                if (mappings == null || mappings.isEmpty() || matcher == null) continue;
 
                 // Extract and pass the message parameters to the endpoint handler
                 Object[] args = new Object[matcher.groupCount() + 1];
@@ -510,8 +510,8 @@ public class WebSocketClient implements Runnable, RequireAble {
      *
      * @return The storage of this websocket client instance.
      */
-    public SessionStorage getStorage() {
-        return storage;
+    public Session getSession() {
+        return session;
     }
 
     /**
@@ -870,7 +870,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 headers = null;
                 mappings = null;
                 transformerPerformer.clearCache();
-                storage.clear();
+                session.clear();
                 extensions.clear();
                 server.remove(this);
                 this.connected = false;
