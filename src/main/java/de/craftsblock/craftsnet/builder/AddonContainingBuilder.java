@@ -19,7 +19,7 @@ import java.util.TreeSet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.1
+ * @version 1.2.2
  * @see CraftsNetBuilder
  * @since 3.1.0-SNAPSHOT
  */
@@ -290,6 +290,9 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
      */
     @Override
     public CraftsNet build() throws IOException {
+        for (Class<? extends Addon> addon : addons)
+            this.removeCodeSource(addon.getProtectionDomain().getCodeSource());
+
         CraftsNet craftsNet = super.build();
         AddonLoader loader = new AddonLoader(craftsNet);
 
