@@ -22,7 +22,7 @@ import java.util.stream.StreamSupport;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.0
+ * @version 1.1.1
  * @see AutoRegisterInfo
  * @since 3.2.0-SNAPSHOT
  */
@@ -68,7 +68,7 @@ public class AutoRegisterLoader {
         Set<AutoRegisterInfo> infos = Collections.newSetFromMap(new ConcurrentHashMap<>());
         ClassLoader classLoader = (loader != null ? loader : ClassLoader.getSystemClassLoader());
 
-        List<Future<?>> futures = new ArrayList<>();
+        ConcurrentLinkedQueue<Future<?>> futures = new ConcurrentLinkedQueue<>();
 
         // Process each entry in the JAR file
         StreamSupport.stream(file.stream().spliterator(), true)
