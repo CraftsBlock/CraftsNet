@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.2.0
+ * @version 3.2.1
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -839,45 +839,42 @@ public class WebSocketClient implements Runnable, RequireAble {
     /**
      * Disconnects the WebSocket client and performs necessary cleanup operations.
      * This method triggers the ClientDisconnectEvent before closing the socket and removing the client from the server.
-     *
-     * @return The Thread the client is running from
      */
-    protected synchronized Thread disconnect() {
-        if (this.connected || socket.isConnected())
-            try {
-                if (reader == null || writer == null) return Thread.currentThread();
+    protected synchronized void disconnect() {
+        if (!this.connected && !socket.isConnected()) return;
+        if (reader == null || writer == null) return;
 
-                reader.close();
-                reader = null;
-                writer.close();
-                writer = null;
+        try {
+            reader.close();
+            reader = null;
+            writer.close();
+            writer = null;
 
-                if (socket != null) socket.close();
+            if (socket != null) socket.close();
 
-                craftsNet.listenerRegistry().call(new ClientDisconnectEvent(exchange, closeCode, closeReason, closeByServer));
+            craftsNet.listenerRegistry().call(new ClientDisconnectEvent(exchange, closeCode, closeReason, closeByServer));
 
-                if (!closeByServer && this.connected) logger.warning(ip + " disconnected abnormal: The underlying tcp connection has been killed!");
-                else if (!closeByServer && closeCode != -1 && closeCode != ClosureCode.NORMAL.intValue()) {
-                    ClosureCode code = ClosureCode.fromInt(closeCode);
-                    logger.warning(
-                            ip + " disconnected abnormal " +
-                                    "(Code: " + (code != null ? code : closeCode) + ")" +
-                                    (closeReason != null && !closeReason.isEmpty() ? ": " + closeReason : "")
-                    );
-                } else
-                    logger.debug(ip + " disconnected");
+            if (!closeByServer && this.connected) logger.warning(ip + " disconnected abnormal: The underlying tcp connection has been killed!");
+            else if (!closeByServer && closeCode != -1 && closeCode != ClosureCode.NORMAL.intValue()) {
+                ClosureCode code = ClosureCode.fromInt(closeCode);
+                logger.warning(
+                        ip + " disconnected abnormal " +
+                                "(Code: " + (code != null ? code : closeCode) + ")" +
+                                (closeReason != null && !closeReason.isEmpty() ? ": " + closeReason : "")
+                );
+            } else
+                logger.debug(ip + " disconnected");
 
-                headers = null;
-                mappings = null;
-                transformerPerformer.clearCache();
-                session.clear();
-                extensions.clear();
-                server.remove(this);
-                this.connected = false;
-            } catch (InvocationTargetException | IllegalAccessException | IOException e) {
-                logger.error(e);
-            }
-        return Thread.currentThread();
+            headers = null;
+            mappings = null;
+            transformerPerformer.clearCache();
+            session.clear();
+            extensions.clear();
+            server.remove(this);
+            this.connected = false;
+        } catch (InvocationTargetException | IllegalAccessException | IOException e) {
+            logger.error(e);
+        }
     }
 
 }

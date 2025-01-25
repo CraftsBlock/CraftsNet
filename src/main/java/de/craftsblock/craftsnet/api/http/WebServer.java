@@ -19,6 +19,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * The WebServer class represents a simple HTTP or HTTPS server that listens for incoming requests and handles
@@ -26,7 +28,7 @@ import java.util.concurrent.Executors;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.4.1
+ * @version 1.5.0
  * @see Exchange
  * @see RequestHandler
  * @see Route
@@ -35,6 +37,8 @@ import java.util.concurrent.Executors;
  */
 public class WebServer extends Server {
 
+    private final ThreadFactory threadFactory = Executors.defaultThreadFactory();
+    private final ThreadPoolExecutor executor;
     private HttpServer server;
 
     /**
@@ -46,6 +50,12 @@ public class WebServer extends Server {
      */
     public WebServer(CraftsNet craftsNet, int port, boolean ssl) {
         super(craftsNet, port, ssl);
+        this.executor = (ThreadPoolExecutor) Executors.newCachedThreadPool(r -> {
+            Thread thread = threadFactory.newThread(r);
+            String oldName = thread.getName();
+            thread.setName("CraftsNet RequestHandler-" + oldName.substring(oldName.lastIndexOf('-') + 1));
+            return thread;
+        });
     }
 
     /**
@@ -105,7 +115,7 @@ public class WebServer extends Server {
         context.setHandler(new WebHandler(this.craftsNet));
 
         logger.debug("Setting up the executor and starting the web server");
-        server.setExecutor(Executors.newCachedThreadPool());
+        server.setExecutor(executor);
         server.start();
         super.start();
         logger.debug("Web server has been started");

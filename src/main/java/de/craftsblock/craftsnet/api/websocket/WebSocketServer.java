@@ -20,9 +20,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.*;
 
 /**
  * The WebSocketServer class represents a simple WebSocket server implementation. It allows WebSocket clients to connect,
@@ -32,12 +30,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
+ * @version 1.2.0
  * @see WebSocketClient
  * @since 2.1.1-SNAPSHOT
  */
 public class WebSocketServer extends Server {
 
+    private final ThreadFactory threadFactory = Executors.defaultThreadFactory();
+    private final ThreadPoolExecutor executor;
     private ConcurrentHashMap<String, ConcurrentLinkedQueue<WebSocketClient>> connected;
 
     private Thread connector;
@@ -67,6 +67,12 @@ public class WebSocketServer extends Server {
      */
     public WebSocketServer(CraftsNet craftsNet, int port, int backlog, boolean ssl) {
         super(craftsNet, port, backlog, ssl);
+        this.executor = (ThreadPoolExecutor) Executors.newCachedThreadPool(r -> {
+            Thread thread = threadFactory.newThread(r);
+            String oldName = thread.getName();
+            thread.setName("CraftsNet WebSocket-" + oldName.substring(oldName.lastIndexOf('-') + 1));
+            return thread;
+        });
     }
 
     /**
@@ -119,7 +125,6 @@ public class WebSocketServer extends Server {
         connected = new ConcurrentHashMap<>();
 
         connector = new Thread(() -> {
-            AtomicInteger i = new AtomicInteger();
             while (!Thread.currentThread().isInterrupted() && running) {
                 try {
                     Socket socket = serverSocket.accept();
@@ -128,9 +133,9 @@ public class WebSocketServer extends Server {
                     socket.setSoTimeout(1000 * 60 * 5);
 
                     if (socket instanceof SSLSocket sslSocket) {
-                        sslSocket.addHandshakeCompletedListener(event -> connectClient(event.getSocket(), i));
+                        sslSocket.addHandshakeCompletedListener(event -> connectClient(event.getSocket()));
                         sslSocket.startHandshake();
-                    } else connectClient(socket, i);
+                    } else connectClient(socket);
                 } catch (SocketException ignored) {
                 } catch (IOException e) {
                     logger.error(e);
@@ -147,12 +152,9 @@ public class WebSocketServer extends Server {
      * Opens a new thread for the connection of the client and starts the websocket client.
      *
      * @param socket The socket used to connect.
-     * @param i      The current identifier of the websocket client.
      */
-    private void connectClient(Socket socket, AtomicInteger i) {
-        Thread client = new Thread(new WebSocketClient(this.craftsNet, socket, this));
-        client.setName("Websocket#" + i.getAndIncrement());
-        client.start();
+    private void connectClient(Socket socket) {
+        executor.execute(new WebSocketClient(this.craftsNet, socket, this));
     }
 
     /**
@@ -165,7 +167,7 @@ public class WebSocketServer extends Server {
                     .forEach(client -> {
                         try {
                             if (client.isConnected()) client.close(ClosureCode.GOING_AWAY, "Server closed!");
-                            client.disconnect().interrupt();
+                            client.disconnect();
                         } catch (IllegalStateException ignored) {
                         }
                     });
@@ -320,16 +322,11 @@ public class WebSocketServer extends Server {
         connected.entrySet().stream()
                 .filter(entry -> entry.getValue().contains(client))
                 .forEach(entry -> {
-                    try {
-                        entry.getValue().removeIf(client::equals);
-                        if (entry.getValue().isEmpty()) connected.remove(entry.getKey());
+                    entry.getValue().removeIf(client::equals);
+                    if (entry.getValue().isEmpty()) connected.remove(entry.getKey());
 
-                        if (!client.isConnected()) return;
-                        Thread thread = client.disconnect();
-                        thread.interrupt();
-                        thread.join(500);
-                    } catch (InterruptedException ignored) {
-                    }
+                    if (!client.isConnected()) return;
+                    client.disconnect();
                 });
     }
 
