@@ -43,7 +43,7 @@ public class ShutdownCommand implements CommandExecutor {
         logger.info("Shutdown anfrage wurde gesendet!");
         craftsNet.stop();
         // Interrupt the console reader thread if it exists
-        Thread thread = Utils.getThreadByName("Console Reader");
+        Thread thread = Utils.getThreadByName("CraftsNet Console Reader");
         if (thread != null) thread.interrupt();
         logger.info("Programm erfolgreich beendet");
         System.exit(0); // Terminate the program with exit code 0 (success)

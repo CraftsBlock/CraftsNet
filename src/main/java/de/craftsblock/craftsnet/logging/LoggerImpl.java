@@ -133,8 +133,8 @@ public class LoggerImpl implements Logger {
         System.out.println(
                 "\u001b[38;5;228m" + OffsetDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "\u001b[0m " +
                         level.getPrefix() + "\u001b[38;5;219m|\u001b[0m " +
-                        "\u001b[36m" + (name != null ? name : Thread.currentThread().getName()) + "\u001b[0m" +
-                        "\u001b[38;5;252m: " + text + "\u001b[0m"
+                        "\u001b[36m" + (name != null ? name : Thread.currentThread().getName().replaceFirst("CraftsNet(\\s+)?", "")) +
+                        "\u001b[0m\u001b[38;5;252m: " + text + "\u001b[0m"
         );
     }
 

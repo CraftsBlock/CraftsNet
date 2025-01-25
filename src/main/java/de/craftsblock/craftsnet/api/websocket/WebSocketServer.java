@@ -142,7 +142,7 @@ public class WebSocketServer extends Server {
                 }
             }
         });
-        connector.setName("Websocket - Connector");
+        connector.setName("CraftsNet WS Acceptor");
         connector.start();
 
         super.start();

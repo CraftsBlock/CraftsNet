@@ -88,6 +88,7 @@ public class CraftsNet {
      * @throws IOException If an I/O error occurs while starting the servers.
      */
     public static void main(String[] args) throws IOException {
+        Thread.currentThread().setName("CraftsNet Main");
         CraftsNet.create().withArgs(args).build();
     }
 
@@ -338,7 +339,7 @@ public class CraftsNet {
             } catch (IOException | InvocationTargetException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
-        }, "Console Reader");
+        }, "CraftsNet Console Reader");
         console.start();
         return console;
     }
