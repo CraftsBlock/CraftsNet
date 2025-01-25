@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -30,7 +31,7 @@ import java.util.concurrent.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.1
+ * @version 1.2.2
  * @see WebSocketClient
  * @since 2.1.1-SNAPSHOT
  */
@@ -122,6 +123,11 @@ public class WebSocketServer extends Server {
 
         if (serverSocket == null) return;
 
+        try {
+            serverSocket.setSoTimeout(0);
+        } catch (SocketException e) {
+            throw new RuntimeException(e);
+        }
         connected = new ConcurrentHashMap<>();
 
         connector = new Thread(() -> {
@@ -136,10 +142,10 @@ public class WebSocketServer extends Server {
                         sslSocket.addHandshakeCompletedListener(event -> connectClient(event.getSocket()));
                         sslSocket.startHandshake();
                     } else connectClient(socket);
-                } catch (SocketException ignored) {
+                } catch (SocketException | SocketTimeoutException socketException) {
                     try {
                         if (Thread.currentThread().isInterrupted()) return;
-                        Thread.sleep(5);
+                        Thread.sleep(15);
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }
