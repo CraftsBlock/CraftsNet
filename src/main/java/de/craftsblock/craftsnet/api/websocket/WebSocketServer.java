@@ -30,7 +30,7 @@ import java.util.concurrent.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.2.1
  * @see WebSocketClient
  * @since 2.1.1-SNAPSHOT
  */
@@ -137,6 +137,12 @@ public class WebSocketServer extends Server {
                         sslSocket.startHandshake();
                     } else connectClient(socket);
                 } catch (SocketException ignored) {
+                    try {
+                        if (Thread.currentThread().isInterrupted()) return;
+                        Thread.sleep(5);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
                 } catch (IOException e) {
                     logger.error(e);
                 }
