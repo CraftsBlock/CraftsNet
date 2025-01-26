@@ -27,7 +27,7 @@ import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.FileHelper;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
 import de.craftsblock.craftsnet.utils.versions.Versions;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -47,7 +47,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.1.4
+ * @version 3.1.5
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -80,6 +80,9 @@ public class CraftsNet {
     private WebServer webServer;
     private WebSocketServer webSocketServer;
 
+    // Status varialbes
+    private boolean started;
+
     /**
      * The main method is the entry point of the application. It parses command-line arguments, initializes the
      * backend
@@ -100,7 +103,7 @@ public class CraftsNet {
      */
     public void start(CraftsNetBuilder builder) throws IOException {
         // Check if the builder was set or CraftsNet is already running and throw an exception if needed.
-        if (this.builder != null)
+        if (started)
             throw new RuntimeException("The instance of CraftsNet has already been started!");
         // Save the builder and the current instance
         this.builder = builder;
@@ -215,7 +218,7 @@ public class CraftsNet {
 
             // Set up and start the console listener
             this.consoleListener = getConsoleReader();
-            logger.debug("Started the console reader");
+            if (this.consoleListener != null) logger.debug("Started the console reader");
         }
 
         // Register a shutdown hook for calling the stop method
@@ -241,6 +244,7 @@ public class CraftsNet {
 
         // Log successful startup message with elapsed time
         logger.info("CraftsNet was successfully started after " + (System.currentTimeMillis() - start) + "ms");
+        started = true;
     }
 
     /**
@@ -295,6 +299,7 @@ public class CraftsNet {
         }
 
         logger.info("CraftsNet has been shutdown");
+        started = false;
     }
 
     /**
@@ -328,13 +333,24 @@ public class CraftsNet {
      *
      * @return The console reader thread.
      */
-    @NotNull
+    @Nullable
     private Thread getConsoleReader() {
+        if (System.in == null) {
+            logger.error("Console input stream not available!");
+            return null;
+        }
+
         Thread console = new Thread(() -> {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            String line;
             try {
-                while (!Thread.currentThread().isInterrupted() && (line = reader.readLine()) != null) {
+                while (!Thread.currentThread().isInterrupted()) {
+                    String line = reader.readLine();
+                    if (line == null) {
+                        if (started)
+                            throw new NullPointerException("Unexpected console input: null");
+                        break;
+                    }
+
                     listenerRegistry.call(new ConsoleMessageEvent(line));
                 }
             } catch (IOException | InvocationTargetException | IllegalAccessException e) {
