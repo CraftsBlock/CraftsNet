@@ -47,7 +47,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.1.3
+ * @version 3.1.4
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -334,8 +334,9 @@ public class CraftsNet {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             String line;
             try {
-                while (!Thread.currentThread().isInterrupted())
-                    if ((line = reader.readLine()) != null) listenerRegistry.call(new ConsoleMessageEvent(line));
+                while (!Thread.currentThread().isInterrupted() && (line = reader.readLine()) != null) {
+                    listenerRegistry.call(new ConsoleMessageEvent(line));
+                }
             } catch (IOException | InvocationTargetException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
