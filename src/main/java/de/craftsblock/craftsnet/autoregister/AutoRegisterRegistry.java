@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.3
+ * @version 1.1.4
  * @see AutoRegisterInfo
  * @see AutoRegisterHandler
  * @since 3.2.0-SNAPSHOT
@@ -124,7 +124,7 @@ public class AutoRegisterRegistry {
         if (args.length >= 1)
             if (info.annotation() instanceof AutoRegister annotation && args[0] instanceof Startup startup)
                 // Cancel if it was called on the wrong startup.
-                if (startup != annotation.value())
+                if (startup != annotation.startup())
                     return false;
 
         List<? extends AutoRegisterHandler<?>> handlers = autoRegisterHandlers.entrySet().stream()

@@ -18,7 +18,7 @@ import java.lang.annotation.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.2.0-SNAPSHOT
  */
 @Documented
@@ -34,6 +34,6 @@ public @interface AutoRegister {
      *
      * @return The {@link Startup} value indicating when to enable auto-registration.
      */
-    Startup value() default Startup.ENABLE;
+    Startup startup() default Startup.ENABLE;
 
 }
