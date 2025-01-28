@@ -47,7 +47,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.1.5
+ * @version 3.1.6
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -346,8 +346,8 @@ public class CraftsNet {
                 while (!Thread.currentThread().isInterrupted()) {
                     String line = reader.readLine();
                     if (line == null) {
-                        if (started)
-                            throw new NullPointerException("Unexpected console input: null");
+                        logger().error("Unexpected console input: null");
+                        logger().error("Console reader will be closed after this!");
                         break;
                     }
 
