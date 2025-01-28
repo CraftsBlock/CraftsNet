@@ -23,7 +23,7 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.0.0
+ * @version 3.0.1
  * @see Session
  * @see BaseExchange
  * @since 3.0.6-SNAPSHOT
@@ -91,7 +91,7 @@ public class SessionInfo {
             this.persistent = true;
 
             if (this.session.getExchange() instanceof Exchange http)
-                http.response().setCookie(SID_COOKIE_NAME, session).setHttpOnly(true)
+                http.response().setCookie(SID_COOKIE_NAME, this.sessionID).setHttpOnly(true)
                         .setPath("/").setSameSite(SameSite.LAX);
 
             if (craftsNet != null)
@@ -178,7 +178,7 @@ public class SessionInfo {
      * @return the associated {@code Session}.
      */
     public Session getSession() {
-        return session;
+        return this.session;
     }
 
     /**
