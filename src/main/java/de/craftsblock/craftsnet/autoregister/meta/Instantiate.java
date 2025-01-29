@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.autoregister.meta;
 
 /**
- * The {@link InstanceType} enum defines the different ways an instance of a class
+ * The {@link Instantiate} enum defines the different ways an instance of a class
  * can be managed during the auto registration process.
  * <p>
  * This enum is primarily used to determine whether a new instance should be created
@@ -10,19 +10,19 @@ package de.craftsblock.craftsnet.autoregister.meta;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.3.2-SNAPSHOT
  */
-public enum InstanceType {
+public enum Instantiate {
 
     /**
      * Indicates that the same instance of the class should be reused.
      */
-    SAME,
+    SAME_INSTANCE,
 
     /**
      * Indicates that a new instance of the class should be created each time it is accessed.
      */
-    NEW,
+    NEW_INSTANCE,
 
 }

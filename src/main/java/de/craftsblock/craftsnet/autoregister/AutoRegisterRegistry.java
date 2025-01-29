@@ -135,9 +135,9 @@ public class AutoRegisterRegistry {
 
         if (handlers.isEmpty()) return false;
 
-        Object obj = info.getInstantiated(craftsNet);
         for (AutoRegisterHandler<?> handler : handlers)
             try {
+                Object obj = info.getInstantiated(craftsNet);
                 Method method = handler.getClass().getDeclaredMethod("handle",
                         ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class),
                         AutoRegisterInfo.class, Object.class.arrayType());
