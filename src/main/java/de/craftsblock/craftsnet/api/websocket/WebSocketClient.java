@@ -12,6 +12,7 @@ import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
+import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
 import de.craftsblock.craftsnet.events.sockets.ClientConnectEvent;
 import de.craftsblock.craftsnet.events.sockets.ClientDisconnectEvent;
@@ -48,7 +49,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.2.1
+ * @version 3.3.0
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -69,6 +70,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final WebSocketServer server;
     private final Socket socket;
     private final Session session;
+    private final Scheme scheme;
     private final List<WebSocketExtension> extensions;
     private final TransformerPerformer transformerPerformer;
 
@@ -107,6 +109,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.socket = socket;
         this.server = server;
         this.session = new Session();
+        this.scheme = Scheme.WS.getSsl(server.isSSL());
         this.extensions = new ArrayList<>();
 
         this.shouldFragment = server.shouldFragment();
@@ -132,7 +135,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         if (this.active)
             throw new IllegalStateException("This websocket client is already running!");
 
-        this.exchange = new SocketExchange(server, this); // Create a SocketExchange object to handle communication with the server
+        this.exchange = new SocketExchange(this.scheme, this.server, this); // Create a SocketExchange object to handle communication with the server
         this.active = true;
         try {
             // Setup input and output streams for communication with the client

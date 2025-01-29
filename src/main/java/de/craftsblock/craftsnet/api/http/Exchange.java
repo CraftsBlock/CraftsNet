@@ -2,6 +2,8 @@ package de.craftsblock.craftsnet.api.http;
 
 import de.craftsblock.craftsnet.api.BaseExchange;
 import de.craftsblock.craftsnet.api.session.Session;
+import de.craftsblock.craftsnet.api.utils.Scheme;
+import org.apache.http.HttpVersion;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -13,14 +15,14 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.2.0
+ * @version 2.2.1
  * @see BaseExchange
  * @see Request
  * @see Response
  * @see Session
  * @since 1.0.0-SNAPSHOT
  */
-public record Exchange(@NotNull String path, @NotNull Request request, @NotNull Response response,
+public record Exchange(@NotNull Scheme scheme, @NotNull String path, @NotNull Request request, @NotNull Response response,
                        @NotNull Session session) implements BaseExchange {
 
     /**

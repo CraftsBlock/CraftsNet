@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import de.craftsblock.craftsnet.api.BaseExchange;
+import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 
 /**
@@ -10,13 +11,13 @@ import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @see BaseExchange
  * @see Socket
  * @see SocketHandler
  * @since 2.1.1-SNAPSHOT
  */
-public record SocketExchange(WebSocketServer server, WebSocketClient client) implements BaseExchange {
+public record SocketExchange(Scheme scheme, WebSocketServer server, WebSocketClient client) implements BaseExchange {
 
     /**
      * Broadcasts the given data to all WebSocket clients connected to the same path as the current client.

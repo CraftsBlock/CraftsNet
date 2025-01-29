@@ -10,6 +10,7 @@ import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.session.SessionInfo;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.session.Session;
+import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.events.requests.PostRequestEvent;
 import de.craftsblock.craftsnet.events.requests.PreRequestEvent;
 import de.craftsblock.craftsnet.events.requests.routes.RouteRequestEvent;
@@ -33,7 +34,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.0
+ * @version 1.4.0
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -42,6 +43,8 @@ public class WebHandler implements HttpHandler {
     private final CraftsNet craftsNet;
     private final Logger logger;
     private final RouteRegistry registry;
+
+    private final Scheme scheme;
 
     /**
      * Constructs a new instance of the WebHandler
@@ -52,6 +55,7 @@ public class WebHandler implements HttpHandler {
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
         this.registry = this.craftsNet.routeRegistry();
+        this.scheme = Scheme.HTTP.getSsl(Scheme.HTTP.getServer(craftsNet).isSSL());
     }
 
     /**
@@ -84,7 +88,7 @@ public class WebHandler implements HttpHandler {
                 // Create a Request object to encapsulate the incoming request information.
                 try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod);
                      Session session = craftsNet.sessionCache().getOrNew(SessionInfo.extractSession(request));
-                     Exchange exchange = new Exchange(url, request, response, session)) {
+                     Exchange exchange = new Exchange(this.scheme, url, request, response, session)) {
                     exchange.session().setExchange(exchange);
 
                     PreRequestEvent event = new PreRequestEvent(exchange);
