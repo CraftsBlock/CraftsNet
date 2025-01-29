@@ -1,7 +1,6 @@
 package de.craftsblock.craftsnet.autoregister;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.meta.Startup;
 import de.craftsblock.craftsnet.autoregister.builtin.addons.ServiceLoaderAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.events.ListenerAutoRegisterHandler;
@@ -14,7 +13,6 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
 
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -33,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.4
+ * @version 1.2.0
  * @see AutoRegisterInfo
  * @see AutoRegisterHandler
  * @since 3.2.0-SNAPSHOT
@@ -120,50 +118,24 @@ public class AutoRegisterRegistry {
      * @return true if the AutoRegisterInfo was successfully handled, false otherwise.
      */
     public boolean handle(AutoRegisterInfo info, Object... args) {
+        // Cancel if no parent types are found
+        if (info.getParentTypes().isEmpty()) return false;
+
         // Pre-check if the auto register info is from @AutoRegister
         if (args.length >= 1)
-            if (info.annotation() instanceof AutoRegister annotation && args[0] instanceof Startup startup)
+            if (info.getAnnotation() instanceof AutoRegister annotation && args[0] instanceof Startup startup)
                 // Cancel if it was called on the wrong startup.
                 if (startup != annotation.startup())
                     return false;
 
         List<? extends AutoRegisterHandler<?>> handlers = autoRegisterHandlers.entrySet().stream()
-                .filter(entry -> info.parentTypes().contains(entry.getKey().getName()))
+                .filter(entry -> info.getParentTypes().contains(entry.getKey().getName()))
                 .map(Map.Entry::getValue)
                 .toList();
 
         if (handlers.isEmpty()) return false;
 
-        Class<?> clazz;
-        try {
-            clazz = info.loader().loadClass(info.className());
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
-        }
-
-        Constructor<?> constructor;
-        Object[] constructorArgs;
-        if (ReflectionUtils.isConstructorPresent(clazz)) {
-            constructor = ReflectionUtils.getConstructor(clazz);
-            constructorArgs = new Object[0];
-        } else if (info.bounding() != null && ReflectionUtils.isConstructorPresent(clazz, Addon.class)) {
-            constructor = ReflectionUtils.getConstructor(clazz, Addon.class);
-            constructorArgs = new Object[]{info.bounding()};
-        } else if (info.bounding() != null && ReflectionUtils.isConstructorPresent(clazz, info.bounding().getClass())) {
-            constructor = ReflectionUtils.getConstructor(clazz, info.bounding().getClass());
-            constructorArgs = new Object[]{info.bounding()};
-        } else {
-            constructor = ReflectionUtils.getConstructor(clazz, CraftsNet.class);
-            constructorArgs = new Object[]{craftsNet};
-        }
-
-        Object obj;
-        try {
-            obj = constructor.newInstance(constructorArgs);
-        } catch (InstantiationException | IllegalAccessException | InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-
+        Object obj = info.getInstantiated(craftsNet);
         for (AutoRegisterHandler<?> handler : handlers)
             try {
                 Method method = handler.getClass().getDeclaredMethod("handle",
@@ -173,7 +145,7 @@ public class AutoRegisterRegistry {
                 method.setAccessible(true);
                 boolean result = (boolean) method.invoke(handler, obj, info, args);
                 if (result)
-                    craftsNet.logger().debug("Auto registered " + info.className() + " with " + handler.getClass().getSimpleName());
+                    craftsNet.logger().debug("Auto registered " + info.getClassName() + " with " + handler.getClass().getSimpleName());
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }

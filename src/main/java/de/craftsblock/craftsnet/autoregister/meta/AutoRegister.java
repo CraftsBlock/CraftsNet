@@ -18,7 +18,7 @@ import java.lang.annotation.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.2
+ * @version 1.1.0
  * @since 3.2.0-SNAPSHOT
  */
 @Documented
@@ -35,5 +35,16 @@ public @interface AutoRegister {
      * @return The {@link Startup} value indicating when to enable auto-registration.
      */
     Startup startup() default Startup.ENABLE;
+
+    /**
+     * The {@link InstanceType} value that determines which instance type logic should be applied
+     * when a new instance of the object is created.
+     * The default values is {@link InstanceType#SAME}, meaning auto registration will use the same
+     * object rather than creating new ones every time.
+     *
+     * @return The {@link InstanceType} value indicating which instantiate logic should be used.
+     * @since 3.3.2-SNAPSHOT
+     */
+    InstanceType instanceType() default InstanceType.SAME;
 
 }
