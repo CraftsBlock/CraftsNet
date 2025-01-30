@@ -103,4 +103,15 @@ public enum Scheme {
         return server;
     }
 
+    /**
+     * Checks if the specified scheme is from the same scheme family as this
+     * scheme.
+     *
+     * @param that The scheme to check.
+     * @return {@code true} if the specified scheme is from the same family, {@code false} otherwise.
+     */
+    public boolean isSameFamily(Scheme that) {
+        return this.getServerRaw().equals(that.getServerRaw());
+    }
+
 }
