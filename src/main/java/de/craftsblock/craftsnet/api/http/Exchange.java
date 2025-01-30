@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.api.http;
 
 import de.craftsblock.craftsnet.api.BaseExchange;
 import de.craftsblock.craftsnet.api.session.Session;
+import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 import org.apache.http.HttpVersion;
 import org.jetbrains.annotations.NotNull;
@@ -15,21 +16,22 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.2.1
+ * @version 3.0.0
  * @see BaseExchange
  * @see Request
  * @see Response
  * @see Session
  * @since 1.0.0-SNAPSHOT
  */
-public record Exchange(@NotNull Scheme scheme, @NotNull String path, @NotNull Request request, @NotNull Response response,
-                       @NotNull Session session) implements BaseExchange {
+public record Exchange(@NotNull Scheme scheme, @NotNull ProtocolVersion protocolVersion,
+                       @NotNull Request request, @NotNull Response response, @NotNull Session session) implements BaseExchange {
 
     /**
-     * @param path     The path the client connected to.
-     * @param request  The {@link Request} object containing the incoming data from the client.
-     * @param response The {@link Response} object used to send data back to the client.
-     * @param session  The {@link Session} object used to store session related things.
+     * @param scheme          The {@link Scheme} object containing the scheme used.
+     * @param protocolVersion The {@link ProtocolVersion} object containing the protocol version used.
+     * @param request         The {@link Request} object containing the incoming data from the client.
+     * @param response        The {@link Response} object used to send data back to the client.
+     * @param session         The {@link Session} object used to store session related things.
      */
     public Exchange {
         request.setExchange(this);

@@ -10,6 +10,7 @@ import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.session.SessionInfo;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.session.Session;
+import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.events.requests.PostRequestEvent;
 import de.craftsblock.craftsnet.events.requests.PreRequestEvent;
@@ -74,6 +75,7 @@ public class WebHandler implements HttpHandler {
             String url = httpExchange.getRequestURI().toString();
             Headers headers = httpExchange.getRequestHeaders();
 
+            ProtocolVersion protocolVersion = ProtocolVersion.parse(this.scheme, httpExchange.getProtocol().split("/")[1]);
             Response response = new Response(this.craftsNet, httpExchange, httpMethod);
             try {
                 String ip;
@@ -88,7 +90,7 @@ public class WebHandler implements HttpHandler {
                 // Create a Request object to encapsulate the incoming request information.
                 try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod);
                      Session session = craftsNet.sessionCache().getOrNew(SessionInfo.extractSession(request));
-                     Exchange exchange = new Exchange(this.scheme, url, request, response, session)) {
+                     Exchange exchange = new Exchange(this.scheme, protocolVersion, request, response, session)) {
                     exchange.session().setExchange(exchange);
 
                     PreRequestEvent event = new PreRequestEvent(exchange);

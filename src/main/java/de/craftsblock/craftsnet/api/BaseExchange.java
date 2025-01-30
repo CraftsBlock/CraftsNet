@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.api;
 
+import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 
 /**
@@ -19,5 +20,13 @@ public interface BaseExchange extends AutoCloseable {
      * @since 3.3.2-SNAPSHOT
      */
     Scheme scheme();
+
+    /**
+     * Gets the {@link ProtocolVersion} of the exchange.
+     *
+     * @return The {@link ProtocolVersion} of the exchange.
+     * @since 3.3.2-SNAPSHOT
+     */
+    ProtocolVersion protocolVersion();
 
 }

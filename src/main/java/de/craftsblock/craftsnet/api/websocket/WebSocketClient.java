@@ -12,6 +12,7 @@ import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
+import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
 import de.craftsblock.craftsnet.events.sockets.ClientConnectEvent;
@@ -75,6 +76,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final TransformerPerformer transformerPerformer;
 
     private SocketExchange exchange;
+    private ProtocolVersion protocolVersion;
     private Headers headers;
     private String ip;
     private String path;
@@ -135,13 +137,18 @@ public class WebSocketClient implements Runnable, RequireAble {
         if (this.active)
             throw new IllegalStateException("This websocket client is already running!");
 
-        this.exchange = new SocketExchange(this.scheme, this.server, this); // Create a SocketExchange object to handle communication with the server
         this.active = true;
         try {
             // Setup input and output streams for communication with the client
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             writer = socket.getOutputStream();
             headers = readHeaders(); // Read and store the client's headers for later use
+
+            int secWebsocketVersion = headers.containsKey("Sec-WebSocket-Version") ? Integer.parseInt(headers.getFirst("Sec-WebSocket-Version")) : 0;
+            this.protocolVersion = new ProtocolVersion(this.scheme, secWebsocketVersion, 0);
+
+            // Create a SocketExchange object to handle communication with the server
+            this.exchange = new SocketExchange(this.scheme, this.protocolVersion, this.server, this);
 
             // Abort if the path was not found on the request
             if (path == null) {

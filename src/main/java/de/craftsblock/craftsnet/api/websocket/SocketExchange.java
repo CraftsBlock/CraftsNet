@@ -1,8 +1,10 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import de.craftsblock.craftsnet.api.BaseExchange;
+import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * The SocketExchange record represents an exchange object that provides a way to interact
@@ -11,16 +13,18 @@ import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
+ * @version 1.2.0
  * @see BaseExchange
  * @see Socket
  * @see SocketHandler
  * @since 2.1.1-SNAPSHOT
  */
-public record SocketExchange(Scheme scheme, WebSocketServer server, WebSocketClient client) implements BaseExchange {
+public record SocketExchange(@NotNull Scheme scheme, @NotNull ProtocolVersion protocolVersion,
+                             @NotNull WebSocketServer server, @NotNull WebSocketClient client) implements BaseExchange {
 
     /**
      * @param scheme          The {@link Scheme} object containing the scheme used.
+     * @param protocolVersion The {@link ProtocolVersion} object containing the protocol version used.
      * @param server          The {@link WebSocketServer} object that the client connected to.
      * @param client          The {@link WebSocketClient} object representing the websocket connection.
      */
