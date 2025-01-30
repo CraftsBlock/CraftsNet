@@ -20,6 +20,36 @@ import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 public record SocketExchange(Scheme scheme, WebSocketServer server, WebSocketClient client) implements BaseExchange {
 
     /**
+     * @param scheme          The {@link Scheme} object containing the scheme used.
+     * @param server          The {@link WebSocketServer} object that the client connected to.
+     * @param client          The {@link WebSocketClient} object representing the websocket connection.
+     */
+    public SocketExchange {
+    }
+
+    /**
+     * Gets the {@link WebSocketServer} object associated with this exchange
+     * the websocket client connected to.
+     *
+     * @return The {@link WebSocketServer} object.
+     */
+    @Override
+    public WebSocketServer server() {
+        return server;
+    }
+
+    /**
+     * Gets the {@link WebSocketClient} object associated with this exchange
+     * representing the websocket connection.
+     *
+     * @return The {@link WebSocketClient} object.
+     */
+    @Override
+    public WebSocketClient client() {
+        return client;
+    }
+
+    /**
      * Broadcasts the given data to all WebSocket clients connected to the same path as the current client.
      * If the current client does not have a WebSocket path associated, the broadcast is not performed.
      *

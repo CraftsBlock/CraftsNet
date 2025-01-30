@@ -37,6 +37,47 @@ public record Exchange(@NotNull Scheme scheme, @NotNull String path, @NotNull Re
     }
 
     /**
+     * Gets the {@link Request} object associated with this exchange holding
+     * information about the request.
+     *
+     * @return The {@link Request} object.
+     */
+    @Override
+    public Request request() {
+        return request;
+    }
+
+    /**
+     * Gets the {@link Response} object associated with this exchange used
+     * for managing the response to the request.
+     *
+     * @return The {@link Response} object.
+     */
+    @Override
+    public Response response() {
+        return response;
+    }
+
+    /**
+     * <p>Get the {@link Session} object associated with this exchange holding
+     * information from the session.</p>
+     *
+     * <p>
+     * Can be made persistent by using {@link Session#startSession()}. Must
+     * be called prior to the first call of {@link Response#print(Object)}.
+     * </p>
+     *
+     * <p>If the session is not persistent the data stored will be discarded
+     * after the request was handled or the websocket was closed.</p>
+     *
+     * @return The session object.
+     */
+    @Override
+    public Session session() {
+        return session;
+    }
+
+    /**
      * Performs last actions before the exchange is closed.
      */
     @Override
