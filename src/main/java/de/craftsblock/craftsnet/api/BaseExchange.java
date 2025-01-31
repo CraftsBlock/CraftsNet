@@ -8,7 +8,7 @@ import de.craftsblock.craftsnet.api.utils.Scheme;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.0
+ * @version 1.3.0
  * @since 1.0.0-SNAPSHOT
  */
 public interface BaseExchange extends AutoCloseable {
@@ -19,7 +19,9 @@ public interface BaseExchange extends AutoCloseable {
      * @return The {@link Scheme} of the exchange.
      * @since 3.3.2-SNAPSHOT
      */
-    Scheme scheme();
+    default Scheme scheme() {
+        return protocolVersion().scheme();
+    }
 
     /**
      * Gets the {@link ProtocolVersion} of the exchange.

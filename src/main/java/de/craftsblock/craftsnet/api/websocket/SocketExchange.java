@@ -13,17 +13,16 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.3.0
  * @see BaseExchange
  * @see Socket
  * @see SocketHandler
  * @since 2.1.1-SNAPSHOT
  */
-public record SocketExchange(@NotNull Scheme scheme, @NotNull ProtocolVersion protocolVersion,
+public record SocketExchange(@NotNull ProtocolVersion protocolVersion,
                              @NotNull WebSocketServer server, @NotNull WebSocketClient client) implements BaseExchange {
 
     /**
-     * @param scheme          The {@link Scheme} object containing the scheme used.
      * @param protocolVersion The {@link ProtocolVersion} object containing the protocol version used.
      * @param server          The {@link WebSocketServer} object that the client connected to.
      * @param client          The {@link WebSocketClient} object representing the websocket connection.

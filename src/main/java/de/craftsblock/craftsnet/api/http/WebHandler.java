@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.4.0
+ * @version 1.4.1
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -90,7 +90,7 @@ public class WebHandler implements HttpHandler {
                 // Create a Request object to encapsulate the incoming request information.
                 try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod);
                      Session session = craftsNet.sessionCache().getOrNew(SessionInfo.extractSession(request));
-                     Exchange exchange = new Exchange(this.scheme, protocolVersion, request, response, session)) {
+                     Exchange exchange = new Exchange(protocolVersion, request, response, session)) {
                     exchange.session().setExchange(exchange);
 
                     PreRequestEvent event = new PreRequestEvent(exchange);

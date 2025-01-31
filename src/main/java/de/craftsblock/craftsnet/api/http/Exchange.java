@@ -16,18 +16,17 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.0.0
+ * @version 3.1.0
  * @see BaseExchange
  * @see Request
  * @see Response
  * @see Session
  * @since 1.0.0-SNAPSHOT
  */
-public record Exchange(@NotNull Scheme scheme, @NotNull ProtocolVersion protocolVersion,
+public record Exchange(@NotNull ProtocolVersion protocolVersion,
                        @NotNull Request request, @NotNull Response response, @NotNull Session session) implements BaseExchange {
 
     /**
-     * @param scheme          The {@link Scheme} object containing the scheme used.
      * @param protocolVersion The {@link ProtocolVersion} object containing the protocol version used.
      * @param request         The {@link Request} object containing the incoming data from the client.
      * @param response        The {@link Response} object used to send data back to the client.

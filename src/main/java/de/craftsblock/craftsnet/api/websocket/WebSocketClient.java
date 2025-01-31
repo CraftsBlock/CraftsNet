@@ -50,7 +50,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.0
+ * @version 3.3.1
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -148,7 +148,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             this.protocolVersion = new ProtocolVersion(this.scheme, secWebsocketVersion, 0);
 
             // Create a SocketExchange object to handle communication with the server
-            this.exchange = new SocketExchange(this.scheme, this.protocolVersion, this.server, this);
+            this.exchange = new SocketExchange(this.protocolVersion, this.server, this);
 
             // Abort if the path was not found on the request
             if (path == null) {
