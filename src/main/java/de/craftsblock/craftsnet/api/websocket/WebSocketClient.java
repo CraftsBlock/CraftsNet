@@ -23,6 +23,7 @@ import de.craftsblock.craftsnet.events.sockets.message.ReceivedPingMessageEvent;
 import de.craftsblock.craftsnet.events.sockets.message.ReceivedPongMessageEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
@@ -50,7 +51,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.1
+ * @version 3.3.2
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -239,11 +240,11 @@ public class WebSocketClient implements Runnable, RequireAble {
 
                 if (!this.connected || !this.socket.isConnected()) break;
                 // Process incoming messages from the client
-                byte[] data = frame.getData();
+                byte @NotNull [] data = frame.getData();
 
                 switch (frame.getOpcode()) {
                     case CLOSE -> {
-                        if (data == null || data.length <= 2) break;
+                        if (data.length <= 2) break;
                         closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
                         closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
                         closeInternally(ClosureCode.NORMAL, "Acknowledged close", false);
