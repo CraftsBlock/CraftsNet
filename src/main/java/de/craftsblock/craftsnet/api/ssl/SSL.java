@@ -1,6 +1,7 @@
-package de.craftsblock.craftsnet.utils;
+package de.craftsblock.craftsnet.api.ssl;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.utils.Utils;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;

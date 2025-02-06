@@ -7,8 +7,8 @@ import com.sun.net.httpserver.HttpsServer;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
+import de.craftsblock.craftsnet.api.ssl.SSL;
 import de.craftsblock.craftsnet.builder.ActivateType;
-import de.craftsblock.craftsnet.utils.SSL;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;

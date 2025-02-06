@@ -4,7 +4,7 @@ import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.builder.ActivateType;
-import de.craftsblock.craftsnet.utils.SSL;
+import de.craftsblock.craftsnet.api.ssl.SSL;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
