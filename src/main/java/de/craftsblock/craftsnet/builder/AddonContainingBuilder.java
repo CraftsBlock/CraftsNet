@@ -245,6 +245,7 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
     /**
      * {@inheritDoc}
      *
+     * @param enabled {@inheritDoc}
      * @return {@inheritDoc}
      */
     public AddonContainingBuilder withDebug(boolean enabled) {
@@ -255,6 +256,7 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
     /**
      * {@inheritDoc}
      *
+     * @param enabled {@inheritDoc}
      * @return {@inheritDoc}
      */
     public AddonContainingBuilder withSSL(boolean enabled) {
