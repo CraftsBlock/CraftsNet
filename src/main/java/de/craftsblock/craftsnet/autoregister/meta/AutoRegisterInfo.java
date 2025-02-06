@@ -23,7 +23,7 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 2.0.1
+ * @version 2.0.2
  * @since 3.2.0-SNAPSHOT
  */
 public class AutoRegisterInfo {
@@ -64,7 +64,7 @@ public class AutoRegisterInfo {
      * @since 3.3.2-SNAPSHOT
      */
     public Object getInstantiated(CraftsNet craftsNet) {
-        if (!(annotation instanceof AutoRegister autoRegister) || autoRegister.instantiate().equals(Instantiate.NEW_INSTANCE))
+        if (!(annotation instanceof AutoRegister autoRegister) || autoRegister.instantiate().equals(Instantiate.NEW))
             return getNewInstance(craftsNet);
 
         if (instantiated != null) return instantiated;

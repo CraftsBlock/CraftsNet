@@ -10,7 +10,7 @@ package de.craftsblock.craftsnet.autoregister.meta;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.3.2-SNAPSHOT
  */
 public enum Instantiate {
@@ -18,11 +18,11 @@ public enum Instantiate {
     /**
      * Indicates that the same instance of the class should be reused.
      */
-    SAME_INSTANCE,
+    SAME,
 
     /**
      * Indicates that a new instance of the class should be created each time it is accessed.
      */
-    NEW_INSTANCE,
+    NEW,
 
 }
