@@ -42,6 +42,7 @@ bin/
 
 ### Addons ###
 /addons/
+/certificates/
 /libraries/
 /logs/
 /sessions/
