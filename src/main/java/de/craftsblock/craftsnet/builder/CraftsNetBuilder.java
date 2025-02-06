@@ -5,6 +5,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.LoggerImpl;
 import de.craftsblock.craftsnet.logging.PlainLogger;
+import de.craftsblock.craftsnet.utils.ReflectionUtils;
 import org.jetbrains.annotations.Range;
 
 import java.io.IOException;
@@ -17,7 +18,7 @@ import java.util.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.2.1
  * @see ActivateType
  * @since 3.0.3-SNAPSHOT
  */
@@ -78,7 +79,10 @@ public class CraftsNetBuilder {
         ArgumentParser parser = new ArgumentParser(args);
 
         try {
-            Field field = parser.getClass().getDeclaredField("arguments");
+            Field field = ReflectionUtils.getField(parser.getClass(), "arguments");
+
+            if (field == null)
+                throw new IllegalStateException("Can not load the arguments field!");
 
             try {
                 field.setAccessible(true);
@@ -88,7 +92,7 @@ public class CraftsNetBuilder {
             } finally {
                 field.setAccessible(false);
             }
-        } catch (NoSuchFieldException | IllegalAccessException e) {
+        } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
 
