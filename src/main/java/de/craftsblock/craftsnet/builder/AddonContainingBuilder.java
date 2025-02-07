@@ -5,6 +5,7 @@ import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
 import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
 import de.craftsblock.craftsnet.logging.Logger;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Range;
 
 import java.io.IOException;
@@ -19,7 +20,7 @@ import java.util.TreeSet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.2
+ * @version 1.2.3
  * @see CraftsNetBuilder
  * @since 3.1.0-SNAPSHOT
  */
@@ -295,15 +296,22 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
         for (Class<? extends Addon> addon : addons)
             this.removeCodeSource(addon.getProtectionDomain().getCodeSource());
 
-        CraftsNet craftsNet = super.build();
-        AddonLoader loader = new AddonLoader(craftsNet);
+        return super.build();
+    }
 
+    /**
+     * Load all the addons that have been registered in the builder.
+     *
+     * @param craftsNet The instance of CraftsNet that the addons should be registered on.
+     */
+    @ApiStatus.Internal
+    public void loadAddons(CraftsNet craftsNet) {
         List<AddonConfiguration> configurations = new ArrayList<>();
-        for (Class<? extends Addon> addon : addons)
+
+        AddonLoader loader = new AddonLoader(craftsNet);
+        for (Class<? extends Addon> addon : this.addons)
             configurations.addAll(AddonConfiguration.of(addon));
         loader.load(new TreeSet<>(configurations).stream().toList());
-
-        return craftsNet;
     }
 
     /**

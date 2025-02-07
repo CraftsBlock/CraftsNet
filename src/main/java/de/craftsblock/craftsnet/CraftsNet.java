@@ -47,7 +47,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.1.6
+ * @version 3.1.7
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -173,6 +173,7 @@ public class CraftsNet {
         logger.debug("Initialization of the addon manager");
         addonManager = new AddonManager(this);
         if (!builder.isAddonSystem(ActivateType.DISABLED)) addonManager.loadAllFromFiles();
+        if (builder instanceof AddonContainingBuilder addonBuilder) addonBuilder.loadAddons(this);
 
         // Check if http routes are registered and start the web server if needed
         if (builder.isWebServer(ActivateType.ENABLED) || builder.isWebServer(ActivateType.DYNAMIC)) {
