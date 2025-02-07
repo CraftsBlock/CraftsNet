@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.2
+ * @version 3.3.3
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -357,7 +357,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     private void createErrorLog(Throwable t) {
         if (craftsNet.fileLogger() != null) {
-            long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "ws", path);
+            long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, this.scheme.getName(), path);
             logger.error(t, "Error: " + errorID);
             sendMessage(Json.empty()
                     .set("error.message", "An unexpected exception happened whilst processing your message!")

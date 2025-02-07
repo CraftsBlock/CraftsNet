@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.4.1
+ * @version 1.4.2
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -102,7 +102,7 @@ public class WebHandler implements HttpHandler {
                 }
             } catch (Throwable t) {
                 if (craftsNet.fileLogger() != null) {
-                    long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, "http", url);
+                    long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, this.scheme.getName(), url);
                     logger.error(t, "Error: " + errorID);
                     if (response.headersSent()) response.setCode(500);
                     if (!httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN))
