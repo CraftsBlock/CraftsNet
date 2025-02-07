@@ -47,7 +47,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.1.7
+ * @version 3.2.0
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -61,6 +61,7 @@ public class CraftsNet {
     private FileLogger fileLogger;
     private FileHelper fileHelper;
     private Thread consoleListener;
+    private BufferedReader consoleReader;
     private Thread shutdownThread;
     private Thread.UncaughtExceptionHandler oldDefaultUncaughtExceptionHandler;
 
@@ -218,7 +219,8 @@ public class CraftsNet {
             listenerRegistry.register(new ConsoleListener(this));
 
             // Set up and start the console listener
-            this.consoleListener = getConsoleReader();
+            this.consoleReader = createConsoleReader();
+            this.consoleListener = startConsoleListener();
             if (this.consoleListener != null) logger.debug("Started the console reader");
         }
 
@@ -255,6 +257,12 @@ public class CraftsNet {
         logger.info("Shutdown request has been received");
         if (this.consoleListener != null && !this.consoleListener.isInterrupted()) {
             logger.info("Closing the console input listener");
+
+            try {
+                if (this.consoleReader != null) consoleReader.close();
+            } catch (IOException ignored) {
+            }
+
             this.consoleListener.interrupt();
             this.consoleListener = null;
         }
@@ -318,7 +326,7 @@ public class CraftsNet {
     public void restart(Runnable executeBetween) {
         CraftsNetBuilder builder = this.builder;
         this.builder = null;
-        new Thread(() -> {
+        Thread restart = new Thread(() -> {
             stop();
             if (executeBetween != null) executeBetween.run();
             try {
@@ -326,26 +334,51 @@ public class CraftsNet {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
-        }, "main").start();
+        }, "CraftsNet Main");
+        restart.start();
+
+        try {
+            restart.join();
+        } catch (InterruptedException ignored) {
+        }
     }
 
     /**
-     * Retrieves the console reader thread used for input.
+     * Creates a new {@link BufferedReader} that reads from the {@link System#in} input steam.
+     * The instance is modified in a way that it does not close the underlying input stream
+     * when it is closed.
+     *
+     * @return The new {@link BufferedReader} that reads from {@link System#in}.
+     */
+    private BufferedReader createConsoleReader() {
+        if (this.consoleReader != null) return this.consoleReader;
+
+        return new BufferedReader(new InputStreamReader(System.in)) {
+            @Override
+            public void close() {
+                consoleReader = null;
+            }
+        };
+    }
+
+    /**
+     * Creates a new thread that listens to the console and performs the according events.
      *
      * @return The console reader thread.
      */
     @Nullable
-    private Thread getConsoleReader() {
+    private Thread startConsoleListener() {
         if (System.in == null) {
             logger.error("Console input stream not available!");
             return null;
         }
 
         Thread console = new Thread(() -> {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             try {
                 while (!Thread.currentThread().isInterrupted()) {
-                    String line = reader.readLine();
+                    if (consoleReader == null) break;
+
+                    String line = consoleReader.readLine();
                     if (line == null) {
                         logger().error("Unexpected console input: null");
                         logger().error("Console reader will be closed after this!");
@@ -358,6 +391,7 @@ public class CraftsNet {
                 throw new RuntimeException(e);
             }
         }, "CraftsNet Console Reader");
+        console.setDaemon(true);
         console.start();
         return console;
     }
