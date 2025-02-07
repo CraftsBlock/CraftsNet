@@ -16,7 +16,7 @@ import java.io.IOException;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.0.3-SNAPSHOT
  */
 public class DefaultRoute implements RequestHandler {
@@ -31,6 +31,8 @@ public class DefaultRoute implements RequestHandler {
     @RequestMethod(HttpMethod.ALL)
     public void handleDefault(Exchange exchange) throws Exception {
         Response response = exchange.response();
+        if (!response.isBodyAble() || response.headersSent()) return;
+
         response.setContentType("text/text");
         response.println("Your running on CraftsNet v" + CraftsNet.version);
         response.println("If you can see this message CraftsNet is up and running!");
