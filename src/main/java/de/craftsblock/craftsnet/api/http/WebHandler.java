@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.4.2
+ * @version 1.4.3
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -104,7 +104,7 @@ public class WebHandler implements HttpHandler {
                 if (craftsNet.fileLogger() != null) {
                     long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, this.scheme.getName(), url);
                     logger.error(t, "Error: " + errorID);
-                    if (response.headersSent()) response.setCode(500);
+                    if (!response.headersSent()) response.setCode(500);
                     if (!httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN))
                         response.print(Json.empty()
                                 .set("error.message", "An unexpected exception happened whilst processing your request!")
@@ -114,7 +114,7 @@ public class WebHandler implements HttpHandler {
                 response.close();
             }
         } catch (Throwable t) {
-            t.printStackTrace(System.err);
+            logger.error(t);
         }
     }
 
