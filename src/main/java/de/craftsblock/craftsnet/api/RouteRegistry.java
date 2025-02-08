@@ -28,6 +28,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * The RouteRegistry class manages the registration and unregistration of {@link RequestHandler} (routes) and {@link SocketHandler} (websockets).
@@ -35,7 +36,7 @@ import java.util.stream.Collectors;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.1
+ * @version 3.3.2
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -334,6 +335,17 @@ public class RouteRegistry {
     }
 
     /**
+     * Checks if there are any registered route mappings for a given {@link Request}.
+     *
+     * @param request The {@link Request} to check.
+     * @return {@code true} if a route mapping exists, otherwise {@code false}.
+     * @since 3.3.3-SNAPSHOT
+     */
+    public boolean hasRouteMappings(Request request) {
+        return hasEndpoint(WebServer.class, request.getUrl(), request);
+    }
+
+    /**
      * Gets an immutable copy of the registered socket handlers in the registry.
      *
      * @return A ConcurrentHashMap containing the registered socket handlers.
@@ -352,6 +364,17 @@ public class RouteRegistry {
     @Nullable
     public EnumMap<ProcessPriority.Priority, List<EndpointMapping>> getSocket(WebSocketClient client) {
         return getEndpoint(WebSocketServer.class, client.getPath(), client);
+    }
+
+    /**
+     * Checks if there are any registered websocket mappings for a given {@link WebSocketClient}.
+     *
+     * @param client The {@link WebSocketClient} to check.
+     * @return {@code true} if a websocket mapping exists, otherwise {@code false}.
+     * @since 3.3.3-SNAPSHOT
+     */
+    public boolean hasSocketMappings(WebSocketClient client) {
+        return hasEndpoint(WebSocketServer.class, client.getPath(), client);
     }
 
     /**
@@ -384,17 +407,6 @@ public class RouteRegistry {
     }
 
     /**
-     * Gets an immutable copy of the registered endpoints for the specific server type in the registry.
-     *
-     * @param server The {@link Server} from which the endpoints should be loaded.
-     * @return A {@link ConcurrentHashMap} containing the registered endpoints.
-     */
-    @NotNull
-    public Map<Pattern, ConcurrentLinkedQueue<EndpointMapping>> getEndpoints(Class<? extends Server> server) {
-        return Map.copyOf(serverMappings.computeIfAbsent(server, c -> new ConcurrentHashMap<>()));
-    }
-
-    /**
      * Gets the {@link EndpointMapping} associated with specific endpoint information.
      *
      * @param server The {@link Server} from which the endpoints should be loaded.
@@ -403,6 +415,36 @@ public class RouteRegistry {
      * @return A {@link EnumMap} containing all matching {@link EndpointMapping} objects grouped by their corresponding {@link ProcessPriority.Priority}.
      */
     private EnumMap<ProcessPriority.Priority, List<EndpointMapping>> getEndpoint(Class<? extends Server> server, String url, RequireAble target) {
+        return getFilteredEndpointStream(server, url, target).collect(Collectors.groupingBy(
+                mapping -> mapping.priority,
+                () -> new EnumMap<>(ProcessPriority.Priority.class),
+                Collectors.toList()
+        ));
+    }
+
+    /**
+     * Checks if an endpoint exists for a given server type, url, and target.
+     *
+     * @param server The server class type.
+     * @param url    The url or path to check.
+     * @param target The {@link RequireAble} containing the data about the request.
+     * @return {@code true} if an endpoint exists, otherwise {@code false}.
+     * @since 3.3.3-SNAPSHOT
+     */
+    private boolean hasEndpoint(Class<? extends Server> server, String url, RequireAble target) {
+        return getFilteredEndpointStream(server, url, target).findFirst().isPresent();
+    }
+
+    /**
+     * Retrieves a filtered stream of endpoint mappings based on the given server type, url, and target.
+     *
+     * @param server The server class type.
+     * @param url    The url or path to filter endpoints for.
+     * @param target The {@link RequireAble} containing the data about the request.
+     * @return A {@link Stream} of matching {@link EndpointMapping} objects.
+     * @since 3.3.3-SNAPSHOT
+     */
+    private Stream<EndpointMapping> getFilteredEndpointStream(Class<? extends Server> server, String url, RequireAble target) {
         return getEndpoints(server).entrySet().parallelStream()
                 .filter(entry -> entry.getKey().matcher(formatUrl(url)).matches())
                 .map(Map.Entry::getValue)
@@ -419,11 +461,19 @@ public class RouteRegistry {
                                 throw new RuntimeException(e);
                             }
                         })
-                ).collect(Collectors.groupingBy(
-                        mapping -> mapping.priority,
-                        () -> new EnumMap<>(ProcessPriority.Priority.class),
-                        Collectors.toList()
-                ));
+                );
+    }
+
+    /**
+     * Gets an immutable copy of the registered endpoints for the specific server type in the registry.
+     *
+     * @param server The {@link Server} from which the endpoints should be loaded.
+     * @return A {@link ConcurrentHashMap} containing the registered endpoints.
+     * @since 3.3.3-SNAPSHOT
+     */
+    @NotNull
+    public Map<Pattern, ConcurrentLinkedQueue<EndpointMapping>> getEndpoints(Class<? extends Server> server) {
+        return Map.copyOf(serverMappings.computeIfAbsent(server, c -> new ConcurrentHashMap<>()));
     }
 
     /**
