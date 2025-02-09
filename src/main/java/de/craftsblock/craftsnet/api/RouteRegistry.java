@@ -36,7 +36,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.2
+ * @version 3.3.3
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -125,13 +125,7 @@ public class RouteRegistry {
 
         // Unregister the DefaultRoute
         if (!(handler instanceof DefaultRoute) && (hasRoutes() || hasShares() || hasWebsockets()))
-            getRoutes().entrySet().parallelStream()
-                    .map(Map.Entry::getValue)
-                    .flatMap(Collection::parallelStream)
-                    .filter(Objects::nonNull)
-                    .filter(mapping -> mapping.handler instanceof DefaultRoute)
-                    .map(EndpointMapping::handler)
-                    .forEach(this::unregister);
+            this.unregister(DefaultRoute.getInstance());
 
         // Loop through all active servers and turn them on as they are now needed.
         for (ServerMapping mapping : annotations.values())
