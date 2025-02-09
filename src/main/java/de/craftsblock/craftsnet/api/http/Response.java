@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.5
+ * @version 1.0.6
  * @see Exchange
  * @see WebServer
  * @since 1.0.0-SNAPSHOT
@@ -72,9 +72,9 @@ public class Response implements AutoCloseable {
      * Sends the string representation of the provided object as the response body.
      *
      * @param object The object to be sent as the response body.
-     * @throws IOException if an I/O error occurs.
+     * @throws RuntimeException if an I/O error occurs.
      */
-    public void print(Object object) throws IOException {
+    public void print(Object object) {
         if (!headersSent() && !hasHeader("Content-Type")) setContentType("application/json");
 
         if (exchange != null) {
@@ -103,9 +103,9 @@ public class Response implements AutoCloseable {
      *
      * @param json   The json object to be sent as the response body.
      * @param pretty Whether the json should be printed pretty.
-     * @throws IOException if an I/O error occurs.
+     * @throws RuntimeException if an I/O error occurs
      */
-    public void print(Json json, boolean pretty) throws IOException {
+    public void print(Json json, boolean pretty) {
         print(json.toString(pretty));
     }
 
@@ -113,9 +113,9 @@ public class Response implements AutoCloseable {
      * Sends the provided text as the response body followed by a new line in UTF-8 encoding.
      *
      * @param text The text to be sent as the response body.
-     * @throws IOException if an I/O error occurs.
+     * @throws RuntimeException if an I/O error occurs
      */
-    public void println(String text) throws IOException {
+    public void println(String text) {
         print(text + (text.trim().endsWith("\r\n") ? "" : "\r\n"));
     }
 
@@ -123,9 +123,9 @@ public class Response implements AutoCloseable {
      * Sends the provided text as the response body in UTF-8 encoding.
      *
      * @param text The text to be sent as the response body.
-     * @throws IOException if an I/O error occurs.
+     * @throws RuntimeException if an I/O error occurs
      */
-    public void print(String text) throws IOException {
+    public void print(String text) {
         print(text.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -133,17 +133,19 @@ public class Response implements AutoCloseable {
      * Sends the provided file as the response body.
      *
      * @param file The file to be sent as the response body.
-     * @throws IOException if an I/O error occurs.
+     * @throws RuntimeException if an I/O error occurs
      */
-    public void print(File file) throws IOException {
+    public void print(File file) {
         if (headersSent) {
             logger.warning("A file was attempted to be sent while the body has already begun to be written!");
             return;
         }
 
-        ensureHeadersSend(file.length());
         try (FileInputStream input = new FileInputStream(file)) {
+            ensureHeadersSend(file.length());
             print(input);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -151,40 +153,48 @@ public class Response implements AutoCloseable {
      * Sends the provided bytes as the response body.
      *
      * @param bytes The bytes to be sent as the response body.
-     * @throws IOException if an I/O error occurs.
+     * @throws RuntimeException if an I/O error occurs
      */
-    public void print(byte[] bytes) throws IOException {
-        try (ByteArrayInputStream input = new ByteArrayInputStream(bytes)) {
-            print(input);
-        }
+    public void print(byte[] bytes) {
+        this.printRaw(bytes, 0, bytes.length);
     }
 
     /**
      * Sends the content of the provided input stream as the response body.
      *
      * @param stream The input stream which content should be sent as the response body.
-     * @throws IOException if an I/O error occurs.
+     * @throws RuntimeException if an I/O error occurs
      */
-    public void print(InputStream stream) throws IOException {
+    public void print(InputStream stream) {
         byte[] buffer = new byte[2048];
-        int read;
-        while ((read = stream.read(buffer)) != -1) printRaw(buffer, 0, read);
-        Arrays.fill(buffer, (byte) 0);
+        try {
+            int read;
+            while ((read = stream.read(buffer)) != -1) printRaw(buffer, 0, read);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        } finally {
+            Arrays.fill(buffer, (byte) 0);
+        }
     }
 
     /**
      * Sends the provided bytes as the response body.
      *
      * @param bytes The bytes to be sent as the response body.
-     * @throws IOException if an I/O error occurs.
+     * @throws RuntimeException if an I/O error occurs
      */
-    private void printRaw(byte[] bytes, int offset, int length) throws IOException {
+    private void printRaw(byte[] bytes, int offset, int length) {
         if (!bodyAble)
             throw new IllegalStateException("Body is not printable as the request method cannot have a response body!");
 
-        ensureHeadersSend(0);
-        stream.write(bytes, offset, length);
-        stream.flush();
+        try {
+            ensureHeadersSend(0);
+
+            stream.write(bytes, offset, length);
+            stream.flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -211,6 +221,7 @@ public class Response implements AutoCloseable {
             addHeader("Set-Cookie", cookie.toString());
 
         if (exchange != null) this.corsPolicy.apply(exchange);
+        if (length == 0) this.setHeader("Transfer-Encoding", "chunked");
 
         httpExchange.sendResponseHeaders(code, length);
         this.headersSent = true;
