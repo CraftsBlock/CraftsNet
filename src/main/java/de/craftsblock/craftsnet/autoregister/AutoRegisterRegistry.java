@@ -6,6 +6,7 @@ import de.craftsblock.craftsnet.autoregister.builtin.addons.ServiceLoaderAutoReg
 import de.craftsblock.craftsnet.autoregister.builtin.events.ListenerAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.http.BodyAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.http.HandlerAutoRegisterHandler;
+import de.craftsblock.craftsnet.autoregister.builtin.http.StreamEncoderAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.http.WebRequirementAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.sockets.WebSocketExtensionAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.sockets.WebSocketRequirementAutoRegisterHandler;
@@ -31,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.0
+ * @version 1.2.1
  * @see AutoRegisterInfo
  * @see AutoRegisterHandler
  * @since 3.2.0-SNAPSHOT
@@ -53,6 +54,7 @@ public class AutoRegisterRegistry {
         register(new HandlerAutoRegisterHandler(craftsNet));
         register(new ListenerAutoRegisterHandler(craftsNet));
         register(new ServiceLoaderAutoRegisterHandler(craftsNet));
+        register(new StreamEncoderAutoRegisterHandler(craftsNet));
         register(new WebRequirementAutoRegisterHandler(craftsNet));
         register(new WebSocketExtensionAutoRegisterHandler(craftsNet));
         register(new WebSocketRequirementAutoRegisterHandler(craftsNet));

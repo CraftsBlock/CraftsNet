@@ -7,6 +7,11 @@ import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
+import de.craftsblock.craftsnet.api.http.encoding.AcceptEncodingHelper;
+import de.craftsblock.craftsnet.api.http.encoding.StreamEncoder;
+import de.craftsblock.craftsnet.api.http.encoding.StreamEncoderRegistry;
+import de.craftsblock.craftsnet.api.http.encoding.builtin.IdentityStreamEncoder;
+import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.session.SessionInfo;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
@@ -26,6 +31,7 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -34,7 +40,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.4.3
+ * @version 1.5.0
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -74,8 +80,20 @@ public class WebHandler implements HttpHandler {
             String url = httpExchange.getRequestURI().toString();
             Headers headers = httpExchange.getRequestHeaders();
 
+            StreamEncoderRegistry streamEncoderRegistry = craftsNet.streamEncoderRegistry();
+            AtomicReference<StreamEncoder> streamEncoder = new AtomicReference<>(streamEncoderRegistry.retrieveEncoder(IdentityStreamEncoder.class));
+            if (craftsNet.getBuilder().responseEncodingAllowed() && headers.containsKey("Accept-Encoding")) {
+                var requestedEncodings = AcceptEncodingHelper.parseHeader(headers.getFirst("Accept-Encoding"));
+
+                for (String requested : requestedEncodings)
+                    if (streamEncoderRegistry.isAvailable(requested)) {
+                        streamEncoder.set(streamEncoderRegistry.retrieveEncoder(requested));
+                        break;
+                    }
+            }
+
             ProtocolVersion protocolVersion = ProtocolVersion.parse(this.scheme, httpExchange.getProtocol().split("/")[1]);
-            Response response = new Response(this.craftsNet, httpExchange, httpMethod);
+            Response response = new Response(this.craftsNet, streamEncoder.get(), httpExchange, httpMethod);
             try {
                 String ip;
                 if (headers.containsKey("Cf-connecting-ip")) ip = headers.getFirst("Cf-connecting-ip");

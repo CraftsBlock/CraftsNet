@@ -6,6 +6,9 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.body.Body;
 import de.craftsblock.craftsnet.api.http.cookies.Cookie;
+import de.craftsblock.craftsnet.api.http.encoding.StreamEncoder;
+import de.craftsblock.craftsnet.api.http.encoding.StreamEncoderRegistry;
+import de.craftsblock.craftsnet.api.http.encoding.builtin.IdentityStreamEncoder;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,13 +27,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.3
+ * @version 1.6.0
  * @see Exchange
  * @since 1.0.0-SNAPSHOT
  */
 public class Request implements AutoCloseable, RequireAble {
 
     private final CraftsNet craftsNet;
+    private StreamEncoder streamEncoder;
     private final HttpExchange httpExchange;
     private final Headers headers;
     private final String domain;
@@ -50,15 +54,16 @@ public class Request implements AutoCloseable, RequireAble {
     /**
      * Constructs a new Request object.
      *
-     * @param craftsNet    The CraftsNet instance to which the request was made.
-     * @param httpExchange The HttpExchange object representing the incoming HTTP request.
-     * @param headers      The headers object representing the headers of the incoming http request.
+     * @param craftsNet    The {@link CraftsNet} instance to which the request was made.
+     * @param httpExchange The {@link HttpExchange} object representing the incoming HTTP request.
+     * @param headers      The {@link Headers} object representing the headers of the incoming http request.
      * @param url          The query string extracted from the request URI.
-     * @param ip           The IP address of the client sending the request.
+     * @param ip           The ip address of the client sending the request.
      * @param domain       The domain used to make the http request.
-     * @param httpMethod   The http method used to access the route.
+     * @param httpMethod   The {@link HttpMethod} used to access the route.
      */
-    public Request(CraftsNet craftsNet, HttpExchange httpExchange, Headers headers, String url, String ip, String domain, HttpMethod httpMethod) {
+    public Request(CraftsNet craftsNet, HttpExchange httpExchange,
+                   Headers headers, String url, String ip, String domain, HttpMethod httpMethod) {
         this.craftsNet = craftsNet;
         this.httpExchange = httpExchange;
         this.headers = headers;
@@ -89,9 +94,18 @@ public class Request implements AutoCloseable, RequireAble {
     private void retrieveBody() {
         if (!httpMethod.isRequestBodyAble()) return;
 
-        InputStream input = httpExchange.getRequestBody();
-        if (input == null) return;
-        try {
+        StreamEncoderRegistry streamEncoderRegistry = craftsNet.streamEncoderRegistry();
+        String encoding = getHeaders().getFirst("Content-Encoding");
+        if (encoding != null) streamEncoder = streamEncoderRegistry.retrieveEncoder(encoding);
+        else streamEncoder = streamEncoderRegistry.retrieveEncoder(IdentityStreamEncoder.class);
+
+        if (streamEncoder == null)
+            throw new RuntimeException(new UnsupportedEncodingException("Unsupported request body encoding: " + encoding));
+
+        try (InputStream input = streamEncoder.encodeInputStream(new FilterInputStream(httpExchange.getRequestBody()) {
+            public void close() {
+            }
+        })) {
             bodyLocation = craftsNet.fileHelper().createTempFile("craftsnet_", ".body").toFile();
             bodyLocation.deleteOnExit();
             try (FileOutputStream destination = new FileOutputStream(bodyLocation, true)) {
@@ -386,6 +400,16 @@ public class Request implements AutoCloseable, RequireAble {
      */
     public HttpMethod getRequestMethod() {
         return HttpMethod.parse(httpExchange.getRequestMethod());
+    }
+
+    /**
+     * Retrieves the {@link StreamEncoder} that was determined during the request body loading.
+     *
+     * @return The {@link StreamEncoder} that was determined. Can be {@code null} if there was no request body or the encoding of the body is unsupported.
+     * @since 3.3.3-SNAPSHOT
+     */
+    public StreamEncoder getStreamEncoder() {
+        return streamEncoder;
     }
 
     /**

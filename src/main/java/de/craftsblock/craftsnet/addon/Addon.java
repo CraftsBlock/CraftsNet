@@ -8,6 +8,7 @@ import de.craftsblock.craftsnet.addon.meta.AddonMeta;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
+import de.craftsblock.craftsnet.api.http.encoding.StreamEncoderRegistry;
 import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterRegistry;
 import de.craftsblock.craftsnet.command.CommandRegistry;
@@ -34,7 +35,7 @@ import java.io.File;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
+ * @version 1.1.2
  * @see AddonLoader
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -172,6 +173,17 @@ public abstract class Addon {
      */
     public final ServiceManager serviceManager() {
         return craftsNet.serviceManager();
+    }
+
+    /**
+     * Get the {@link StreamEncoderRegistry} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the handler directly.
+     *
+     * @return The {@link StreamEncoderRegistry} instance used by the addon.
+     * @since 3.3.3-SNAPSHOT
+     */
+    public final StreamEncoderRegistry streamEncoderRegistry() {
+        return craftsNet.streamEncoderRegistry();
     }
 
     /**

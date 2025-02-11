@@ -9,6 +9,7 @@ import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.WebServer;
 import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
 import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
+import de.craftsblock.craftsnet.api.http.encoding.StreamEncoderRegistry;
 import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
 import de.craftsblock.craftsnet.api.session.SessionCache;
 import de.craftsblock.craftsnet.api.websocket.DefaultPingResponder;
@@ -47,7 +48,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.2.2
+ * @version 3.2.3
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -75,6 +76,7 @@ public class CraftsNet {
     private RouteRegistry routeRegistry;
     private ServiceManager serviceManager;
     private SessionCache sessionCache;
+    private StreamEncoderRegistry streamEncoderRegistry;
     private WebSocketExtensionRegistry webSocketExtensionRegistry;
 
     // Server instances
@@ -152,6 +154,9 @@ public class CraftsNet {
         logger.info("Initialization of system variables");
         logger.debug("Initialization of the session cache");
         this.sessionCache = new SessionCache(builder.getSessionCacheSize());
+
+        logger.debug("Initialization of the stream encoder registry");
+        streamEncoderRegistry = new StreamEncoderRegistry();
 
         logger.debug("Initialization of the listener registry");
         listenerRegistry = new ListenerRegistry();
@@ -479,6 +484,15 @@ public class CraftsNet {
      */
     public SessionCache sessionCache() {
         return sessionCache;
+    }
+
+    /**
+     * Retrieves the stream encoder registry instance for managing stream encoders.
+     *
+     * @return The stream encoder registry instance.
+     */
+    public StreamEncoderRegistry streamEncoderRegistry() {
+        return streamEncoderRegistry;
     }
 
     /**

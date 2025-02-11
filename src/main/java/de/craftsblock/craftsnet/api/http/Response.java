@@ -8,12 +8,17 @@ import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.http.cookies.Cookie;
 import de.craftsblock.craftsnet.api.http.cors.CorsPolicy;
+import de.craftsblock.craftsnet.api.http.encoding.StreamEncoder;
 import de.craftsblock.craftsnet.logging.Logger;
+import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -27,7 +32,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.6
+ * @version 1.1.0
  * @see Exchange
  * @see WebServer
  * @since 1.0.0-SNAPSHOT
@@ -38,11 +43,14 @@ public class Response implements AutoCloseable {
     private final Logger logger;
 
     private final HttpExchange httpExchange;
-    private OutputStream stream;
+    private final StreamEncoder streamEncoder;
     private final Headers headers;
     private final ConcurrentHashMap<String, Cookie> cookies = new ConcurrentHashMap<>();
     private final CorsPolicy corsPolicy;
     private final boolean bodyAble;
+
+    private OutputStream encodedStream;
+    private OutputStream rawStream;
 
     private Exchange exchange;
 
@@ -53,9 +61,10 @@ public class Response implements AutoCloseable {
     /**
      * Constructor for creating a new Response object.
      *
-     * @param craftsNet    The CraftsNet instance which instantiates this
-     * @param httpExchange The HttpExchange object representing the HTTP request-response exchange.
-     * @param httpMethod   The http method used to access the route.
+     * @param craftsNet     The {@link CraftsNet} instance which instantiates this
+     * @param streamEncoder The {@link StreamEncoder} that should be used to encode the response body.
+     * @param httpExchange  The {@link HttpExchange} object representing the HTTP request-response exchange.
+     * @param httpMethod    The {@link HttpMethod} used to access the route.
      */
     protected Response(CraftsNet craftsNet, StreamEncoder streamEncoder, HttpExchange httpExchange,
                        HttpMethod httpMethod) {
@@ -63,6 +72,7 @@ public class Response implements AutoCloseable {
         this.logger = this.craftsNet.logger();
 
         this.httpExchange = httpExchange;
+        this.streamEncoder = streamEncoder;
         this.headers = httpExchange.getResponseHeaders();
         this.bodyAble = httpMethod.isResponseBodyAble();
         this.corsPolicy = new CorsPolicy();
@@ -145,9 +155,28 @@ public class Response implements AutoCloseable {
         if (this.headersSent)
             throw new IllegalStateException("A file was attempted to be sent while the body has already begun to be written!");
 
-        try (FileInputStream input = new FileInputStream(file)) {
-            ensureHeadersSend(file.length());
-            print(input);
+        try (FileInputStream fileInput = new FileInputStream(file)) {
+            if (this.streamEncoder == null || this.streamEncoder.getEncodingName().equalsIgnoreCase("identity")) {
+                this.ensureHeadersSend(file.length());
+                this.print(fileInput);
+                return;
+            }
+
+            Path temp = craftsNet.fileHelper().createTempFile("response", ".body");
+            try {
+                try (OutputStream output = streamEncoder.encodeOutputStream(Files.newOutputStream(temp))) {
+                    IOUtils.copy(fileInput, output, 2048);
+                }
+
+                try (InputStream input = Files.newInputStream(temp, StandardOpenOption.READ)) {
+                    long size = Files.size(temp);
+                    ensureHeadersSend(size);
+
+                    IOUtils.copy(input, this.rawStream, Math.min((int) size, 2048));
+                }
+            } finally {
+                Files.deleteIfExists(temp);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
@@ -200,8 +229,11 @@ public class Response implements AutoCloseable {
         try {
             ensureHeadersSend(0);
 
-            stream.write(bytes, offset, length);
-            stream.flush();
+            if (this.encodedStream == null)
+                this.encodedStream = this.streamEncoder != null ? this.streamEncoder.encodeOutputStream(this.rawStream) : this.rawStream;
+
+            this.encodedStream.write(bytes, offset, length);
+            this.encodedStream.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -242,13 +274,15 @@ public class Response implements AutoCloseable {
             addHeader("Set-Cookie", cookie.toString());
 
         if (exchange != null) this.corsPolicy.apply(exchange);
+        if (this.streamEncoder != null)
+            this.setHeader("Content-Encoding", this.streamEncoder.getEncodingName());
         if (length == 0) this.setHeader("Transfer-Encoding", "chunked");
 
         httpExchange.sendResponseHeaders(code, length);
         this.headersSent = true;
 
         if (length == -1) return;
-        this.stream = httpExchange.getResponseBody();
+        this.rawStream = httpExchange.getResponseBody();
     }
 
     /**
@@ -259,6 +293,11 @@ public class Response implements AutoCloseable {
     @Override
     public void close() throws IOException {
         ensureHeadersSend(-1);
+
+        if (this.encodedStream != null && !sendingFile) {
+            this.encodedStream.flush();
+            this.encodedStream.close();
+        }
     }
 
     /**
@@ -277,6 +316,16 @@ public class Response implements AutoCloseable {
      */
     public Exchange getExchange() {
         return exchange;
+    }
+
+    /**
+     * Retrieves the {@link StreamEncoder} that is used to encode the response body.
+     *
+     * @return The {@link StreamEncoder} is used.
+     * @since 3.3.3-SNAPSHOT
+     */
+    public StreamEncoder getStreamEncoder() {
+        return streamEncoder;
     }
 
     /**
