@@ -20,7 +20,7 @@ import java.util.TreeSet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.3
+ * @version 1.2.4
  * @see CraftsNetBuilder
  * @since 3.1.0-SNAPSHOT
  */
@@ -202,6 +202,19 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
     /**
      * {@inheritDoc}
      *
+     * @param allowed {@inheritDoc}
+     * @return {@inheritDoc}
+     * @since 3.3.3-SNAPSHOT
+     */
+    @Override
+    public AddonContainingBuilder withApplyResponseEncoding(boolean allowed) {
+        super.withApplyResponseEncoding(allowed);
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
      * @param tempFilesOnNormalFileSystem {@inheritDoc}
      * @return {@inheritDoc}
      */
@@ -213,11 +226,24 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
     /**
      * {@inheritDoc}
      *
-     * @param skipVersionCheck {@inheritDoc}
+     * @param skip {@inheritDoc}
+     * @return {@inheritDoc}
+     * @since 3.3.3-SNAPSHOT
+     */
+    @Override
+    public AddonContainingBuilder withSkipDefaultRoute(boolean skip) {
+        super.withSkipDefaultRoute(skip);
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param skip {@inheritDoc}
      * @return {@inheritDoc}
      */
-    public AddonContainingBuilder withSkipVersionCheck(boolean skipVersionCheck) {
-        super.withSkipVersionCheck(skipVersionCheck);
+    public AddonContainingBuilder withSkipVersionCheck(boolean skip) {
+        super.withSkipVersionCheck(skip);
         return this;
     }
 

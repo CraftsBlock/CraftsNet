@@ -18,7 +18,7 @@ import java.util.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.1
+ * @version 1.2.2
  * @see ActivateType
  * @since 3.0.3-SNAPSHOT
  */
@@ -39,8 +39,10 @@ public class CraftsNetBuilder {
     private ActivateType fileLogger;
     private Logger logger;
 
+    private boolean allowResponseEncoding;
     private boolean debug;
     private boolean tempFilesOnNormalFileSystem;
+    private boolean skipDefaultRoute;
     private boolean skipVersionCheck;
     private boolean ssl;
 
@@ -56,7 +58,9 @@ public class CraftsNetBuilder {
         addonSystem = commandSystem = fileLogger = ActivateType.ENABLED;
         withSessionCache(5);
         withDebug(false);
+        withApplyResponseEncoding(false);
         withTempFilesOnNormalFileSystem(false);
+        withSkipDefaultRoute(false);
         withSkipVersionCheck(false);
         withSSL(false);
         withoutLogRotate();
@@ -115,6 +119,7 @@ public class CraftsNetBuilder {
             // Flags
             case "debug" -> withDebug(true);
             case "placetempfileinnormal" -> withTempFilesOnNormalFileSystem(true);
+            case "skipdefaultroute" -> withSkipDefaultRoute(true);
             case "skipversioncheck" -> withSkipVersionCheck(true);
             case "ssl" -> withSSL(true);
 
@@ -128,6 +133,8 @@ public class CraftsNetBuilder {
 
             case "forcewebserver" -> withWebServer(ActivateType.ENABLED);
             case "forcewebsocketserver" -> withWebSocketServer(ActivateType.ENABLED);
+
+            case "enableresponseencoding" -> withApplyResponseEncoding(true);
 
             // Arguments
             case "http-port", "httpport" -> withWebServer(Integer.parseInt(value));
@@ -278,6 +285,18 @@ public class CraftsNetBuilder {
     }
 
     /**
+     * Specifies whether from the client requested response encodings should be applied or not.
+     *
+     * @param allowed {@code true} if the requested response encoding should be applied, {@code false} otherwise.
+     * @return The {@link CraftsNetBuilder} instance.
+     * @since 3.3.3-SNAPSHOT
+     */
+    public CraftsNetBuilder withApplyResponseEncoding(boolean allowed) {
+        this.allowResponseEncoding = allowed;
+        return this;
+    }
+
+    /**
      * Configures whether temporary files should be placed on the normal file system.
      * When set to {@code true}, the application will store temporary files in the local
      * file system instead of using the system's default temporary file location.
@@ -291,13 +310,26 @@ public class CraftsNetBuilder {
     }
 
     /**
+     * Specifies whether the registration of the default route (if no other route was registered)
+     * should be skipped on startup.
+     *
+     * @param skip {@code true} if the version check should be skipped, {@code false} otherwise.
+     * @return The {@link CraftsNetBuilder} instance.
+     * @since 3.3.3-SNAPSHOT
+     */
+    public CraftsNetBuilder withSkipDefaultRoute(boolean skip) {
+        this.skipDefaultRoute = skip;
+        return this;
+    }
+
+    /**
      * Specifies whether the version check should be skipped on startup.
      *
-     * @param skipVersionCheck true if the version check should be skipped, false otherwise.
+     * @param skip {@code true} if the version check should be skipped, false otherwise.
      * @return The {@link CraftsNetBuilder} instance.
      */
-    public CraftsNetBuilder withSkipVersionCheck(boolean skipVersionCheck) {
-        this.skipVersionCheck = skipVersionCheck;
+    public CraftsNetBuilder withSkipVersionCheck(boolean skip) {
+        this.skipVersionCheck = skip;
         return this;
     }
 
@@ -331,7 +363,7 @@ public class CraftsNetBuilder {
     /**
      * Specifies whether debug mode should be enabled.
      *
-     * @param enabled true if debug mode should be enabled, false otherwise.
+     * @param enabled {@code true} if debug mode should be enabled, {@code false} otherwise.
      * @return The {@link CraftsNetBuilder} instance.
      */
     public CraftsNetBuilder withDebug(boolean enabled) {
@@ -342,7 +374,7 @@ public class CraftsNetBuilder {
     /**
      * Specifies whether SSL should be enabled.
      *
-     * @param enabled true if SSL should be enabled, false otherwise.
+     * @param enabled {@code true} if SSL should be enabled, {@code false} otherwise.
      * @return The {@link CraftsNetBuilder} instance.
      */
     public CraftsNetBuilder withSSL(boolean enabled) {
@@ -495,12 +527,33 @@ public class CraftsNetBuilder {
     }
 
     /**
+     * Determines whether from the client requested response encoding should be applied or not.
+     *
+     * @return {@code true} if the request encoding should be applied, {@code false} otherwise.
+     * @since 3.3.3-SNAPSHOT
+     */
+    public boolean responseEncodingAllowed() {
+        return allowResponseEncoding;
+    }
+
+    /**
      * Determines whether temporary files should be placed in the normal file system.
      *
      * @return {@code true} if temporary files are placed on the normal file system, {@code false} otherwise.
      */
     public boolean shouldPlaceTempFilesOnNormalFileSystem() {
         return tempFilesOnNormalFileSystem;
+    }
+
+    /**
+     * Determines whether the registration of the default route (if no other route was registered)
+     * should be skipped on startup.
+     *
+     * @return {@code true} if the registration of the default rout should be skipped, {@code false} otherwise.
+     * @since 3.3.3-SNAPSHOT
+     */
+    public boolean shouldSkipDefaultRoute() {
+        return skipDefaultRoute;
     }
 
     /**
