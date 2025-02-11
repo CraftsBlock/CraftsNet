@@ -47,7 +47,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.2.1
+ * @version 3.2.2
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -186,7 +186,7 @@ public class CraftsNet {
             bodyRegistry = new BodyRegistry();
 
             // Register a default route if nothing has been registered.
-            if (!routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
+            if (!builder.shouldSkipDefaultRoute() && !routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
                 logger.debug("No routes and sockets found, creating the default route");
                 routeRegistry().register(DefaultRoute.getInstance());
             }
