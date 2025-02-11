@@ -48,6 +48,7 @@ public class Response implements AutoCloseable {
 
     private int code = 200;
     private boolean headersSent = false;
+    private boolean sendingFile = false;
 
     /**
      * Constructor for creating a new Response object.
@@ -56,7 +57,8 @@ public class Response implements AutoCloseable {
      * @param httpExchange The HttpExchange object representing the HTTP request-response exchange.
      * @param httpMethod   The http method used to access the route.
      */
-    protected Response(CraftsNet craftsNet, HttpExchange httpExchange, HttpMethod httpMethod) {
+    protected Response(CraftsNet craftsNet, StreamEncoder streamEncoder, HttpExchange httpExchange,
+                       HttpMethod httpMethod) {
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
 
@@ -74,8 +76,8 @@ public class Response implements AutoCloseable {
      * @param object The object to be sent as the response body.
      * @throws RuntimeException if an I/O error occurs.
      */
-    public void print(Object object) {
-        if (!headersSent() && !hasHeader("Content-Type")) setContentType("application/json");
+    public synchronized void print(Object object) {
+        checkOutput();
 
         if (exchange != null) {
             Request r = exchange.request();
@@ -105,8 +107,9 @@ public class Response implements AutoCloseable {
      * @param pretty Whether the json should be printed pretty.
      * @throws RuntimeException if an I/O error occurs
      */
-    public void print(Json json, boolean pretty) {
-        print(json.toString(pretty));
+    public synchronized void print(Json json, boolean pretty) {
+        checkOutput();
+        this.print(json.toString(pretty));
     }
 
     /**
@@ -115,8 +118,9 @@ public class Response implements AutoCloseable {
      * @param text The text to be sent as the response body.
      * @throws RuntimeException if an I/O error occurs
      */
-    public void println(String text) {
-        print(text + (text.trim().endsWith("\r\n") ? "" : "\r\n"));
+    public synchronized void println(String text) {
+        checkOutput();
+        this.print(text + (text.trim().endsWith("\r\n") ? "" : "\r\n"));
     }
 
     /**
@@ -125,8 +129,9 @@ public class Response implements AutoCloseable {
      * @param text The text to be sent as the response body.
      * @throws RuntimeException if an I/O error occurs
      */
-    public void print(String text) {
-        print(text.getBytes(StandardCharsets.UTF_8));
+    public synchronized void print(String text) {
+        checkOutput();
+        this.print(text.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
@@ -135,17 +140,18 @@ public class Response implements AutoCloseable {
      * @param file The file to be sent as the response body.
      * @throws RuntimeException if an I/O error occurs
      */
-    public void print(File file) {
-        if (headersSent) {
-            logger.warning("A file was attempted to be sent while the body has already begun to be written!");
-            return;
-        }
+    public synchronized void print(File file) {
+        checkOutput();
+        if (this.headersSent)
+            throw new IllegalStateException("A file was attempted to be sent while the body has already begun to be written!");
 
         try (FileInputStream input = new FileInputStream(file)) {
             ensureHeadersSend(file.length());
             print(input);
         } catch (IOException e) {
             throw new RuntimeException(e);
+        } finally {
+            this.sendingFile = true;
         }
     }
 
@@ -155,7 +161,8 @@ public class Response implements AutoCloseable {
      * @param bytes The bytes to be sent as the response body.
      * @throws RuntimeException if an I/O error occurs
      */
-    public void print(byte[] bytes) {
+    public synchronized void print(byte[] bytes) {
+        checkOutput();
         this.printRaw(bytes, 0, bytes.length);
     }
 
@@ -165,11 +172,14 @@ public class Response implements AutoCloseable {
      * @param stream The input stream which content should be sent as the response body.
      * @throws RuntimeException if an I/O error occurs
      */
-    public void print(InputStream stream) {
+    public synchronized void print(InputStream stream) {
+        checkOutput();
+
         byte[] buffer = new byte[2048];
         try {
             int read;
-            while ((read = stream.read(buffer)) != -1) printRaw(buffer, 0, read);
+            while ((read = stream.read(buffer)) != -1)
+                this.printRaw(buffer, 0, read);
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
@@ -183,7 +193,7 @@ public class Response implements AutoCloseable {
      * @param bytes The bytes to be sent as the response body.
      * @throws RuntimeException if an I/O error occurs
      */
-    private void printRaw(byte[] bytes, int offset, int length) {
+    private synchronized void printRaw(byte[] bytes, int offset, int length) {
         if (!bodyAble)
             throw new IllegalStateException("Body is not printable as the request method cannot have a response body!");
 
@@ -195,6 +205,17 @@ public class Response implements AutoCloseable {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Checks if the output stream is still valid and can therefore be written to.
+     * This method also enforces some other output blocking logic.
+     *
+     * @since 3.3.3-SNAPSHOT
+     */
+    private void checkOutput() {
+        if (this.sendingFile)
+            throw new IllegalStateException("A file has been written to the response, no further output can be written!");
     }
 
     /**
@@ -238,7 +259,6 @@ public class Response implements AutoCloseable {
     @Override
     public void close() throws IOException {
         ensureHeadersSend(-1);
-        httpExchange.close();
     }
 
     /**
@@ -418,6 +438,16 @@ public class Response implements AutoCloseable {
      */
     public boolean headersSent() {
         return headersSent;
+    }
+
+    /**
+     * Returns whether the response was used to send a file to the client.
+     *
+     * @return {@code true} if a file was sent, {@code false} otherwise.
+     * @since 3.3.3-SNAPSHOT
+     */
+    public boolean sendingFile() {
+        return sendingFile;
     }
 
     /**
