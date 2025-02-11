@@ -9,7 +9,6 @@ import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.session.SessionInfo;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
-import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.events.requests.PostRequestEvent;
@@ -67,7 +66,7 @@ public class WebHandler implements HttpHandler {
      */
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
-        try {
+        try (httpExchange) {
             // Extract relevant information from the incoming request.
             String requestMethod = httpExchange.getRequestMethod();
             HttpMethod httpMethod = HttpMethod.parse(requestMethod);
@@ -275,7 +274,7 @@ public class WebHandler implements HttpHandler {
         share = fileLoadedEvent.getFile();
 
         assert share != null;
-        if (!share.getCanonicalPath().startsWith(folder.getCanonicalPath() + File.separator)) {
+        if (!share.getCanonicalPath().startsWith(folder.getCanonicalPath() + File.separator) || share.isDirectory()) {
             response.setCode(403);
             response.setContentType("text/html; charset=utf-8");
             response.print(DefaultPages.notallowed(domain, request.unsafe().getLocalAddress().getPort()));
@@ -288,7 +287,6 @@ public class WebHandler implements HttpHandler {
         }
 
         response.setContentType(fileLoadedEvent.getContentType(), "text/plain");
-
         response.print(share);
     }
 
