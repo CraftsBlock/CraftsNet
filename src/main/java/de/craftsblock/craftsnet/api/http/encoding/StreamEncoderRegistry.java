@@ -1,6 +1,8 @@
 package de.craftsblock.craftsnet.api.http.encoding;
 
-import de.craftsblock.craftsnet.api.http.encoding.builtin.*;
+import de.craftsblock.craftsnet.api.http.encoding.builtin.DeflateStreamEncoder;
+import de.craftsblock.craftsnet.api.http.encoding.builtin.GZIPStreamEncoder;
+import de.craftsblock.craftsnet.api.http.encoding.builtin.IdentityStreamEncoder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -12,7 +14,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.3.3-SNAPSHOT
  */
 public final class StreamEncoderRegistry {
@@ -23,11 +25,9 @@ public final class StreamEncoderRegistry {
      * Constructs a new {@link StreamEncoderRegistry} and registers the built-in stream encoders.
      */
     public StreamEncoderRegistry() {
-        register(new BrotliStreamEncoder());
         register(new DeflateStreamEncoder());
         register(new GZIPStreamEncoder());
         register(new IdentityStreamEncoder());
-        register(new ZSTDStreamEncoder());
     }
 
     /**
