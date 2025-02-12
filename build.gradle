@@ -18,7 +18,7 @@ repositories {
 dependencies {
     // CraftsBlock related dependencies ---------------------------------------------------------------------------------------
 
-    implementation 'de.craftsblock:craftscore:3.8.2-SNAPSHOT'
+    implementation 'de.craftsblock:craftscore:3.8.3-SNAPSHOT'
 
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
