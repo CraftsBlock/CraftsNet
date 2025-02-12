@@ -29,7 +29,7 @@ dependencies {
     implementation 'org.apache.tika:tika-core:3.1.0'
 
     // https://mvnrepository.com/artifact/org.jetbrains/annotations
-    implementation 'org.jetbrains:annotations:26.0.1'
+    implementation 'org.jetbrains:annotations:26.0.2'
 
     // Encoding dependencies --------------------------------------------------------------------------------------------------
 
