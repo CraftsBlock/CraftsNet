@@ -33,7 +33,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.5
+ * @version 2.1.6
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -126,7 +126,7 @@ public final class AddonLoader {
                 // Load all required dependencies
                 URL[] dependencies;
                 if (addon.contains("dependencies"))
-                    dependencies = artifactLoader.loadLibraries(this.craftsNet, this, configuration, name, addon.getStringList("dependencies").toArray(String[]::new));
+                    dependencies = artifactLoader.loadLibraries(this.craftsNet, this, configuration.services(), name, addon.getStringList("dependencies").toArray(String[]::new));
                 else dependencies = null;
 
                 // Generate classpath

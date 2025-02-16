@@ -2,7 +2,7 @@ package de.craftsblock.craftsnet.addon.loaders;
 
 import de.craftsblock.craftscore.utils.id.Snowflake;
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
+import de.craftsblock.craftsnet.addon.meta.RegisteredService;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.DefaultRepositorySystemSession;
@@ -21,10 +21,7 @@ import org.eclipse.aether.supplier.RepositorySystemSupplier;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.jar.JarFile;
 import java.util.zip.ZipFile;
 
@@ -34,8 +31,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.1
- * @apiNote It utilizes the Eclipse Aether library for handling dependency resolution and management.
+ * @version 2.0.2
  * @see <a href="https://maven.apache.org/resolver/index.html">Eclipse Aether</a>
  * @since 3.0.0-SNAPSHOT
  */
@@ -49,7 +45,7 @@ final class ArtifactLoader {
     /**
      * Creates a new instance of the artifact loader
      */
-    ArtifactLoader() {
+    public ArtifactLoader() {
         RepositorySystemSupplier repositorySupplier = new RepositorySystemSupplier();
         repository = repositorySupplier.get();
 
@@ -79,7 +75,7 @@ final class ArtifactLoader {
     /**
      * Cleanup internal repository cache
      */
-    void cleanup() {
+    public void cleanup() {
         repositories.parallelStream()
                 .filter(remoteRepository -> !remoteRepository.equals(defaultRepo))
                 .forEach(repositories::remove);
@@ -88,7 +84,7 @@ final class ArtifactLoader {
     /**
      * Cleanup and shutdown of the internal repository resolver
      */
-    void stop() {
+    public void stop() {
         cleanup();
         repository.shutdown();
     }
@@ -98,7 +94,7 @@ final class ArtifactLoader {
      *
      * @param repo The URL of the remote repository to be added.
      */
-    void addRepository(String repo) {
+    public void addRepository(String repo) {
         if (repositories.stream().anyMatch(repository -> Objects.equals(repository.getUrl(), repo))) return;
         RemoteRepository remoteRepository = new RemoteRepository.Builder(
                 Snowflake.generate() + "",
@@ -111,13 +107,13 @@ final class ArtifactLoader {
     /**
      * Loads libraries for a specific addon based on the provided library coordinates.
      *
-     * @param addonLoader   The addon loader responsible for loading services.
-     * @param configuration The configuration for the addon loader.
-     * @param addon         The name of the addon for which libraries are being loaded.
-     * @param libraries     The coordinates of the libraries to be loaded.
+     * @param addonLoader The addon loader responsible for loading services.
+     * @param services    The list with the currently registered services.
+     * @param addon       The name of the addon for which libraries are being loaded.
+     * @param libraries   The coordinates of the libraries to be loaded.
      * @return An array of URLs representing the loaded libraries.
      */
-    URL[] loadLibraries(CraftsNet craftsNet, AddonLoader addonLoader, AddonConfiguration configuration, String addon, String... libraries) {
+    public URL[] loadLibraries(CraftsNet craftsNet, AddonLoader addonLoader, Collection<RegisteredService> services, String addon, String... libraries) {
         Logger logger = craftsNet.logger();
         logger.debug("Loading " + libraries.length + " libraries for " + addon + "...");
         List<Dependency> dependencies = new ArrayList<>();
@@ -140,7 +136,7 @@ final class ArtifactLoader {
             File file = artifact.getArtifact().getPath().toFile();
             try (JarFile jarFile = new JarFile(file, true, ZipFile.OPEN_READ, Runtime.version())) {
                 urls.add(file.toURI().toURL());
-                configuration.services().addAll(addonLoader.loadServices(jarFile));
+                services.addAll(addonLoader.loadServices(jarFile));
             } catch (IOException e) {
                 logger.error(e, "Error while loading libraries for " + addon);
                 return;
