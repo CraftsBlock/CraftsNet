@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.3.3-SNAPSHOT
  */
 public final class StreamEncoderRegistry {
@@ -120,8 +120,8 @@ public final class StreamEncoderRegistry {
      * @return The {@link StreamEncoder} of the given type, or {@code null} if no available encoder of that type is found.
      */
     public @Nullable StreamEncoder retrieveEncoder(@NotNull Class<? extends StreamEncoder> type) {
-        return streamEncoders.stream().filter(provider -> type.isInstance(type))
-                .filter(StreamEncoder::isAvailable).findFirst().orElse(null);
+        return streamEncoders.stream().filter(type::isInstance).filter(StreamEncoder::isAvailable)
+                .findFirst().orElse(null);
     }
 
 }
