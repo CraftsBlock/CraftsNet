@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.0
+ * @version 1.5.1
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -124,8 +124,9 @@ public class WebHandler implements HttpHandler {
                     if (!response.headersSent()) response.setCode(500);
                     if (!httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN))
                         response.print(Json.empty()
-                                .set("error.message", "An unexpected exception happened whilst processing your request!")
-                                .set("error.identifier", errorID));
+                                .set("status", "500")
+                                .set("message", "An unexpected exception happened whilst processing your request!")
+                                .set("incident", errorID));
                 } else logger.error(t);
             } finally {
                 response.close();
@@ -164,7 +165,7 @@ public class WebHandler implements HttpHandler {
 
         // If no matching route or share is found, respond with an error message and log the failed request
         response.setCode(404);
-        respondWithError(response, "Path do not match any API endpoint!");
+        respondWithError(response, 404, "Path do not match any API endpoint!");
         logger.info(httpMethod.toString() + " " + url + " from " + request.getIp() + " \u001b[38;5;9m[NOT FOUND]");
         return Map.entry(false, false);
     }
@@ -207,7 +208,7 @@ public class WebHandler implements HttpHandler {
         Pattern validator = routes.get(routes.keySet().stream().findFirst().orElseThrow()).get(0).validator();
         Matcher matcher = validator.matcher(url);
         if (!matcher.matches()) {
-            respondWithError(response, "There was an unexpected error while matching!");
+            respondWithError(response, 500, "There was an unexpected error while matching!");
             return true;
         }
 
@@ -266,7 +267,7 @@ public class WebHandler implements HttpHandler {
         File folder = registry.getShareFolder(url);
         Matcher matcher = registry.getSharePattern(url).matcher(url);
         if (!matcher.matches()) {
-            respondWithError(response, "There was an unexpected error while matching!");
+            respondWithError(response, 500, "There was an unexpected error while matching!");
             return;
         }
 
@@ -313,10 +314,9 @@ public class WebHandler implements HttpHandler {
      *
      * @param response The Response object for managing the outgoing response.
      * @param message  The error message to be included in the response.
-     * @throws IOException If an I/O error occurs during response handling.
      */
-    private static void respondWithError(Response response, String message) throws IOException {
-        response.print(Json.empty().set("success", false).set("message", message));
+    private static void respondWithError(Response response, int code, String message) {
+        response.print(Json.empty().set("status", "" + code).set("message", message));
     }
 
 }
