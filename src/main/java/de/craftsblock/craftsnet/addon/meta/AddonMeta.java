@@ -22,7 +22,7 @@ import java.util.Optional;
  * @param depends     The dependencies required by the addon.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.1.0-SNAPSHOT
  */
 public record AddonMeta(String name, String mainClass, String description, List<String> authors, String website, String version, String[] depends) {
@@ -34,7 +34,8 @@ public record AddonMeta(String name, String mainClass, String description, List<
      * @return A new instance of {@link AddonMeta} populated with the values from the configuration.
      */
     public static AddonMeta of(@NotNull AddonConfiguration configuration) {
-        assert configuration.json() != null;
+        if (configuration.json() == null)
+            throw new IllegalStateException("The addon json config is null!");
 
         Addon addon = configuration.addon().get();
         Json json = configuration.json();

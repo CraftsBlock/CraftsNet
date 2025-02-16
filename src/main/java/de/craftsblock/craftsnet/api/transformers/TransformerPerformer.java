@@ -31,7 +31,7 @@ import static de.craftsblock.craftsnet.utils.Utils.getGroupNames;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @see Transformer
  * @see TransformerCollection
  * @see Transformable
@@ -222,7 +222,8 @@ public class TransformerPerformer {
             else {
                 // Search for the transform method on the transformable
                 Method transformerMethod = Utils.getMethod(transformable, "transform", String.class);
-                assert transformerMethod != null;
+                if (transformerMethod == null)
+                    throw new IllegalStateException("Transformer " + transformable.getName() + " does not have a transformer method!");
 
                 // Execute the transform method on the transformable and inject it into the args
                 Object transformed = transformerMethod.invoke(owner, value);

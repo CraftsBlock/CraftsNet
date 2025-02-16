@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.3
+ * @version 3.3.4
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -314,10 +314,10 @@ public class WebSocketClient implements Runnable, RequireAble {
 
                     // Process the requirements
                     if (craftsNet.requirementRegistry().getRequirements().containsKey(WebSocketServer.class))
-                        for (Requirement requirement : craftsNet.requirementRegistry().getRequirements().get(WebSocketServer.class))
+                        req:for (Requirement requirement : craftsNet.requirementRegistry().getRequirements().get(WebSocketServer.class))
                             try {
                                 Method m = Utils.getMethod(requirement.getClass(), "applies", Frame.class, RouteRegistry.EndpointMapping.class);
-                                assert m != null;
+                                if (m == null) continue req;
                                 if (!((Boolean) m.invoke(requirement, frame, mapping))) continue inner;
                             } catch (NullPointerException | AssertionError | IllegalAccessException | InvocationTargetException ignored) {
                             }

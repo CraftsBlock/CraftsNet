@@ -15,7 +15,7 @@ import java.net.URLConnection;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.2
+ * @version 1.1.3
  * @see CancellableEvent
  * @since 2.3.2-SNAPSHOT
  */
@@ -33,7 +33,7 @@ public class ShareFileLoadedEvent extends CancellableEvent {
      * @param exchange The exchange used by the share to handle its connection
      * @param file     The loaded file associated with this event.
      */
-    public ShareFileLoadedEvent(@NotNull Exchange exchange, @Nullable File file) {
+    public ShareFileLoadedEvent(@NotNull Exchange exchange, @NotNull File file) {
         this.exchange = exchange;
         this.file = file;
     }
@@ -52,7 +52,7 @@ public class ShareFileLoadedEvent extends CancellableEvent {
      *
      * @return The loaded file.
      */
-    @Nullable
+    @NotNull
     public File getFile() {
         return file;
     }
@@ -62,7 +62,7 @@ public class ShareFileLoadedEvent extends CancellableEvent {
      *
      * @param file The new loaded file.
      */
-    public void setFile(@Nullable File file) {
+    public void setFile(@NotNull File file) {
         this.file = file;
     }
 

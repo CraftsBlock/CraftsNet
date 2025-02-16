@@ -13,7 +13,7 @@ import java.util.Objects;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.0.6
  */
 public class Cookie {
@@ -287,7 +287,9 @@ public class Cookie {
      * @return The current Cookie object, for method chaining
      */
     public Cookie override(Cookie cookie) {
-        assert this.name.equalsIgnoreCase(cookie.name);
+        if (!this.name.equalsIgnoreCase(cookie.name))
+            throw new IllegalStateException("Can not override cookie (" + this.getName() + ") with cookie (" + cookie.getName() + ")! The names must match!");
+
         this.value = cookie.getValue();
         this.path = cookie.getPath();
         this.domain = cookie.getDomain();

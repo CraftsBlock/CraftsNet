@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.1
+ * @version 1.5.2
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -292,7 +292,6 @@ public class WebHandler implements HttpHandler {
         if (fileLoadedEvent.isCancelled()) return;
         share = fileLoadedEvent.getFile();
 
-        assert share != null;
         if (!share.getCanonicalPath().startsWith(folder.getCanonicalPath() + File.separator) || share.isDirectory()) {
             response.setCode(403);
             response.setContentType("text/html; charset=utf-8");
