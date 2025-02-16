@@ -6,6 +6,8 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collector;
+import java.util.stream.Collectors;
 
 /**
  * Represents a system for managing the load order of addons.
@@ -14,12 +16,12 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.0.2-SNAPSHOT
  */
 final class AddonLoadOrder {
 
-    private final ConcurrentHashMap<String, BootMapping> addonLoadOrder = new ConcurrentHashMap<>();
+    private final Map<String, BootMapping> addonLoadOrder = Collections.synchronizedMap(new LinkedHashMap<>());
 
     /**
      * Adds an Addon to the system, considering its load order.
@@ -63,9 +65,9 @@ final class AddonLoadOrder {
      * @param dependsOn The name of the addon on which the specified addon depends.
      */
     public void depends(Addon addon, String dependsOn) {
-        addonLoadOrder.merge(dependsOn, new BootMapping(0, null),
+        final int addonPriority = getPriority(addon.getName());
+        addonLoadOrder.merge(dependsOn, new BootMapping(addonPriority + 1, null),
                 (existingMapping, newMapping) -> {
-                    int addonPriority = getPriority(addon.getName());
                     int dependsOnPriority = getPriority(dependsOn);
                     return (addonPriority <= dependsOnPriority) ?
                             existingMapping.priority(dependsOnPriority + 1) :
@@ -88,6 +90,7 @@ final class AddonLoadOrder {
         return bootOrderList.stream()
                 .map(addonLoadOrder::get)
                 .filter(Objects::nonNull)
+                .sorted((o1, o2) -> Integer.compare(o2.priority(), o1.priority()))
                 .map(BootMapping::addon)
                 .filter(Objects::nonNull)
                 .toList();
