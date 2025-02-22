@@ -63,6 +63,8 @@ public class CraftsNet {
     private FileHelper fileHelper;
     private Thread consoleListener;
     private BufferedReader consoleReader;
+
+    // Threads
     private Thread shutdownThread;
     private Thread.UncaughtExceptionHandler oldDefaultUncaughtExceptionHandler;
 
