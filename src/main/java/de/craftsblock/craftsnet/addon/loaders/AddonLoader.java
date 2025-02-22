@@ -33,7 +33,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.6
+ * @version 2.1.7
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -201,6 +201,10 @@ public final class AddonLoader {
                 if (addon.contains("depends"))
                     for (String depended : addon.getStringList("depends"))
                         loadOrder.depends(obj, depended);
+
+                if (addon.contains("softDepends"))
+                    for (String depended : addon.getStringList("softDepends"))
+                        loadOrder.softDepends(obj, depended);
 
                 craftsNet.addonManager().register(obj);
                 configuration.addon().set(obj);

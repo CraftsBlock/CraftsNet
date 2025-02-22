@@ -1,13 +1,11 @@
 package de.craftsblock.craftsnet.addon.loaders;
 
 import de.craftsblock.craftsnet.addon.Addon;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collector;
-import java.util.stream.Collectors;
 
 /**
  * Represents a system for managing the load order of addons.
@@ -16,7 +14,7 @@ import java.util.stream.Collectors;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.2
+ * @version 1.1.0
  * @since 3.0.2-SNAPSHOT
  */
 final class AddonLoadOrder {
@@ -32,7 +30,7 @@ final class AddonLoadOrder {
      */
     public void addAddon(Addon addon) {
         addonLoadOrder.compute(addon.getName(), (name, bootMapping) ->
-                (bootMapping == null) ? new BootMapping(0, addon) : bootMapping.addon(addon));
+                (bootMapping == null) ? new BootMapping(name, 0, addon, true) : bootMapping.addon(addon));
     }
 
     /**
@@ -56,21 +54,52 @@ final class AddonLoadOrder {
     }
 
     /**
-     * Specifies a dependency relationship between two addons, influencing their load order.
-     * The method uses a ConcurrentHashMap to manage the load order of addons based on their dependencies.
-     * If the specified dependency does not exist, a new entry is created with a default BootMapping.
-     * The load order is adjusted according to the priorities of the dependent addons.
+     * Registers a required dependency for the specified addon.
      *
-     * @param addon     The Addon object representing the dependent addon.
-     * @param dependsOn The name of the addon on which the specified addon depends.
+     * @param addon     the addon that declares the dependency
+     * @param dependsOn the name of the addon that is depended on
      */
     public void depends(Addon addon, String dependsOn) {
+        this.depends(addon, dependsOn, true);
+    }
+
+    /**
+     * Registers an optional (soft) dependency for the specified addon.
+     *
+     * @param addon     the addon that declares the dependency
+     * @param dependsOn the name of the addon that is optionally depended on
+     * @since 3.3.4-SNAPSHOT
+     */
+    public void softDepends(Addon addon, String dependsOn) {
+        this.depends(addon, dependsOn, false);
+    }
+
+    /**
+     * Registers a dependency for the specified addon on another addon.
+     * <p>
+     * The dependency can be either required or optional based on the {@code required} parameter.
+     * This method updates the internal addon load order by merging a new {@link BootMapping} into the existing mapping.
+     * If a dependency mapping for {@code dependsOn} already exists, the method adjusts its priority and, if necessary,
+     * marks it as required.
+     * </p>
+     *
+     * @param addon     the addon that declares the dependency
+     * @param dependsOn the name of the addon that is being depended on
+     * @param required  {@code true} if the dependency is required, {@code false} otherwise.
+     * @throws IllegalStateException if the addon attempts to depend on itself
+     * @since 3.3.4-SNAPSHOT
+     */
+    private void depends(Addon addon, String dependsOn, boolean required) {
+        if (addon.getName().equalsIgnoreCase(dependsOn))
+            throw new IllegalStateException("Can not add " + addon.getName() + " as depends to itself!");
+
         final int addonPriority = getPriority(addon.getName());
-        addonLoadOrder.merge(dependsOn, new BootMapping(addonPriority + 1, null),
+        addonLoadOrder.merge(dependsOn, new BootMapping(dependsOn, addonPriority + 1, null, required),
                 (existingMapping, newMapping) -> {
                     int dependsOnPriority = getPriority(dependsOn);
+                    if (required) existingMapping.require();
                     return (addonPriority <= dependsOnPriority) ?
-                            existingMapping.priority(dependsOnPriority + 1) :
+                            existingMapping.priority(addonPriority + 1) :
                             existingMapping;
                 });
     }
@@ -90,6 +119,7 @@ final class AddonLoadOrder {
         return bootOrderList.stream()
                 .map(addonLoadOrder::get)
                 .filter(Objects::nonNull)
+                .filter(BootMapping::presenceFilter)
                 .sorted((o1, o2) -> Integer.compare(o2.priority(), o1.priority()))
                 .map(BootMapping::addon)
                 .filter(Objects::nonNull)
@@ -104,7 +134,7 @@ final class AddonLoadOrder {
      * @return The priority of the specified addon in the load order.
      */
     private int getPriority(String addon) {
-        return addonLoadOrder.getOrDefault(addon, new BootMapping(0, null)).priority();
+        return addonLoadOrder.getOrDefault(addon, new BootMapping(addon, 0, null, false)).priority();
     }
 
     /**
@@ -113,18 +143,24 @@ final class AddonLoadOrder {
      */
     private static class BootMapping {
 
+        private final String name;
         private int priority;
         private Addon addon;
+        private boolean required;
 
         /**
          * Constructs a BootMapping with the specified priority and addon.
          *
+         * @param name     The name of the addon.
          * @param priority The priority level assigned to the addon in the load order.
          * @param addon    The addon associated with this mapping.
+         * @param required Whether this {@link BootMapping} is required to properly start or not.
          */
-        public BootMapping(int priority, @Nullable Addon addon) {
+        public BootMapping(@NotNull String name, int priority, @Nullable Addon addon, boolean required) {
+            this.name = name;
             this.priority = priority;
             this.addon = addon;
+            this.required = required;
         }
 
         /**
@@ -150,6 +186,15 @@ final class AddonLoadOrder {
         }
 
         /**
+         * Marks this {@link BootMapping} as required to properly start.
+         *
+         * @since 3.3.4-SNAPSHOT
+         */
+        public void require() {
+            this.required = true;
+        }
+
+        /**
          * Retrieves the priority level assigned to the addon in the load order.
          *
          * @return The priority level of the addon in the load order.
@@ -166,5 +211,20 @@ final class AddonLoadOrder {
         public Addon addon() {
             return addon;
         }
+
+        /**
+         * Filter for the presence check of this {@link BootMapping}.
+         *
+         * @return {@code true} if the {@link BootMapping} is properly present.
+         * @throws IllegalStateException If the addon is required but not present.
+         * @since 3.3.4-SNAPSHOT
+         */
+        public boolean presenceFilter() {
+            if (!required) return true;
+            if (addon != null) return true;
+
+            throw new IllegalStateException("The addon \"" + this.name + "\" is required but not found!");
+        }
+
     }
 }

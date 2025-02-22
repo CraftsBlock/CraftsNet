@@ -15,7 +15,7 @@ import java.lang.annotation.*;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @see DependsCollection
  * @since 3.1.0-SNAPSHOT
  */
@@ -35,5 +35,15 @@ public @interface Depends {
      * @return The class of the required addon.
      */
     Class<? extends Addon> value();
+
+    /**
+     * Specifies whether this dependency should be treated as optional or not.
+     * {@code true} means that this dependency is optional, {@code false} means
+     * the opposite. The default value is {@code false}.
+     *
+     * @return {@code true} if this dependency is optional, {@code false} otherwise.
+     * @since 3.3.4-SNAPSHOT
+     */
+    boolean soft() default false;
 
 }
