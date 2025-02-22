@@ -31,11 +31,11 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.2
+ * @version 2.0.3
  * @see <a href="https://maven.apache.org/resolver/index.html">Eclipse Aether</a>
  * @since 3.0.0-SNAPSHOT
  */
-final class ArtifactLoader {
+public final class ArtifactLoader {
 
     private final RepositorySystem repository;
     private final DefaultRepositorySystemSession session;
