@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.IntStream;
 
 /**
  * This utility class provides helper methods for thread-related operations.
@@ -19,7 +18,7 @@ import java.util.stream.IntStream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.5
+ * @version 1.0.6
  * @since 2.1.1-SNAPSHOT
  */
 public class Utils {
@@ -29,33 +28,6 @@ public class Utils {
      * This pattern matches named capturing groups defined in regular expression patterns.
      */
     public static final Pattern patternGroupNameExtractPattern = Pattern.compile("\\(\\?<([a-zA-Z][a-zA-Z0-9]*)>");
-
-    /**
-     * Converts a primitive byte array into a Byte object array.
-     *
-     * @param data The byte array to be converted.
-     * @return A Byte object array with the same values as the input byte array.
-     */
-    public static Byte[] convert(byte[] data) {
-        return IntStream.range(0, data.length)
-                .mapToObj(i -> data[i])
-                .toArray(Byte[]::new);
-    }
-
-    /**
-     * Converts a Byte object array into a primitive byte array.
-     *
-     * @param data The Byte array to be converted.
-     * @return A primitive byte array with the same values as the input Byte array.
-     */
-    public static byte[] convert(Byte[] data) {
-        byte[] output = new byte[data.length];
-
-        for (int i = 0; i < data.length; i++)
-            output[i] = data[i];
-
-        return output;
-    }
 
     /**
      * Retrieves a thread by its name from the currently running threads.
