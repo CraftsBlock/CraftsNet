@@ -8,7 +8,6 @@ package de.craftsblock.craftsnet.addon.meta;
  *   <li>{@link #DEPENDENCY} - Indicates that the shadow is a dependency required by the addon.</li>
  *   <li>{@link #REPOSITORY} - Indicates that the shadow is a repository reference needed for resolving dependencies.</li>
  * </ul>
- * </p>
  *
  * @author Philipp Maywald
  * @author CraftsBlock
