@@ -5,7 +5,10 @@ import de.craftsblock.craftsnet.api.http.encoding.builtin.GZIPStreamEncoder;
 import de.craftsblock.craftsnet.api.http.encoding.builtin.IdentityStreamEncoder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -14,7 +17,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.3.3-SNAPSHOT
  */
 public final class StreamEncoderRegistry {
@@ -122,6 +125,16 @@ public final class StreamEncoderRegistry {
     public @Nullable StreamEncoder retrieveEncoder(@NotNull Class<? extends StreamEncoder> type) {
         return streamEncoders.stream().filter(type::isInstance).filter(StreamEncoder::isAvailable)
                 .findFirst().orElse(null);
+    }
+
+    /**
+     * Retrieves a list of all registered {@link StreamEncoder}.
+     *
+     * @return The list of {@link StreamEncoder}.
+     * @since 3.3.5-SNAPSHOT
+     */
+    public @Unmodifiable @NotNull Collection<StreamEncoder> getStreamEncoders() {
+        return Collections.unmodifiableCollection(this.streamEncoders);
     }
 
 }
