@@ -3,10 +3,14 @@ package de.craftsblock.craftsnet.addon;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
 import de.craftsblock.craftsnet.logging.Logger;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
@@ -18,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.2.0
  * @see Addon
  * @see AddonLoader
  * @since 1.0.0-SNAPSHOT
@@ -82,7 +86,7 @@ public final class AddonManager {
      *
      * @param addon The addon to be registered.
      */
-    public void register(Addon addon) {
+    public void register(@NotNull Addon addon) {
         addons.put(addon.getName(), addon);
     }
 
@@ -91,7 +95,7 @@ public final class AddonManager {
      *
      * @param addon The addon to be unregistered.
      */
-    public void unregister(Addon addon) {
+    public void unregister(@NotNull Addon addon) {
         addons.remove(addon.getName());
         addon.onDisable();
     }
@@ -101,8 +105,8 @@ public final class AddonManager {
      *
      * @return A read-only ConcurrentHashMap containing the registered addons.
      */
-    public ConcurrentHashMap<String, Addon> getAddons() {
-        return new ConcurrentHashMap<>(addons);
+    public @Unmodifiable @NotNull Map<String, Addon> getAddons() {
+        return Collections.unmodifiableMap(addons);
     }
 
     /**
@@ -112,14 +116,34 @@ public final class AddonManager {
      * @param addon The class object representing the type of the addon to be retrieved.
      * @return An instance of the specified addon type if found, or {@code null} if not present.
      */
-    @Nullable
-    public <T extends Addon> T getAddon(Class<T> addon) {
-        return addons.entrySet().parallelStream()
-                .map(Map.Entry::getValue)
+    public <T extends Addon> @Nullable T getAddon(@NotNull Class<T> addon) {
+        return addons.values().stream()
                 .filter(addon::isInstance)
                 .map(addon::cast)
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * Checks whether an {@link Addon} class is registered or not.
+     *
+     * @param addon The class of the {@link Addon} to check.
+     * @return {@code true} if the addon is registered, {@code false} otherwise.
+     * @since 3.3.4-SNAPSHOT
+     */
+    public boolean isRegistered(@NotNull Class<? extends Addon> addon) {
+        return addons.values().stream().anyMatch(addon::isInstance);
+    }
+
+    /**
+     * Checks whether an {@link Addon} is registered using its name.
+     *
+     * @param name The name of the {@link Addon}
+     * @return {@code true} if the addon is registered, {@code false} otherwise.
+     * @since 3.3.4-SNAPSHOT
+     */
+    public boolean isRegistered(@NotNull String name) {
+        return addons.values().stream().anyMatch(addon -> addon.getName().equalsIgnoreCase(name));
     }
 
 }
