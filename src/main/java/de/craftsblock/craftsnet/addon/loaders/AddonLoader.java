@@ -33,7 +33,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.7
+ * @version 2.1.8
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -187,10 +187,11 @@ public final class AddonLoader {
                 if (clazz == null)
                     throw new NullPointerException("The main class could not be found!");
                 if (!Addon.class.isAssignableFrom(clazz))
-                    throw new IllegalArgumentException("The loaded main class (" + className + ") is not an instance of Addon!");
+                    throw new IllegalArgumentException("The loaded main class (" + className +
+                            ") is not an instance of " + Addon.class.getSimpleName() + "!");
 
                 // Create an instance of the main class and inject dependencies using reflection
-                Addon obj = (Addon) clazz.getDeclaredConstructor().newInstance();
+                Addon obj = clazz.asSubclass(Addon.class).getDeclaredConstructor().newInstance();
                 ReflectionUtils.setField("craftsNet", obj, craftsNet);
                 ReflectionUtils.setField("meta", obj, meta);
                 ReflectionUtils.setField("logger", obj, logger.cloneWithName(name));
