@@ -40,7 +40,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.2
+ * @version 1.5.3
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -164,7 +164,6 @@ public class WebHandler implements HttpHandler {
         }
 
         // If no matching route or share is found, respond with an error message and log the failed request
-        response.setCode(404);
         respondWithError(response, 404, "Path do not match any API endpoint!");
         logger.info(httpMethod.toString() + " " + url + " from " + request.getIp() + " \u001b[38;5;9m[NOT FOUND]");
         return Map.entry(false, false);
@@ -315,6 +314,7 @@ public class WebHandler implements HttpHandler {
      * @param message  The error message to be included in the response.
      */
     private static void respondWithError(Response response, int code, String message) {
+        if (!response.headersSent()) response.setCode(code);
         response.print(Json.empty().set("status", "" + code).set("message", message));
     }
 
