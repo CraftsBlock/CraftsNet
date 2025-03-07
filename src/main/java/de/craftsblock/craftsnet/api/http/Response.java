@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -32,7 +33,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.2.0
  * @see Exchange
  * @see WebServer
  * @since 1.0.0-SNAPSHOT
@@ -43,12 +44,12 @@ public class Response implements AutoCloseable {
     private final Logger logger;
 
     private final HttpExchange httpExchange;
-    private final StreamEncoder streamEncoder;
     private final Headers headers;
     private final ConcurrentHashMap<String, Cookie> cookies = new ConcurrentHashMap<>();
     private final CorsPolicy corsPolicy;
     private final boolean bodyAble;
 
+    private StreamEncoder streamEncoder;
     private OutputStream encodedStream;
     private OutputStream rawStream;
 
@@ -316,6 +317,34 @@ public class Response implements AutoCloseable {
      */
     public Exchange getExchange() {
         return exchange;
+    }
+
+    /**
+     * Sets the {@link StreamEncoder} by its name that is used to encode the response body.
+     *
+     * @param encodingName The name of the {@link StreamEncoder} that should be used.
+     * @throws IllegalStateException If the response headers have already been sent.
+     * @since 3.3.5-SNAPSHOT
+     */
+    public void setStreamEncoder(String encodingName) {
+        if (!this.craftsNet.streamEncoderRegistry().isAvailable(encodingName))
+            throw new IllegalStateException("No available stream encoder found for name " + encodingName + "!");
+
+        this.setStreamEncoder(Objects.requireNonNull(this.craftsNet.streamEncoderRegistry().retrieveEncoder(encodingName)));
+    }
+
+    /**
+     * Sets the {@link StreamEncoder} that is used to encode the response body.
+     *
+     * @param streamEncoder The {@link StreamEncoder} that should be used.
+     * @throws IllegalStateException If the response headers have already been sent.
+     * @since 3.3.5-SNAPSHOT
+     */
+    public void setStreamEncoder(@NotNull StreamEncoder streamEncoder) {
+        if (headersSent())
+            throw new IllegalStateException("Response headers have already been sent!");
+
+        this.streamEncoder = streamEncoder;
     }
 
     /**
