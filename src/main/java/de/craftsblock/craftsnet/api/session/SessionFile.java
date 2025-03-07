@@ -1,15 +1,10 @@
 package de.craftsblock.craftsnet.api.session;
 
+import de.craftsblock.craftsnet.api.session.drivers.SessionDriver;
+import de.craftsblock.craftsnet.api.session.drivers.builtin.FileSessionDriver;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
 
 import java.io.*;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
@@ -25,36 +20,28 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.0.0
+ * @version 3.1.0
  * @see Session
  * @see ByteBuffer
  * @since 3.3.0-SNAPSHOT
  */
 public class SessionFile {
 
-    /**
-     * The default directory where session files are stored.
-     */
-    public static final String STORAGE_LOCATION = "./sessions";
-
-    /**
-     * The file extension used for session files.
-     */
-    public static final String STORAGE_EXTENSION = ".cnetsess";
-
+    private final SessionDriver driver;
     private final Session session;
-    private final ConcurrentLinkedQueue<String> actionQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<JobType> actionQueue = new ConcurrentLinkedQueue<>();
 
     private boolean busy = false;
     private boolean handlingActionQueue = false;
 
     /**
-     * Constructs a new {@link  SessionFile} instance for managing the specified session.
+     * Constructs a new {@link SessionFile} instance for managing the specified session.
      *
      * @param session the session associated with this file handler.
      */
     public SessionFile(Session session) {
         this.session = session;
+        this.driver = new FileSessionDriver();
     }
 
     /**
@@ -66,40 +53,13 @@ public class SessionFile {
      */
     public void load() {
         if (!this.session.isSessionStarted()) return;
-        if (availableOrQueue("load")) return;
+        if (availableOrQueue(JobType.LOAD)) return;
 
         busy = true;
         try {
-            Path path = Path.of(STORAGE_LOCATION, this.session.getSessionInfo().getSessionID() + STORAGE_EXTENSION);
-            try {
-                if (path.getParent() != null && !Files.exists(path.getParent()))
-                    Files.createDirectories(path.getParent());
-
-                if (!Files.exists(path)) return;
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-
-            try (FileChannel channel = FileChannel.open(path);
-                 InputStream stream = Channels.newInputStream(channel);
-                 FileLock ignored = channel.lock(0, Long.MAX_VALUE, true)) {
-
-                ByteBuffer readBuffer = new ByteBuffer(stream.readAllBytes());
-
-                while (readBuffer.isReadable()) {
-                    String key = readBuffer.readUTF();
-                    byte[] obj = readBuffer.readNBytes(readBuffer.readVarInt());
-
-                    try (ByteArrayInputStream in = new ByteArrayInputStream(obj);
-                         ObjectInputStream reader = new ObjectInputStream(in)) {
-                        this.session.put(key, reader.readObject());
-                    } catch (IOException | ClassNotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            this.driver.load(this.session, this.session.getSessionInfo().getSessionID());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         } finally {
             completeJob();
         }
@@ -113,46 +73,11 @@ public class SessionFile {
      */
     public void save() {
         if (!this.session.isSessionStarted()) return;
-        if (availableOrQueue("save")) return;
+        if (availableOrQueue(JobType.SAVE)) return;
 
         busy = true;
         try {
-            ByteBuffer saveBuffer = new ByteBuffer(0, false);
-            for (Map.Entry<String, Object> entry : this.session.entrySet())
-                try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-                     ObjectOutputStream writer = new ObjectOutputStream(out)) {
-                    writer.writeObject(entry.getValue());
-
-                    byte[] objBytes = out.toByteArray();
-                    saveBuffer.writeUTF(entry.getKey());
-                    saveBuffer.writeVarInt(objBytes.length);
-                    saveBuffer.write(objBytes);
-                } catch (IOException e) {
-                    this.session.getSessionInfo().getLogger().error(e, "Skipping key " + entry.getKey());
-                }
-
-            Path path = Path.of(STORAGE_LOCATION, this.session.getSessionInfo().getSessionID() + STORAGE_EXTENSION);
-            if (path.getParent() != null && !Files.exists(path.getParent()))
-                Files.createDirectories(path.getParent());
-
-            if (!Files.exists(path)) Files.createFile(path);
-
-            try (FileChannel channel = FileChannel.open(path, StandardOpenOption.WRITE);
-                 OutputStream stream = Channels.newOutputStream(channel)) {
-                FileLock lock;
-                if (!Thread.currentThread().isInterrupted()) lock = channel.lock();
-                else lock = null;
-
-                try {
-                    int bufferSize = 1024;
-                    while (saveBuffer.isReadable(bufferSize))
-                        stream.write(saveBuffer.readNBytes(bufferSize));
-
-                    stream.write(saveBuffer.readRemaining());
-                } finally {
-                    if (lock != null) lock.release();
-                }
-            }
+            this.driver.save(this.session, this.session.getSessionInfo().getSessionID());
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
@@ -166,14 +91,13 @@ public class SessionFile {
      */
     protected void destroy() {
         if (!this.session.isSessionStarted()) return;
-        if (availableOrQueue("destroy")) return;
+        if (availableOrQueue(JobType.DESTROY)) return;
 
         busy = true;
         try {
-            File data = new File(STORAGE_LOCATION, this.session.getSessionInfo().getSessionID() + STORAGE_EXTENSION);
-            if (!data.exists()) return;
-
-            data.delete();
+            this.driver.destroy(this.session, this.session.getSessionInfo().getSessionID());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         } finally {
             completeJob();
         }
@@ -193,9 +117,9 @@ public class SessionFile {
             actionQueue.forEach(action -> {
                 busy = false;
                 switch (action) {
-                    case "load" -> this.load();
-                    case "save" -> this.save();
-                    case "destroy" -> this.destroy();
+                    case LOAD -> this.load();
+                    case SAVE -> this.save();
+                    case DESTROY -> this.destroy();
                 }
 
                 actionQueue.remove(action);
@@ -209,14 +133,14 @@ public class SessionFile {
     /**
      * Checks if the session file is busy. If busy, queues the action for execution once the current job is completed.
      *
-     * @param action The action to queue for later execution.
+     * @param jobType The action to queue for later execution.
      * @return {@code true} if the runnable was queued, {@code false} if the manager was not busy and no action was queued.
      */
-    public boolean availableOrQueue(String action) {
+    public boolean availableOrQueue(JobType jobType) {
         if (!isBusy()) return false;
 
-        if (actionQueue.contains(action)) return true;
-        actionQueue.add(action);
+        if (actionQueue.contains(jobType)) return true;
+        actionQueue.add(jobType);
 
         return true;
     }
@@ -231,12 +155,49 @@ public class SessionFile {
     }
 
     /**
+     * Retrieves the {@link SessionDriver} instance associated with this session file.
+     *
+     * @return The associated {@link SessionDriver}.
+     * @since 3.3.5-SNAPSHOT
+     */
+    public SessionDriver getDriver() {
+        return driver;
+    }
+
+    /**
      * Retrieves the {@link Session} instance associated with this session file.
      *
-     * @return the associated {@code Session}.
+     * @return The associated {@link Session}.
      */
     public Session getSession() {
         return session;
+    }
+
+    /**
+     * Indicating the type of job the {@link SessionFile} is performing.
+     *
+     * @author Philipp Maywald
+     * @author CraftsBlock
+     * @version 1.0.0
+     * @since 3.3.5-SNAPSHOT
+     */
+    public enum JobType {
+
+        /**
+         * Indicating a load process.
+         */
+        LOAD,
+
+        /**
+         * Indicating a save process.
+         */
+        SAVE,
+
+        /**
+         * Indicating a destroy process.
+         */
+        DESTROY,
+
     }
 
 }
