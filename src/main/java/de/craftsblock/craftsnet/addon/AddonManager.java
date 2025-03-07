@@ -129,7 +129,7 @@ public final class AddonManager {
      *
      * @param addon The class of the {@link Addon} to check.
      * @return {@code true} if the addon is registered, {@code false} otherwise.
-     * @since 3.3.4-SNAPSHOT
+     * @since 3.3.5-SNAPSHOT
      */
     public boolean isRegistered(@NotNull Class<? extends Addon> addon) {
         return addons.values().stream().anyMatch(addon::isInstance);
@@ -140,7 +140,7 @@ public final class AddonManager {
      *
      * @param name The name of the {@link Addon}
      * @return {@code true} if the addon is registered, {@code false} otherwise.
-     * @since 3.3.4-SNAPSHOT
+     * @since 3.3.5-SNAPSHOT
      */
     public boolean isRegistered(@NotNull String name) {
         return addons.values().stream().anyMatch(addon -> addon.getName().equalsIgnoreCase(name));
