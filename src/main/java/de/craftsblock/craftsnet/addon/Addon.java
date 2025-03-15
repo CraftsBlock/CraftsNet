@@ -35,7 +35,7 @@ import java.io.File;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.2
+ * @version 1.1.3
  * @see AddonLoader
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -234,6 +234,18 @@ public abstract class Addon {
      */
     public <T extends Addon> T getAddon(Class<T> addon) {
         return craftsNet.addonManager().getAddon(addon);
+    }
+
+    /**
+     * Retrieves an addon by its name from the loaded addons.
+     *
+     * @param <T>  The type of the addon to retrieve, extending the Addon class.
+     * @param name The name of the addon to be retrieved.
+     * @return An instance of the specified addon type if found, or {@code null} if not present.
+     * @since 3.3.5-SNAPSHOT
+     */
+    public <T extends Addon> T getAddon(String name) {
+        return craftsNet.addonManager().getAddon(name);
     }
 
 }

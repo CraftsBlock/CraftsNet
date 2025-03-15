@@ -9,7 +9,6 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -22,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.2.1
  * @see Addon
  * @see AddonLoader
  * @since 1.0.0-SNAPSHOT
@@ -117,9 +116,28 @@ public final class AddonManager {
      * @return An instance of the specified addon type if found, or {@code null} if not present.
      */
     public <T extends Addon> @Nullable T getAddon(@NotNull Class<T> addon) {
+        if (HollowAddon.class.isAssignableFrom(addon))
+            throw new IllegalArgumentException(addon.getSimpleName() + "s cannot be retrieved by class, use the name instead!");
+
         return addons.values().stream()
                 .filter(addon::isInstance)
                 .map(addon::cast)
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Retrieves an addon by its name from the loaded addons.
+     *
+     * @param <T>  The type of the addon to retrieve, extending the Addon class.
+     * @param name The name of the addon to be retrieved.
+     * @return An instance of the specified addon type if found, or {@code null} if not present.
+     * @since 3.3.5-SNAPSHOT
+     */
+    @SuppressWarnings("unchecked")
+    public <T extends Addon> @Nullable T getAddon(String name) {
+        return (T) addons.values().stream()
+                .filter(addon -> addon.getName().equalsIgnoreCase(name))
                 .findFirst()
                 .orElse(null);
     }
@@ -132,6 +150,7 @@ public final class AddonManager {
      * @since 3.3.5-SNAPSHOT
      */
     public boolean isRegistered(@NotNull Class<? extends Addon> addon) {
+        if (HollowAddon.class.isAssignableFrom(addon)) return false;
         return addons.values().stream().anyMatch(addon::isInstance);
     }
 

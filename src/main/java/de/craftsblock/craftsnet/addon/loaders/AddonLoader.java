@@ -183,7 +183,7 @@ public final class AddonLoader {
 
                 // Load the main class of the addon using the class loader
                 String className = meta.mainClass();
-                Class<?> clazz = classLoader.loadClass(className);
+                Class<?> clazz = className != null ? classLoader.loadClass(className) : HollowAddon.class;
                 if (clazz == null)
                     throw new NullPointerException("The main class could not be found!");
                 if (!Addon.class.isAssignableFrom(clazz))

@@ -37,7 +37,6 @@ public record AddonMeta(String name, String mainClass, String description, List<
         if (configuration.json() == null)
             throw new IllegalStateException("The addon json config is null!");
 
-        Addon addon = configuration.addon().get();
         Json json = configuration.json();
 
         List<String> authors = new ArrayList<>();
