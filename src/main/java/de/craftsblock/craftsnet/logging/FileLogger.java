@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.0.2-SNAPSHOT
  */
 public class FileLogger {
@@ -64,8 +64,8 @@ public class FileLogger {
             if (max != 0 && Files.exists(folder))
                 try (Stream<Path> stream = Files.walk(folder, 1).parallel().filter(Files::isRegularFile)) {
                     long count = stream.count();
-                    if (count > max) {
-                        long diff = count - max;
+                    if (count >= max) {
+                        long diff = count - (max - 1);
                         for (Path path : FileUtils.getOldestNFiles(folder, diff))
                             Files.deleteIfExists(path);
                     }
