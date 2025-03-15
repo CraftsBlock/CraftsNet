@@ -572,6 +572,9 @@ public class CraftsNet {
 
     /**
      * Creates a new builder instance for configuring CraftsNet with the specified addons.
+     * <p>
+     * <b>Warning:</b> There is currently a bug where autoregister classes gets mixed up when
+     * more than one addon is in the same jar file. Use with caution in production!
      *
      * @param addons An array of {@link Addon} classes to include in the configuration.
      * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
@@ -583,6 +586,9 @@ public class CraftsNet {
 
     /**
      * Creates a new builder instance for configuring CraftsNet with the specified addons.
+     * <p>
+     * <b>Warning:</b> There is currently a bug where autoregister classes gets mixed up when
+     * more than one addon is in the same jar file. Use with caution in production!
      *
      * @param addons A {@link Collection} of {@link Addon} classes to include in the configuration.
      * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
