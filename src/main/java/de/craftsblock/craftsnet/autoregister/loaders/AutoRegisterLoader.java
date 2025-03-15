@@ -22,7 +22,7 @@ import java.util.stream.StreamSupport;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.1
+ * @version 1.2.0
  * @see AutoRegisterInfo
  * @since 3.2.0-SNAPSHOT
  */
@@ -46,24 +46,26 @@ public class AutoRegisterLoader {
      * these classes, and returns it as a list of {@link AutoRegisterInfo}.
      * </p>
      *
-     * @param loader The class loader to use (can be null for the system class loader).
-     * @param file   The {@link JarFile} from which classes will be loaded.
+     * @param loader   The class loader to use (can be null for the system class loader).
+     * @param bounding The list of addons that the auto register info is from. Nullable if the register info does not come from an addon.
+     * @param file     The {@link JarFile} from which classes will be loaded.
      * @return A list of {@link AutoRegisterInfo} objects containing metadata about the classes.
      * @since 1.0.0
      */
-    public List<AutoRegisterInfo> loadFrom(@Nullable ClassLoader loader, @Nullable Addon bounding, @NotNull JarFile file) {
+    public List<AutoRegisterInfo> loadFrom(@Nullable ClassLoader loader, @Nullable Collection<Addon> bounding, @NotNull JarFile file) {
         return loadFrom(loader, bounding, file, AutoRegister.class);
     }
 
     /**
      * Loads and processes all classes annotated with the specified annotation from the provided {@link JarFile}.
      *
-     * @param loader The class loader to use (can be null for the system class loader).
-     * @param file   The {@link JarFile} from which classes will be loaded.
-     * @param type   The annotation type that classes should be annotated with.
+     * @param loader   The class loader to use (can be null for the system class loader).
+     * @param bounding The list of addons that the auto register info is from. Nullable if the register info does not come from an addon.
+     * @param file     The {@link JarFile} from which classes will be loaded.
+     * @param type     The annotation type that classes should be annotated with.
      * @return A list of {@link AutoRegisterInfo} objects containing metadata about the classes.
      */
-    protected List<AutoRegisterInfo> loadFrom(@Nullable ClassLoader loader, @Nullable Addon bounding, @NotNull JarFile file,
+    protected List<AutoRegisterInfo> loadFrom(@Nullable ClassLoader loader, @Nullable Collection<Addon> bounding, @NotNull JarFile file,
                                               @NotNull Class<? extends Annotation> type) {
         Set<AutoRegisterInfo> infos = Collections.newSetFromMap(new ConcurrentHashMap<>());
         ClassLoader classLoader = (loader != null ? loader : ClassLoader.getSystemClassLoader());
@@ -120,11 +122,12 @@ public class AutoRegisterLoader {
      * Processes a class by loading it, checking for the specified annotation, and collecting relevant information.
      *
      * @param jvmName     The JVM class name of the class to process.
+     * @param bounding    The list of addons that the auto register info is from. Nullable if the register info does not come from an addon.
      * @param classLoader The class loader to use.
      * @param type        The annotation type to look for.
      * @param infos       A set to collect {@link AutoRegisterInfo} instances.
      */
-    private void processClass(@NotNull String jvmName, @Nullable Addon bounding, @NotNull ClassLoader classLoader,
+    private void processClass(@NotNull String jvmName, @Nullable Collection<Addon> bounding, @NotNull ClassLoader classLoader,
                               @NotNull Class<? extends Annotation> type, @NotNull Set<AutoRegisterInfo> infos) {
         try {
             Class<?> clazz = Class.forName(jvmName, false, classLoader);

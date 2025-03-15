@@ -2,7 +2,7 @@ package de.craftsblock.craftsnet.autoregister.meta;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.Addon;
-import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import de.craftsblock.craftsnet.autoregister.meta.constructors.ConstructorType;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -10,9 +10,7 @@ import org.jetbrains.annotations.Unmodifiable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * The {@link AutoRegisterInfo} holds information about a class to be processed in an auto registration
@@ -23,13 +21,13 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 2.0.2
+ * @version 2.1.0
  * @since 3.2.0-SNAPSHOT
  */
 public class AutoRegisterInfo {
 
     private final @NotNull String className;
-    private final @Nullable Addon bounding;
+    private final @Nullable Collection<Addon> bounding;
     private final @NotNull Annotation annotation;
     private final @NotNull ClassLoader loader;
     @NotNull
@@ -46,7 +44,7 @@ public class AutoRegisterInfo {
      * @param loader      The {@link ClassLoader} that was used to load the class.
      * @param parentTypes A list of parent types (superclasses and interfaces) of the class.
      */
-    public AutoRegisterInfo(@NotNull String className, @Nullable Addon bounding, @NotNull Annotation annotation,
+    public AutoRegisterInfo(@NotNull String className, @Nullable Collection<Addon> bounding, @NotNull Annotation annotation,
                             @NotNull ClassLoader loader, @NotNull List<String> parentTypes) {
         this.className = className;
         this.bounding = bounding;
@@ -96,21 +94,44 @@ public class AutoRegisterInfo {
             throw new RuntimeException(e);
         }
 
-        Constructor<?> constructor;
-        Object[] constructorArgs;
-        if (ReflectionUtils.isConstructorPresent(clazz)) {
-            constructor = ReflectionUtils.getConstructor(clazz);
-            constructorArgs = new Object[0];
-        } else if (hasBounding() && ReflectionUtils.isConstructorPresent(clazz, Addon.class)) {
-            constructor = ReflectionUtils.getConstructor(clazz, Addon.class);
-            constructorArgs = new Object[]{getBounding()};
-        } else if (hasBounding() && ReflectionUtils.isConstructorPresent(clazz, getBounding().getClass())) {
-            constructor = ReflectionUtils.getConstructor(clazz, getBounding().getClass());
-            constructorArgs = new Object[]{getBounding()};
-        } else {
-            constructor = ReflectionUtils.getConstructor(clazz, CraftsNet.class);
-            constructorArgs = new Object[]{craftsNet};
+        EnumMap<ConstructorType, Collection<Constructor<?>>> constructors = new EnumMap<>(ConstructorType.class);
+        for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
+            if (constructor.getParameterCount() != 0 && Arrays.stream(constructor.getParameterTypes())
+                    .noneMatch(param -> CraftsNet.class.isAssignableFrom(param) || Addon.class.isAssignableFrom(param)))
+                continue;
+
+            constructors.computeIfAbsent(ConstructorType.estimateType(constructor), c -> new ArrayList<>()).add(constructor);
         }
+
+        // Remove ignored constructors
+        constructors.remove(ConstructorType.IGNORED);
+
+        Constructor<?> constructor = null;
+        Object[] constructorArgs = null;
+
+        Collection<Addon> addons = craftsNet.addonManager().getAddons().values();
+        for (Constructor<?> con : constructors.values().stream().flatMap(Collection::stream).toList()) {
+            Collection<Object> args = new ArrayList<>();
+
+            for (Class<?> type : con.getParameterTypes())
+                if (CraftsNet.class.isAssignableFrom(type)) args.add(craftsNet);
+                else if (hasBounding()) {
+                    Optional<Addon> matchingAddon = addons.stream()
+                            .filter(addon -> addon.getClass().isAssignableFrom(type))
+                            .findFirst();
+
+                    if (matchingAddon.isPresent()) args.add(matchingAddon.get());
+                    else break;
+                } else break;
+
+            if (args.size() != con.getParameterCount()) continue;
+            constructor = con;
+            constructorArgs = args.toArray();
+            break;
+        }
+
+        if (constructor == null)
+            throw new IllegalStateException("No suitable constructor found for autoregister target " + clazz);
 
         try {
             return constructor.newInstance(constructorArgs);
@@ -133,7 +154,7 @@ public class AutoRegisterInfo {
      *
      * @return The {@link Addon} instance or {@code null} if no addon is associated.
      */
-    public @Nullable Addon getBounding() {
+    public @Nullable Collection<Addon> getBounding() {
         return bounding;
     }
 
@@ -144,7 +165,7 @@ public class AutoRegisterInfo {
      * @since 3.3.2-SNAPSHOT
      */
     public boolean hasBounding() {
-        return bounding != null;
+        return bounding != null && !bounding.isEmpty();
     }
 
     /**
@@ -201,13 +222,13 @@ public class AutoRegisterInfo {
      * Creates a new instance of {@link AutoRegisterInfo}.
      *
      * @param className   The name of the class.
-     * @param bounding    The addon that the auto register info is from. Nullable if the register info does not come from an addon.
+     * @param bounding    The list of addons that the auto register info is from. Nullable if the register info does not come from an addon.
      * @param annotation  The annotation associated with the class.
      * @param loader      The class loader that was used to load the class.
      * @param parentTypes A list of the names of the parent types (superclasses and interfaces) of the class.
      * @return A new instance of {@link AutoRegisterInfo}.
      */
-    public static AutoRegisterInfo of(@NotNull String className, @Nullable Addon bounding, @NotNull Annotation annotation,
+    public static AutoRegisterInfo of(@NotNull String className, @Nullable Collection<Addon> bounding, @NotNull Annotation annotation,
                                       @NotNull ClassLoader loader, @NotNull List<String> parentTypes) {
         return new AutoRegisterInfo(className, bounding, annotation, loader, parentTypes);
     }

@@ -5,6 +5,7 @@ import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.AddonManager;
+import de.craftsblock.craftsnet.addon.HollowAddon;
 import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
 import de.craftsblock.craftsnet.addon.meta.AddonMeta;
 import de.craftsblock.craftsnet.addon.meta.RegisteredService;
@@ -17,6 +18,7 @@ import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
 
 import java.io.*;
+import java.net.URI;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.*;
@@ -33,7 +35,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.8
+ * @version 2.1.9
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -163,7 +165,7 @@ public final class AddonLoader {
     public void load(List<AddonConfiguration> configurations) {
         AddonLoadOrder loadOrder = new AddonLoadOrder();
         AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader();
-        HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos = new HashMap<>();
+        HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources = new HashMap<>();
 
         for (AddonConfiguration configuration : configurations)
             try {
@@ -191,42 +193,67 @@ public final class AddonLoader {
                             ") is not an instance of " + Addon.class.getSimpleName() + "!");
 
                 // Create an instance of the main class and inject dependencies using reflection
-                Addon obj = clazz.asSubclass(Addon.class).getDeclaredConstructor().newInstance();
-                ReflectionUtils.setField("craftsNet", obj, craftsNet);
-                ReflectionUtils.setField("meta", obj, meta);
-                ReflectionUtils.setField("logger", obj, logger.cloneWithName(name));
-                ReflectionUtils.setField("classLoader", obj, classLoader);
+                Class<? extends Addon> addonClass = clazz.asSubclass(Addon.class);
+                Addon addon = ReflectionUtils.getConstructor(addonClass).newInstance();
+                ReflectionUtils.setField("craftsNet", addon, craftsNet);
+                ReflectionUtils.setField("meta", addon, meta);
+                ReflectionUtils.setField("logger", addon, logger.cloneWithName(name));
+                ReflectionUtils.setField("classLoader", addon, classLoader);
 
-                loadOrder.addAddon(obj);
-                Json addon = configuration.json();
-                if (addon.contains("depends"))
-                    for (String depended : addon.getStringList("depends"))
-                        loadOrder.depends(obj, depended);
+                loadOrder.addAddon(addon);
+                Json addonConfig = configuration.json();
+                if (addonConfig.contains("depends"))
+                    for (String depended : addonConfig.getStringList("depends"))
+                        loadOrder.depends(addon, depended);
 
-                if (addon.contains("softDepends"))
-                    for (String depended : addon.getStringList("softDepends"))
-                        loadOrder.softDepends(obj, depended);
+                if (addonConfig.contains("softDepends"))
+                    for (String depended : addonConfig.getStringList("softDepends"))
+                        loadOrder.softDepends(addon, depended);
 
-                craftsNet.addonManager().register(obj);
-                configuration.addon().set(obj);
+                craftsNet.addonManager().register(addon);
+                configuration.addon().set(addon);
 
                 // Load the file the addon is located in
-                JarFile file;
-                if (configuration.file() != null) file = new JarFile(configuration.file());
-                else {
+                URI uri;
+                JarFile jarFile;
+                if (configuration.file() != null) {
+                    uri = configuration.file().toURI();
+                    jarFile = new JarFile(configuration.file());
+                } else {
                     // Use the code source of the addon when it is not located in the addons folder
-                    Path path = Path.of(obj.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
-                    file = craftsNet.fileHelper().getJarFileAt(path);
+                    Path path = Path.of(addon.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
+                    uri = path.toUri();
+                    jarFile = craftsNet.fileHelper().getJarFileAt(path);
                 }
 
-                // Perform the actual load of the jar file if it is not null
-                if (file != null)
-                    try (file) {
-                        autoRegisterInfos.put(obj, autoRegisterLoader.loadFrom(classLoader, obj, file));
-                    }
+                codesSources.computeIfAbsent(uri, f -> Map.entry(jarFile, new ArrayList<>())).getValue().add(addon);
             } catch (Exception e) {
                 logger.error(e);
             }
+
+        // ToDo: Fix that currently the first addon in the jar is loading all autoregister infos.
+
+        final HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos = new HashMap<>();
+        codesSources.values().forEach((info) -> {
+            final JarFile file = info.getKey();
+            final ArrayList<Addon> bounding = info.getValue();
+
+            // Skip if the jar file is null
+            if (file == null) return;
+
+            // Perform the actual load of the jar file if it is not null
+            try (file) {
+                bounding.forEach(addon -> {
+                    try {
+                        autoRegisterInfos.put(addon, autoRegisterLoader.loadFrom(addon.getClassLoader(), bounding, file));
+                    } catch (NoClassDefFoundError ignored) {
+                    }
+                });
+            } catch (IOException e) {
+                throw new RuntimeException("Could not load auto register infos!", e);
+            }
+        });
+        codesSources.clear();
 
         // Loading all addons
         Collection<Addon> orderedLoad = loadOrder.getLoadOrder();
