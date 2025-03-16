@@ -477,8 +477,7 @@ public class CraftsNet {
     public ServiceManager serviceManager() {
         return serviceManager;
     }
-
-
+    
     /**
      * Retrieves the session cache instance which is in charge of caching session.
      *
