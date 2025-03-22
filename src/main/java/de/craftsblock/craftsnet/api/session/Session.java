@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.3.0-SNAPSHOT
  */
 public class Session extends ConcurrentHashMap<String, Object> implements AutoCloseable {
@@ -37,12 +37,10 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
      * @throws IllegalStateException if the session file does not exist.
      */
     public void setExchange(@NotNull BaseExchange exchange) {
-        if (this.exchange != null) {
-            this.exchange = exchange;
-            return;
-        }
-
+        boolean loaded = this.exchange != null;
         this.exchange = exchange;
+
+        if (loaded) return;
         this.sessionInfo.load();
     }
 
