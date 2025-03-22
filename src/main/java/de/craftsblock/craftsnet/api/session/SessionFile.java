@@ -5,7 +5,7 @@ import de.craftsblock.craftsnet.api.session.drivers.builtin.FileSessionDriver;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
 
 import java.io.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
 /**
  * Handles the persistence of session data by providing functionality for loading, saving,
@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.1.0
+ * @version 3.1.1
  * @see Session
  * @see ByteBuffer
  * @since 3.3.0-SNAPSHOT
@@ -29,7 +29,7 @@ public class SessionFile {
 
     private final SessionDriver driver;
     private final Session session;
-    private final ConcurrentLinkedQueue<JobType> actionQueue = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedDeque<JobType> actionQueue = new ConcurrentLinkedDeque<>();
 
     private boolean busy = false;
     private boolean handlingActionQueue = false;
@@ -139,7 +139,7 @@ public class SessionFile {
     public boolean availableOrQueue(JobType jobType) {
         if (!isBusy()) return false;
 
-        if (actionQueue.contains(jobType)) return true;
+        if (actionQueue.getLast().equals(jobType)) return true;
         actionQueue.add(jobType);
 
         return true;
