@@ -23,7 +23,7 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.0.1
+ * @version 3.0.2
  * @see Session
  * @see BaseExchange
  * @since 3.0.6-SNAPSHOT
@@ -73,7 +73,7 @@ public class SessionInfo {
         if (this.craftsNet != null)
             this.craftsNet.sessionCache().put(this.sessionID, this.session);
 
-        this.session.getSessionFile().load();
+        this.session.getSessionStorage().load();
     }
 
     /**
@@ -110,7 +110,7 @@ public class SessionInfo {
         if (!isPersistent()) return;
 
         if (craftsNet != null) craftsNet.sessionCache().remove(this.sessionID);
-        this.session.getSessionFile().destroy();
+        this.session.getSessionStorage().destroy();
 
         if (this.session.getExchange() instanceof Exchange http)
             http.response().deleteCookie(SID_COOKIE_NAME).setHttpOnly(true)

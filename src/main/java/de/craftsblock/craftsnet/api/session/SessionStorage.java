@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  * and destroying session files. The session data is serialized to a file and deserialized
  * back into memory, allowing for session state preservation between application runs.
  *
- * <p>The {@link  SessionFile} class ensures data integrity through file locking mechanisms
+ * <p>The {@link  SessionStorage} class ensures data integrity through file locking mechanisms
  * and supports thread-safe operations by preventing concurrent modifications.</p>
  *
  * <p>Session files are stored in a predefined directory, and their filenames are constructed
@@ -20,12 +20,14 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.1.1
+ * @version 3.2.1
  * @see Session
  * @see ByteBuffer
  * @since 3.3.0-SNAPSHOT
  */
-public class SessionFile {
+public class SessionStorage {
+
+    // ToDo: Add ability to select the SessionDriver.
 
     private final SessionDriver driver;
     private final Session session;
@@ -35,11 +37,11 @@ public class SessionFile {
     private boolean handlingActionQueue = false;
 
     /**
-     * Constructs a new {@link SessionFile} instance for managing the specified session.
+     * Constructs a new {@link SessionStorage} instance for managing the specified session.
      *
      * @param session the session associated with this file handler.
      */
-    public SessionFile(Session session) {
+    public SessionStorage(Session session) {
         this.session = session;
         this.driver = new FileSessionDriver();
     }
@@ -174,7 +176,7 @@ public class SessionFile {
     }
 
     /**
-     * Indicating the type of job the {@link SessionFile} is performing.
+     * Indicating the type of job the {@link SessionStorage} is performing.
      *
      * @author Philipp Maywald
      * @author CraftsBlock

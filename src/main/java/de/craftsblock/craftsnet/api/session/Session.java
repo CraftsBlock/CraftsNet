@@ -12,13 +12,13 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.3.0-SNAPSHOT
  */
 public class Session extends ConcurrentHashMap<String, Object> implements AutoCloseable {
 
     private final SessionInfo sessionInfo;
-    private final SessionFile sessionFile;
+    private final SessionStorage sessionStorage;
 
     private BaseExchange exchange;
 
@@ -27,7 +27,7 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
      */
     public Session() {
         this.sessionInfo = new SessionInfo(this);
-        this.sessionFile = new SessionFile(this);
+        this.sessionStorage = new SessionStorage(this);
     }
 
     /**
@@ -127,7 +127,7 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
      */
     @Override
     public void close() {
-        this.sessionFile.save();
+        this.sessionStorage.save();
     }
 
     /**
@@ -140,12 +140,12 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
     }
 
     /**
-     * Retrieves the {@link SessionFile} associated with this session.
+     * Retrieves the {@link SessionStorage} associated with this session.
      *
-     * @return the {@code SessionFile} instance managing session file persistence.
+     * @return the {@code SessionStorage} instance managing session persistence.
      */
-    public SessionFile getSessionFile() {
-        return sessionFile;
+    public SessionStorage getSessionStorage() {
+        return sessionStorage;
     }
 
 }
