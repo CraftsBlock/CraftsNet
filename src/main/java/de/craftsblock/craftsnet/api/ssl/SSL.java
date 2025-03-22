@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.api.ssl;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.utils.Utils;
+import de.craftsblock.craftsnet.utils.PassphraseUtils;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -27,7 +27,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.1
+ * @version 1.2.2
  * @since 2.1.1-SNAPSHOT
  */
 public class SSL {
@@ -70,7 +70,7 @@ public class SSL {
         keyStore.load(null);
 
         File privkeyFile = file(privkey);
-        String key = Utils.secureRandomPassphrase();
+        String key = PassphraseUtils.generateSecure();
         try (InputStream fullchainStream = new FileInputStream(file(fullchain));
              InputStream privateKeyStream = new FileInputStream(privkeyFile)) {
             X509Certificate[] certificates = getCertificateChain(fullchainStream);

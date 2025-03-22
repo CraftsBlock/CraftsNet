@@ -7,7 +7,7 @@ import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.cookies.SameSite;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
 import de.craftsblock.craftsnet.logging.Logger;
-import de.craftsblock.craftsnet.utils.Utils;
+import de.craftsblock.craftsnet.utils.PassphraseUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.security.NoSuchAlgorithmException;
@@ -23,7 +23,7 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.0.2
+ * @version 3.0.3
  * @see Session
  * @see BaseExchange
  * @since 3.0.6-SNAPSHOT
@@ -87,7 +87,7 @@ public class SessionInfo {
         if (isPersistent()) return;
 
         try {
-            this.sessionID = Utils.secureRandomPassphrase(20, false);
+            this.sessionID = PassphraseUtils.generateSecure(20, false);
             this.persistent = true;
 
             if (this.session.getExchange() instanceof Exchange http)
