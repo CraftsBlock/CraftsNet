@@ -14,7 +14,10 @@ import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,7 +36,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.2.1
  * @see Exchange
  * @see WebServer
  * @since 1.0.0-SNAPSHOT
@@ -152,31 +155,45 @@ public class Response implements AutoCloseable {
      * @throws RuntimeException if an I/O error occurs
      */
     public synchronized void print(File file) {
+        this.print(file.toPath());
+    }
+
+    /**
+     * Sends the provided file behind the {@link Path} as the response body.
+     *
+     * @param path The {@link Path} of the file to be sent.
+     * @throws RuntimeException if an I/O error occurs
+     * @since 3.3.5-SNAPSHOT
+     */
+    public synchronized void print(Path path) {
         checkOutput();
         if (this.headersSent)
             throw new IllegalStateException("A file was attempted to be sent while the body has already begun to be written!");
 
-        try (FileInputStream fileInput = new FileInputStream(file)) {
+        if (Files.notExists(path))
+            throw new IllegalArgumentException("The file behind the path must exist!");
+
+        try (InputStream fileInput = Files.newInputStream(path)) {
             if (this.streamEncoder == null || this.streamEncoder.getEncodingName().equalsIgnoreCase("identity")) {
-                this.ensureHeadersSend(file.length());
+                this.ensureHeadersSend(Files.size(path));
                 this.print(fileInput);
                 return;
             }
 
-            Path temp = craftsNet.fileHelper().createTempFile("response", ".body");
+            Path encodedFileLocation = craftsNet.fileHelper().createTempFile("response", ".body");
             try {
-                try (OutputStream output = streamEncoder.encodeOutputStream(Files.newOutputStream(temp))) {
+                try (OutputStream output = streamEncoder.encodeOutputStream(Files.newOutputStream(encodedFileLocation))) {
                     IOUtils.copy(fileInput, output, 2048);
                 }
 
-                try (InputStream input = Files.newInputStream(temp, StandardOpenOption.READ)) {
-                    long size = Files.size(temp);
+                try (InputStream input = Files.newInputStream(encodedFileLocation, StandardOpenOption.READ)) {
+                    long size = Files.size(encodedFileLocation);
                     ensureHeadersSend(size);
 
                     IOUtils.copy(input, this.rawStream, Math.min((int) size, 2048));
                 }
             } finally {
-                Files.deleteIfExists(temp);
+                Files.deleteIfExists(encodedFileLocation);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

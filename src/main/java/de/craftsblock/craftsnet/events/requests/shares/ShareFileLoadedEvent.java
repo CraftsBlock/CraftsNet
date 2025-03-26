@@ -8,6 +8,8 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.net.FileNameMap;
 import java.net.URLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Represents an event that is triggered when a share file has been loaded.
@@ -15,7 +17,7 @@ import java.net.URLConnection;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.3
+ * @version 1.1.4
  * @see CancellableEvent
  * @since 2.3.2-SNAPSHOT
  */
@@ -24,18 +26,18 @@ public class ShareFileLoadedEvent extends CancellableEvent {
     private static final FileNameMap contentTypes = URLConnection.getFileNameMap();
 
     private final Exchange exchange;
-    private File file;
+    private Path path;
     private String contentType;
 
     /**
      * Creates a new ShareFileLoadedEvent with the specified loaded file.
      *
      * @param exchange The exchange used by the share to handle its connection
-     * @param file     The loaded file associated with this event.
+     * @param path     The loaded file path associated with this event.
      */
-    public ShareFileLoadedEvent(@NotNull Exchange exchange, @NotNull File file) {
+    public ShareFileLoadedEvent(@NotNull Exchange exchange, @NotNull Path path) {
         this.exchange = exchange;
-        this.file = file;
+        this.path = path;
     }
 
     /**
@@ -48,13 +50,33 @@ public class ShareFileLoadedEvent extends CancellableEvent {
     }
 
     /**
+     * Gets the loaded file path associated with this event.
+     *
+     * @return The loaded file path.
+     * @since 3.3.5-SNAPSHOT
+     */
+    public Path getPath() {
+        return path;
+    }
+
+    /**
      * Gets the loaded file associated with this event.
      *
      * @return The loaded file.
      */
     @NotNull
     public File getFile() {
-        return file;
+        return path.toFile();
+    }
+
+    /**
+     * Sets the loaded file path associated with this event.
+     *
+     * @param path The new loaded file path.
+     * @since 3.3.5-SNAPSHOT
+     */
+    public void setPath(@NotNull Path path) {
+        this.path = path;
     }
 
     /**
@@ -63,7 +85,7 @@ public class ShareFileLoadedEvent extends CancellableEvent {
      * @param file The new loaded file.
      */
     public void setFile(@NotNull File file) {
-        this.file = file;
+        this.setPath(file.toPath());
     }
 
     /**
@@ -73,8 +95,8 @@ public class ShareFileLoadedEvent extends CancellableEvent {
      */
     @Nullable
     public String getRawContentType() {
-        if (!file.exists()) return null;
-        return contentTypes.getContentTypeFor(file.getName());
+        if (Files.notExists(path)) return null;
+        return contentTypes.getContentTypeFor(path.getFileName().toString());
     }
 
     /**

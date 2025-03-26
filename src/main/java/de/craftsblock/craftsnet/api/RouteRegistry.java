@@ -22,6 +22,8 @@ import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -36,7 +38,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.3
+ * @version 3.3.4
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -184,10 +186,24 @@ public class RouteRegistry {
      * @throws IllegalArgumentException If the provided "folder" is not a directory.
      */
     public void share(String path, File folder, boolean onlyGet) {
-        if (!folder.isDirectory())
+        this.share(path, folder.toPath(), onlyGet);
+    }
+
+    /**
+     * Shares a folder for a specified path.
+     *
+     * @param path    The path pattern to share.
+     * @param folder  The path of the folder to be shared.
+     * @param onlyGet Set to true if only get requests should be received by this share, false otherwise.
+     * @throws IllegalArgumentException If the provided "folder" is not a directory.
+     * @since 3.3.5-SNAPSHOT
+     */
+    public void share(String path, Path folder, boolean onlyGet) {
+        if (!Files.isDirectory(folder))
             throw new IllegalArgumentException("\"folder\" must be a folder!");
+
         Pattern pattern = Pattern.compile(formatUrl(path) + "/" + "?(.*)");
-        shares.put(pattern, new ShareMapping(folder.getAbsolutePath(), onlyGet));
+        shares.put(pattern, new ShareMapping(folder.toAbsolutePath().toString(), onlyGet));
 
         // Only continue if the web server was set
         if (this.craftsNet.webServer() != null)
@@ -266,9 +282,9 @@ public class RouteRegistry {
      * @param url The URL for which to retrieve the associated shared folder.
      * @return The shared folder or null if no match is found.
      */
-    public File getShareFolder(String url) {
+    public Path getShareFolder(String url) {
         if (!isShare(url)) return null;
-        return new File(getShare(url).filepath());
+        return Path.of(getShare(url).filepath());
     }
 
     /**

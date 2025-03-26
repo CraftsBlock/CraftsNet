@@ -23,10 +23,11 @@ import de.craftsblock.craftsnet.events.requests.shares.ShareFileLoadedEvent;
 import de.craftsblock.craftsnet.events.requests.shares.ShareRequestEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
@@ -40,7 +41,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.3
+ * @version 1.5.4
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -263,15 +264,14 @@ public class WebHandler implements HttpHandler {
         String domain = request.getDomain();
         HttpMethod httpMethod = request.getHttpMethod();
 
-        File folder = registry.getShareFolder(url);
+        Path folder = registry.getShareFolder(url);
         Matcher matcher = registry.getSharePattern(url).matcher(url);
         if (!matcher.matches()) {
             respondWithError(response, 500, "There was an unexpected error while matching!");
             return;
         }
 
-        String path = matcher.group(1);
-        ShareRequestEvent event = new ShareRequestEvent(url, path, exchange, registry.getShare(url));
+        ShareRequestEvent event = new ShareRequestEvent(url, matcher.group(1), exchange, registry.getShare(url));
         craftsNet.listenerRegistry().call(event);
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "SHARE ABORTED";
@@ -279,24 +279,24 @@ public class WebHandler implements HttpHandler {
             return;
         }
 
+        String path = event.getFilePath();
+
         for (String key : event.getHeaders().keySet())
             event.getHeader(key).forEach(value -> response.addHeader(key, value));
 
-        path = event.getFilePath();
         logger.info(httpMethod + " " + url + " from " + ip + " \u001b[38;5;205m[SHARED]");
 
-        File share = new File(folder, (path.isBlank() ? "index.html" : path));
-        ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(exchange, share);
+        ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(exchange, folder.resolve((path.isBlank() ? "index.html" : path)));
         craftsNet.listenerRegistry().call(fileLoadedEvent);
         if (fileLoadedEvent.isCancelled()) return;
-        share = fileLoadedEvent.getFile();
+        Path share = fileLoadedEvent.getPath();
 
-        if (!share.getCanonicalPath().startsWith(folder.getCanonicalPath() + File.separator) || share.isDirectory()) {
+        if (!share.startsWith(folder) || Files.isDirectory(share)) {
             response.setCode(403);
             response.setContentType("text/html; charset=utf-8");
             response.print(DefaultPages.notallowed(domain, request.unsafe().getLocalAddress().getPort()));
             return;
-        } else if (!share.exists()) {
+        } else if (Files.notExists(share)) {
             response.setCode(404);
             response.setContentType("text/html; charset=utf-8");
             response.print(DefaultPages.notfound(domain, request.unsafe().getLocalAddress().getPort()));
