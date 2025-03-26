@@ -38,7 +38,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.4
+ * @version 3.3.5
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -174,7 +174,19 @@ public class RouteRegistry {
      * @throws IllegalArgumentException If the provided "folder" is not a directory.
      */
     public void share(String path, File folder) {
-        share(path, folder, true);
+        this.share(path, folder.toPath());
+    }
+
+    /**
+     * Shares a folder for a specified path.
+     *
+     * @param path   The path pattern to share.
+     * @param folder The folder to be shared.
+     * @throws IllegalArgumentException If the provided "folder" is not a directory.
+     * @since 3.3.5-SNAPSHOT
+     */
+    public void share(String path, Path folder) {
+        this.share(path, folder, true);
     }
 
     /**
