@@ -38,7 +38,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.5
+ * @version 3.3.6
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -65,7 +65,7 @@ public class RouteRegistry {
      */
     public void register(Handler handler) {
         if (isRegistered(handler)) return;
-        ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = retrieveHandlerInfoMap(handler);
+        ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = retrieveHandlerInfoMap(handler.getClass());
 
         for (Class<? extends Annotation> annotation : annotations.keySet())
             try {
@@ -157,7 +157,9 @@ public class RouteRegistry {
     public boolean isRegistered(Class<? extends Handler> type) {
         if (serverMappings.isEmpty()) return false;
 
-        return serverMappings.values().stream()
+        return retrieveHandlerInfoMap(type).values().stream()
+                .map(ServerMapping::rawServer)
+                .map(serverMappings::get)
                 .filter(map -> !map.isEmpty())
                 .flatMap(map -> map.values().stream())
                 .filter(list -> !list.isEmpty())
@@ -230,7 +232,7 @@ public class RouteRegistry {
     public void unregister(final Handler handler) {
         if (!isRegistered(handler)) return;
 
-        ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = retrieveHandlerInfoMap(handler);
+        ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = retrieveHandlerInfoMap(handler.getClass());
 
         for (Class<? extends Annotation> annotation : annotations.keySet()) {
             try {
@@ -558,17 +560,17 @@ public class RouteRegistry {
     }
 
     /**
-     * Retrieves a map with information about the server types held by the handler.
+     * Retrieves a map with information about the server types held by the handler type.
      *
-     * @param handler The handler from which the information should be retrieved.
+     * @param handler The handler type from which the information should be retrieved.
      * @return The information about the server types held by the handler.
      */
-    private ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> retrieveHandlerInfoMap(Handler handler) {
+    private ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> retrieveHandlerInfoMap(Class<? extends Handler> handler) {
         ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = new ConcurrentHashMap<>();
-        if (handler instanceof RequestHandler)
+        if (RequestHandler.class.isAssignableFrom(handler))
             annotations.computeIfAbsent(Route.class, c -> new ServerMapping(WebServer.class, craftsNet.webServer()));
 
-        if (handler instanceof SocketHandler)
+        if (SocketHandler.class.isAssignableFrom(handler))
             annotations.computeIfAbsent(Socket.class, c -> new ServerMapping(WebSocketServer.class, craftsNet.webSocketServer()));
 
         if (annotations.isEmpty())
