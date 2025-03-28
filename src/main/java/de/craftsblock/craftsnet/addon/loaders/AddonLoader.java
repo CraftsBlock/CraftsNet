@@ -35,7 +35,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.9
+ * @version 2.1.10
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -318,7 +318,7 @@ public final class AddonLoader {
                         int minor = dis.readUnsignedShort();
                         int major = dis.readUnsignedShort();
 
-                        if (major > maxMajor || minor > maxMinor)
+                        if (major > maxMajor || (major == maxMajor && minor > maxMinor))
                             throw new RuntimeException(jarEntry.getName().replace(".class", "") + " " +
                                     "has been compiled by a more recent version of the Java Runtime (class file version " + major + "." + minor + "), " +
                                     "this version of the Java Runtime only recognizes class file versions up to " + maxMajor + "." + maxMinor);
