@@ -9,7 +9,7 @@ import java.io.IOException;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.1.0
  * @see Session
  * @since 3.3.5-SNAPSHOT
  */
@@ -36,11 +36,28 @@ public interface SessionDriver {
     /**
      * Destroys or removes the session data associated with the given session identifier
      * from the underlying storage.
+     * <p>
+     * <b>NOTE: </b> Should not clear the underlying session object, otherwise the migrate function
+     * will no longer work.
      *
      * @param session   The session instance to be destroyed.
      * @param sessionID The unique identifier of the session.
      * @throws IOException If an error occurs while destroying the session data.
      */
     void destroy(Session session, String sessionID) throws IOException;
+
+    /**
+     * Migrates the session data from one {@link SessionDriver} to another.
+     *
+     * @param session     The session instance to be migrated.
+     * @param sessionID   The unique identifier of the session.
+     * @param priorDriver The prior {@link SessionDriver} from which this session is migrated.
+     * @throws IOException If an error occurs while migrating the session data.
+     * @since 3.3.5-SNAPSHOT
+     */
+    default void migrate(Session session, String sessionID, SessionDriver priorDriver) throws IOException {
+        priorDriver.destroy(session, sessionID);
+        this.save(session, sessionID);
+    }
 
 }
