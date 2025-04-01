@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.3.0
+ * @version 3.3.1
  * @see Session
  * @see ByteBuffer
  * @since 3.3.0-SNAPSHOT
@@ -98,7 +98,7 @@ public class SessionStorage {
      * @param driver The new {@link SessionDriver}.
      * @since 3.3.5-SNAPSHOT
      */
-    protected void migrate(SessionDriver driver) {
+    public void migrate(SessionDriver driver) {
         if (this.driver.equals(driver)) return;
         SessionDriver priorDriver = this.driver;
         this.driver = driver;
