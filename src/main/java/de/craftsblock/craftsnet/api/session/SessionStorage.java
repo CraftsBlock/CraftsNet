@@ -209,7 +209,7 @@ public class SessionStorage {
      *
      * @author Philipp Maywald
      * @author CraftsBlock
-     * @version 1.0.0
+     * @version 1.0.1
      * @since 3.3.5-SNAPSHOT
      */
     public enum JobType {
@@ -231,6 +231,7 @@ public class SessionStorage {
 
         /**
          * Indicating a migrate process.
+         * @since 3.3.5-SNAPSHOT
          */
         MIGRATE,
 
