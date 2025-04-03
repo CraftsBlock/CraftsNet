@@ -34,10 +34,11 @@ public class SessionStorage {
     /**
      * Changes the default {@link SessionDriver} that will be used when
      * creating sessions.
+     * <p>
+     * <b>NOTE:</b> This method will change in future releases so use with caution.
      *
      * @param defaultDriver The new default {@link SessionDriver}.
      * @since 3.3.5-SNAPSHOT
-     * @experimental This method will change in future releases so use with caution.
      */
     @Experimental
     @ApiStatus.Experimental
@@ -231,6 +232,7 @@ public class SessionStorage {
 
         /**
          * Indicating a migrate process.
+         *
          * @since 3.3.5-SNAPSHOT
          */
         MIGRATE,
