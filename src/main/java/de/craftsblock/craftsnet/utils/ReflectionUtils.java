@@ -12,7 +12,7 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.0
+ * @version 1.1.1
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
@@ -25,7 +25,7 @@ public class ReflectionUtils {
      * @since 3.3.1-SNAPSHOT
      */
     public static Class<?> getCallerClass() {
-        return getCallerClass(2);
+        return getCallerClass(3);
     }
 
     /**
