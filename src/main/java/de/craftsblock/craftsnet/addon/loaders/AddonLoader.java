@@ -35,7 +35,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.10
+ * @version 2.1.11
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -185,7 +185,7 @@ public final class AddonLoader {
 
                 // Load the main class of the addon using the class loader
                 String className = meta.mainClass();
-                Class<?> clazz = className != null ? classLoader.loadClass(className) : HollowAddon.class;
+                Class<?> clazz = className != null && !className.isBlank() ? classLoader.loadClass(className) : HollowAddon.class;
                 if (clazz == null)
                     throw new NullPointerException("The main class could not be found!");
                 if (!Addon.class.isAssignableFrom(clazz))
