@@ -41,7 +41,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.4
+ * @version 1.5.5
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -315,6 +315,7 @@ public class WebHandler implements HttpHandler {
      */
     private static void respondWithError(Response response, int code, String message) {
         if (!response.headersSent()) response.setCode(code);
+        if (!response.isBodyAble()) return;
         response.print(Json.empty().set("status", "" + code).set("message", message));
     }
 
