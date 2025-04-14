@@ -8,10 +8,16 @@ import java.security.SecureRandom;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.3.5-SNAPSHOT
  */
 public class PassphraseUtils {
+
+    /**
+     * Private constructor to prevent direct instantiation
+     */
+    private PassphraseUtils() {
+    }
 
     /**
      * Generates a secure random passphrase with a default length between 12 and 16 characters.

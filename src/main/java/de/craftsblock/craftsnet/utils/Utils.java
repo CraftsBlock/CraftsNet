@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.0
+ * @version 2.0.1
  * @since 2.1.1-SNAPSHOT
  */
 public class Utils {
@@ -25,6 +25,12 @@ public class Utils {
      * This pattern matches named capturing groups defined in regular expression patterns.
      */
     public static final Pattern patternGroupNameExtractPattern = Pattern.compile("\\(\\?<([a-zA-Z][a-zA-Z0-9]*)>");
+
+    /**
+     * Private constructor to prevent direct instantiation
+     */
+    private Utils() {
+    }
 
     /**
      * Retrieves a thread by its name from the currently running threads.

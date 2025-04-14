@@ -21,11 +21,17 @@ import java.util.regex.Pattern;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0
+ * @version 1.0.1
  * @see Comparison
  * @since 3.1.0-SNAPSHOT
  */
 public class Versions {
+
+    /**
+     * Private constructor to prevent direct instantiation
+     */
+    private Versions() {
+    }
 
     /**
      * Determines whether the given current version is suitable in comparison to the expected version.

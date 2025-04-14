@@ -12,10 +12,16 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.1
+ * @version 1.1.2
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
+
+    /**
+     * Private constructor to prevent direct instantiation
+     */
+    private ReflectionUtils() {
+    }
 
     /**
      * Retrieves the class of the immediate caller of the method in which this method is called.
