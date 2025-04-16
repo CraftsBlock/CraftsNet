@@ -33,9 +33,7 @@ body:
   attributes:
     label: Environment Setup
     options:
-      - label: Execution in a Docker environment
-        required: true
-      - label: Using Docker CE
+      - label: Usage of Docker / Docker CE
         required: true
 - type: textarea
   attributes:
