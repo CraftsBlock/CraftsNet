@@ -6,7 +6,7 @@ body:
 - type: markdown
   attributes:
     value: |-
-      If you have questions please join our discord server: [CraftsBlock Discord Server](https://dc.craftsblock.de).
+      If you have any questions please join our discord server: [CraftsBlock Discord Server](https://dc.craftsblock.de).
 - type: input
   attributes:
     label: "Operating System"
