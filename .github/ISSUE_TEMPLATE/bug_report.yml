@@ -6,7 +6,7 @@ body:
 - type: markdown
   attributes:
     value: |-
-      If you have questions please join our discord server: [CraftsBlock Discord Server](https://dc.craftsblock.de).
+      If you have any questions please join our discord server: [CraftsBlock Discord Server](https://dc.craftsblock.de).
 - type: input
   attributes:
     label: "Operating System"
@@ -33,9 +33,7 @@ body:
   attributes:
     label: Environment Setup
     options:
-      - label: Execution in a Docker environment
-        required: true
-      - label: Using Docker CE
+      - label: Usage of Docker / Docker CE
         required: true
 - type: textarea
   attributes:

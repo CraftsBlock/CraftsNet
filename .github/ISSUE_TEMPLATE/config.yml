@@ -2,7 +2,7 @@ blank_issues_enabled: true
 contact_links:
   - name: Discord
     url: https://dc.craftsblock.de
-    about: If you have questions, you can ask them here.
+    about: If you have any questions, you can ask them here.
   - name: Releases
     url: https://github.com/CraftsBlock/CraftsNet/releases
     about: A list of all releases of CraftsNet.
