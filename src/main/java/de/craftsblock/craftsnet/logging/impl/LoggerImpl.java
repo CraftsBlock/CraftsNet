@@ -1,5 +1,7 @@
-package de.craftsblock.craftsnet.logging;
+package de.craftsblock.craftsnet.logging.impl;
 
+import de.craftsblock.craftsnet.logging.LogLevel;
+import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,7 +19,7 @@ import java.time.format.DateTimeFormatter;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.0.5-SNAPSHOT
  */
 public class LoggerImpl implements Logger {
@@ -129,7 +131,7 @@ public class LoggerImpl implements Logger {
      * @param level The log level (e.g., INFO, WARN, ERROR, DEBUG).
      * @param text  The log message to be printed.
      */
-    private synchronized void log(@NotNull LogLevel level, @Nullable String text) {
+    private void log(@NotNull LogLevel level, @Nullable String text) {
         System.out.println(
                 "\u001b[38;5;228m" + OffsetDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")) + "\u001b[0m " +
                         level.getPrefix() + "\u001b[38;5;219m|\u001b[0m " +
