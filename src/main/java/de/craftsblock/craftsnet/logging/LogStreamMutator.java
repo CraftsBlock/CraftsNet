@@ -19,7 +19,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 /**
@@ -28,12 +28,15 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.3
+ * @version 1.1.0
+ * @see LoggerPrintStream
  * @since 3.0.2-SNAPSHOT
  */
-public class FileLogger {
+public class LogStreamMutator {
 
     private final Path folder = Path.of("logs");
+    private final CraftsNet craftsNet;
+    private final boolean logToFiles;
     private final long max;
 
     private OutputStream stream;
@@ -41,12 +44,15 @@ public class FileLogger {
     private PrintStream oldErr;
 
     /**
-     * Constructs a new {@link FileLogger} instance with a specified maximum number of log files.
+     * Constructs a new {@link LogStreamMutator} instance with a specified maximum number of log files.
      *
-     * @param max the maximum number of log files to retain. Once this limit is reached, older log files
-     *            may be deleted or rotated out to maintain the limit.
+     * @param craftsNet The instance of {@link CraftsNet}, which is using this logging utils.
+     * @param max       the maximum number of log files to retain. Once this limit is reached, older log files
+     *                  may be deleted or rotated out to maintain the limit.
      */
-    public FileLogger(long max) {
+    public LogStreamMutator(CraftsNet craftsNet, boolean logToFiles, long max) {
+        this.craftsNet = craftsNet;
+        this.logToFiles = logToFiles;
         this.max = max;
     }
 
@@ -55,47 +61,15 @@ public class FileLogger {
      * This method sets up file logging by redirecting standard output and error streams to log files.
      */
     public void start() {
-        if (stream != null) return;
+        if (System.out instanceof LoggerPrintStream || System.err instanceof LoggerPrintStream) return;
 
         try {
             oldOut = System.out;
             oldErr = System.err;
 
-            if (max != 0 && Files.exists(folder))
-                try (Stream<Path> stream = Files.walk(folder, 1).parallel().filter(Files::isRegularFile)) {
-                    long count = stream.count();
-                    if (count >= max) {
-                        long diff = count - (max - 1);
-                        for (Path path : FileUtils.getOldestNFiles(folder, diff))
-                            Files.deleteIfExists(path);
-                    }
-                }
-
-            Path file = folder.resolve("latest.log");
-            if (Files.exists(folder.resolve("latest.log"))) {
-                BasicFileAttributes attributes = Files.readAttributes(file, BasicFileAttributes.class);
-                OffsetDateTime creationTime = OffsetDateTime.ofInstant(attributes.creationTime().toInstant(), ZoneId.systemDefault());
-                String prefix = creationTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-
-                int i = 1;
-                while (true) {
-                    Path newName = folder.resolve(prefix + "_" + i + ".log");
-                    if (Files.exists(newName)) {
-                        i++;
-                        continue;
-                    }
-                    Files.move(file, newName);
-                    start();
-                    return;
-                }
-            }
-
-            ensureParentFolder(file);
-            Files.createFile(file);
-
-            stream = Files.newOutputStream(file);
-            System.setOut(new LoggerPrintStream(oldOut, stream));
-            System.setErr(new LoggerPrintStream(oldErr, stream));
+            this.stream = this.createFileLogStream();
+            System.setOut(new LoggerPrintStream(this, oldOut, stream));
+            System.setErr(new LoggerPrintStream(this, oldErr, stream));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -114,6 +88,10 @@ public class FileLogger {
         try {
             out.close();
             err.close();
+
+            if (stream == null) return;
+            stream.flush();
+            stream.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -126,8 +104,8 @@ public class FileLogger {
      * @param line The line to add to the log file.
      */
     public synchronized void addLine(String line) {
-        if (stream == null) return;
-        if (line != null && line.contains("SLF4J")) return;
+        if (stream == null || line == null) return;
+
         try {
             stream.write((LoggerPrintStream.removeAsciiColors(line) + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
             stream.flush();
@@ -241,107 +219,63 @@ public class FileLogger {
     }
 
     /**
-     * A subclass of {@link PrintStream} used for logging.
-     * This class intercepts the output written to the stream and writes it to the provided output stream while removing any ASCII colors.
+     * Creates a log file output stream if file logging is activated respectively to {@link #logToFiles}.
+     *
+     * @return The {@link OutputStream} which log to a file, or null otherwise.
+     * @throws IOException If the log file stream creation fails.
+     * @since 3.3.6-SNAPSHOT
      */
-    private static class LoggerPrintStream extends PrintStream {
+    private @Nullable OutputStream createFileLogStream() throws IOException {
+        if (!this.logToFiles) return null;
 
-        // Regular expression pattern to match ANSI escape sequences for colors
-        private static final Pattern pattern = Pattern.compile("\u001B\\[[;\\d]*m");
-
-        private final OutputStream stream;
-
-        private int skipLines = 0;
-
-        /**
-         * Constructs a new {@code LoggerPrintStream} instance.
-         *
-         * @param console The original console print stream.
-         * @param stream  The output stream where the log messages will be written.
-         */
-        public LoggerPrintStream(PrintStream console, OutputStream stream) {
-            super(console);
-            this.stream = stream;
-        }
-
-        /**
-         * Writes the specified string to the output stream after removing ASCII colors.
-         *
-         * @param s The string to be written.
-         */
-        @Override
-        public void print(@Nullable String s) {
-            if (skipLines >= 1) {
-                skipLines--;
-                return;
+        if (max != 0 && Files.exists(folder))
+            try (Stream<Path> stream = Files.walk(folder, 1).parallel().filter(Files::isRegularFile)) {
+                long count = stream.count();
+                if (count >= max) {
+                    long diff = count - (max - 1);
+                    for (Path path : FileUtils.getOldestNFiles(folder, diff))
+                        Files.deleteIfExists(path);
+                }
             }
 
-            super.print(s);
-            try {
-                stream.write(removeAsciiColors(s).getBytes(StandardCharsets.UTF_8));
-                stream.flush();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+        Path file = folder.resolve("latest.log");
+        while (!Thread.currentThread().isInterrupted()) {
+            if (!Files.exists(file)) break;
+
+            BasicFileAttributes attributes = Files.readAttributes(file, BasicFileAttributes.class);
+            OffsetDateTime creationTime = OffsetDateTime.ofInstant(attributes.creationTime().toInstant(), ZoneId.systemDefault());
+            String prefix = creationTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
+
+            int i = 1;
+            AtomicReference<Path> name = new AtomicReference<>();
+            while (!Thread.currentThread().isInterrupted()) {
+                Path newName = folder.resolve(prefix + "_" + i + ".log");
+
+                if (!Files.exists(newName)) {
+                    name.set(newName);
+                    break;
+                }
+
+                i++;
             }
+
+            if (name.get() == null) return null;
+            Files.move(file, name.get());
         }
 
-        /**
-         * Writes the specified string followed by a line separator to the output stream.
-         *
-         * @param x The string to be written.
-         */
-        @Override
-        public void println(@Nullable String x) {
-            if (x != null && x.contains("SLF4J")) return;
-            super.println(x);
-            try {
-                stream.write(System.lineSeparator().getBytes(StandardCharsets.UTF_8));
-                stream.flush();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        ensureParentFolder(file);
+        Files.createFile(file);
 
-        /**
-         * Closes the output stream.
-         */
-        @Override
-        public void close() {
-            try {
-                stream.flush();
-                stream.close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }
+        return Files.newOutputStream(file);
+    }
 
-        /**
-         * Removes ASCII color codes from the input string.
-         *
-         * @param input The input string possibly containing ASCII color codes.
-         * @return The input string with ASCII color codes removed.
-         */
-        protected static String removeAsciiColors(String input) {
-            return input == null ? "null" : pattern.matcher(input).replaceAll("");
-        }
-
-        /**
-         * Skips the next input.
-         */
-        public synchronized void skipNext() {
-            this.skipNext(1);
-        }
-
-
-        /**
-         * Skips the next n inputs.
-         *
-         * @param line the amount of inputs to be skipped
-         */
-        public synchronized void skipNext(@Range(from = 1, to = Integer.MAX_VALUE) int line) {
-            this.skipLines += line;
-        }
-
+    /**
+     * The instance of {@link CraftsNet} which is owning the {@link LogStreamMutator}.
+     *
+     * @return The instance of {@link CraftsNet}.
+     */
+    public CraftsNet getCraftsNet() {
+        return craftsNet;
     }
 
 }

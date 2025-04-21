@@ -18,7 +18,7 @@ import java.util.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.2
+ * @version 1.2.3
  * @see ActivateType
  * @since 3.0.3-SNAPSHOT
  */
@@ -41,6 +41,7 @@ public class CraftsNetBuilder {
 
     private boolean allowResponseEncoding;
     private boolean debug;
+    private boolean hideIpsInLog;
     private boolean tempFilesOnNormalFileSystem;
     private boolean skipDefaultRoute;
     private boolean skipVersionCheck;
@@ -58,6 +59,7 @@ public class CraftsNetBuilder {
         addonSystem = commandSystem = fileLogger = ActivateType.ENABLED;
         withSessionCache(5);
         withDebug(false);
+        withIpsInLog(true);
         withApplyResponseEncoding(false);
         withTempFilesOnNormalFileSystem(false);
         withSkipDefaultRoute(false);
@@ -118,6 +120,7 @@ public class CraftsNetBuilder {
         switch (arg.toLowerCase()) {
             // Flags
             case "debug" -> withDebug(true);
+            case "hideips", "hideipsinlog" -> withIpsInLog(false);
             case "placetempfileinnormal" -> withTempFilesOnNormalFileSystem(true);
             case "skipdefaultroute" -> withSkipDefaultRoute(true);
             case "skipversioncheck" -> withSkipVersionCheck(true);
@@ -186,7 +189,7 @@ public class CraftsNetBuilder {
      *
      * @param type The activation type for the web server.
      * @return The {@link CraftsNetBuilder} instance.
-     * @since 3.0.5
+     * @since 3.0.5-SNAPSHOT
      */
     public CraftsNetBuilder withWebServer(ActivateType type) {
         return withWebServer(type, this.webServerPort);
@@ -220,7 +223,7 @@ public class CraftsNetBuilder {
      *
      * @param type The activation type for the WebSocket server.
      * @return The {@link CraftsNetBuilder} instance.
-     * @since 3.0.5
+     * @since 3.0.5-SNAPSHOT
      */
     public CraftsNetBuilder withWebSocketServer(ActivateType type) {
         return withWebSocketServer(type, this.webSocketServerPort);
@@ -277,7 +280,7 @@ public class CraftsNetBuilder {
      *
      * @param type The activation type for the file logger.
      * @return The {@link CraftsNetBuilder} instance.
-     * @since 3.0.5
+     * @since 3.0.5-SNAPSHOT
      */
     public CraftsNetBuilder withFileLogger(ActivateType type) {
         this.fileLogger = type;
@@ -338,7 +341,7 @@ public class CraftsNetBuilder {
      *
      * @param logger The instance of the custom logger.
      * @return The {@link CraftsNetBuilder} instance.
-     * @since 3.0.5
+     * @since 3.0.5-SNAPSHOT
      */
     public CraftsNetBuilder withCustomLogger(Logger logger) {
         this.logger = logger;
@@ -350,7 +353,7 @@ public class CraftsNetBuilder {
      *
      * @param type The activation type for the logger.
      * @return The {@link CraftsNetBuilder} instance.
-     * @since 3.0.5
+     * @since 3.0.5-SNAPSHOT
      */
     public CraftsNetBuilder withLogger(ActivateType type) {
         if (type.equals(ActivateType.DISABLED))
@@ -368,6 +371,18 @@ public class CraftsNetBuilder {
      */
     public CraftsNetBuilder withDebug(boolean enabled) {
         this.debug = enabled;
+        return this;
+    }
+
+    /**
+     * Specifies whether ips should be blurred in the log output.
+     *
+     * @param enabled {@code true} if ips should be readable in the log, {@code false} otherwise.
+     * @return The {@link CraftsNetBuilder} instance.
+     * @since 3.3.6-SNAPSHOT
+     */
+    public CraftsNetBuilder withIpsInLog(boolean enabled) {
+        this.hideIpsInLog = !enabled;
         return this;
     }
 
@@ -520,7 +535,7 @@ public class CraftsNetBuilder {
      *
      * @param type The activation type to check.
      * @return true if the file logger is configured with the specified activation type, false otherwise.
-     * @since 3.0.5
+     * @since 3.0.5-SNAPSHOT
      */
     public boolean isFileLogger(ActivateType type) {
         return fileLogger == type;
@@ -578,16 +593,26 @@ public class CraftsNetBuilder {
     /**
      * Checks if debug mode is enabled.
      *
-     * @return true if debug mode is enabled, false otherwise.
+     * @return {@code true} if debug mode is enabled, {@code false} otherwise.
      */
     public boolean isDebug() {
         return debug;
     }
 
     /**
+     * Checks if ips should be hidden in the log output.
+     *
+     * @return {@code true} if ips should be hidden, {@code false} otherwise.
+     * @since 3.3.6-SNAPSHOT
+     */
+    public boolean shouldHideIps() {
+        return hideIpsInLog;
+    }
+
+    /**
      * Checks if SSL is enabled.
      *
-     * @return true if SSL is enabled, false otherwise.
+     * @return {@code true} if SSL is enabled, {@code false} otherwise.
      */
     public boolean isSSL() {
         return ssl;

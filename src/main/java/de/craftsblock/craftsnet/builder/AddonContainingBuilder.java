@@ -20,7 +20,7 @@ import java.util.TreeSet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.5
+ * @version 1.2.6
  * @see CraftsNetBuilder
  * @since 3.1.0-SNAPSHOT
  */
@@ -277,6 +277,18 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
      */
     public AddonContainingBuilder withDebug(boolean enabled) {
         super.withDebug(enabled);
+        return this;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param enabled {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    public AddonContainingBuilder withIpsInLog(boolean enabled) {
+        super.withIpsInLog(enabled);
         return this;
     }
 

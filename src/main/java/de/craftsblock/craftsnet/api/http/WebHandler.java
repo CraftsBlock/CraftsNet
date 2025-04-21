@@ -119,8 +119,8 @@ public class WebHandler implements HttpHandler {
                     craftsNet.listenerRegistry().call(new PostRequestEvent(exchange, result.getKey(), result.getValue()));
                 }
             } catch (Throwable t) {
-                if (craftsNet.fileLogger() != null) {
-                    long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, this.scheme.getName(), url);
+                if (craftsNet.logStreamMutator() != null) {
+                    long errorID = craftsNet.logStreamMutator().createErrorLog(this.craftsNet, t, this.scheme.getName(), url);
                     logger.error(t, "Error: " + errorID);
                     if (!response.headersSent()) response.setCode(500);
                     if (!httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN))

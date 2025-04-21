@@ -356,8 +356,8 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param t the throwable which has been thrown
      */
     private void createErrorLog(Throwable t) {
-        if (craftsNet.fileLogger() != null) {
-            long errorID = craftsNet.fileLogger().createErrorLog(this.craftsNet, t, this.scheme.getName(), path);
+        if (craftsNet.logStreamMutator() != null) {
+            long errorID = craftsNet.logStreamMutator().createErrorLog(this.craftsNet, t, this.scheme.getName(), path);
             logger.error(t, "Error: " + errorID);
             sendMessage(Json.empty()
                     .set("error.message", "An unexpected exception happened whilst processing your message!")

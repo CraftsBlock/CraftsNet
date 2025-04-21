@@ -23,7 +23,7 @@ import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.events.ConsoleMessageEvent;
 import de.craftsblock.craftsnet.listeners.ConsoleListener;
-import de.craftsblock.craftsnet.logging.FileLogger;
+import de.craftsblock.craftsnet.logging.LogStreamMutator;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.FileHelper;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
@@ -48,7 +48,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.2.3
+ * @version 3.2.4
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -59,7 +59,7 @@ public class CraftsNet {
     // Local instance
     private CraftsNetBuilder builder;
     private Logger logger;
-    private FileLogger fileLogger;
+    private LogStreamMutator logStreamMutator;
     private FileHelper fileHelper;
     private Thread consoleListener;
     private BufferedReader consoleReader;
@@ -119,11 +119,9 @@ public class CraftsNet {
         // Create and initialize the logger & file logger
         logger = builder.getCustomLogger();
 
-        // Checks if the file logger was enabled and start it if so
-        if (builder.isFileLogger(ActivateType.ENABLED)) {
-            fileLogger = new FileLogger(builder.getLogRotate());
-            fileLogger.start();
-        }
+        // Starts the log stream mutator
+        logStreamMutator = new LogStreamMutator(this, builder.isFileLogger(ActivateType.ENABLED), builder.getLogRotate());
+        logStreamMutator.start();
 
         // Log startup message
         logger.info("CraftsNet v" + version + " boots up");
@@ -139,8 +137,8 @@ public class CraftsNet {
         // Setup default uncaught exception handler
         this.oldDefaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
-            if (fileLogger != null) {
-                long identifier = fileLogger.createErrorLog(this, e);
+            if (logStreamMutator != null) {
+                long identifier = logStreamMutator.createErrorLog(this, e);
                 logger.error(e, "Throwable: " + identifier);
                 return;
             }
@@ -299,10 +297,10 @@ public class CraftsNet {
             Thread.setDefaultUncaughtExceptionHandler(this.oldDefaultUncaughtExceptionHandler);
         }
 
-        if (this.fileLogger != null) {
+        if (this.logStreamMutator != null) {
             logger.info("Disconnecting the file logger");
-            this.fileLogger.stop();
-            this.fileLogger = null;
+            this.logStreamMutator.stop();
+            this.logStreamMutator = null;
         }
 
         try {
@@ -533,12 +531,12 @@ public class CraftsNet {
     }
 
     /**
-     * Retrieves the file logger instance for logging messages to an file.
+     * Retrieves the {@link LogStreamMutator} instance for advanced log creation.
      *
-     * @return The file logger instance.
+     * @return The {@link LogStreamMutator} instance.
      */
-    public FileLogger fileLogger() {
-        return fileLogger;
+    public LogStreamMutator logStreamMutator() {
+        return logStreamMutator;
     }
 
     /**
