@@ -1,0 +1,16 @@
+name: Feature Request
+description: Suggest an idea for this project
+labels: enhancement
+assignees: CrAfTsArMy
+body:
+- type: markdown
+  attributes:
+    value: |-
+      If you have any questions please join our discord server: [CraftsBlock Discord Server](https://dc.craftsblock.de).
+- type: textarea
+  attributes:
+    label: "Feature Request"
+    description: "A clear and concise description of what you want to have added."
+    placeholder: "CraftsNet should get ..."
+  validations:
+    required: true

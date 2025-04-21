@@ -1,0 +1,59 @@
+name: Bug Report
+description: Create a report to help us improve
+labels: bug
+assignees: CrAfTsArMy
+body:
+- type: markdown
+  attributes:
+    value: |-
+      If you have any questions please join our discord server: [CraftsBlock Discord Server](https://dc.craftsblock.de).
+- type: input
+  attributes:
+    label: "Operating System"
+    placeholder: "For example linux/debian"
+  validations:
+    required: true
+- type: input
+  attributes:
+    label: "Java Version"
+    description: |
+      You can find out the version use by executing `java -version` in the cli.
+    placeholder: "For example 21.0.1"
+  validations:
+    required: true
+- type: input
+  attributes:
+    label: "Version of CraftsNet"
+    description: |
+      You can find out the version use by adding `System.out.println(CraftsNet.version);` to your code.
+    placeholder: "For example 3.3.5-SNAPSHOT"
+  validations:
+    required: true
+- type: checkboxes
+  attributes:
+    label: Environment Setup
+    options:
+      - label: Usage of Docker / Docker CE
+        required: true
+- type: textarea
+  attributes:
+    label: "To Reproduce"
+    description: "Steps to reproduce the behavior"
+    placeholder: |
+      1. Go to '...'
+      2. Click on '....'
+      3. Scroll down to '....'
+      4. See error
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: "Expected Behaviour"
+    description: "A clear and concise description of what you expected to happen."
+  validations:
+    required: true
+- type: textarea
+  attributes:
+    label: "Screenshots"
+    description: |-
+      If applicable, add screenshots to help explain your problem.
