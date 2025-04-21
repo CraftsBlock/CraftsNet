@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @since 3.0.2-SNAPSHOT
  */
 class LoggerPrintStream extends PrintStream {
@@ -100,6 +100,8 @@ class LoggerPrintStream extends PrintStream {
      * @since 3.3.6-SNAPSHOT
      */
     protected String mutateLogLine(String input) {
+        if (logStreamMutator.getCraftsNet().getBuilder().shouldHideIps())
+            return Utils.blurIPs(input);
         return input;
     }
 

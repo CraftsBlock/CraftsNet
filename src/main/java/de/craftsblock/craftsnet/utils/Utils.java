@@ -15,10 +15,25 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.1
+ * @version 2.1.0
  * @since 2.1.1-SNAPSHOT
  */
 public class Utils {
+
+    /**
+     * A pattern to search for ipv4 addresses.
+     */
+    public static final String IPv4_SEARCH = "\\b((25[0-5]|2[0-4]\\d|1\\d{2}|\\d{1,2})\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|\\d{1,2})\\b";
+
+    /**
+     * A pattern to search for ipv6 addresses.
+     */
+    public static final String IPv6_SEARCH = "\\b([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\\b";
+
+    /**
+     * A {@link Pattern} instance which searches for ip addresses.
+     */
+    public static final Pattern IP_SEARCHER = Pattern.compile(IPv4_SEARCH + "|" + IPv6_SEARCH);
 
     /**
      * A regular expression pattern used to extract group names from a regular expression pattern string.
@@ -73,6 +88,26 @@ public class Utils {
         Matcher matcher = patternGroupNameExtractPattern.matcher(regex);
         while (matcher.find()) groupNames.add(matcher.group(1));
         return new ArrayList<>(groupNames);
+    }
+
+    /**
+     * Blurs IPv4 and IPv6 ip addresses in an string.
+     *
+     * @param phrase The string where the readable ips are present
+     * @return The string containing the blurred ip addresses.
+     * @since 3.3.6-SNAPSHOT
+     */
+    public static String blurIPs(String phrase) {
+        Matcher matcher = IP_SEARCHER.matcher(phrase);
+        StringBuilder result = new StringBuilder();
+
+        while (matcher.find()) {
+            String ip = matcher.group();
+            matcher.appendReplacement(result, ip.replaceAll("[0-9a-fA-F]", "*"));
+        }
+        matcher.appendTail(result);
+
+        return result.toString();
     }
 
 }
