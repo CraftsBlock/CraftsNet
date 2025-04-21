@@ -31,7 +31,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.3
+ * @version 2.0.4
  * @see <a href="https://maven.apache.org/resolver/index.html">Eclipse Aether</a>
  * @since 3.0.0-SNAPSHOT
  */
@@ -125,7 +125,8 @@ public final class ArtifactLoader {
 
         DependencyResult result;
         try {
-            result = repository.resolveDependencies(session, new DependencyRequest(new CollectRequest((Dependency) null, dependencies, repositories), null));
+            CollectRequest request = new CollectRequest((Dependency) null, dependencies, repositories);
+            result = repository.resolveDependencies(session, new DependencyRequest(request, null));
         } catch (DependencyResolutionException e) {
             logger.error(e, "Error while loading libraries for " + addon);
             return new URL[0];
