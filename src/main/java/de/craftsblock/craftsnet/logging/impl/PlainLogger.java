@@ -1,5 +1,6 @@
-package de.craftsblock.craftsnet.logging;
+package de.craftsblock.craftsnet.logging.impl;
 
+import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -115,6 +116,7 @@ public record PlainLogger(Logger previous) implements Logger {
      */
     @Override
     public Logger cloneWithName(String name) {
-        return new PlainLogger(this.previous);
+        return this;
     }
+
 }

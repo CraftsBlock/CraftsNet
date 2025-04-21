@@ -3,8 +3,8 @@ package de.craftsblock.craftsnet.builder;
 import de.craftsblock.craftscore.utils.ArgumentParser;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.logging.Logger;
-import de.craftsblock.craftsnet.logging.LoggerImpl;
-import de.craftsblock.craftsnet.logging.PlainLogger;
+import de.craftsblock.craftsnet.logging.impl.LoggerImpl;
+import de.craftsblock.craftsnet.logging.impl.PlainLogger;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
 import org.jetbrains.annotations.Range;
 
