@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.5
+ * @version 3.4.0
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -730,7 +730,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param code   The close code.
      * @param reason The reason why the client has been closed.
      */
-    private synchronized void closeInternally(int code, String reason, boolean closeByServer) {
+    private void closeInternally(int code, String reason, boolean closeByServer) {
         byte[] message = reason.getBytes(StandardCharsets.UTF_8);
         byte[] data = new byte[2 + message.length];
 
@@ -756,17 +756,19 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param data   The message to be sent, as a byte array.
      * @param opcode The byte used to control the message flow.
      */
-    private synchronized void sendMessage(byte[] data, Opcode opcode) {
+    private void sendMessage(byte[] data, Opcode opcode) {
         if (!isConnected())
             throw new IllegalStateException("The websocket connection has already been closed!");
         if (writer == null)
             throw new IllegalStateException("The websocket writer has already been closed!");
 
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+        try {
             if (data == null || data.length == 0) {
-                outputStream.write(0x80 | opcode.byteValue());
-                outputStream.write(0x00);
-                writer.write(outputStream.toByteArray());
+                byte[] subject = new byte[2];
+                subject[0] = (byte) (0x80 | opcode.byteValue());
+                // subject[1] is already 0x00 so no further write is required
+
+                this.sendMessageRaw(subject);
                 return;
             }
 
@@ -780,32 +782,49 @@ public class WebSocketClient implements Runnable, RequireAble {
                     return;
             }
 
-            frame = event.getFrame();
-
-            if (shouldFragment())
-                for (Frame send : frame.fragmentFrame(getFragmentSize())) {
-                    for (WebSocketExtension extension : this.extensions)
-                        send = extension.encode(send);
-
-                    outputStream.reset();
-                    send.write(outputStream);
-                    writer.write(outputStream.toByteArray());
-                }
-            else {
-                for (WebSocketExtension extension : this.extensions)
-                    frame = extension.encode(frame);
-
-                outputStream.reset();
-                frame.write(outputStream);
-                writer.write(outputStream.toByteArray());
+            Frame subject = event.getFrame();
+            if (shouldFragment()) {
+                for (Frame send : subject.fragmentFrame(getFragmentSize()))
+                    this.sendMessageFrame(send);
+                return;
             }
+
+            sendMessageFrame(subject);
         } catch (SocketException ignored) {
         } catch (IOException e) {
-            logger.error(e);
             disconnect();
+            throw new RuntimeException(e);
         } catch (InvocationTargetException | IllegalAccessException e) {
-            logger.error(e);
+            throw new RuntimeException(e);
         }
+    }
+
+    /**
+     * Sends a specific message {@link Frame frame} to the client.
+     *
+     * @param frame The {@link Frame frame} that should be sent.
+     * @throws IOException If an IO error occurs while sending the frame.
+     * @since 3.3.6-SNAPSHOT
+     */
+    private void sendMessageFrame(Frame frame) throws IOException {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            for (WebSocketExtension extension : this.extensions)
+                frame = extension.encode(frame);
+
+            frame.write(outputStream);
+            this.sendMessageRaw(outputStream.toByteArray());
+        }
+    }
+
+    /**
+     * Thread safe wrapper for sending bytes to the client.
+     *
+     * @param data The bytes that should be sent.
+     * @throws IOException If an IO error occurs while sending the bytes.
+     * @since 3.3.6-SNAPSHOT
+     */
+    private synchronized void sendMessageRaw(byte[] data) throws IOException {
+        this.writer.write(data);
     }
 
     /**
