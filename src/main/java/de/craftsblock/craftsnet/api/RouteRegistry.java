@@ -38,7 +38,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.6
+ * @version 3.3.7
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -158,8 +158,8 @@ public class RouteRegistry {
         if (serverMappings.isEmpty()) return false;
 
         return retrieveHandlerInfoMap(type).values().stream()
-                .map(ServerMapping::rawServer)
-                .map(serverMappings::get)
+                .map(ServerMapping::rawServer).filter(serverMappings::containsKey)
+                .map(serverMappings::get).filter(Objects::nonNull)
                 .filter(map -> !map.isEmpty())
                 .flatMap(map -> map.values().stream())
                 .filter(list -> !list.isEmpty())
