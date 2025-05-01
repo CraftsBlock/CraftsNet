@@ -283,10 +283,10 @@ public class WebSocketClient implements Runnable, RequireAble {
                 for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
 
                 handleMappings(frame, args);
-            }
 
-            // Clear up transformer cache to free up memory
-            transformerPerformer.clearCache();
+                // Clear up transformer cache to free up memory
+                transformerPerformer.clearCache();
+            }
         } catch (SocketException ignored) {
         } catch (Throwable t) {
             if (t instanceof IOException ioException && ioException.getMessage().contains("EOF")) {
