@@ -425,7 +425,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                     + "\r\n";
             writer.write(response.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
-            logger.error(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -881,10 +881,11 @@ public class WebSocketClient implements Runnable, RequireAble {
             transformerPerformer.clearCache();
             session.clear();
             extensions.clear();
+        } catch (InvocationTargetException | IllegalAccessException | IOException e) {
+            throw new RuntimeException(e);
+        } finally {
             server.remove(this);
             this.connected = false;
-        } catch (InvocationTargetException | IllegalAccessException | IOException e) {
-            logger.error(e);
         }
     }
 
