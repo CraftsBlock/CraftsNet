@@ -3,8 +3,6 @@ package de.craftsblock.craftsnet.api.http;
 import de.craftsblock.craftsnet.api.BaseExchange;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
-import de.craftsblock.craftsnet.api.utils.Scheme;
-import org.apache.http.HttpVersion;
 import org.jetbrains.annotations.NotNull;
 
 /**

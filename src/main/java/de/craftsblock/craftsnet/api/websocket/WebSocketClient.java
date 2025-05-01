@@ -51,7 +51,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.4
+ * @version 3.3.5
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -806,27 +806,6 @@ public class WebSocketClient implements Runnable, RequireAble {
         } catch (InvocationTargetException | IllegalAccessException e) {
             logger.error(e);
         }
-    }
-
-    /**
-     * Splits a byte array into smaller arrays based on a specified maximum size.
-     *
-     * @param input   The byte array to be split.
-     * @param maxSize The maximum size of each chunk.
-     * @return A list of byte arrays, each with a size up to the specified maximum size.
-     */
-    private List<byte[]> splitByteArray(byte[] input, int maxSize) {
-        List<byte[]> result = new ArrayList<>();
-        int inputLength = input.length;
-
-        for (int start = 0; start < inputLength; start += maxSize) {
-            int end = Math.min(inputLength, start + maxSize);
-            byte[] chunk = new byte[end - start];
-            System.arraycopy(input, start, chunk, 0, end - start);
-            result.add(chunk);
-        }
-
-        return result;
     }
 
     /**
