@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -10,7 +11,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.0.5-SNAPSHOT
  */
 public enum ClosureCode {
@@ -84,6 +85,12 @@ public enum ClosureCode {
      * Indicates that the connection was closed due to a failure to perform a TLS handshake.
      */
     TLS_HANDSHAKE_FAIL(1015, true);
+
+    /**
+     * List of all {@link ClosureCode closure codes} that are specified in RFC 6455.
+     * @since 3.3.6-SNAPSHOT
+     */
+    public static final List<Integer> SPECIFIED_CODES = Arrays.stream(ClosureCode.values()).map(ClosureCode::intValue).toList();
 
     /**
      * List of ClosureCode values that are considered internal.

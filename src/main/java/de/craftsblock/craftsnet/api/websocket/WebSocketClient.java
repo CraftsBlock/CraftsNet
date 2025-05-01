@@ -25,6 +25,7 @@ import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Range;
 
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -705,10 +706,11 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param reason The reason why the client has been closed.
      * @throws IllegalStateException If the code used to close the connection is only for internal use.
      */
-    public void close(int code, String reason) {
-        if (ClosureCode.RAW_INTERNAL_CODES.contains(code)) {
+    public void close(@Range(from = 1000, to = 4999) int code, String reason) {
+        if (!ClosureCode.SPECIFIED_CODES.contains(code) && code < 4000
+                || ClosureCode.RAW_INTERNAL_CODES.contains(code)) {
             closeInternally(ClosureCode.SERVER_ERROR, "Used close code " + code, true);
-            throw new IllegalStateException("The close code " + code + " was used, but is not meant to use!");
+            throw new IllegalArgumentException("Invalid close code " + code + ": must be between 4000–4999 or a non reserved close code.");
         }
 
         closeInternally(code, reason, true);
