@@ -423,7 +423,8 @@ public class WebSocketClient implements Runnable, RequireAble {
                     + "Sec-WebSocket-Accept: " + Base64.getEncoder().encodeToString(hash) + "\r\n"
                     + (!extensions.isEmpty() ? "Sec-websocket-extensions: " + extensions + "\r\n" : "")
                     + "\r\n";
-            writer.write(response.getBytes(StandardCharsets.UTF_8));
+
+            this.sendMessageRaw(response.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
