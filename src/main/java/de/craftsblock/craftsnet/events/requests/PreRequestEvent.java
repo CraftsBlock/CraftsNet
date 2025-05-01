@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.events.requests;
 
 import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftsnet.api.http.Exchange;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * This event is triggered before a http request is processed as route or share.
@@ -11,10 +12,11 @@ import de.craftsblock.craftsnet.api.http.Exchange;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.1.0
+ * @see RequestEventBase
  * @since 3.1.0-SNAPSHOT
  */
-public class PreRequestEvent extends CancellableEvent {
+public class PreRequestEvent extends CancellableEvent implements RequestEventBase {
 
     private final Exchange exchange;
 
@@ -28,11 +30,12 @@ public class PreRequestEvent extends CancellableEvent {
     }
 
     /**
-     * Gets the Exchange object associated with the request event.
+     * {@inheritDoc}
      *
-     * @return The Exchange object representing the request and its associated data.
+     * @return {@inheritDoc}
      */
-    public Exchange getExchange() {
+    @Override
+    public @NotNull Exchange getExchange() {
         return exchange;
     }
 

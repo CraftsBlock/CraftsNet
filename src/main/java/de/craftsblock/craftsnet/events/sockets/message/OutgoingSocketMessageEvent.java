@@ -4,6 +4,7 @@ import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftsnet.api.websocket.Frame;
 import de.craftsblock.craftsnet.api.websocket.Opcode;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import de.craftsblock.craftsnet.events.sockets.GenericSocketEventBase;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
 import org.jetbrains.annotations.NotNull;
 
@@ -13,13 +14,13 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.1.0
+ * @see GenericSocketMessageEventBase
  * @since 2.1.1-SNAPSHOT
  */
-public class OutgoingSocketMessageEvent extends CancellableEvent {
+public class OutgoingSocketMessageEvent extends CancellableEvent implements GenericSocketMessageEventBase {
 
-    private final @NotNull SocketExchange exchange;
-
+    private final SocketExchange exchange;
     private Frame frame;
 
     /**
@@ -34,21 +35,23 @@ public class OutgoingSocketMessageEvent extends CancellableEvent {
     }
 
     /**
-     * Gets the SocketExchange object associated with the event.
+     * {@inheritDoc}
      *
-     * @return The SocketExchange object representing the socket connection and its associated data.
+     * @return {@inheritDoc}
      */
+    @Override
     public @NotNull SocketExchange getExchange() {
         return exchange;
     }
 
     /**
-     * Gets the opcode used when sending the data.
+     * {@inheritDoc}
      *
-     * @return The opcode of the message.
+     * @return {@inheritDoc}
      */
-    public @NotNull Opcode getOpcode() {
-        return frame.getOpcode();
+    @Override
+    public @NotNull Frame getFrame() {
+        return frame;
     }
 
     /**
@@ -76,44 +79,6 @@ public class OutgoingSocketMessageEvent extends CancellableEvent {
      */
     public void setFrame(@NotNull Frame frame) {
         this.frame = frame;
-    }
-
-    /**
-     * Gets the outgoing message as a {@link Frame} object.
-     *
-     * @return The outgoing message.
-     */
-    public @NotNull Frame getFrame() {
-        return frame;
-    }
-
-    /**
-     * Gets the outgoing message as a {@link ByteBuffer} object.
-     *
-     * @return The outgoing message.
-     */
-    public @NotNull ByteBuffer getBuffer() {
-        return frame.getBuffer();
-    }
-
-    /**
-     * Gets the outgoing message as a byte array.
-     *
-     * @return The outgoing message data.
-     */
-    public byte @NotNull [] getData() {
-        return frame.getData();
-    }
-
-
-    /**
-     * Gets the outgoing message as an utf8 encoded string.
-     *
-     * @return The outgoing message.
-     */
-    public String getUtf8() {
-        if (!frame.getOpcode().equals(Opcode.TEXT)) return null;
-        return frame.getUtf8();
     }
 
 }

@@ -52,7 +52,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.4.0
+ * @version 3.4.1
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -253,12 +253,12 @@ public class WebSocketClient implements Runnable, RequireAble {
                     }
 
                     case PING -> {
-                        craftsNet.listenerRegistry().call(new ReceivedPingMessageEvent(exchange, data));
+                        craftsNet.listenerRegistry().call(new ReceivedPingMessageEvent(exchange, frame));
                         continue;
                     }
 
                     case PONG -> {
-                        craftsNet.listenerRegistry().call(new ReceivedPongMessageEvent(exchange, data));
+                        craftsNet.listenerRegistry().call(new ReceivedPongMessageEvent(exchange, frame));
                         continue;
                     }
 

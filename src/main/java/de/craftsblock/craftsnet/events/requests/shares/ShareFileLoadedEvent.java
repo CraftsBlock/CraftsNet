@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.events.requests.shares;
 
 import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.events.requests.RequestEventBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,11 +18,12 @@ import java.nio.file.Path;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.4
+ * @version 1.2.0
  * @see CancellableEvent
+ * @see RequestEventBase
  * @since 2.3.2-SNAPSHOT
  */
-public class ShareFileLoadedEvent extends CancellableEvent {
+public class ShareFileLoadedEvent extends CancellableEvent implements RequestEventBase {
 
     private static final FileNameMap contentTypes = URLConnection.getFileNameMap();
 
@@ -41,11 +43,12 @@ public class ShareFileLoadedEvent extends CancellableEvent {
     }
 
     /**
-     * Gets the exchange which holds all http information about the connection with the shared location.
+     * {@inheritDoc}
      *
-     * @return The exchange object storing important information
+     * @return {@inheritDoc}
      */
-    public Exchange getExchange() {
+    @Override
+    public @NotNull Exchange getExchange() {
         return exchange;
     }
 

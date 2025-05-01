@@ -5,6 +5,7 @@ import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.websocket.ClosureCode;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -15,10 +16,11 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.1.0
+ * @see GenericSocketEventBase
  * @since 2.1.1-SNAPSHOT
  */
-public class ClientDisconnectEvent extends Event {
+public class ClientDisconnectEvent extends Event implements GenericSocketEventBase {
 
     private final SocketExchange exchange;
     private final EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappings;
@@ -47,6 +49,16 @@ public class ClientDisconnectEvent extends Event {
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
+    public @NotNull SocketExchange getExchange() {
+        return exchange;
+    }
+
+    /**
      * Gets a {@link EnumMap} of all {@link RouteRegistry.EndpointMapping} associated with the client disconnect event.
      *
      * @return A {@link EnumMap} of {@link RouteRegistry.EndpointMapping} objects representing the mapping for the socket connection.
@@ -62,15 +74,6 @@ public class ClientDisconnectEvent extends Event {
      */
     public boolean hasMappings() {
         return mappings != null && !mappings.isEmpty();
-    }
-
-    /**
-     * Gets the SocketExchange object associated with the client disconnection event.
-     *
-     * @return The SocketExchange object representing the socket connection and its associated data.
-     */
-    public SocketExchange getExchange() {
-        return exchange;
     }
 
     /**

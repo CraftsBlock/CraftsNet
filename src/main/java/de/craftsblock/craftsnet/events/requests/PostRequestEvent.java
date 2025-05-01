@@ -3,6 +3,7 @@ package de.craftsblock.craftsnet.events.requests;
 import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.http.Exchange;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * This event is triggered after an HTTP request has been processed.
@@ -11,11 +12,12 @@ import de.craftsblock.craftsnet.api.http.Exchange;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.1.0
+ * @see RequestEventBase
  * @since 3.1.0-SNAPSHOT
  */
 @Experimental
-public class PostRequestEvent extends Event {
+public class PostRequestEvent extends Event implements RequestEventBase {
 
     private final Exchange exchange;
     private final boolean found, shared;
@@ -34,11 +36,12 @@ public class PostRequestEvent extends Event {
     }
 
     /**
-     * Gets the {@link Exchange} object associated with the request event.
+     * {@inheritDoc}
      *
-     * @return The {@link Exchange} object representing the request and response.
+     * @return {@inheritDoc}
      */
-    public Exchange getExchange() {
+    @Override
+    public @NotNull Exchange getExchange() {
         return exchange;
     }
 

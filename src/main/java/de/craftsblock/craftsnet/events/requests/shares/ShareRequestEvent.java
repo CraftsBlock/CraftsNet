@@ -3,7 +3,9 @@ package de.craftsblock.craftsnet.events.requests.shares;
 import com.sun.net.httpserver.Headers;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.api.http.Response;
 import de.craftsblock.craftsnet.events.EventWithCancelReason;
+import de.craftsblock.craftsnet.events.requests.RequestEventBase;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -14,13 +16,13 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.2
+ * @version 1.1.0
  * @see EventWithCancelReason
+ * @see RequestEventBase
  * @since 2.3.2-SNAPSHOT
  */
-public class ShareRequestEvent extends EventWithCancelReason {
+public class ShareRequestEvent extends EventWithCancelReason implements RequestEventBase {
 
-    private final Headers headers = new Headers();
     private final String httpPath;
     private final Exchange exchange;
     private final RouteRegistry.ShareMapping mapping;
@@ -43,11 +45,12 @@ public class ShareRequestEvent extends EventWithCancelReason {
     }
 
     /**
-     * Gets the exchange which holds all http information about the connection with the shared location.
+     * {@inheritDoc}
      *
-     * @return The exchange object storing important information
+     * @return {@inheritDoc}
      */
-    public Exchange getExchange() {
+    @Override
+    public @NotNull Exchange getExchange() {
         return exchange;
     }
 
@@ -93,9 +96,11 @@ public class ShareRequestEvent extends EventWithCancelReason {
      * Gets the headers for this response.
      *
      * @return Returns the header object
+     * @deprecated Use {@link Response#getHeaders()} instead.
      */
+    @Deprecated(forRemoval = true, since = "3.3.6-SNAPSHOT")
     public Headers getHeaders() {
-        return headers;
+        return getResponse().getHeaders();
     }
 
     /**
@@ -103,9 +108,11 @@ public class ShareRequestEvent extends EventWithCancelReason {
      *
      * @param key   The "name" of the header
      * @param value The value of the header
+     * @deprecated Use {@link Response#addHeader(String, String)} instead.
      */
+    @Deprecated(forRemoval = true, since = "3.3.6-SNAPSHOT")
     public void addHeader(String key, String value) {
-        headers.add(key, value);
+        getResponse().addHeader(key, value);
     }
 
     /**
@@ -113,9 +120,11 @@ public class ShareRequestEvent extends EventWithCancelReason {
      *
      * @param key   The "name" of the header
      * @param value The value which should override the value of the header if it exists already, otherwise just adds the value to the header.
+     * @deprecated Use {@link Response#setHeader(String, String)} instead.
      */
+    @Deprecated(forRemoval = true, since = "3.3.6-SNAPSHOT")
     public void setHeader(String key, String value) {
-        headers.set(key, value);
+        getResponse().setHeader(key, value);
     }
 
     /**
@@ -123,9 +132,11 @@ public class ShareRequestEvent extends EventWithCancelReason {
      *
      * @param key The "name" of the header used to find the header
      * @return A list of alle the values
+     * @deprecated Use {@link Response#getHeaders(String)} instead.
      */
+    @Deprecated(forRemoval = true, since = "3.3.6-SNAPSHOT")
     public List<String> getHeader(String key) {
-        return headers.get(key);
+        return getResponse().getHeaders(key);
     }
 
     /**
@@ -133,9 +144,11 @@ public class ShareRequestEvent extends EventWithCancelReason {
      *
      * @param key The "name" of the header which should be checked if it is present
      * @return true if the header is set, false otherwise
+     * @deprecated Use {@link Response#hasHeader(String)} instead.
      */
+    @Deprecated(forRemoval = true, since = "3.3.6-SNAPSHOT")
     public boolean hasHeader(String key) {
-        return headers.containsKey(key);
+        return getResponse().hasHeader(key);
     }
 
 }

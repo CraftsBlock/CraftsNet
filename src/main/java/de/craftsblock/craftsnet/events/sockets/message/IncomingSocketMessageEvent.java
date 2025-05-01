@@ -4,6 +4,7 @@ import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftsnet.api.websocket.Frame;
 import de.craftsblock.craftsnet.api.websocket.Opcode;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import de.craftsblock.craftsnet.events.sockets.GenericSocketEventBase;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
 import org.jetbrains.annotations.NotNull;
 
@@ -13,13 +14,13 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.2.0
+ * @see GenericSocketMessageEventBase
  * @since 2.1.1-SNAPSHOT
  */
-public class IncomingSocketMessageEvent extends CancellableEvent {
+public class IncomingSocketMessageEvent extends CancellableEvent implements GenericSocketMessageEventBase {
 
     private final SocketExchange exchange;
-
     private final Frame frame;
 
     /**
@@ -34,50 +35,23 @@ public class IncomingSocketMessageEvent extends CancellableEvent {
     }
 
     /**
-     * Gets the SocketExchange object associated with the event.
+     * {@inheritDoc}
      *
-     * @return The SocketExchange object representing the socket connection and its associated data.
+     * @return {@inheritDoc}
      */
-    public SocketExchange getExchange() {
+    @Override
+    public @NotNull SocketExchange getExchange() {
         return exchange;
     }
 
     /**
-     * Gets the incoming message as a {@link Frame} object.
+     * {@inheritDoc}
      *
-     * @return The incoming message.
+     * @return {@inheritDoc}
      */
+    @Override
     public Frame getFrame() {
         return frame;
-    }
-
-    /**
-     * Gets the incoming message as a {@link ByteBuffer} object.
-     *
-     * @return The incoming message.
-     */
-    public ByteBuffer getBuffer() {
-        return frame.getBuffer();
-    }
-
-    /**
-     * Gets the incoming message as a byte array.
-     *
-     * @return The incoming message data.
-     */
-    public byte @NotNull [] getData() {
-        return frame.getData();
-    }
-
-
-    /**
-     * Gets the incoming message as an utf8 encoded string.
-     *
-     * @return The incoming message.
-     */
-    public String getUtf8() {
-        if (!frame.getOpcode().equals(Opcode.TEXT)) return null;
-        return frame.getUtf8();
     }
 
 }

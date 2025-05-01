@@ -41,7 +41,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.5
+ * @version 1.5.6
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -251,11 +251,10 @@ public class WebHandler implements HttpHandler {
      * Handles share-specific requests by delegating to the appropriate share handler.
      *
      * @param exchange The {@link Exchange} representing the request.
-     * @throws IOException               If an I/O error occurs during request processing.
      * @throws InvocationTargetException If an error occurs while invoking the share handler.
      * @throws IllegalAccessException    If the share handler cannot be accessed.
      */
-    private void handleShare(Exchange exchange) throws InvocationTargetException, IllegalAccessException, IOException {
+    private void handleShare(Exchange exchange) throws InvocationTargetException, IllegalAccessException {
         Request request = exchange.request();
         Response response = exchange.response();
 
@@ -280,10 +279,6 @@ public class WebHandler implements HttpHandler {
         }
 
         String path = event.getFilePath();
-
-        for (String key : event.getHeaders().keySet())
-            event.getHeader(key).forEach(value -> response.addHeader(key, value));
-
         logger.info(httpMethod + " " + url + " from " + ip + " \u001b[38;5;205m[SHARED]");
 
         ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(exchange, folder.resolve((path.isBlank() ? "index.html" : path)));

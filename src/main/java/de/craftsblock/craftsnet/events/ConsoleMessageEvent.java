@@ -9,6 +9,7 @@ import de.craftsblock.craftscore.event.CancellableEvent;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0
+ * @see CancellableEvent
  * @since 1.0.0-SNAPSHOT
  */
 public class ConsoleMessageEvent extends CancellableEvent {

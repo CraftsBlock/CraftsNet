@@ -23,6 +23,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -36,7 +37,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.1
+ * @version 1.2.2
  * @see Exchange
  * @see WebServer
  * @since 1.0.0-SNAPSHOT
@@ -453,6 +454,27 @@ public class Response implements AutoCloseable {
             throw new IllegalStateException("Response headers have already been sent!");
         if (key == null || value == null) return;
         headers.set(key, value);
+    }
+
+    /**
+     * Get all the values from the response headers for the specified header name.
+     *
+     * @param key The "name" of the header used to find the header
+     * @return A list of alle the values
+     * @since 3.3.6-SNAPSHOT
+     */
+    public List<String> getHeaders(String key) {
+        return getHeaders().get(key);
+    }
+
+    /**
+     * Allows raw access to the underlying {@link Headers} object, which stores the response headers.
+     *
+     * @return The {@link Headers} object storing the response headers.
+     * @since 3.3.6-SNAPSHOT
+     */
+    public Headers getHeaders() {
+        return headers;
     }
 
     /**
