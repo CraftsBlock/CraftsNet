@@ -315,10 +315,10 @@ public class WebSocketClient implements Runnable, RequireAble {
 
                     // Process the requirements
                     if (craftsNet.requirementRegistry().getRequirements().containsKey(WebSocketServer.class))
-                        req:for (Requirement requirement : craftsNet.requirementRegistry().getRequirements().get(WebSocketServer.class))
+                        for (Requirement requirement : craftsNet.requirementRegistry().getRequirements().get(WebSocketServer.class))
                             try {
                                 Method m = Utils.getMethod(requirement.getClass(), "applies", Frame.class, RouteRegistry.EndpointMapping.class);
-                                if (m == null) continue req;
+                                if (m == null) continue;
                                 if (!((Boolean) m.invoke(requirement, frame, mapping))) continue inner;
                             } catch (NullPointerException | AssertionError | IllegalAccessException | InvocationTargetException ignored) {
                             }
