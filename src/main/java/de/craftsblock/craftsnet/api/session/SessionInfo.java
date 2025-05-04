@@ -23,7 +23,7 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.0.3
+ * @version 3.0.4
  * @see Session
  * @see BaseExchange
  * @since 3.0.6-SNAPSHOT
@@ -68,7 +68,13 @@ public class SessionInfo {
         }
 
         if (this.sessionID == null) return;
+
+        // Must be true because SessionStorage#exists relies on #persistent
         this.persistent = true;
+        if (!this.session.getSessionStorage().exists()) {
+            this.persistent = false;
+            return;
+        }
 
         if (this.craftsNet != null)
             this.craftsNet.sessionCache().put(this.sessionID, this.session);
