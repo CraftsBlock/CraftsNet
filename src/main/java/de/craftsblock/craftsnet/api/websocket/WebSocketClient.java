@@ -52,7 +52,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.4.1
+ * @version 3.4.2
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -787,12 +787,12 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             Frame subject = event.getFrame();
             if (shouldFragment()) {
-                for (Frame send : subject.fragmentFrame(getFragmentSize()))
-                    this.sendMessageFrame(send);
+                Collection<Frame> frames = subject.fragmentFrame(getFragmentSize());
+                this.sendMessageFrames(frames.toArray(Frame[]::new));
                 return;
             }
 
-            sendMessageFrame(subject);
+            this.sendMessageFrames(subject);
         } catch (SocketException ignored) {
         } catch (IOException e) {
             disconnect();
@@ -803,20 +803,21 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
-     * Sends a specific message {@link Frame frame} to the client.
+     * Sends specific message {@link Frame frames} to the client.
      *
-     * @param frame The {@link Frame frame} that should be sent.
+     * @param frames An array of {@link Frame frames} that should be sent.
      * @throws IOException If an IO error occurs while sending the frame.
      * @since 3.3.6-SNAPSHOT
      */
-    private void sendMessageFrame(Frame frame) throws IOException {
-        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            for (WebSocketExtension extension : this.extensions)
-                frame = extension.encode(frame);
+    private synchronized void sendMessageFrames(Frame... frames) throws IOException {
+        for (Frame frame : frames)
+            try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                for (WebSocketExtension extension : this.extensions)
+                    frame = extension.encode(frame);
 
-            frame.write(outputStream);
-            this.sendMessageRaw(outputStream.toByteArray());
-        }
+                frame.write(outputStream);
+                this.sendMessageRaw(outputStream.toByteArray());
+            }
     }
 
     /**
