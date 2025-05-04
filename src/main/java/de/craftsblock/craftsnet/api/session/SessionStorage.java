@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.3.1
+ * @version 3.3.2
  * @see Session
  * @see ByteBuffer
  * @since 3.3.0-SNAPSHOT
@@ -65,36 +65,53 @@ public class SessionStorage {
     }
 
     /**
-     * Loads session data from the corresponding session file, if it exists.
-     * The data is deserialized and added to the session.
+     * Checks if the session exists in the underlying {@link SessionDriver driver}.
      *
-     * <p>File locking ensures that no other thread or process can access the file
-     * during the load operation.</p>
+     * @return {@code true} if the session exists in the {@link SessionDriver driver}, {@code false} otherwise.
+     * @since 3.3.6-SNAPSHOT
+     */
+    public boolean exists() {
+        try {
+            if (!this.session.isSessionStarted()) return false;
+            return this.driver.exists(this.session, this.session.getSessionInfo().getSessionID());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Loads the sessions data using the currently set {@link SessionDriver driver}.
+     * If the {@link SessionStorage storage} is currently busy, the load
+     * action will be queued and performed later on.
      */
     public void load() {
         this.performJob(JobType.LOAD);
     }
 
     /**
-     * Saves the current session data to the corresponding session file.
-     * The data is serialized to ensure persistence across application runs.
-     *
-     * <p>File locking is used to prevent concurrent access during the save operation.</p>
+     * Saves the sessions data using the currently set {@link SessionDriver driver}.
+     * If the {@link SessionStorage storage} is currently busy, the save
+     * action will be queued and performed later on.
      */
     public void save() {
         this.performJob(JobType.SAVE);
     }
 
     /**
-     * Deletes the session file associated with the current session.
-     * Ensures that the file is removed if it exists.
+     * Deletes the persistent session data holder using the currently set
+     * {@link SessionDriver driver}.
+     * If the {@link SessionStorage storage} is currently busy, the destroy
+     * action will be queued and performed later on.
      */
     protected void destroy() {
         this.performJob(JobType.DESTROY);
     }
 
     /**
-     * Migrates this session to another {@link SessionDriver}.
+     * Migrates this session from the currently set {@link SessionDriver driver}
+     * to another {@link SessionDriver driver}.
+     * If the {@link SessionStorage storage} is currently busy, the migrate
+     * action will be queued and performed later on.
      *
      * @param driver The new {@link SessionDriver}.
      * @since 3.3.5-SNAPSHOT

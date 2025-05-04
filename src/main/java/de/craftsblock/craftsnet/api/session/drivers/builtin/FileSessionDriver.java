@@ -23,7 +23,7 @@ import java.util.Map;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.1.0
  * @see Session
  * @see SessionDriver
  * @since 3.3.5-SNAPSHOT
@@ -41,6 +41,26 @@ public class FileSessionDriver implements SessionDriver {
     public static final String STORAGE_EXTENSION = ".cnetsess";
 
     /**
+     * Check if the corresponding session file exists on the hard drive.
+     *
+     * @param session   The {@link Session} instance to be populated with data.
+     * @param sessionID The unique identifier of the session.
+     * @since 3.3.6-SNAPSHOT
+     */
+    @Override
+    public boolean exists(Session session, String sessionID) {
+        Path path = Path.of(STORAGE_LOCATION, session.getSessionInfo().getSessionID() + STORAGE_EXTENSION);
+        try {
+            if (path.getParent() != null && !Files.exists(path.getParent()))
+                Files.createDirectories(path.getParent());
+
+            return Files.exists(path);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
      * Loads the session data from a file corresponding to the sessions ID.
      *
      * @param session   The session instance to populate with stored data.
@@ -49,15 +69,9 @@ public class FileSessionDriver implements SessionDriver {
      */
     @Override
     public void load(Session session, String sessionID) {
-        Path path = Path.of(STORAGE_LOCATION, session.getSessionInfo().getSessionID() + STORAGE_EXTENSION);
-        try {
-            if (path.getParent() != null && !Files.exists(path.getParent()))
-                Files.createDirectories(path.getParent());
+        if (!this.exists(session, sessionID)) return;
 
-            if (!Files.exists(path)) return;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        Path path = Path.of(STORAGE_LOCATION, session.getSessionInfo().getSessionID() + STORAGE_EXTENSION);
 
         try (FileChannel channel = FileChannel.open(path);
              InputStream stream = Channels.newInputStream(channel);

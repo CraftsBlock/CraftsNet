@@ -9,11 +9,22 @@ import java.io.IOException;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.0
+ * @version 1.2.0
  * @see Session
  * @since 3.3.5-SNAPSHOT
  */
 public interface SessionDriver {
+
+    /**
+     * Checks if the session id exists in the underlying storage.
+     *
+     * @param session   The {@link Session} instance to be populated with data.
+     * @param sessionID The unique identifier of the session.
+     * @return Returns {@code true} if the session exists in the underlying storage, {@code false} otherwise.
+     * @throws IOException If an error occurs while loading the session data.
+     * @since 3.3.6-SNAPSHOT
+     */
+    boolean exists(Session session, String sessionID) throws IOException;
 
     /**
      * Loads session data from the underlying storage into the provided session instance.
