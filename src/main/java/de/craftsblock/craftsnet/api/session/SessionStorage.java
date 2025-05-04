@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.3.2
+ * @version 3.3.3
  * @see Session
  * @see ByteBuffer
  * @since 3.3.0-SNAPSHOT
@@ -85,6 +85,7 @@ public class SessionStorage {
      * action will be queued and performed later on.
      */
     public void load() {
+        if (!this.exists()) return;
         this.performJob(JobType.LOAD);
     }
 
@@ -94,6 +95,7 @@ public class SessionStorage {
      * action will be queued and performed later on.
      */
     public void save() {
+        if (!this.session.isSessionStarted()) return;
         this.performJob(JobType.SAVE);
     }
 
