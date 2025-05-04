@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.1
+ * @version 1.2.2
  * @see AutoRegisterInfo
  * @see AutoRegisterHandler
  * @since 3.2.0-SNAPSHOT
@@ -135,7 +135,10 @@ public class AutoRegisterRegistry {
                 .map(Map.Entry::getValue)
                 .toList();
 
-        if (handlers.isEmpty()) return false;
+        if (handlers.isEmpty()) {
+            craftsNet.logger().warning("Found @AutoRegister on " + info.getClassName() + " but no registry found!");
+            return false;
+        }
 
         for (AutoRegisterHandler<?> handler : handlers)
             try {
