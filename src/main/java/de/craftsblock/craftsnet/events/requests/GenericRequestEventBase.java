@@ -10,13 +10,13 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @see Exchange
  * @see Request
  * @see Response
  * @since 3.3.6-SNAPSHOT
  */
-public interface RequestEventBase {
+public interface GenericRequestEventBase {
 
     /**
      * Gets the {@link Exchange} which stores the involved request, response and some other data.

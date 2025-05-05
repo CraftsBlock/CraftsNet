@@ -12,11 +12,11 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.0
- * @see RequestEventBase
+ * @version 1.1.1
+ * @see GenericRequestEventBase
  * @since 3.1.0-SNAPSHOT
  */
-public class PreRequestEvent extends CancellableEvent implements RequestEventBase {
+public class PreRequestEvent extends CancellableEvent implements GenericRequestEventBase {
 
     private final Exchange exchange;
 

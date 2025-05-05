@@ -5,7 +5,7 @@ import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.Exchange;
 import de.craftsblock.craftsnet.api.http.Response;
 import de.craftsblock.craftsnet.events.EventWithCancelReason;
-import de.craftsblock.craftsnet.events.requests.RequestEventBase;
+import de.craftsblock.craftsnet.events.requests.GenericRequestEventBase;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -16,12 +16,12 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @see EventWithCancelReason
- * @see RequestEventBase
+ * @see GenericRequestEventBase
  * @since 2.3.2-SNAPSHOT
  */
-public class ShareRequestEvent extends EventWithCancelReason implements RequestEventBase {
+public class ShareRequestEvent extends EventWithCancelReason implements GenericRequestEventBase {
 
     private final String httpPath;
     private final Exchange exchange;

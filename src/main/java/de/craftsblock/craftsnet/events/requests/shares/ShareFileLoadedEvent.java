@@ -2,7 +2,7 @@ package de.craftsblock.craftsnet.events.requests.shares;
 
 import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftsnet.api.http.Exchange;
-import de.craftsblock.craftsnet.events.requests.RequestEventBase;
+import de.craftsblock.craftsnet.events.requests.GenericRequestEventBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -18,12 +18,12 @@ import java.nio.file.Path;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.2.1
  * @see CancellableEvent
- * @see RequestEventBase
+ * @see GenericRequestEventBase
  * @since 2.3.2-SNAPSHOT
  */
-public class ShareFileLoadedEvent extends CancellableEvent implements RequestEventBase {
+public class ShareFileLoadedEvent extends CancellableEvent implements GenericRequestEventBase {
 
     private static final FileNameMap contentTypes = URLConnection.getFileNameMap();
 

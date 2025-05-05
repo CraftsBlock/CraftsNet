@@ -2,9 +2,8 @@ package de.craftsblock.craftsnet.events.requests.routes;
 
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.Exchange;
-import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.events.EventWithCancelReason;
-import de.craftsblock.craftsnet.events.requests.RequestEventBase;
+import de.craftsblock.craftsnet.events.requests.GenericRequestEventBase;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
@@ -16,12 +15,12 @@ import java.util.Collection;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.2.1
  * @see EventWithCancelReason
- * @see RequestEventBase
+ * @see GenericRequestEventBase
  * @since 1.0.0-SNAPSHOT
  */
-public class RouteRequestEvent extends EventWithCancelReason implements RequestEventBase {
+public class RouteRequestEvent extends EventWithCancelReason implements GenericRequestEventBase {
 
     private final Exchange exchange;
 
