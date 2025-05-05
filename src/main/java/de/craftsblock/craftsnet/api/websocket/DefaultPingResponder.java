@@ -11,7 +11,7 @@ import de.craftsblock.craftsnet.events.sockets.message.ReceivedPingMessageEvent;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @see ReceivedPingMessageEvent
  * @see WebSocketClient
  * @since 3.0.5-SNAPSHOT
@@ -28,7 +28,7 @@ public class DefaultPingResponder implements ListenerAdapter {
     @EventHandler
     public void handlePing(ReceivedPingMessageEvent event) {
         if (!event.getClient().isConnected()) return;
-        event.getClient().sendPong(event.getMessage());
+        event.getClient().sendPong(event.getData());
     }
 
     /**
