@@ -31,7 +31,7 @@ import static de.craftsblock.craftsnet.utils.Utils.getGroupNames;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
+ * @version 1.2.0
  * @see Transformer
  * @see TransformerCollection
  * @see Transformable
@@ -41,7 +41,7 @@ public class TransformerPerformer {
 
     private final Logger logger;
 
-    private final DoubleKeyedCache<Class<? extends Transformable<?>>, String, Object> transformerCache = new DoubleKeyedCache<>(10);
+    private final DoubleKeyedCache<Class<? extends Transformable<?, ?>>, Object, Object> transformerCache = new DoubleKeyedCache<>(10);
     private final List<String> groupNames = new ArrayList<>();
 
     private final int argsOffset;
@@ -190,15 +190,15 @@ public class TransformerPerformer {
     }
 
     /**
-     * Performs a transformation with an {@link Transformer}
+     * Performs a transformation with an {@link Transformer}.
      *
-     * @param groupNames  A {@link List <String>} with all the named groups of the url validator
-     * @param args        A {@link Object} array with all the dynamic url parameter values
-     * @param transformer The current {@link Transformer} used to transform an argument
-     * @throws NoSuchMethodException  if the transformer method could not be not found
-     * @throws InstantiationException if no new instance of the {@link Transformable <?>} can be created
+     * @param groupNames  A {@link List <String>} with all the named groups of the url validator.
+     * @param args        A {@link Object} array with all the dynamic url parameter values.
+     * @param transformer The current {@link Transformer} used to transform an argument.
+     * @throws NoSuchMethodException  if the transformer method could not be not found.
+     * @throws InstantiationException if no new instance of the {@link Transformable <?>} can be created.
      * @throws IllegalAccessException if the access to the constructor of the {@link Transformable} or
-     *                                if the access to the method {@link Transformable#transform(String)} is restricted
+     *                                if the access to the method {@link Transformable#transform(Object)} is restricted.
      */
     private void transform(List<String> groupNames, Object[] args, Transformer transformer) throws NoSuchMethodException, InstantiationException, IllegalAccessException {
         String parameter = transformer.parameter();
@@ -212,31 +212,60 @@ public class TransformerPerformer {
         String value = (String) args[groupIndex];
         try {
             // Load all important variables
-            Class<? extends Transformable<?>> transformable = transformer.transformer();
-            Transformable<?> owner = transformable.cast(transformable.getDeclaredConstructor().newInstance());
-
-            // Check if the transformer is cacheable and the transformer cache contains this specific transformer
-            if (transformer.cacheable() && owner.isCacheable() && transformerCache.containsKeyPair(transformable, value))
-                // Override the args with the cache value from the transformer cache
-                args[groupIndex] = transformerCache.get(transformable, value);
-            else {
-                // Search for the transform method on the transformable
-                Method transformerMethod = Utils.getMethod(transformable, "transform", String.class);
-                if (transformerMethod == null)
-                    throw new IllegalStateException("Transformer " + transformable.getName() + " does not have a transformer method!");
-
-                // Execute the transform method on the transformable and inject it into the args
-                Object transformed = transformerMethod.invoke(owner, value);
-                args[groupIndex] = transformed;
-                // Put the transformed value into the cache, if the transformer is cacheable
-                if (transformer.cacheable() && owner.isCacheable()) transformerCache.put(transformable, value, transformed);
-
-            }
+            Class<? extends Transformable<?, ?>> transformable = transformer.transformer();
+            args[groupIndex] = transform(value, transformer, transformable);
         } catch (InvocationTargetException parent) {
             // Check if the cause of the InvocationTargetException is an TransformerException
             if (parent.getCause() instanceof TransformerException e)
                 // Parse up the TransformerException to the route handler
                 args[groupIndex] = e;
+        }
+    }
+
+    /**
+     * Performs the actual transformation with an {@link Transformer}.
+     *
+     * @param parameter   The parameter which should be transformed.
+     * @param transformer The current {@link Transformer} used to transform an argument.
+     * @param type        The class type of {@link Transformer#transformer()}.
+     * @return The transformed value.
+     * @throws NoSuchMethodException     if the transformer method could not be not found.
+     * @throws InvocationTargetException if no new instance of the {@link Transformable <?>} can be created.
+     * @throws InstantiationException    if the performed {@link Transformable#transform(Object)} method throws an exception.
+     * @throws IllegalAccessException    if the access to the constructor of the {@link Transformable} or
+     *                                   if the access to the method {@link Transformable#transform(Object)} is restricted.
+     * @since 3.3.6-SNAPSHOT
+     */
+    private Object transform(String parameter, Transformer transformer, Class<? extends Transformable<?, ?>> type) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+        Transformable<?, ?> transformable = type.cast(type.getDeclaredConstructor().newInstance());
+
+        // Check if the transformable has a parent and invoke it if one is present
+        Object value;
+        if (transformable.getParent() != null)
+            value = transform(parameter, transformer, transformable.getParent());
+        else value = parameter;
+
+        // Check if the transformer is cacheable and the transformer cache contains this specific transformer
+        if (transformer.cacheable() && transformable.isCacheable() && transformerCache.containsKeyPair(type, value))
+            // Override the args with the cache value from the transformer cache
+            return transformerCache.get(type, value);
+
+        // Search for the transform method on the transformable
+        Method transformerMethod = Utils.getMethod(type, "transform", Object.class);
+        if (transformerMethod == null)
+            throw new IllegalStateException("Transformer " + type.getName() + " does not have a transformer method!");
+
+        try {
+            // Execute the transform method on the transformable
+            transformerMethod.setAccessible(true);
+            Object transformed = transformerMethod.invoke(transformable, value);
+
+            // Put the transformed value into the cache, if the transformer is cacheable
+            if (transformer.cacheable() && transformable.isCacheable()) transformerCache.put(type, value, transformed);
+
+            return transformed;
+        } finally {
+            transformerMethod.setAccessible(false);
         }
     }
 

@@ -9,11 +9,11 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */
-public class IntTransformer implements Transformable<Integer> {
+public class IntTransformer implements Transformable<Integer, String> {
 
     /**
      * Transforms the provided string parameter into an Integer object.

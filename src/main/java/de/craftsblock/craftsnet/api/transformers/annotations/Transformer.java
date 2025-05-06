@@ -15,7 +15,7 @@ import java.lang.annotation.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @see Transformable
  * @see TransformerCollection
  * @since 3.0.2-SNAPSHOT
@@ -38,7 +38,7 @@ public @interface Transformer {
      *
      * @return The class of the transformer.
      */
-    Class<? extends Transformable<?>> transformer();
+    Class<? extends Transformable<?, ?>> transformer();
 
     /**
      * Specifies whether caching is enabled for the transformation.
