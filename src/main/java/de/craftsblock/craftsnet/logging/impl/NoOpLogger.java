@@ -6,22 +6,22 @@ import org.jetbrains.annotations.Nullable;
 
 /**
  * An implementation of the {@link Logger} interface that performs no operations.
- * The {@link NoLogLogger} simply accepts log messages and errors but does not process
+ * The {@link NoOpLogger} simply accepts log messages and errors but does not process
  * them in any way.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.1.0
  * @since 3.3.6-SNAPSHOT
  */
-public record NoLogLogger(Logger previous) implements Logger {
+public record NoOpLogger(Logger previous) implements Logger {
 
     /**
-     * Constructs an {@link NoLogLogger} with a reference to a previous {@link Logger}.
+     * Constructs an {@link NoOpLogger} with a reference to a previous {@link Logger}.
      *
      * @param previous the previous {@link Logger} in the chain, can be used for chaining or fallback purposes.
      */
-    public NoLogLogger {
+    public NoOpLogger {
     }
 
     /**
@@ -86,10 +86,10 @@ public record NoLogLogger(Logger previous) implements Logger {
     }
 
     /**
-     * Returns this instance of the {@link NoLogLogger}.
+     * Returns this instance of the {@link NoOpLogger}.
      *
      * @param name the name for the new logger instance. (Not used in any way!)
-     * @return the current instance of this {@link NoLogLogger}.
+     * @return the current instance of this {@link NoOpLogger}.
      */
     @Override
     public Logger cloneWithName(String name) {
