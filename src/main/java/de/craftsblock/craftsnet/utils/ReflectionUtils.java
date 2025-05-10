@@ -133,21 +133,24 @@ public class ReflectionUtils {
      * @return The class type corresponding to the handler's generic type.
      */
     @SuppressWarnings("unchecked")
-    public static <T> Class<T> extractGeneric(Class<?> clazz, Class<?> base) {
+    public static <T> Class<T> extractGeneric(Class<?> clazz, Class<?> base, @Range(from = 0, to = Integer.MAX_VALUE) int index) {
         try {
             Type superclass = clazz.getGenericSuperclass();
             if (superclass instanceof ParameterizedType type)
-                if (type.getActualTypeArguments().length >= 1) {
-                    Type t = type.getActualTypeArguments()[0];
+                // Subtract the length by one to make Integer.MAX_VALUE possible as index
+                if ((type.getActualTypeArguments().length - 1) >= index) {
+                    Type t = type.getActualTypeArguments()[index];
+
                     if (t instanceof ParameterizedType sub)
                         return (Class<T>) sub.getRawType();
+
                     return (Class<T>) t;
                 }
         } catch (ClassCastException ignored) {
         }
 
         if (!Object.class.equals(clazz.getSuperclass()) && base.isAssignableFrom(clazz.getSuperclass()))
-            return extractGeneric(clazz.getSuperclass(), base);
+            return extractGeneric(clazz.getSuperclass(), base, index);
 
         return null;
     }
@@ -164,12 +167,12 @@ public class ReflectionUtils {
      */
     @Nullable
     @SuppressWarnings("unchecked")
-    public static <T> Class<T> extractGenericInterface(Class<?> clazz) {
+    public static <T> Class<T> extractGenericInterface(Class<?> clazz, @Range(from = 0, to = Integer.MAX_VALUE) int index) {
         return Arrays.stream(clazz.getGenericInterfaces())
                 .filter(type -> type instanceof ParameterizedType)
                 .map(type -> (ParameterizedType) type)
-                .filter(type -> type.getActualTypeArguments().length >= 1)
-                .map(type -> (Class<T>) type.getActualTypeArguments()[0])
+                .filter(type -> (type.getActualTypeArguments().length - 1) >= index)
+                .map(type -> (Class<T>) type.getActualTypeArguments()[index])
                 .findFirst()
                 .orElse(null);
     }
@@ -184,6 +187,7 @@ public class ReflectionUtils {
      */
     public static <A extends Annotation> A retrieveRawAnnotation(Object obj, Class<A> annotation) {
         if (obj instanceof Method method) return method.getDeclaredAnnotation(annotation);
+        if (obj instanceof Class<?> clazz) return clazz.getDeclaredAnnotation(annotation);
         return obj.getClass().getDeclaredAnnotation(annotation);
     }
 

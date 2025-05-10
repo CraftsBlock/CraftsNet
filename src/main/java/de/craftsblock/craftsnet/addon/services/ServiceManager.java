@@ -6,12 +6,9 @@ import de.craftsblock.craftsnet.addon.services.builtin.handlers.GenericHandlerLo
 import de.craftsblock.craftsnet.addon.services.builtin.handlers.RequestHandlerLoader;
 import de.craftsblock.craftsnet.addon.services.builtin.handlers.SocketHandlerLoader;
 import de.craftsblock.craftsnet.addon.services.builtin.listeners.ListenerAdapterLoader;
-import de.craftsblock.craftsnet.api.Handler;
-import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,7 +21,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.3
+ * @version 1.0.4
  * @since 3.0.0-SNAPSHOT
  */
 public class ServiceManager {
@@ -59,7 +56,7 @@ public class ServiceManager {
      * @param <T>    The type of service handled by the service loader.
      */
     public <T> void register(ServiceLoader<T> loader) {
-        Class<T> generic = ReflectionUtils.extractGenericInterface(loader.getClass());
+        Class<T> generic = ReflectionUtils.extractGenericInterface(loader.getClass(), 0);
         if (generic == null) return;
         ConcurrentLinkedQueue<ServiceLoader<?>> loaders = providers.computeIfAbsent(generic, c -> new ConcurrentLinkedQueue<>());
         if (loaders.contains(loader)) return;
@@ -73,7 +70,7 @@ public class ServiceManager {
      * @param <T>    The type of service handled by the service loader.
      */
     public <T> void unregister(ServiceLoader<T> loader) {
-        Class<T> generic = ReflectionUtils.extractGenericInterface(loader.getClass());
+        Class<T> generic = ReflectionUtils.extractGenericInterface(loader.getClass(), 0);
         if (generic == null) return;
         providers.computeIfAbsent(generic, c -> new ConcurrentLinkedQueue<>()).remove(loader);
     }
@@ -135,7 +132,7 @@ public class ServiceManager {
 
         List<ServiceLoader<T>> loaders = providers.get(spi).stream()
                 .filter(loader -> {
-                    Class<T> loaderClass = ReflectionUtils.extractGenericInterface(loader.getClass());
+                    Class<T> loaderClass = ReflectionUtils.extractGenericInterface(loader.getClass(), 0);
                     return loaderClass != null && loaderClass.isAssignableFrom(provider);
                 })
                 .map(loader -> (ServiceLoader<T>) loader)
