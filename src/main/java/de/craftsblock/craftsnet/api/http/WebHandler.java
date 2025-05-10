@@ -41,7 +41,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.6
+ * @version 1.5.7
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -78,7 +78,7 @@ public class WebHandler implements HttpHandler {
             String requestMethod = httpExchange.getRequestMethod();
             HttpMethod httpMethod = HttpMethod.parse(requestMethod);
 
-            String url = httpExchange.getRequestURI().toString();
+            String url = httpExchange.getRequestURI().toString().replaceAll("//+", "/");
             Headers headers = httpExchange.getRequestHeaders();
 
             StreamEncoderRegistry streamEncoderRegistry = craftsNet.streamEncoderRegistry();

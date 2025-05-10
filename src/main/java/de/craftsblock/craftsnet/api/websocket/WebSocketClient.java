@@ -52,7 +52,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.4.2
+ * @version 3.4.3
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -381,7 +381,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             if (path == null)
                 for (String method : HttpMethod.ALL.getMethods())
                     if (line.startsWith(method)) {
-                        path = line.split(" ")[1];
+                        path = line.split(" ")[1].replaceAll("//+", "/");
                         continue headerReader;
                     }
 
