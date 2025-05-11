@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.utils;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
@@ -12,7 +13,7 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.3
+ * @version 1.2.0
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
@@ -86,6 +87,32 @@ public class ReflectionUtils {
             return clazz.getDeclaredConstructor(args);
         } catch (NoSuchMethodException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Creates a new instance of a class.
+     *
+     * @param type The class type of the desired class.
+     * @param args The args for the constructor.
+     * @param <T>  The desired result type.
+     * @return A new instance of the given class type.
+     * @throws IllegalStateException if no matching constructor is found for the args.
+     * @throws RuntimeException      if the instantiation failed.
+     * @since 3.3.6-SNAPSHOT
+     */
+    public static <T> @NotNull T getNewInstance(@NotNull Class<T> type, @NotNull Object... args) {
+        Class<?>[] argTypes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
+
+        if (!isConstructorPresent(type, argTypes))
+            throw new IllegalStateException("No constructor found for " + type.getSimpleName() + "(" +
+                    String.join(", ", Arrays.stream(argTypes).map(Class::getSimpleName).toList()) + ")!");
+
+        Constructor<T> constructor = getConstructor(type, argTypes);
+        try {
+            return constructor.newInstance(args);
+        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+            throw new RuntimeException("Could not a new instance of " + type.getSimpleName() + "!", e);
         }
     }
 
