@@ -52,7 +52,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.4.3
+ * @version 3.5.0
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -84,6 +84,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private String path;
     private String domain;
     private EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappings;
+    private Matcher matcher;
 
     private BufferedReader reader;
     private OutputStream writer;
@@ -209,7 +210,6 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
-            Matcher matcher;
             if (mappings != null && !mappings.isEmpty()) {
                 Pattern validator = mappings.get(mappings.keySet().stream().findFirst().orElseThrow()).get(0).validator();
                 matcher = validator.matcher(path);
@@ -230,62 +230,10 @@ public class WebSocketClient implements Runnable, RequireAble {
             // If the event is not cancelled, process incoming messages from the client
             logger.info(ip + " connected to " + path);
 
-            readLoop:
             while (!Thread.currentThread().isInterrupted() && isConnected()) {
                 Frame frame = readMessage();
-
-                if (frame == null || frame.getOpcode().isUnknown()) {
-                    logger.warning("Received invalid websocket packet!");
-                    return;
-                }
-
-                if (!this.connected || !this.socket.isConnected()) break;
-                // Process incoming messages from the client
-                byte @NotNull [] data = frame.getData();
-
-                switch (frame.getOpcode()) {
-                    case CLOSE -> {
-                        if (data.length <= 2) break;
-                        closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
-                        closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
-                        closeInternally(ClosureCode.NORMAL, "Acknowledged close", false);
-                        break readLoop;
-                    }
-
-                    case PING -> {
-                        craftsNet.listenerRegistry().call(new ReceivedPingMessageEvent(exchange, frame));
-                        continue;
-                    }
-
-                    case PONG -> {
-                        craftsNet.listenerRegistry().call(new ReceivedPongMessageEvent(exchange, frame));
-                        continue;
-                    }
-
-                    case TEXT -> {
-                        if (Utils.isEncodingValid(frame.getData(), StandardCharsets.UTF_8)) break;
-                        closeInternally(ClosureCode.UNSUPPORTED_PAYLOAD, "Send byte values are not utf8 valid!", true);
-                        break readLoop;
-                    }
-                }
-
-                // Fire an incoming socket message event and continue if it was cancelled
-                IncomingSocketMessageEvent incomingMessageEvent = new IncomingSocketMessageEvent(exchange, frame);
-                craftsNet.listenerRegistry().call(incomingMessageEvent);
-                if (incomingMessageEvent.isCancelled()) continue;
-
-                if (mappings == null || mappings.isEmpty() || matcher == null) continue;
-
-                // Extract and pass the message parameters to the endpoint handler
-                Object[] args = new Object[matcher.groupCount() + 1];
-                args[0] = exchange;
-                args[1] = data;
-                for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
-
-                handleMappings(frame, args);
-
-                // Clear up transformer cache to free up memory
-                transformerPerformer.clearCache();
+                if (handleIncomingMessage(frame))
+                    break;
             }
         } catch (SocketException ignored) {
         } catch (Throwable t) {
@@ -297,6 +245,93 @@ public class WebSocketClient implements Runnable, RequireAble {
         } finally {
             disconnect();
         }
+    }
+
+    /**
+     * Handles the frame of an incoming message.
+     *
+     * @param frame The frame of the incoming message.
+     * @return {@code true} if the read loop should be exited, {@code false} otherwise.
+     * @since 3.3.6-SNAPSHOT
+     */
+    private boolean handleIncomingMessage(Frame frame) throws InvocationTargetException, IllegalAccessException {
+        if (frame == null || frame.getOpcode().isUnknown()) {
+            logger.warning("Received invalid websocket packet!");
+            return true;
+        }
+
+        if (!this.connected || !this.socket.isConnected()) return true;
+        // Process incoming messages from the client
+        byte @NotNull [] data = frame.getData();
+        if (isCloseFrame(frame) || processOrClose(frame))
+            return true;
+
+        // Fire an incoming socket message event and continue if it was cancelled
+        IncomingSocketMessageEvent incomingMessageEvent = new IncomingSocketMessageEvent(exchange, frame);
+        craftsNet.listenerRegistry().call(incomingMessageEvent);
+        if (incomingMessageEvent.isCancelled()) return false;
+
+        if (mappings == null || mappings.isEmpty() || matcher == null) return false;
+
+        // Extract and pass the message parameters to the endpoint handler
+        Object[] args = new Object[matcher.groupCount() + 1];
+        args[0] = exchange;
+        args[1] = data;
+        for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
+
+        handleMappings(frame, args);
+
+        // Clear up transformer cache to free up memory
+        transformerPerformer.clearCache();
+        return false;
+    }
+
+    /**
+     * Process / Checks some things based on the {@link Opcode} of a frame.
+     *
+     * @param frame The frame to process / check.
+     * @return {@code true} if the read loop should be ended, {@code false} otherwise.
+     * @since 3.3.6-SNAPSHOT
+     */
+    private boolean processOrClose(Frame frame) throws InvocationTargetException, IllegalAccessException {
+        return switch (frame.getOpcode()) {
+            case PING -> {
+                craftsNet.listenerRegistry().call(new ReceivedPingMessageEvent(exchange, frame));
+                yield false;
+            }
+
+            case PONG -> {
+                craftsNet.listenerRegistry().call(new ReceivedPongMessageEvent(exchange, frame));
+                yield false;
+            }
+
+            case TEXT -> {
+                if (Utils.isEncodingValid(frame.getData(), StandardCharsets.UTF_8)) yield false;
+                closeInternally(ClosureCode.UNSUPPORTED_PAYLOAD, "Send byte values are not utf8 valid!", true);
+                yield true;
+            }
+
+            default -> false;
+        };
+    }
+
+    /**
+     * Checks if the provided frame is a close frame.
+     *
+     * @param frame The {@link Frame} to check.
+     * @return {@code true} if the frame is a close frame, {@code false} otherwise.
+     * @since 3.3.6-SNAPSHOT
+     */
+    private boolean isCloseFrame(Frame frame) {
+        byte @NotNull [] data = frame.getData();
+
+        if (!frame.getOpcode().equals(Opcode.CLOSE)) return false;
+        if (data.length <= 2) return true;
+
+        closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
+        closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
+        closeInternally(ClosureCode.NORMAL, "Acknowledged close", false);
+        return true;
     }
 
     /**
@@ -879,6 +914,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             } else
                 logger.debug(ip + " disconnected");
 
+            matcher = null;
             headers = null;
             mappings = null;
             transformerPerformer.clearCache();
