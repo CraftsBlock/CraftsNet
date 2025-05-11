@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.2
+ * @version 1.2.3
  * @see AutoRegisterInfo
  * @see AutoRegisterHandler
  * @since 3.2.0-SNAPSHOT
@@ -69,7 +69,7 @@ public class AutoRegisterRegistry {
      */
     public <T> void register(AutoRegisterHandler<? extends T> handler) {
         autoRegisterHandlers.put(
-                Objects.requireNonNull(ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class)),
+                Objects.requireNonNull(ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class, 0)),
                 handler
         );
     }
@@ -95,7 +95,7 @@ public class AutoRegisterRegistry {
      */
     public <T> boolean unregister(AutoRegisterHandler<T> handler) {
         return autoRegisterHandlers.remove(
-                ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class),
+                ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class, 0),
                 handler
         );
     }
@@ -144,7 +144,7 @@ public class AutoRegisterRegistry {
             try {
                 Object obj = info.getInstantiated(craftsNet);
                 Method method = handler.getClass().getDeclaredMethod("handle",
-                        ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class),
+                        ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class, 0),
                         AutoRegisterInfo.class, Object.class.arrayType());
 
                 method.setAccessible(true);

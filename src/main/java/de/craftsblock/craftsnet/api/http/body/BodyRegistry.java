@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
+ * @version 1.1.2
  * @see BodyParser
  * @since 3.0.4-SNAPSHOT
  */
@@ -42,7 +42,7 @@ public class BodyRegistry {
      */
     public <T extends Body> void register(@NotNull BodyParser<T> bodyParser) {
         if (isRegistered(bodyParser)) return;
-        this.bodyParser.put(Objects.requireNonNull(ReflectionUtils.extractGeneric(bodyParser.getClass(), BodyParser.class)), bodyParser);
+        this.bodyParser.put(Objects.requireNonNull(ReflectionUtils.extractGeneric(bodyParser.getClass(), BodyParser.class, 0)), bodyParser);
     }
 
     /**
