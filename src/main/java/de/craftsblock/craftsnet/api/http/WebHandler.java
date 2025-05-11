@@ -205,7 +205,7 @@ public class WebHandler implements HttpHandler {
         }
         logger.info(requestMethod + " " + url + " from " + ip);
 
-        Pattern validator = routes.get(routes.keySet().stream().findFirst().orElseThrow()).get(0).validator();
+        Pattern validator = routes.values().stream().flatMap(Collection::stream).findFirst().orElseThrow().validator();
         Matcher matcher = validator.matcher(url);
         if (!matcher.matches()) {
             respondWithError(response, 500, "There was an unexpected error while matching!");
