@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.6.0
+ * @version 1.6.1
  * @see Exchange
  * @since 1.0.0-SNAPSHOT
  */
@@ -76,9 +76,9 @@ public class Request implements AutoCloseable, RequireAble {
         this.url = queryIndex >= 0 ? url.substring(0, queryIndex) : url;
         String query = queryIndex >= 0 ? url.substring(queryIndex + 1) : "";
 
-        if (!query.isEmpty())
+        if (!query.isBlank())
             Arrays.stream(query.split("&"))
-                    .filter(pair -> !pair.isEmpty())
+                    .filter(pair -> !pair.isBlank())
                     .forEach(pair -> {
                         String[] stripped = pair.split("=", 2);
                         queryParams.put(stripped[0], stripped.length == 2 ? stripped[1] : "");
