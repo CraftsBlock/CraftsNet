@@ -1,10 +1,18 @@
 plugins {
     id 'java'
+    id 'application'
 }
 
 java {
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+
     withJavadocJar()
     withSourcesJar()
+}
+
+application {
+    mainClass = 'de.craftsblock.craftsnet.CraftsNet'
 }
 
 group = 'de.craftsblock'
@@ -42,5 +50,19 @@ dependencies {
     implementation 'org.apache.maven.resolver:maven-resolver-supplier:2.0.0-alpha-8'
 }
 
-sourceCompatibility = JavaVersion.VERSION_17
-targetCompatibility = JavaVersion.VERSION_17
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+jar {
+    manifest {
+        attributes 'Main-Class': application.mainClass.get()
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
