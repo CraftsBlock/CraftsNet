@@ -12,7 +12,7 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.2
+ * @version 1.1.3
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
@@ -178,17 +178,30 @@ public class ReflectionUtils {
     }
 
     /**
-     * This method searches for an annotation of the specified type in an object.
+     * Checks if a given annotation is present on the object.
      *
      * @param obj        The object in which to search for the annotation.
      * @param annotation The class of the annotation to search for.
      * @param <A>        The type of the annotation.
+     * @return {@code true} if the annotation is present, {@code false} otherwise.
+     * @since 3.3.6-SNAPSHOT
+     */
+    public static <A extends Annotation> boolean isAnnotationPresent(Object obj, Class<A> annotation) {
+        if (obj instanceof Method method) return method.isAnnotationPresent(annotation);
+        if (obj instanceof Class<?> clazz) return clazz.isAnnotationPresent(annotation);
+        return obj.getClass().isAnnotationPresent(annotation);
+    }
+
+    /**
+     * This method searches for an annotation of the specified type in an object.
+     *
+     * @param element    The element in which to search for the annotation.
+     * @param annotation The class of the annotation to search for.
+     * @param <A>        The type of the annotation.
      * @return The found annotation or null if none is found.
      */
-    public static <A extends Annotation> A retrieveRawAnnotation(Object obj, Class<A> annotation) {
-        if (obj instanceof Method method) return method.getDeclaredAnnotation(annotation);
-        if (obj instanceof Class<?> clazz) return clazz.getDeclaredAnnotation(annotation);
-        return obj.getClass().getDeclaredAnnotation(annotation);
+    public static <A extends Annotation> A retrieveRawAnnotation(AnnotatedElement element, Class<A> annotation) {
+        return element.getDeclaredAnnotation(annotation);
     }
 
     /**
@@ -196,7 +209,7 @@ public class ReflectionUtils {
      *
      * @param <A>             The type of the annotation.
      * @param <T>             The type of the attribute value.
-     * @param o               The object containing the annotation.
+     * @param element         The element containing the annotation.
      * @param annotationClass The class of the annotation.
      * @param type            The class of the targeted type.
      * @param fallback        Defines if the default value should be returned.
@@ -205,8 +218,8 @@ public class ReflectionUtils {
      * @throws InvocationTargetException If there is an issue invoking the getter method.
      * @throws IllegalAccessException    If there is an access issue with the getter method.
      */
-    public static <A extends Annotation, T> T retrieveValueOfAnnotation(Object o, Class<A> annotationClass, Class<T> type, boolean fallback) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-        A annotation = retrieveRawAnnotation(o, annotationClass);
+    public static <A extends Annotation, T> T retrieveValueOfAnnotation(AnnotatedElement element, Class<A> annotationClass, Class<T> type, boolean fallback) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+        A annotation = retrieveRawAnnotation(element, annotationClass);
         if (annotation == null)
             if (fallback) {
                 Method method = annotationClass.getDeclaredMethod("value");

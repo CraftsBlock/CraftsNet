@@ -38,7 +38,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.7
+ * @version 3.3.8
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -74,7 +74,7 @@ public class RouteRegistry {
                 List<Class<? extends Annotation>> requirementAnnotations = new ArrayList<>(craftsNet.requirementRegistry().getRequirements(rawServer)
                         .parallelStream().map(Requirement::getAnnotation).toList());
 
-                String parent = ReflectionUtils.retrieveValueOfAnnotation(handler, annotation, String.class, true);
+                String parent = ReflectionUtils.retrieveValueOfAnnotation(handler.getClass(), annotation, String.class, true);
 
                 // Continue if no handlers exists for this server type
                 if (!Utils.hasMethodsWithAnnotation(handler.getClass(), annotation)) continue;
@@ -239,7 +239,7 @@ public class RouteRegistry {
                 ServerMapping mapping = annotations.get(annotation);
 
                 ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<EndpointMapping>> endpoints = serverMappings.computeIfAbsent(mapping.rawServer(), c -> new ConcurrentHashMap<>());
-                String parent = ReflectionUtils.retrieveValueOfAnnotation(handler, annotation, String.class, true);
+                String parent = ReflectionUtils.retrieveValueOfAnnotation(handler.getClass(), annotation, String.class, true);
 
                 // Continue if no handlers exists for this server type
                 if (!Utils.hasMethodsWithAnnotation(handler.getClass(), annotation)) continue;

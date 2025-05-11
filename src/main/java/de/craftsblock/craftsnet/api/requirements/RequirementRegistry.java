@@ -15,6 +15,7 @@ import de.craftsblock.craftsnet.utils.ReflectionUtils;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
@@ -28,7 +29,7 @@ import java.util.regex.Pattern;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.2.1-SNAPSHOT
  */
 public class RequirementRegistry {
@@ -179,7 +180,7 @@ public class RequirementRegistry {
      */
     @ApiStatus.Internal
     public void loadRequirements(ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements, List<Class<? extends Annotation>> annotations, Method method, Object handler) {
-        loadRequirements(requirements, annotations, handler);
+        loadRequirements(requirements, annotations, handler.getClass());
         loadRequirements(requirements, annotations, method);
     }
 
@@ -188,12 +189,12 @@ public class RequirementRegistry {
      *
      * @param requirements A concurrent map where all the processed requirements will be stored.
      * @param annotations  A list of annotation classes to process as requirements.
-     * @param obj          The object (either a Method or another class instance) to process.
+     * @param element      The object (either a Method or another class instance) to process.
      */
     @ApiStatus.Internal
-    private void loadRequirements(ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements, List<Class<? extends Annotation>> annotations, Object obj) {
+    private void loadRequirements(ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements, List<Class<? extends Annotation>> annotations, AnnotatedElement element) {
         for (Class<? extends Annotation> type : annotations) {
-            Annotation annotation = ReflectionUtils.retrieveRawAnnotation(obj, type);
+            Annotation annotation = ReflectionUtils.retrieveRawAnnotation(element, type);
             if (annotation == null) continue;
 
             RequirementInfo info = new RequirementInfo(annotation);
