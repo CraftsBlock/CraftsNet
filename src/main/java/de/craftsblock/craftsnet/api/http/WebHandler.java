@@ -41,7 +41,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.7
+ * @version 1.5.8
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -263,7 +263,7 @@ public class WebHandler implements HttpHandler {
         String domain = request.getDomain();
         HttpMethod httpMethod = request.getHttpMethod();
 
-        Path folder = registry.getShareFolder(url);
+        Path folder = registry.getShareFolder(url).toAbsolutePath();
         Matcher matcher = registry.getSharePattern(url).matcher(url);
         if (!matcher.matches()) {
             respondWithError(response, 500, "There was an unexpected error while matching!");
@@ -284,7 +284,7 @@ public class WebHandler implements HttpHandler {
         ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(exchange, folder.resolve((path.isBlank() ? "index.html" : path)));
         craftsNet.listenerRegistry().call(fileLoadedEvent);
         if (fileLoadedEvent.isCancelled()) return;
-        Path share = fileLoadedEvent.getPath();
+        Path share = fileLoadedEvent.getPath().toAbsolutePath();
 
         if (!share.startsWith(folder) || Files.isDirectory(share)) {
             response.setCode(403);
