@@ -10,7 +10,6 @@ import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.PassphraseUtils;
 import org.jetbrains.annotations.Nullable;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 
 /**
@@ -23,7 +22,7 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.0.4
+ * @version 3.0.5
  * @see Session
  * @see BaseExchange
  * @since 3.0.6-SNAPSHOT
@@ -92,19 +91,15 @@ public class SessionInfo {
         compatibleOrThrow();
         if (isPersistent()) return;
 
-        try {
-            this.sessionID = PassphraseUtils.generateSecure(20, false);
-            this.persistent = true;
+        this.sessionID = PassphraseUtils.generateSecure(20, false);
+        this.persistent = true;
 
-            if (this.session.getExchange() instanceof Exchange http)
-                http.response().setCookie(SID_COOKIE_NAME, this.sessionID).setHttpOnly(true)
-                        .setPath("/").setSameSite(SameSite.LAX);
+        if (this.session.getExchange() instanceof Exchange http)
+            http.response().setCookie(SID_COOKIE_NAME, this.sessionID).setHttpOnly(true)
+                    .setPath("/").setSameSite(SameSite.LAX);
 
-            if (craftsNet != null)
-                craftsNet.sessionCache().put(this.sessionID, this.session);
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
+        if (craftsNet != null)
+            craftsNet.sessionCache().put(this.sessionID, this.session);
     }
 
     /**
