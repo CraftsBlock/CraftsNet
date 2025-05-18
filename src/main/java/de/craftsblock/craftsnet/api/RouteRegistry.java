@@ -6,6 +6,7 @@ import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.http.*;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
+import de.craftsblock.craftsnet.api.middlewares.Middleware;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.requirements.meta.RequirementInfo;
@@ -38,7 +39,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.8
+ * @version 3.4.0
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -113,11 +114,13 @@ public class RouteRegistry {
                     ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements = new ConcurrentHashMap<>();
                     craftsNet.requirementRegistry().loadRequirements(requirements, requirementAnnotations, method, handler);
 
+                    Stack<Middleware> middlewares = craftsNet.middlewareRegistry().resolveMiddlewares(handler, method);
+
                     // Register the endpoint mapping
                     ConcurrentLinkedQueue<EndpointMapping> mappings = endpoints.computeIfAbsent(validator, pattern -> new ConcurrentLinkedQueue<>());
                     mappings.add(new EndpointMapping(
                             priority != null ? priority.value() : ProcessPriority.Priority.NORMAL,
-                            method, handler, validator, requirements
+                            method, handler, validator, requirements, middlewares
                     ));
                 }
 
@@ -614,8 +617,8 @@ public class RouteRegistry {
      * @since 3.0.5-SNAPSHOT
      */
     public record EndpointMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull Handler handler,
-                                  @NotNull Pattern validator,
-                                  ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements) implements Mapping {
+                                  @NotNull Pattern validator, ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements,
+                                  Stack<Middleware> middlewares) implements Mapping {
 
         /**
          * Checks whether the given annotation is present in the requirements.

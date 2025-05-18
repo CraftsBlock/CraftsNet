@@ -11,6 +11,7 @@ import de.craftsblock.craftsnet.api.http.encoding.AcceptEncodingHelper;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoder;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoderRegistry;
 import de.craftsblock.craftsnet.api.http.encoding.builtin.IdentityStreamEncoder;
+import de.craftsblock.craftsnet.api.middlewares.MiddlewareCallbackInfo;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.session.SessionInfo;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
@@ -41,7 +42,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.8
+ * @version 1.6.0
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -155,6 +156,15 @@ public class WebHandler implements HttpHandler {
         String url = request.getUrl();
         HttpMethod httpMethod = request.getHttpMethod();
 
+        // Handle global middlewares
+        MiddlewareCallbackInfo callback = new MiddlewareCallbackInfo();
+        craftsNet.middlewareRegistry().getMiddlewares(exchange).stream().filter(middleware -> middleware.isApplicable(exchange))
+                .forEach(middleware -> middleware.handle(callback, exchange));
+
+        // Cancel if the middleware callback is cancelled
+        if (callback.isCancelled())
+            return Map.entry(false, false);
+
         // Check if the route is registered and process it if so
         if (handleRoute(exchange)) return Map.entry(true, false);
 
@@ -229,6 +239,10 @@ public class WebHandler implements HttpHandler {
             for (RouteRegistry.EndpointMapping mapping : routes.get(priority)) {
                 if (!(mapping.handler() instanceof RequestHandler handler)) continue;
                 Method method = mapping.method();
+
+                MiddlewareCallbackInfo callback = new MiddlewareCallbackInfo();
+                mapping.middlewares().forEach(middleware -> middleware.handle(callback, exchange));
+                if (callback.isCancelled()) continue;
 
                 // Perform all transformers and continue if passingArgs is null
                 Object[] passingArgs = transformerPerformer.perform(mapping.handler(), method, args);

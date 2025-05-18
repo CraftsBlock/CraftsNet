@@ -5,9 +5,12 @@ import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.api.RouteRegistry.EndpointMapping;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
+import de.craftsblock.craftsnet.api.middlewares.MiddlewareCallbackInfo;
+import de.craftsblock.craftsnet.api.middlewares.MiddlewareRegistry;
+import de.craftsblock.craftsnet.api.middlewares.WebsocketMiddleware;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.session.Session;
@@ -23,6 +26,7 @@ import de.craftsblock.craftsnet.events.sockets.message.ReceivedPingMessageEvent;
 import de.craftsblock.craftsnet.events.sockets.message.ReceivedPongMessageEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
+import de.craftsblock.craftsnet.utils.ReflectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
@@ -39,6 +43,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 /**
  * The WebSocketClient class represents a WebSocket client that connects to the WebSocketServer.
@@ -52,7 +57,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.5.0
+ * @version 3.6.0
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -83,7 +88,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private String ip;
     private String path;
     private String domain;
-    private EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappings;
+    private EnumMap<ProcessPriority.Priority, List<EndpointMapping>> mappings;
     private Matcher matcher;
 
     private BufferedReader reader;
@@ -198,7 +203,19 @@ public class WebSocketClient implements Runnable, RequireAble {
                 if (event.hasCancelReason())
                     sendMessage(event.getCancelReason());
                 disconnect();
-                logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[" + event.getCancelReason() + "]");
+                logger.debug(ip + " tried to connect to " + path + " \u001b[38;5;9m[" + event.getCancelReason() + "]");
+                return;
+            }
+
+            // Handle middleware on connect
+            MiddlewareCallbackInfo callbackInfo = new MiddlewareCallbackInfo();
+            getWebsocketMiddlewares().forEach(middleware -> middleware.handleConnect(callbackInfo, exchange));
+
+            if (callbackInfo.isCancelled()) {
+                if (callbackInfo.hasCancelReason())
+                    sendMessage(callbackInfo.getCancelReason());
+                disconnect();
+                logger.debug(ip + " tried to connect to " + path + " \u001b[38;5;9m[" + callbackInfo.getCancelReason() + "]");
                 return;
             }
 
@@ -263,13 +280,19 @@ public class WebSocketClient implements Runnable, RequireAble {
         if (!this.connected || !this.socket.isConnected()) return true;
         // Process incoming messages from the client
         byte @NotNull [] data = frame.getData();
-        if (isCloseFrame(frame) || processOrClose(frame))
+        if (isCloseFrame(frame) || validateOrClose(frame))
             return true;
 
         // Fire an incoming socket message event and continue if it was cancelled
         IncomingSocketMessageEvent incomingMessageEvent = new IncomingSocketMessageEvent(exchange, frame);
         craftsNet.listenerRegistry().call(incomingMessageEvent);
         if (incomingMessageEvent.isCancelled()) return false;
+
+        // Handle middlewares
+        MiddlewareCallbackInfo callbackInfo = new MiddlewareCallbackInfo();
+        getWebsocketMiddlewares().forEach(middleware -> middleware.handleMessageReceived(callbackInfo, exchange, frame));
+        if (callbackInfo.isCancelled())
+            return true;
 
         if (mappings == null || mappings.isEmpty() || matcher == null) return false;
 
@@ -293,7 +316,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @return {@code true} if the read loop should be ended, {@code false} otherwise.
      * @since 3.3.6-SNAPSHOT
      */
-    private boolean processOrClose(Frame frame) throws InvocationTargetException, IllegalAccessException {
+    private boolean validateOrClose(Frame frame) throws InvocationTargetException, IllegalAccessException {
         return switch (frame.getOpcode()) {
             case PING -> {
                 craftsNet.listenerRegistry().call(new ReceivedPingMessageEvent(exchange, frame));
@@ -341,49 +364,59 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param args  The args that should be passed down.
      */
     private void handleMappings(Frame frame, Object[] args) {
-        mappings.keySet().forEach(priority -> {
-            try {
-                inner:
-                for (RouteRegistry.EndpointMapping mapping : mappings.get(priority)) {
-                    if (!(mapping.handler() instanceof SocketHandler handler)) continue;
-                    Method method = mapping.method();
+        mappings.keySet().stream()
+                .map(mappings::get)
+                .flatMap(Collection::stream)
+                .forEach(mapping -> this.handleMapping(mapping, frame, args));
+    }
 
-                    // Process the requirements
-                    if (craftsNet.requirementRegistry().getRequirements().containsKey(WebSocketServer.class))
-                        for (Requirement requirement : craftsNet.requirementRegistry().getRequirements().get(WebSocketServer.class))
-                            try {
-                                Method m = Utils.getMethod(requirement.getClass(), "applies", Frame.class, RouteRegistry.EndpointMapping.class);
-                                if (m == null) continue;
-                                if (!((Boolean) m.invoke(requirement, frame, mapping))) continue inner;
-                            } catch (NullPointerException | AssertionError | IllegalAccessException | InvocationTargetException ignored) {
-                            }
+    /**
+     * Passes a socket message frame down to one specific endpoint.
+     *
+     * @param mapping The {@link EndpointMapping mapping} which should be handled.
+     * @param frame   The {@link Frame} received.
+     * @param args    The args that should be passed down.
+     * @since 3.3.6-SNAPSHOT
+     */
+    private void handleMapping(EndpointMapping mapping, Frame frame, Object[] args) {
+        try {
+            if (!(mapping.handler() instanceof SocketHandler handler)) return;
+            Method method = mapping.method();
 
-                    // Perform all transformers and continue if passingArgs is null
-                    Object[] passingArgs = transformerPerformer.perform(mapping.handler(), method, args);
-                    if (passingArgs == null)
-                        continue;
-
-                    // Only check the parameter types if there are two parameters
-                    if (method.getParameterCount() >= 2)
-                        switch (method.getParameterTypes()[1].getName()) {
-                            case "java.lang.String" -> passingArgs[1] = new String(frame.getData(), StandardCharsets.UTF_8);
-                            case "de.craftsblock.craftsnet.api.websocket.Frame" -> passingArgs[1] = frame.clone();
-                            case "de.craftsblock.craftsnet.utils.ByteBuffer" -> passingArgs[1] = new ByteBuffer(frame.getData());
-                        }
-
-
-                    // Invoke the handler method
+            // Process the requirements
+            if (craftsNet.requirementRegistry().getRequirements().containsKey(WebSocketServer.class))
+                for (Requirement requirement : craftsNet.requirementRegistry().getRequirements().get(WebSocketServer.class))
                     try {
-                        method.setAccessible(true);
-                        method.invoke(handler, passingArgs);
-                    } finally {
-                        method.setAccessible(false);
+                        Method m = Utils.getMethod(requirement.getClass(), "applies", Frame.class, EndpointMapping.class);
+                        if (m == null) continue;
+                        if (!((Boolean) m.invoke(requirement, frame, mapping))) return;
+                    } catch (NullPointerException | AssertionError | IllegalAccessException | InvocationTargetException ignored) {
                     }
+
+            // Perform all transformers and continue if passingArgs is null
+            Object[] passingArgs = transformerPerformer.perform(mapping.handler(), method, args);
+            if (passingArgs == null)
+                return;
+
+            // Only check the parameter types if there are two parameters
+            if (method.getParameterCount() >= 2)
+                switch (method.getParameterTypes()[1].getName()) {
+                    case "java.lang.String" -> passingArgs[1] = new String(frame.getData(), StandardCharsets.UTF_8);
+                    case "de.craftsblock.craftsnet.api.websocket.Frame" -> passingArgs[1] = frame.clone();
+                    case "de.craftsblock.craftsnet.utils.ByteBuffer" -> passingArgs[1] = new ByteBuffer(frame.getData());
                 }
-            } catch (Throwable t) {
-                throw new RuntimeException("Unexpected exception whilst handling websocket mappings", t);
+
+
+            // Invoke the handler method
+            try {
+                method.setAccessible(true);
+                method.invoke(handler, passingArgs);
+            } finally {
+                method.setAccessible(false);
             }
-        });
+        } catch (Throwable t) {
+            throw new RuntimeException("Unexpected exception whilst handling websocket mappings", t);
+        }
     }
 
     /**
@@ -438,7 +471,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @return The corresponding list of SocketMappings if found, or null if not found.
      */
     @Nullable
-    public EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> getEndpoint() {
+    public EnumMap<ProcessPriority.Priority, List<EndpointMapping>> getEndpoint() {
         return this.mappings != null ? mappings : craftsNet.routeRegistry().getSocket(this);
     }
 
@@ -818,6 +851,12 @@ public class WebSocketClient implements Runnable, RequireAble {
                 craftsNet.listenerRegistry().call(event);
                 if (event.isCancelled())
                     return;
+
+                // Handle middlewares
+                MiddlewareCallbackInfo callbackInfo = new MiddlewareCallbackInfo();
+                getWebsocketMiddlewares().forEach(middleware -> middleware.handleMessageSent(callbackInfo, exchange, frame));
+                if (callbackInfo.isCancelled())
+                    return;
             }
 
             Frame subject = event.getFrame();
@@ -914,6 +953,9 @@ public class WebSocketClient implements Runnable, RequireAble {
             } else
                 logger.debug(ip + " disconnected");
 
+            MiddlewareCallbackInfo callbackInfo = new MiddlewareCallbackInfo();
+            getWebsocketMiddlewares().forEach(middleware -> middleware.handleDisconnect(callbackInfo, exchange));
+
             matcher = null;
             headers = null;
             mappings = null;
@@ -926,6 +968,25 @@ public class WebSocketClient implements Runnable, RequireAble {
             server.remove(this);
             this.connected = false;
         }
+    }
+
+    /**
+     * Creates a new {@link Stream stream} of {@link WebsocketMiddleware middlewares}
+     * that contains the {@link EndpointMapping mappings} middlewares as specified by
+     * {@link EndpointMapping#middlewares()} and the global registered middlewares
+     * as specified by {@link MiddlewareRegistry#getMiddlewares(Class)}.
+     *
+     * @return The {@link Stream stream} of {@link WebsocketMiddleware middlewares}.
+     * @since 3.3.6-SNAPSHOT
+     */
+    private Stream<WebsocketMiddleware> getWebsocketMiddlewares() {
+        return Stream.concat(
+                        craftsNet.middlewareRegistry().getMiddlewares(WebSocketServer.class).stream(),
+                        this.mappings.values().stream().flatMap(Collection::stream)
+                                .map(EndpointMapping::middlewares)
+                                .flatMap(Stack::stream)
+                ).map(middleware -> ReflectionUtils.castTo(middleware, WebsocketMiddleware.class))
+                .filter(Objects::nonNull);
     }
 
 }

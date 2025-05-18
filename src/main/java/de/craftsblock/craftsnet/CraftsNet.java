@@ -10,6 +10,7 @@ import de.craftsblock.craftsnet.api.http.WebServer;
 import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
 import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoderRegistry;
+import de.craftsblock.craftsnet.api.middlewares.MiddlewareRegistry;
 import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
 import de.craftsblock.craftsnet.api.session.SessionCache;
 import de.craftsblock.craftsnet.api.websocket.DefaultPingResponder;
@@ -48,7 +49,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.2.4
+ * @version 3.3.0
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -74,6 +75,7 @@ public class CraftsNet {
     private BodyRegistry bodyRegistry;
     private CommandRegistry commandRegistry;
     private ListenerRegistry listenerRegistry;
+    private MiddlewareRegistry middlewareRegistry;
     private RequirementRegistry requirementRegistry;
     private RouteRegistry routeRegistry;
     private ServiceManager serviceManager;
@@ -160,6 +162,9 @@ public class CraftsNet {
 
         logger.debug("Initialization of the listener registry");
         listenerRegistry = new ListenerRegistry();
+
+        logger.debug("Initialization of the middleware registry");
+        middlewareRegistry = new MiddlewareRegistry();
 
         logger.debug("Initialization of the route registry");
         routeRegistry = new RouteRegistry(this);
@@ -446,6 +451,17 @@ public class CraftsNet {
      */
     public ListenerRegistry listenerRegistry() {
         return listenerRegistry;
+    }
+
+    /**
+     * Retrieves the middleware registry instance for manging
+     * {@link de.craftsblock.craftsnet.api.middlewares.Middleware middlewares}
+     *
+     * @return The {@link MiddlewareRegistry middleware registry} instance.
+     * @since 3.3.6-SNAPSHOT
+     */
+    public MiddlewareRegistry middlewareRegistry() {
+        return middlewareRegistry;
     }
 
     /**

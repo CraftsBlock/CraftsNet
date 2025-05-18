@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.autoregister;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.meta.Startup;
+import de.craftsblock.craftsnet.autoregister.builtin.MiddlewareAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.addons.ServiceLoaderAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.events.ListenerAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.http.BodyAutoRegisterHandler;
@@ -32,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.3
+ * @version 1.2.4
  * @see AutoRegisterInfo
  * @see AutoRegisterHandler
  * @since 3.2.0-SNAPSHOT
@@ -53,6 +54,7 @@ public class AutoRegisterRegistry {
         register(new BodyAutoRegisterHandler(craftsNet));
         register(new HandlerAutoRegisterHandler(craftsNet));
         register(new ListenerAutoRegisterHandler(craftsNet));
+        register(new MiddlewareAutoRegisterHandler(craftsNet));
         register(new ServiceLoaderAutoRegisterHandler(craftsNet));
         register(new StreamEncoderAutoRegisterHandler(craftsNet));
         register(new WebRequirementAutoRegisterHandler(craftsNet));
