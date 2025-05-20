@@ -29,10 +29,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
-import java.util.EnumMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -42,7 +39,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.6.0
+ * @version 1.6.1
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -250,9 +247,19 @@ public class WebHandler implements HttpHandler {
                     continue;
 
                 // Call the method of the route handler
-                method.setAccessible(true);
-                method.invoke(handler, passingArgs);
-                method.setAccessible(false);
+                try {
+                    method.setAccessible(true);
+                    method.invoke(handler, passingArgs);
+                } catch (IllegalArgumentException e) {
+                    throw new RuntimeException("Could not call %s#%s(%s) with argument (%s)".formatted(
+                            method.getDeclaringClass().getSimpleName(),
+                            method.getName(),
+                            String.join(", ", Arrays.stream(method.getParameterTypes()).map(Class::getSimpleName).toList()),
+                            String.join(", ", Arrays.stream(passingArgs).map(Object::getClass).map(Class::getSimpleName).toList())
+                    ));
+                } finally {
+                    method.setAccessible(false);
+                }
             }
 
         // Clean up to free up memory

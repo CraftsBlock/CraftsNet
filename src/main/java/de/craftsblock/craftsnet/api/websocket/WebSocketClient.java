@@ -57,7 +57,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.0
+ * @version 3.6.1
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -411,6 +411,13 @@ public class WebSocketClient implements Runnable, RequireAble {
             try {
                 method.setAccessible(true);
                 method.invoke(handler, passingArgs);
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Could not call %s#%s(%s) with argument (%s)".formatted(
+                        method.getDeclaringClass().getSimpleName(),
+                        method.getName(),
+                        String.join(", ", Arrays.stream(method.getParameterTypes()).map(Class::getSimpleName).toList()),
+                        String.join(", ", Arrays.stream(passingArgs).map(Object::getClass).map(Class::getSimpleName).toList())
+                ));
             } finally {
                 method.setAccessible(false);
             }
