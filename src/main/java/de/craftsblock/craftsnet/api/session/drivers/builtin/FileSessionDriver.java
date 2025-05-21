@@ -114,8 +114,7 @@ public class FileSessionDriver implements SessionDriver {
                 saveBuffer.writeUTF(entry.getKey());
                 saveBuffer.writeVarInt(objBytes.length);
                 saveBuffer.write(objBytes);
-            } catch (IOException e) {
-                session.getSessionInfo().getLogger().error(e, "Skipping key " + entry.getKey());
+            } catch (NotSerializableException ignored) {
             }
 
         Path path = Path.of(STORAGE_LOCATION, session.getSessionInfo().getSessionID() + STORAGE_EXTENSION);
