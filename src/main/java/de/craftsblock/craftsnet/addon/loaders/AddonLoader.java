@@ -35,7 +35,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.11
+ * @version 2.1.12
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -138,7 +138,8 @@ public final class AddonLoader {
                 else classpath = new URL[]{file.toURI().toURL()};
 
                 // Put the configuration in the configurations map
-                configurations.add(new AddonConfiguration(file, configuration.json(), classpath, configuration.services(), configuration.addon(), configuration.meta()));
+                configurations.add(new AddonConfiguration(file, configuration.json(), classpath,
+                        configuration.services(), configuration.addon(), configuration.meta(), configuration.classLoader()));
             }
         }
         artifactLoader.stop();
@@ -167,6 +168,8 @@ public final class AddonLoader {
         AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader();
         HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources = new HashMap<>();
 
+        configurations.forEach(configuration -> configuration.classLoader().set(new AddonClassLoader(this.craftsNet, configuration)));
+
         for (AddonConfiguration configuration : configurations)
             try {
                 AddonMeta meta = AddonMeta.of(configuration);
@@ -181,7 +184,7 @@ public final class AddonLoader {
                 logger.info("Found addon " + name + ", add it to load order");
 
                 // Create addon class loader
-                AddonClassLoader classLoader = new AddonClassLoader(this.craftsNet, configuration);
+                AddonClassLoader classLoader = configuration.classLoader().get();
 
                 // Load the main class of the addon using the class loader
                 String className = meta.mainClass();

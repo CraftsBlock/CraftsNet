@@ -3,6 +3,7 @@ package de.craftsblock.craftsnet.addon.meta;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.Addon;
+import de.craftsblock.craftsnet.addon.loaders.AddonClassLoader;
 import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
 import de.craftsblock.craftsnet.addon.loaders.ArtifactLoader;
 import de.craftsblock.craftsnet.addon.meta.annotations.*;
@@ -32,11 +33,12 @@ import java.util.stream.Collectors;
  * @param meta      Reference to the {@link AddonMeta} metadata of the addon.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.0
+ * @version 1.2.1
  * @since 3.1.0-SNAPSHOT
  */
 public record AddonConfiguration(File file, Json json, URL[] classpath, Collection<RegisteredService> services, AtomicReference<Addon> addon,
-                                 AtomicReference<AddonMeta> meta) implements Comparable<AddonConfiguration> {
+                                 AtomicReference<AddonMeta> meta, AtomicReference<AddonClassLoader> classLoader)
+        implements Comparable<AddonConfiguration> {
 
     @ApiStatus.Internal
     private static final ConcurrentHashMap<Class<? extends Addon>, String> MAPPED_NAMES = new ConcurrentHashMap<>();
@@ -50,7 +52,8 @@ public record AddonConfiguration(File file, Json json, URL[] classpath, Collecti
      * @return A new instance of {@link AddonConfiguration}.
      */
     public static AddonConfiguration of(File file, Json json, URL[] classpath, Collection<RegisteredService> services) {
-        return new AddonConfiguration(file, json, classpath, services, new AtomicReference<>(), new AtomicReference<>());
+        return new AddonConfiguration(file, json, classpath, services,
+                new AtomicReference<>(), new AtomicReference<>(), new AtomicReference<>());
     }
 
     /**
