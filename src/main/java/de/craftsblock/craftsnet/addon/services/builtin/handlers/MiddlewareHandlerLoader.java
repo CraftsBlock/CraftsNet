@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.middlewares.MiddlewareRegistry;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since 3.3.6-SNAPSHOT
+ * @since 3.4.0-SNAPSHOT
  */
 public class MiddlewareHandlerLoader implements ServiceLoader<Middleware> {
 

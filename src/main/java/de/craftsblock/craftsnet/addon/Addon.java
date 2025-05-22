@@ -150,7 +150,7 @@ public abstract class Addon {
      * This method is marked as final to prevent subclasses from modifying the registry directly.
      *
      * @return The {@link MiddlewareRegistry} instance used by the addon.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     public final MiddlewareRegistry middlewareRegistry() {
         return craftsNet.middlewareRegistry();

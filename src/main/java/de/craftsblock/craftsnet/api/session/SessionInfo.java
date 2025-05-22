@@ -46,7 +46,7 @@ public class SessionInfo {
      * session cookies are created or deleted.
      *
      * @param referenceCookie The reference instance {@link Cookie cookie}.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     public static void setReferenceCookie(Cookie referenceCookie) {
         REFERENCE_COOKIE.override(referenceCookie);

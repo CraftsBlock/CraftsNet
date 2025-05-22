@@ -46,7 +46,7 @@ public class FileSessionDriver implements SessionDriver {
      *
      * @param session   The {@link Session} instance to be populated with data.
      * @param sessionID The unique identifier of the session.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     @Override
     public boolean exists(Session session, String sessionID) {

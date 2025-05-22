@@ -269,7 +269,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      *
      * @param frame The frame of the incoming message.
      * @return {@code true} if the read loop should be exited, {@code false} otherwise.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     private boolean handleIncomingMessage(Frame frame) throws InvocationTargetException, IllegalAccessException {
         if (frame == null || frame.getOpcode().isUnknown()) {
@@ -314,7 +314,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      *
      * @param frame The frame to process / check.
      * @return {@code true} if the read loop should be ended, {@code false} otherwise.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     private boolean validateOrClose(Frame frame) throws InvocationTargetException, IllegalAccessException {
         return switch (frame.getOpcode()) {
@@ -343,7 +343,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      *
      * @param frame The {@link Frame} to check.
      * @return {@code true} if the frame is a close frame, {@code false} otherwise.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     private boolean isCloseFrame(Frame frame) {
         byte @NotNull [] data = frame.getData();
@@ -376,7 +376,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param mapping The {@link EndpointMapping mapping} which should be handled.
      * @param frame   The {@link Frame} received.
      * @param args    The args that should be passed down.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     private void handleMapping(EndpointMapping mapping, Frame frame, Object[] args) {
         try {
@@ -888,7 +888,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      *
      * @param frames An array of {@link Frame frames} that should be sent.
      * @throws IOException If an IO error occurs while sending the frame.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     private synchronized void sendMessageFrames(Frame... frames) throws IOException {
         for (Frame frame : frames)
@@ -906,7 +906,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      *
      * @param data The bytes that should be sent.
      * @throws IOException If an IO error occurs while sending the bytes.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     private synchronized void sendMessageRaw(byte[] data) throws IOException {
         this.writer.write(data);
@@ -984,7 +984,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * as specified by {@link MiddlewareRegistry#getMiddlewares(Class)}.
      *
      * @return The {@link Stream stream} of {@link WebsocketMiddleware middlewares}.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     private Stream<WebsocketMiddleware> getWebsocketMiddlewares() {
         return Stream.concat(

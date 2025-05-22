@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
  * @see Exchange
  * @see Request
  * @see Response
- * @since 3.3.6-SNAPSHOT
+ * @since 3.4.0-SNAPSHOT
  */
 public interface GenericRequestEventBase {
 
@@ -30,7 +30,7 @@ public interface GenericRequestEventBase {
      * Gets the {@link Request} which is involved in this event.
      *
      * @return The {@link Request}
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     default @NotNull Request getRequest() {
         return getExchange().request();
@@ -40,7 +40,7 @@ public interface GenericRequestEventBase {
      * Gets the {@link Response} which is involved in this event.
      *
      * @return The {@link Response}
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     default @NotNull Response getResponse() {
         return getExchange().response();

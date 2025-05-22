@@ -58,7 +58,7 @@ public class ReceivedPingMessageEvent extends Event implements GenericSocketMess
      * @return The message as a byte array if present, otherwise null.
      * @deprecated Use {@link #getData()} instead.
      */
-    @Deprecated(forRemoval = true, since = "3.3.6-SNAPSHOT")
+    @Deprecated(forRemoval = true, since = "3.4.0-SNAPSHOT")
     public byte @Nullable [] getMessage() {
         return getData();
     }

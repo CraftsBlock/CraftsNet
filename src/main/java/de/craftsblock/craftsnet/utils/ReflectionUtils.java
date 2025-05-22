@@ -99,7 +99,7 @@ public class ReflectionUtils {
      * @return A new instance of the given class type.
      * @throws IllegalStateException if no matching constructor is found for the args.
      * @throws RuntimeException      if the instantiation failed.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     public static <T> @NotNull T getNewInstance(@NotNull Class<T> type, @NotNull Object... args) {
         Class<?>[] argTypes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
@@ -211,7 +211,7 @@ public class ReflectionUtils {
      * @param annotation The class of the annotation to search for.
      * @param <A>        The type of the annotation.
      * @return {@code true} if the annotation is present, {@code false} otherwise.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     public static <A extends Annotation> boolean isAnnotationPresent(Object obj, Class<A> annotation) {
         if (obj instanceof Method method) return method.isAnnotationPresent(annotation);

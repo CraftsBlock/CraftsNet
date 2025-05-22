@@ -49,13 +49,13 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.3.0
+ * @version 3.4.0
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
 
     // Global variables
-    public static final String version = "3.3.5-SNAPSHOT";
+    public static final String version = "3.4.0-SNAPSHOT";
 
     // Local instance
     private CraftsNetBuilder builder;
@@ -458,7 +458,7 @@ public class CraftsNet {
      * {@link de.craftsblock.craftsnet.api.middlewares.Middleware middlewares}
      *
      * @return The {@link MiddlewareRegistry middleware registry} instance.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     public MiddlewareRegistry middlewareRegistry() {
         return middlewareRegistry;

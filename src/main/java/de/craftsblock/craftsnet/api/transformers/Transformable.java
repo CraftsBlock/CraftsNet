@@ -31,7 +31,7 @@ public interface Transformable<R, T> {
      * before invoking {@link #transform(Object)}.
      *
      * @return The parent {@link Transformable transformer}, may be null.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     default @Nullable Class<? extends Transformable<T, ?>> getParent() {
         return null;

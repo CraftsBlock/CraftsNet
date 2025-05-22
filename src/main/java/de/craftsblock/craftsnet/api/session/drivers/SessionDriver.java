@@ -22,7 +22,7 @@ public interface SessionDriver {
      * @param sessionID The unique identifier of the session.
      * @return Returns {@code true} if the session exists in the underlying storage, {@code false} otherwise.
      * @throws IOException If an error occurs while loading the session data.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     boolean exists(Session session, String sessionID) throws IOException;
 

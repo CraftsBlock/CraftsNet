@@ -234,7 +234,7 @@ public class TransformerPerformer {
      * @throws InstantiationException    if the performed {@link Transformable#transform(Object)} method throws an exception.
      * @throws IllegalAccessException    if the access to the constructor of the {@link Transformable} or
      *                                   if the access to the method {@link Transformable#transform(Object)} is restricted.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     private Object transform(String parameter, Transformer transformer, Class<? extends Transformable<?, ?>> type) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         Transformable<?, ?> transformable = type.cast(type.getDeclaredConstructor().newInstance());

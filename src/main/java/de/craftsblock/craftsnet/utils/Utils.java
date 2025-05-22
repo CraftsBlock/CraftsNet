@@ -95,7 +95,7 @@ public class Utils {
      *
      * @param phrase The string where the readable ips are present
      * @return The string containing the blurred ip addresses.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     public static String blurIPs(String phrase) {
         Matcher matcher = IP_SEARCHER.matcher(phrase);

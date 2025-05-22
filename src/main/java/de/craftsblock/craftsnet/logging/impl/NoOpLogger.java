@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.1.0
- * @since 3.3.6-SNAPSHOT
+ * @since 3.4.0-SNAPSHOT
  */
 public record NoOpLogger(Logger previous) implements Logger {
 

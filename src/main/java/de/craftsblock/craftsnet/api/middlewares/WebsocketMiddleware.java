@@ -18,7 +18,7 @@ import de.craftsblock.craftsnet.events.sockets.message.OutgoingSocketMessageEven
  * @author CraftsBlock
  * @version 1.0.0
  * @see Middleware
- * @since 3.3.6-SNAPSHOT
+ * @since 3.4.0-SNAPSHOT
  */
 public interface WebsocketMiddleware extends Middleware {
 

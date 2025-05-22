@@ -16,7 +16,7 @@ application {
 }
 
 group = 'de.craftsblock'
-version = '3.3.5-SNAPSHOT'
+version = '3.4.0-SNAPSHOT'
 
 repositories {
     mavenCentral()

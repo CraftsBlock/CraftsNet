@@ -97,7 +97,7 @@ class LoggerPrintStream extends PrintStream {
      *
      * @param input The log line.
      * @return The mutated log line.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     protected String mutateLogLine(String input) {
         if (logStreamMutator.getCraftsNet().getBuilder().shouldHideIps())

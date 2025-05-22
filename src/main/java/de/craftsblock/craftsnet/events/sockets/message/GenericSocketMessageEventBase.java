@@ -15,7 +15,7 @@ import org.jetbrains.annotations.NotNull;
  * @see Frame
  * @see ByteBuffer
  * @see Opcode
- * @since 3.3.6-SNAPSHOT
+ * @since 3.4.0-SNAPSHOT
  */
 public interface GenericSocketMessageEventBase extends GenericSocketEventBase {
 

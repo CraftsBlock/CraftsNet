@@ -223,7 +223,7 @@ public class LogStreamMutator {
      *
      * @return The {@link OutputStream} which log to a file, or null otherwise.
      * @throws IOException If the log file stream creation fails.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     private @Nullable OutputStream createFileLogStream() throws IOException {
         if (!this.logToFiles) return null;

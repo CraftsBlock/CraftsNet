@@ -461,7 +461,7 @@ public class Response implements AutoCloseable {
      *
      * @param key The "name" of the header used to find the header
      * @return A list of alle the values
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     public List<String> getHeaders(String key) {
         return getHeaders().get(key);
@@ -471,7 +471,7 @@ public class Response implements AutoCloseable {
      * Allows raw access to the underlying {@link Headers} object, which stores the response headers.
      *
      * @return The {@link Headers} object storing the response headers.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     public Headers getHeaders() {
         return headers;

@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
  * @see SocketExchange
  * @see WebSocketClient
  * @see WebSocketServer
- * @since 3.3.6-SNAPSHOT
+ * @since 3.4.0-SNAPSHOT
  */
 public interface GenericSocketEventBase {
 
@@ -30,7 +30,7 @@ public interface GenericSocketEventBase {
      * Gets the {@link WebSocketClient} which is involved in this event.
      *
      * @return The {@link WebSocketClient}.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     default @NotNull WebSocketClient getClient() {
         return getExchange().client();
@@ -40,7 +40,7 @@ public interface GenericSocketEventBase {
      * Gets the {@link WebSocketServer} which is involved in this event.
      *
      * @return The {@link WebSocketServer}.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     default @NotNull WebSocketServer getServer() {
         return getExchange().server();

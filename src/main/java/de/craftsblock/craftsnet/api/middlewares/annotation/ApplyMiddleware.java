@@ -12,7 +12,7 @@ import java.lang.annotation.*;
  * @author Philipp Maywald
  * @author CraftsBlock
  * @version 1.0.0
- * @since 3.3.6-SNAPSHOT
+ * @since 3.4.0-SNAPSHOT
  */
 @Documented
 @Repeatable(ApplyMiddleware.List.class)
@@ -35,7 +35,7 @@ public @interface ApplyMiddleware {
      * @author Philipp Maywald
      * @author CraftsBlock
      * @version 1.0.0
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     @Documented
     @Retention(RetentionPolicy.RUNTIME)

@@ -88,7 +88,7 @@ public enum ClosureCode {
 
     /**
      * List of all {@link ClosureCode closure codes} that are specified in RFC 6455.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     public static final List<Integer> SPECIFIED_CODES = Arrays.stream(ClosureCode.values()).map(ClosureCode::intValue).toList();
 

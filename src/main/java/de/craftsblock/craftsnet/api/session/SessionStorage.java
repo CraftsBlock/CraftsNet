@@ -69,7 +69,7 @@ public class SessionStorage {
      * Checks if the session exists in the underlying {@link SessionDriver driver}.
      *
      * @return {@code true} if the session exists in the {@link SessionDriver driver}, {@code false} otherwise.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     public boolean exists() {
         try {
@@ -153,7 +153,7 @@ public class SessionStorage {
      *
      * @param type The {@link JobType} which will be performed.
      * @param args An array of objects which can be passed down to the driver.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     private void forcePerformJob(JobType type, Object... args) {
         try {
@@ -239,7 +239,7 @@ public class SessionStorage {
      * @author Philipp Maywald
      * @author CraftsBlock
      * @version 1.0.0
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     private record QueuedJob(JobType type, Object... args) {
 

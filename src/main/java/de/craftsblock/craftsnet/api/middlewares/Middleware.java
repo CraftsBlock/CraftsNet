@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.Server;
  * @author CraftsBlock
  * @version 1.0.0
  * @see MiddlewareCallbackInfo
- * @since 3.3.6-SNAPSHOT
+ * @since 3.4.0-SNAPSHOT
  */
 public interface Middleware {
 

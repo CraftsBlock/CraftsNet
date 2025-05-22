@@ -379,7 +379,7 @@ public class CraftsNetBuilder {
      *
      * @param enabled {@code true} if ips should be readable in the log, {@code false} otherwise.
      * @return The {@link CraftsNetBuilder} instance.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     public CraftsNetBuilder withIpsInLog(boolean enabled) {
         this.hideIpsInLog = !enabled;
@@ -603,7 +603,7 @@ public class CraftsNetBuilder {
      * Checks if ips should be hidden in the log output.
      *
      * @return {@code true} if ips should be hidden, {@code false} otherwise.
-     * @since 3.3.6-SNAPSHOT
+     * @since 3.4.0-SNAPSHOT
      */
     public boolean shouldHideIps() {
         return hideIpsInLog;
