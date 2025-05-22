@@ -4,6 +4,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.BaseExchange;
 import de.craftsblock.craftsnet.api.http.Exchange;
 import de.craftsblock.craftsnet.api.http.Request;
+import de.craftsblock.craftsnet.api.http.cookies.Cookie;
 import de.craftsblock.craftsnet.api.http.cookies.SameSite;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
 import de.craftsblock.craftsnet.logging.Logger;
@@ -22,7 +23,7 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.0.5
+ * @version 3.1.0
  * @see Session
  * @see BaseExchange
  * @since 3.0.6-SNAPSHOT
@@ -33,6 +34,23 @@ public class SessionInfo {
      * The name of the cookie used to store session identifiers.
      */
     public static final String SID_COOKIE_NAME = "CNET_SID";
+
+    /**
+     * The reference {@link Cookie}
+     */
+    public static final Cookie REFERENCE_COOKIE = new Cookie(SID_COOKIE_NAME, null).setHttpOnly(true)
+            .setPath("/").setSameSite(SameSite.LAX);
+
+    /**
+     * Setting the reference {@link Cookie cookie} whose parameters are used when
+     * session cookies are created or deleted.
+     *
+     * @param referenceCookie The reference instance {@link Cookie cookie}.
+     * @since 3.3.6-SNAPSHOT
+     */
+    public static void setReferenceCookie(Cookie referenceCookie) {
+        REFERENCE_COOKIE.override(referenceCookie);
+    }
 
     private final Session session;
 
@@ -95,8 +113,8 @@ public class SessionInfo {
         this.persistent = true;
 
         if (this.session.getExchange() instanceof Exchange http)
-            http.response().setCookie(SID_COOKIE_NAME, this.sessionID).setHttpOnly(true)
-                    .setPath("/").setSameSite(SameSite.LAX);
+            http.response().setCookie(SID_COOKIE_NAME)
+                    .override(REFERENCE_COOKIE).setValue(this.sessionID);
 
         if (craftsNet != null)
             craftsNet.sessionCache().put(this.sessionID, this.session);
@@ -114,8 +132,8 @@ public class SessionInfo {
         this.session.getSessionStorage().destroy();
 
         if (this.session.getExchange() instanceof Exchange http)
-            http.response().deleteCookie(SID_COOKIE_NAME).setHttpOnly(true)
-                    .setPath("/").setSameSite(SameSite.LAX);
+            http.response().deleteCookie(SID_COOKIE_NAME)
+                    .override(REFERENCE_COOKIE);
 
         this.sessionID = null;
         this.persistent = false;
