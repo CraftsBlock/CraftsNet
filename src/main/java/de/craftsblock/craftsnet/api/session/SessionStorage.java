@@ -6,8 +6,8 @@ import de.craftsblock.craftsnet.api.session.drivers.builtin.FileSessionDriver;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
 import org.jetbrains.annotations.ApiStatus;
 
-import java.io.*;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.io.IOException;
+import java.util.Queue;
 
 /**
  * Handles the persistence of session data by providing functionality for loading, saving,
@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentLinkedDeque;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.3.3
+ * @version 3.4.0
  * @see Session
  * @see ByteBuffer
  * @since 3.3.0-SNAPSHOT
@@ -47,7 +47,7 @@ public class SessionStorage {
     }
 
     private final Session session;
-    private final ConcurrentLinkedDeque<JobType> actionQueue = new ConcurrentLinkedDeque<>();
+    private final Queue<QueuedJob> actionQueue = new LinkedBlockingQueue<>();
 
     private SessionDriver driver;
 
@@ -140,6 +140,22 @@ public class SessionStorage {
 
         busy = true;
         try {
+            this.forcePerformJob(type, args);
+        } finally {
+            completeJob();
+        }
+    }
+
+    /**
+     * Force performs a job. If the session is currently not persistent nothing
+     * will happen.
+     *
+     * @param type The {@link JobType} which will be performed.
+     * @param args An array of objects which can be passed down to the driver.
+     * @since 3.3.6-SNAPSHOT
+     */
+    private void forcePerformJob(JobType type, Object... args) {
+        try {
             String sessionID = this.session.getSessionInfo().getSessionID();
             switch (type) {
                 case LOAD -> this.driver.load(this.session, sessionID);
@@ -149,8 +165,6 @@ public class SessionStorage {
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
-        } finally {
-            completeJob();
         }
     }
 
@@ -165,16 +179,10 @@ public class SessionStorage {
             if (actionQueue.isEmpty()) return;
 
             handlingActionQueue = true;
-            actionQueue.forEach(action -> {
-                busy = false;
-                switch (action) {
-                    case LOAD -> this.load();
-                    case SAVE -> this.save();
-                    case DESTROY -> this.destroy();
-                }
 
-                actionQueue.remove(action);
-            });
+            QueuedJob job;
+            while ((job = actionQueue.poll()) != null)
+                forcePerformJob(job.type(), job.args());
         } finally {
             busy = false;
             handlingActionQueue = false;
@@ -184,15 +192,13 @@ public class SessionStorage {
     /**
      * Checks if the session file is busy. If busy, queues the action for execution once the current job is completed.
      *
-     * @param jobType The action to queue for later execution.
+     * @param type The action to queue for later execution.
      * @return {@code true} if the runnable was queued, {@code false} if the manager was not busy and no action was queued.
      */
-    public boolean availableOrQueue(JobType jobType) {
-        if (!isBusy()) return false;
+    public boolean availableOrQueue(JobType type, Object... args) {
+        if (!isBusy() && !handlingActionQueue) return false;
 
-        if (actionQueue.getLast().equals(jobType)) return true;
-        actionQueue.add(jobType);
-
+        actionQueue.offer(new QueuedJob(type, args));
         return true;
     }
 
@@ -222,6 +228,20 @@ public class SessionStorage {
      */
     public Session getSession() {
         return session;
+    }
+
+    /**
+     * Represents a queued job.
+     *
+     * @param type The {@link JobType}.
+     * @param args Additional arguments.
+     * @author Philipp Maywald
+     * @author CraftsBlock
+     * @version 1.0.0
+     * @since 3.3.6-SNAPSHOT
+     */
+    private record QueuedJob(JobType type, Object... args) {
+
     }
 
     /**
