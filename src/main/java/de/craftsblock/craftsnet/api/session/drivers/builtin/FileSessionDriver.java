@@ -8,6 +8,7 @@ import java.io.*;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -23,7 +24,7 @@ import java.util.Map;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.0
+ * @version 1.1.1
  * @see Session
  * @see SessionDriver
  * @since 3.3.5-SNAPSHOT
@@ -90,8 +91,10 @@ public class FileSessionDriver implements SessionDriver {
                     throw new RuntimeException(e);
                 }
             }
+        } catch (OverlappingFileLockException e) {
+            throw new RuntimeException("Could not lock session file!", e);
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Could not load persistent session data!", e);
         }
     }
 
@@ -138,6 +141,8 @@ public class FileSessionDriver implements SessionDriver {
             } finally {
                 if (lock != null) lock.release();
             }
+        } catch (OverlappingFileLockException e) {
+            throw new RuntimeException("Could not lock session file!", e);
         }
     }
 
@@ -149,9 +154,13 @@ public class FileSessionDriver implements SessionDriver {
      */
     @Override
     public void destroy(Session session, String sessionID) {
-        File data = new File(STORAGE_LOCATION, sessionID + STORAGE_EXTENSION);
-        if (!data.exists()) return;
-        data.delete();
+        try {
+            Path data = Path.of(STORAGE_LOCATION, sessionID + STORAGE_EXTENSION);
+            if (Files.notExists(data)) return;
+            Files.delete(data);
+        } catch (IOException e) {
+            throw new RuntimeException("Could not delete session data!", e);
+        }
     }
 
 }
