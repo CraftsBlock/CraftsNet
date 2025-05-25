@@ -221,7 +221,7 @@ public class Frame implements RequireAble {
             throw new IllegalStateException("Tried to append a frame whose opcode is not continuation!");
 
         if (this.isFinalFrame())
-            throw new IllegalStateException("Tried to append a frame while the current frame was already the last one!");
+            throw new IllegalStateException("Tried to append a frame to a final frame!");
 
         byte[] mergedData = new byte[this.getData().length + frame.getData().length];
         System.arraycopy(this.getData(), 0, mergedData, 0, this.getData().length);
