@@ -50,7 +50,7 @@ dependencies {
     implementation 'org.apache.maven.resolver:maven-resolver-supplier:2.0.0-alpha-8'
 }
 
-tasks.withType(JavaCompile) {
+tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
