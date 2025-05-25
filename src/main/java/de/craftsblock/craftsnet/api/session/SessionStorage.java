@@ -23,7 +23,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.4.0
+ * @version 3.4.1
  * @see Session
  * @see ByteBuffer
  * @since 3.3.0-SNAPSHOT
@@ -53,7 +53,6 @@ public class SessionStorage {
     private SessionDriver driver;
 
     private boolean busy = false;
-    private boolean handlingActionQueue = false;
 
     /**
      * Constructs a new {@link SessionStorage} instance for managing the specified session.
@@ -173,20 +172,17 @@ public class SessionStorage {
      * Completes all jobs in the queue and marks the session file as not busy.
      * Ensures thread safety and prevents concurrent modification issues.
      */
-    private void completeJob() {
-        if (handlingActionQueue) return;
+    private synchronized void completeJob() {
+        if (actionQueue.isEmpty()) return;
 
         try {
-            if (actionQueue.isEmpty()) return;
-
-            handlingActionQueue = true;
-
             QueuedJob job;
             while ((job = actionQueue.poll()) != null)
-                forcePerformJob(job.type(), job.args());
+                this.forcePerformJob(job.type(), job.args());
+
+            if (!actionQueue.isEmpty()) this.completeJob();
         } finally {
             busy = false;
-            handlingActionQueue = false;
         }
     }
 
@@ -197,7 +193,7 @@ public class SessionStorage {
      * @return {@code true} if the runnable was queued, {@code false} if the manager was not busy and no action was queued.
      */
     public boolean availableOrQueue(JobType type, Object... args) {
-        if (!isBusy() && !handlingActionQueue) return false;
+        if (!isBusy()) return false;
 
         actionQueue.offer(new QueuedJob(type, args));
         return true;
