@@ -27,7 +27,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.2
+ * @version 1.2.e
  * @since 2.1.1-SNAPSHOT
  */
 public class SSL {
@@ -70,7 +70,7 @@ public class SSL {
         keyStore.load(null);
 
         File privkeyFile = file(privkey);
-        String key = PassphraseUtils.generateSecure();
+        String key = PassphraseUtils.stringify(PassphraseUtils.generateSecure());
         try (InputStream fullchainStream = new FileInputStream(file(fullchain));
              InputStream privateKeyStream = new FileInputStream(privkeyFile)) {
             X509Certificate[] certificates = getCertificateChain(fullchainStream);

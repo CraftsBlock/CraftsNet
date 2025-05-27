@@ -23,7 +23,7 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.1.2
+ * @version 3.1.3
  * @see Session
  * @see BaseExchange
  * @since 3.0.6-SNAPSHOT
@@ -109,7 +109,7 @@ public class SessionInfo {
         compatibleOrThrow();
         if (isPersistent()) return;
 
-        this.sessionID = PassphraseUtils.generateSecure(20, false);
+        this.sessionID = PassphraseUtils.stringify(PassphraseUtils.generateSecure(20, false));
         this.persistent = true;
 
         if (this.session.getExchange() instanceof Exchange http)
