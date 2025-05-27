@@ -11,6 +11,7 @@ import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.PassphraseUtils;
 import org.jetbrains.annotations.Nullable;
 
+import java.sql.SQLOutput;
 import java.util.Objects;
 
 /**
@@ -23,7 +24,7 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.1.4
+ * @version 3.1.5
  * @see Session
  * @see BaseExchange
  * @since 3.0.6-SNAPSHOT
@@ -88,8 +89,9 @@ public class SessionInfo {
 
         // Must be true because SessionStorage#exists relies on #persistent
         this.persistent = true;
-        if (!this.session.getSessionStorage().exists()) {
-            this.persistent = false;
+        this.secureSession();
+        if (!this.persistent) {
+            this.session.exchange = exchange;
             return;
         }
 
@@ -97,6 +99,23 @@ public class SessionInfo {
             this.craftsNet.sessionCache().put(this.sessionID, this.session);
 
         this.session.getSessionStorage().load();
+    }
+
+    /**
+     * Performs a quick session check against the session storage
+     * to validate that the current session is a real session.
+     *
+     * @return {@link Session} for method chaining in {@link SessionCache}.
+     * @since 3.4.3-SNAPSHOT
+     */
+    protected Session secureSession() {
+        if (!this.session.getSessionStorage().exists()) {
+            this.session.exchange = null;
+            this.session.stopSession();
+            this.session.clear();
+        }
+
+        return session;
     }
 
     /**
@@ -146,6 +165,7 @@ public class SessionInfo {
      * @throws IllegalStateException if the current exchange is not compatible.
      */
     private void compatibleOrThrow() {
+        if (this.session.getExchange() == null) return;
         if (this.session.getExchange() instanceof Exchange http) {
             if (http.response().headersSent())
                 throw new IllegalStateException("The response headers have already been sent!");

@@ -9,7 +9,7 @@ import de.craftsblock.craftscore.cache.Cache;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @see Session
  * @since 3.3.0-SNAPSHOT
  */
@@ -40,7 +40,7 @@ public class SessionCache extends Cache<String, Session> {
      * if the key is not present in the cache.
      */
     public Session getOrNew(String key) {
-        return key != null && containsKey(key) ? get(key) : new Session();
+        return key != null && containsKey(key) ? get(key).getSessionInfo().secureSession() : new Session();
     }
 
 }

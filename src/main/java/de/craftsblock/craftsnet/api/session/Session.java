@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.3.0-SNAPSHOT
  */
 public class Session extends ConcurrentHashMap<String, Object> implements AutoCloseable {
@@ -20,7 +20,7 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
     private final SessionInfo sessionInfo;
     private final SessionStorage sessionStorage;
 
-    private BaseExchange exchange;
+    protected BaseExchange exchange;
 
     /**
      * Creates a new instance of {@code Session} without an active session.
