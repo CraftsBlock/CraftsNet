@@ -23,7 +23,7 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.1.3
+ * @version 3.1.4
  * @see Session
  * @see BaseExchange
  * @since 3.0.6-SNAPSHOT
@@ -133,7 +133,7 @@ public class SessionInfo {
 
         if (this.session.getExchange() instanceof Exchange http)
             http.response().deleteCookie(SID_COOKIE_NAME)
-                    .override(REFERENCE_COOKIE).setValue(this.sessionID).markDeleted();
+                    .override(REFERENCE_COOKIE).markDeleted();
 
         this.sessionID = null;
         this.persistent = false;
