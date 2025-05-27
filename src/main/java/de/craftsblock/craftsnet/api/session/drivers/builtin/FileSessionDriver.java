@@ -24,7 +24,7 @@ import java.util.Map;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.1
+ * @version 1.1.2
  * @see Session
  * @see SessionDriver
  * @since 3.3.5-SNAPSHOT
@@ -73,6 +73,12 @@ public class FileSessionDriver implements SessionDriver {
         if (!this.exists(session, sessionID)) return;
 
         Path path = Path.of(STORAGE_LOCATION, session.getSessionInfo().getSessionID() + STORAGE_EXTENSION);
+
+        try {
+            if (Files.size(path) <= 0) return;
+        } catch (IOException e) {
+            throw new RuntimeException("Could not retrieve file size of session file!", e);
+        }
 
         try (FileChannel channel = FileChannel.open(path);
              InputStream stream = Channels.newInputStream(channel);
