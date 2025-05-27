@@ -13,7 +13,7 @@ import java.util.stream.Stream;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 2.0.0
+ * @version 2.0.1
  * @since 3.3.5-SNAPSHOT
  */
 public class PassphraseUtils {
@@ -121,7 +121,7 @@ public class PassphraseUtils {
             chars[i] = characters.get(index);
         }
 
-        byte[] passphrase = Utils.secureEncode(chars, StandardCharsets.UTF_8);
+        byte[] passphrase = SecureEncodingUtils.encode(chars, StandardCharsets.UTF_8);
         erase(chars);
         return passphrase;
     }
