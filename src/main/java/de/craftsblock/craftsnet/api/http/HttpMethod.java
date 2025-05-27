@@ -3,6 +3,7 @@ package de.craftsblock.craftsnet.api.http;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * The RequestMethod enum represents the different HTTP request methods, such as POST, GET, PUT, DELETE, PATCH, and HEAD.
@@ -11,7 +12,7 @@ import java.util.Arrays;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1
+ * @version 1.1.1
  * @see Route
  * @since 1.0.0-SNAPSHOT
  */
@@ -121,8 +122,14 @@ public enum HttpMethod {
      */
     public static String[] convert(HttpMethod... methods) {
         return Arrays.stream(methods)
-                .filter(method -> method != UNKNOWN && method != ALL)
-                .flatMap(method -> Arrays.stream(method.getMethods()))
+                .filter(Objects::nonNull)
+                .filter(method -> !method.equals(UNKNOWN))
+                .distinct()
+                .flatMap(method -> switch (method) {
+                    case ALL, ALL_RAW -> Arrays.stream(method.getMethods());
+                    default -> Arrays.stream(new String[]{method.name()});
+                })
+                .filter(Objects::nonNull)
                 .distinct()
                 .toArray(String[]::new);
     }
