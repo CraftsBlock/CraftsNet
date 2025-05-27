@@ -27,7 +27,7 @@ dependencies {
     // CraftsBlock related dependencies ---------------------------------------------------------------------------------------
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore
-    implementation 'de.craftsblock:craftscore:3.8.3-SNAPSHOT'
+    implementation 'de.craftsblock:craftscore:3.8.4-SNAPSHOT'
 
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
