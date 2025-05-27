@@ -24,7 +24,7 @@ import java.util.Map;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.2
+ * @version 1.1.3
  * @see Session
  * @see SessionDriver
  * @since 3.3.5-SNAPSHOT
@@ -55,7 +55,7 @@ public class FileSessionDriver implements SessionDriver {
             if (path.getParent() != null && !Files.exists(path.getParent()))
                 Files.createDirectories(path.getParent());
 
-            return Files.exists(path);
+            return Files.exists(path) && Files.isRegularFile(path);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
