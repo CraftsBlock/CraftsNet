@@ -16,7 +16,7 @@ import java.nio.charset.CoderResult;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.0
+ * @version 1.1.1
  * @since 3.4.1-SNAPSHOT
  */
 public class SecureEncodingUtils {
@@ -74,7 +74,7 @@ public class SecureEncodingUtils {
      */
     public static char[] decode(byte[] bytes, Charset charset) {
         CharsetDecoder decoder = charset.newDecoder();
-        java.nio.ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
 
         try {
             int maxChars = (int) (decoder.maxCharsPerByte() * bytes.length);

@@ -2,11 +2,13 @@ package de.craftsblock.craftsnet.api.ssl;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.utils.PassphraseUtils;
+import de.craftsblock.craftsnet.utils.SecureEncodingUtils;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.security.cert.*;
@@ -27,7 +29,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.e
+ * @version 1.2.4
  * @since 2.1.1-SNAPSHOT
  */
 public class SSL {
@@ -70,7 +72,11 @@ public class SSL {
         keyStore.load(null);
 
         File privkeyFile = file(privkey);
-        String key = PassphraseUtils.stringify(PassphraseUtils.generateSecure());
+
+        byte[] passphrase = PassphraseUtils.generateSecure();
+        char[] key = SecureEncodingUtils.decode(passphrase, StandardCharsets.UTF_8);
+        PassphraseUtils.erase(passphrase);
+
         try (InputStream fullchainStream = new FileInputStream(file(fullchain));
              InputStream privateKeyStream = new FileInputStream(privkeyFile)) {
             X509Certificate[] certificates = getCertificateChain(fullchainStream);
@@ -103,11 +109,13 @@ public class SSL {
                 return null;
             }
 
-            keyStore.setKeyEntry("privateKey", privateKey, key.toCharArray(), certificates);
+            keyStore.setKeyEntry("privateKey", privateKey, key, certificates);
         }
 
         KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(keyStore, key.toCharArray());
+        keyManagerFactory.init(keyStore, key);
+
+        PassphraseUtils.erase(key);
 
         TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
         trustManagerFactory.init(keyStore);
