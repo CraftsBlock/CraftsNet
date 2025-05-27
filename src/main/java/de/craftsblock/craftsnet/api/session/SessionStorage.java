@@ -23,7 +23,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.4.1
+ * @version 3.4.2
  * @see Session
  * @see ByteBuffer
  * @since 3.3.0-SNAPSHOT
@@ -173,9 +173,9 @@ public class SessionStorage {
      * Ensures thread safety and prevents concurrent modification issues.
      */
     private synchronized void completeJob() {
-        if (actionQueue.isEmpty()) return;
-
         try {
+            if (actionQueue.isEmpty()) return;
+
             QueuedJob job;
             while ((job = actionQueue.poll()) != null)
                 this.forcePerformJob(job.type(), job.args());
