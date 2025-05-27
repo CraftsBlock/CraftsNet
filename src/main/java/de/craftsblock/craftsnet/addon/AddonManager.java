@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.addon;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
+import de.craftsblock.craftsnet.events.addons.AllAddonsDisabledEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -9,6 +10,7 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -21,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.1
+ * @version 1.2.2
  * @see Addon
  * @see AddonLoader
  * @since 1.0.0-SNAPSHOT
@@ -77,6 +79,13 @@ public final class AddonManager {
             logger.info("Disabling addon " + addon.getName());
             this.unregister(addon);
         });
+
+        try {
+            craftsNet.listenerRegistry().call(new AllAddonsDisabledEvent());
+        } catch (InvocationTargetException | IllegalAccessException e) {
+            craftsNet.logger().error(e, "Error while performing the all addons disabled event!");
+        }
+
         addons.clear();
     }
 
