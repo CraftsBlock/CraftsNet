@@ -16,7 +16,7 @@ import java.nio.charset.CoderResult;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.1.0
  * @since 3.4.1-SNAPSHOT
  */
 public class SecureEncodingUtils {
@@ -60,6 +60,44 @@ public class SecureEncodingUtils {
             return bytes;
         } catch (Exception e) {
             throw new RuntimeException("UTF-8 encoding failed", e);
+        }
+    }
+
+    /**
+     * Decodes the given byte array into a char array using the specified charset.
+     *
+     * @param bytes   The byte array containing the encoded characters; must not be null
+     * @param charset The charset to use for decoding; must not be null
+     * @return A char array containing the decoded characters
+     * @throws RuntimeException     If decoding fails for any reason
+     * @throws NullPointerException If bytes or charset is null
+     */
+    public static char[] decode(byte[] bytes, Charset charset) {
+        CharsetDecoder decoder = charset.newDecoder();
+        java.nio.ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+
+        try {
+            int maxChars = (int) (decoder.maxCharsPerByte() * bytes.length);
+            CharBuffer charBuffer = CharBuffer.allocate(maxChars);
+
+            CoderResult decoded = decoder.decode(byteBuffer, charBuffer, true);
+            if (!decoded.isUnderflow()) decoded.throwException();
+
+            CoderResult result = decoder.flush(charBuffer);
+            if (!result.isUnderflow()) result.throwException();
+
+            charBuffer.flip();
+            char[] chars = new char[charBuffer.limit()];
+            charBuffer.get(chars);
+
+            // Clear buffer to minimize sensitive data retention
+            charBuffer.clear();
+            for (int i = 0; i < maxChars; i++)
+                charBuffer.put('\0');
+
+            return chars;
+        } catch (Exception e) {
+            throw new RuntimeException("Decoding failed", e);
         }
     }
 
