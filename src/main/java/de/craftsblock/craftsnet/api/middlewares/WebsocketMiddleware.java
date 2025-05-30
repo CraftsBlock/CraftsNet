@@ -64,6 +64,7 @@ public interface WebsocketMiddleware extends Middleware {
      * @param callbackInfo The {@link MiddlewareCallbackInfo callback info} that is used
      *                     to store data between middlewares.
      * @param exchange     The exchange holding the data of the websocket session.
+     * @param frame        The frame which was received.
      */
     default void handleMessageReceived(MiddlewareCallbackInfo callbackInfo, SocketExchange exchange, Frame frame) {
         handle(callbackInfo, exchange);
@@ -79,6 +80,7 @@ public interface WebsocketMiddleware extends Middleware {
      * @param callbackInfo The {@link MiddlewareCallbackInfo callback info} that is used
      *                     to store data between middlewares.
      * @param exchange     The exchange holding the data of the websocket session.
+     * @param frame        The frame which was sent.
      */
     default void handleMessageSent(MiddlewareCallbackInfo callbackInfo, SocketExchange exchange, Frame frame) {
         handle(callbackInfo, exchange);

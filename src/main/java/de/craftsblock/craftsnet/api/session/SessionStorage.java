@@ -190,6 +190,7 @@ public class SessionStorage {
      * Checks if the session file is busy. If busy, queues the action for execution once the current job is completed.
      *
      * @param type The action to queue for later execution.
+     * @param args The args which should be passed to the driver.
      * @return {@code true} if the runnable was queued, {@code false} if the manager was not busy and no action was queued.
      */
     public boolean availableOrQueue(JobType type, Object... args) {

@@ -156,6 +156,8 @@ public class ReflectionUtils {
      * Extracts the generic type parameter from a Class.
      *
      * @param clazz The Class to extract the generic type from.
+     * @param base  The base class at which will be stopped, when no generics are found. (exklusive)
+     * @param index The index of the generic.
      * @param <T>   The type of handler.
      * @return The class type corresponding to the handler's generic type.
      */
@@ -186,6 +188,7 @@ public class ReflectionUtils {
      * Extracts the generic type {@link T} from a given class.
      *
      * @param clazz The class loader from which to extract the generic type.
+     * @param index The index of the generic.
      * @param <T>   The type of service handled by the service loader.
      * @return The {@link Class} object representing the generic type {@link T}, or null if unable to extract.
      * @see ParameterizedType

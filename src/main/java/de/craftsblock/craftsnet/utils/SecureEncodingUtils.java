@@ -1,5 +1,7 @@
 package de.craftsblock.craftsnet.utils;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -30,11 +32,12 @@ public class SecureEncodingUtils {
     /**
      * Encodes a given array of chars into a byte array.
      *
-     * @param chars the input character array to encode
+     * @param chars   The input character array to encode
+     * @param charset The charset to use for encoding; must not be null
      * @return A byte array containing the bytes of the input characters
      * @throws RuntimeException If the encoding fails
      */
-    public static byte[] encode(char[] chars, Charset charset) {
+    public static byte[] encode(char @NotNull [] chars, @NotNull Charset charset) {
         CharsetEncoder encoder = charset.newEncoder();
         CharBuffer charBuffer = CharBuffer.wrap(chars);
 
@@ -72,7 +75,7 @@ public class SecureEncodingUtils {
      * @throws RuntimeException     If decoding fails for any reason
      * @throws NullPointerException If bytes or charset is null
      */
-    public static char[] decode(byte[] bytes, Charset charset) {
+    public static char[] decode(byte @NotNull [] bytes, @NotNull Charset charset) {
         CharsetDecoder decoder = charset.newDecoder();
         ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
 

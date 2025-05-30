@@ -46,9 +46,10 @@ public class LogStreamMutator {
     /**
      * Constructs a new {@link LogStreamMutator} instance with a specified maximum number of log files.
      *
-     * @param craftsNet The instance of {@link CraftsNet}, which is using this logging utils.
-     * @param max       the maximum number of log files to retain. Once this limit is reached, older log files
-     *                  may be deleted or rotated out to maintain the limit.
+     * @param craftsNet  The instance of {@link CraftsNet}, which is using this logging utils.
+     * @param logToFiles {@code true} if logging to files is enabled, {@code false} otherwise.
+     * @param max        the maximum number of log files to retain. Once this limit is reached, older log files
+     *                   may be deleted or rotated out to maintain the limit.
      */
     public LogStreamMutator(CraftsNet craftsNet, boolean logToFiles, long max) {
         this.craftsNet = craftsNet;

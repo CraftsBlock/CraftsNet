@@ -107,6 +107,7 @@ public final class ArtifactLoader {
     /**
      * Loads libraries for a specific addon based on the provided library coordinates.
      *
+     * @param craftsNet   The {@link CraftsNet} instance that loads the libraries.
      * @param addonLoader The addon loader responsible for loading services.
      * @param services    The list with the currently registered services.
      * @param addon       The name of the addon for which libraries are being loaded.

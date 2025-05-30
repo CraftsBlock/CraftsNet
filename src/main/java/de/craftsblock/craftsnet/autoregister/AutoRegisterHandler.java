@@ -35,6 +35,7 @@ public abstract class AutoRegisterHandler<T> {
      * by subclasses to define the specific logic for handling objects of type {@link  T}.
      *
      * @param t    The object to handle.
+     * @param info The {@link AutoRegisterInfo} which holds more information about the object.
      * @param args Additional arguments that may be passed during the registration process.
      * @return {@code true} if the object was handled successfully, {@code false} otherwise.
      */

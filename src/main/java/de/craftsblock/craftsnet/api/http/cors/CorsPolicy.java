@@ -25,7 +25,7 @@ import java.util.List;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.1.0
  */
 public class CorsPolicy {

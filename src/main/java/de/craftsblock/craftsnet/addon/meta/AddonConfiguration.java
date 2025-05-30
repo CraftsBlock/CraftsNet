@@ -46,6 +46,7 @@ public record AddonConfiguration(File file, Json json, URL[] classpath, Collecti
     /**
      * Creates an {@link AddonConfiguration} instance from the provided params.
      *
+     * @param file      The jar file
      * @param json      Content of the addon.json
      * @param classpath Classpath of the jar file
      * @param services  Services that should be registered
