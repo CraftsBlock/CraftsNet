@@ -25,10 +25,47 @@ import java.util.List;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.1.0
  */
 public class CorsPolicy {
+
+    /**
+     * The http header that specifies which origin sites are allowed to access the resource.
+     */
+    public static final String ALLOW_ORIGIN_HEADER = "Access-Control-Allow-Origin";
+
+    /**
+     * The http header that indicates which http methods are permitted when accessing the resource.
+     */
+    public static final String ALLOW_METHODS_HEADER = "Access-Control-Allow-Methods";
+
+    /**
+     * The http header that defines which custom request headers are allowed during a CORS request.
+     */
+    public static final String ALLOW_HEADERS_HEADER = "Access-Control-Allow-Headers";
+
+    /**
+     * The http header that specifies which headers are safe to expose to the client.
+     */
+    public static final String EXPOSE_HEADERS_HEADER = "Access-Control-Expose-Headers";
+
+    /**
+     * The http header that indicates whether the response to the request can be exposed
+     * when the credentials flag is true.
+     */
+    public static final String ALLOW_CREDENTIALS_HEADER = "Access-Control-Allow-Credentials";
+
+    /**
+     * The http header that indicates how long the results of a preflight request can be cached.
+     */
+    public static final String MAX_AGE_HEADER = "Access-Control-Max-Age";
+
+    /**
+     * The http header sent by browsers in preflight requests to indicate which custom headers
+     * will be included in the actual request.
+     */
+    public static final String REQUEST_HEADERS_HEADER = "Access-Control-Request-Headers";
 
     private boolean allowAllOrigins = false;
     private boolean allowAllMethods = false;
