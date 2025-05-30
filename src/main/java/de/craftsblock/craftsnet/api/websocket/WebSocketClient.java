@@ -57,7 +57,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.1
+ * @version 3.6.2
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -454,8 +454,8 @@ public class WebSocketClient implements Runnable, RequireAble {
         headerReader:
         while ((line = reader.readLine()) != null && !line.isEmpty()) {
             if (path == null)
-                for (String method : HttpMethod.ALL.getMethods())
-                    if (line.startsWith(method)) {
+                for (HttpMethod method : HttpMethod.ALL.getMethods())
+                    if (line.startsWith(method.name())) {
                         path = line.split(" ")[1].replaceAll("//+", "/");
                         continue headerReader;
                     }

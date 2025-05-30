@@ -13,7 +13,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @see WebRequirement
  * @since 3.0.5-SNAPSHOT
  */
@@ -42,7 +42,6 @@ public class MethodRequirement extends WebRequirement {
         HttpMethod method = request.getHttpMethod();
         if (requirements.contains(HttpMethod.ALL))
             return Arrays.stream(HttpMethod.ALL.getMethods())
-                    .map(HttpMethod::parse)
                     .anyMatch(httpMethod -> method.equals(httpMethod) || requirements.contains(httpMethod));
 
         return requirements.contains(method);
