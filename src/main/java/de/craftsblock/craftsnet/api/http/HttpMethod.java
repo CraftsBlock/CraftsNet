@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.http;
 
 import de.craftsblock.craftsnet.api.http.annotations.Route;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -12,26 +13,75 @@ import java.util.Objects;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
+ * @version 1.2.0
  * @see Route
  * @since 1.0.0-SNAPSHOT
  */
 public enum HttpMethod {
 
-    ALL("POST", "GET", "PUT", "DELETE", "PATCH"), // Represents all request methods
-    ALL_RAW("POST", "GET", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"), // Represents all request methods + raw request methods
-    CONNECT(true, true), // Represents the CONNECT request method
-    POST(true, true), // Represents the POST request method
-    GET(false, true), // Represents the GET request method
-    PUT(true, true), // Represents the PUT request method
-    DELETE(true, true), // Represents the DELETE request method
-    PATCH(true, true), // Represents the PATCH request method
-    HEAD(false, false), // Represents the HEAD request method
-    OPTIONS(true, true), // Represents the OPTIONS request method
-    TRACE(false, true), // Represents the TRACE request method
-    UNKNOWN(false, true); // Represents an unrecognized request method
+    /**
+     * Represents the CONNECT request method
+     */
+    CONNECT(true, true),
 
-    final String[] methods;
+    /**
+     * Represents the POST request method
+     */
+    POST(true, true),
+
+    /**
+     * Represents the GET request method
+     */
+    GET(false, true),
+
+    /**
+     * Represents the PUT request method
+     */
+    PUT(true, true),
+
+    /**
+     * Represents the DELETE request method
+     */
+    DELETE(true, true),
+
+    /**
+     * Represents the PATCH request method
+     */
+    PATCH(true, true),
+
+    /**
+     * Represents the HEAD request method
+     */
+    HEAD(false, false),
+
+    /**
+     * Represents the OPTIONS request method
+     */
+    OPTIONS(true, true),
+
+    /**
+     * Represents the TRACE request method
+     */
+    TRACE(false, true),
+
+    /**
+     * Represents an unrecognized request method
+     */
+    UNKNOWN(false, true),
+
+    /**
+     * Represents all request methods
+     */
+    ALL(POST, GET, PUT, DELETE, PATCH),
+
+    /**
+     * Represents all request methods + raw request methods
+     */
+    ALL_RAW(HttpMethod.normalize(ALL, HEAD, OPTIONS)),
+
+    ;
+
+    final HttpMethod[] methods;
     final boolean requestBody;
     final boolean responseBody;
 
@@ -40,7 +90,7 @@ public enum HttpMethod {
      *
      * @param methods optional set of request method names. (Only used by {@link HttpMethod#ALL})
      */
-    HttpMethod(String... methods) {
+    HttpMethod(HttpMethod... methods) {
         this.methods = methods;
         this.requestBody = this.responseBody = false;
     }
@@ -62,7 +112,7 @@ public enum HttpMethod {
      *
      * @return The array of request methods as strings.
      */
-    public String[] getMethods() {
+    public HttpMethod[] getMethods() {
         return methods;
     }
 
@@ -92,9 +142,7 @@ public enum HttpMethod {
      */
     @Override
     public String toString() {
-        if (this.equals(HttpMethod.ALL) || this.equals(HttpMethod.ALL_RAW))
-            return String.join("|", methods);
-        return super.toString();
+        return HttpMethod.join(this);
     }
 
     /**
@@ -113,25 +161,70 @@ public enum HttpMethod {
     }
 
     /**
-     * Convert an array of RequestMethod enum values to an array of strings representing the request methods.
-     * If the array contains the ALL value, it returns all methods as an array.
-     * It filters out UNKNOWN and ALL values from the array during conversion.
+     * Normalizes the provided array of HttpMethod values by:
+     * <ul>
+     *     <li>Removing null values</li>
+     *     <li>Excluding UNKNOWN methods</li>
+     *     <li>Flattening ALL and ALL_RAW into their actual method components</li>
+     *     <li>Removing duplicates</li>
+     * </ul>
      *
-     * @param methods The array of RequestMethod enum values.
-     * @return The array of strings representing the request methods.
+     * @param methods The array of HttpMethod values to normalize
+     * @return A normalized array of distinct, valid HttpMethod values
+     * @since 3.4.3-SNAPSHOT
      */
-    public static String[] convert(HttpMethod... methods) {
+    public static HttpMethod[] normalize(HttpMethod @NotNull ... methods) {
         return Arrays.stream(methods)
                 .filter(Objects::nonNull)
                 .filter(method -> !method.equals(UNKNOWN))
                 .distinct()
                 .flatMap(method -> switch (method) {
                     case ALL, ALL_RAW -> Arrays.stream(method.getMethods());
-                    default -> Arrays.stream(new String[]{method.name()});
+                    default -> Arrays.stream(new HttpMethod[]{method});
                 })
                 .filter(Objects::nonNull)
                 .distinct()
-                .toArray(String[]::new);
+                .toArray(HttpMethod[]::new);
+    }
+
+    /**
+     * Joins the names of the provided {@link HttpMethod} values using the default delimiter "|".
+     * The methods are normalized before joining.
+     *
+     * @param methods The array of HttpMethod values to join.
+     * @return A single string of method names separated by the default delimiter.
+     * @since 3.4.3-SNAPSHOT
+     */
+    public static String join(HttpMethod @NotNull ... methods) {
+        return HttpMethod.join("|", methods);
+    }
+
+    /**
+     * Joins the names of the provided {@link HttpMethod} values into a single string using the specified delimiter.
+     * The methods are normalized before joining.
+     *
+     * @param delimiter The string used to separate method names.
+     * @param methods   The array of HttpMethod values to join.
+     * @return A string of joined method names, or an empty string if methods is null or empty.
+     * @since 3.4.3-SNAPSHOT
+     */
+    public static String join(@NotNull CharSequence delimiter, HttpMethod @NotNull ... methods) {
+        if (methods.length == 0) return "";
+        return String.join(delimiter, Arrays.stream(normalize(methods)).map(HttpMethod::name).toList());
+    }
+
+    /**
+     * Convert an array of RequestMethod enum values to an array of strings representing the request methods.
+     * If the array contains the ALL value, it returns all methods as an array.
+     * It filters out UNKNOWN and ALL values from the array during conversion.
+     *
+     * @param methods The array of RequestMethod enum values.
+     * @return The array of strings representing the request methods.
+     * @deprecated in favor of {@link #normalize(HttpMethod...)}.
+     */
+    @Deprecated(since = "3.4.3-SNAPSHOT", forRemoval = true)
+    public static String[] convert(HttpMethod... methods) {
+        return Arrays.stream(normalize(methods)).map(HttpMethod::name).toArray(String[]::new);
     }
 
     /**
@@ -140,9 +233,11 @@ public enum HttpMethod {
      *
      * @param methods The array of RequestMethod enum values.
      * @return The string representation of request methods separated by "|".
+     * @deprecated in favor of {@link #join(HttpMethod...)}.
      */
+    @Deprecated(since = "3.4.3-SNAPSHOT", forRemoval = true)
     public static String asString(HttpMethod... methods) {
-        return String.join("|", convert(methods));
+        return HttpMethod.join(methods);
     }
 
 }

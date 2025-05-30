@@ -18,7 +18,7 @@ import java.util.List;
  * This class allows fine-grained control over which origins, methods, and headers are allowed
  * in cross-origin requests, and whether credentials are permitted.
  * <p>
- * The policy can be customized to either allow or disallow specific origins, HTTP methods,
+ * The policy can be customized to either allow or disallow specific origins, http methods,
  * headers, and control headers exposure.
  * <p>
  * <b>Important: </b>The cors policy is applied to an exchange automatically. You don't need to take further actions!
@@ -90,56 +90,56 @@ public class CorsPolicy {
      * Allows all origins for cross-origin requests.
      * Once enabled, any domain can make requests to the server.
      */
-    public synchronized void allowAllOrigins() {
+    public void allowAllOrigins() {
         allowAllOrigins = true;
     }
 
     /**
      * Disallows all origins, restricting cross-origin requests to specific origins if set.
      */
-    public synchronized void disallowAllOrigins() {
+    public void disallowAllOrigins() {
         allowAllOrigins = false;
     }
 
     /**
-     * Allows all HTTP methods (e.g., GET, POST, DELETE) for cross-origin requests.
+     * Allows all http methods (e.g., GET, POST, DELETE) for cross-origin requests.
      */
-    public synchronized void allowAllMethods() {
+    public void allowAllMethods() {
         allowAllMethods = true;
     }
 
     /**
-     * Disallows all HTTP methods, limiting cross-origin requests to only specific methods.
+     * Disallows all http methods, limiting cross-origin requests to only specific methods.
      */
-    public synchronized void disallowAllMethods() {
+    public void disallowAllMethods() {
         allowAllMethods = false;
     }
 
     /**
-     * Allows all HTTP headers for cross-origin requests, meaning any header can be sent from the client.
+     * Allows all http headers for cross-origin requests, meaning any header can be sent from the client.
      */
-    public synchronized void allowAllHeaders() {
+    public void allowAllHeaders() {
         allowAllHeaders = true;
     }
 
     /**
      * Disallows all headers, requiring cross-origin requests to specify only permitted headers.
      */
-    public synchronized void disallowAllHeaders() {
+    public void disallowAllHeaders() {
         allowAllHeaders = false;
     }
 
     /**
      * Allows credentials (such as cookies or authentication data) in cross-origin requests.
      */
-    public synchronized void allowCredentials() {
+    public void allowCredentials() {
         overrideCredentials = allowCredentials = true;
     }
 
     /**
      * Disallows credentials in cross-origin requests.
      */
-    public synchronized void disallowCredentials() {
+    public void disallowCredentials() {
         overrideCredentials = true;
         allowCredentials = false;
     }
@@ -149,7 +149,7 @@ public class CorsPolicy {
      *
      * @param origins The origins to be allowed.
      */
-    public synchronized void addAllowedOrigin(String... origins) {
+    public void addAllowedOrigin(String... origins) {
         add(allowedOrigins, origins);
     }
 
@@ -158,53 +158,53 @@ public class CorsPolicy {
      *
      * @param origins The origins to be removed.
      */
-    public synchronized void removeAllowedOrigin(String... origins) {
+    public void removeAllowedOrigin(String... origins) {
         remove(allowedOrigins, origins);
     }
 
     /**
-     * Adds one or more HTTP methods to the list of allowed methods for cross-origin requests.
+     * Adds one or more http methods to the list of allowed methods for cross-origin requests.
      *
-     * @param methods The HTTP methods to be allowed.
+     * @param methods The http methods to be allowed.
      */
-    public synchronized void addAllowedMethod(HttpMethod... methods) {
+    public void addAllowedMethod(HttpMethod... methods) {
         add(allowedMethods, methods);
     }
 
     /**
-     * Removes one or more HTTP methods from the list of allowed methods.
+     * Removes one or more http methods from the list of allowed methods.
      *
-     * @param methods The HTTP methods to be removed.
+     * @param methods The http methods to be removed.
      */
-    public synchronized void removeAllowedOrigin(HttpMethod... methods) {
+    public void removeAllowedOrigin(HttpMethod... methods) {
         remove(allowedMethods, methods);
     }
 
     /**
-     * Adds one or more HTTP headers to the list of allowed headers for cross-origin requests.
+     * Adds one or more http headers to the list of allowed headers for cross-origin requests.
      *
-     * @param headers The HTTP headers to be allowed.
+     * @param headers The http headers to be allowed.
      */
-    public synchronized void addAllowedHeader(String... headers) {
+    public void addAllowedHeader(String... headers) {
         add(allowedHeaders, headers);
     }
 
     /**
-     * Removes one or more HTTP headers from the list of allowed headers.
+     * Removes one or more http headers from the list of allowed headers.
      *
-     * @param headers The HTTP headers to be removed.
+     * @param headers The http headers to be removed.
      */
-    public synchronized void removeAllowedHeader(String... headers) {
+    public void removeAllowedHeader(String... headers) {
         remove(allowedHeaders, headers);
     }
 
     /**
-     * Adds one or more HTTP headers to the list of headers exposed to the client.
+     * Adds one or more http headers to the list of headers exposed to the client.
      * Exposed headers can be accessed by the client application.
      *
-     * @param headers The HTTP headers to be exposed.
+     * @param headers The http headers to be exposed.
      */
-    public synchronized void addExposedHeader(String... headers) {
+    public void addExposedHeader(String... headers) {
         add(exposedHeaders, headers);
     }
 
@@ -213,7 +213,7 @@ public class CorsPolicy {
      *
      * @param headers The headers to be removed.
      */
-    public synchronized void removeExposedHeader(String... headers) {
+    public void removeExposedHeader(String... headers) {
         remove(exposedHeaders, headers);
     }
 
@@ -265,18 +265,18 @@ public class CorsPolicy {
     }
 
     /**
-     * Retrieves the list of allowed HTTP methods for cross-origin requests.
+     * Retrieves the list of allowed http methods for cross-origin requests.
      *
-     * @return A list of allowed HTTP methods.
+     * @return A list of allowed http methods.
      */
     public @Unmodifiable List<HttpMethod> getAllowedMethods() {
         return Collections.unmodifiableList(allowedMethods);
     }
 
     /**
-     * Retrieves the list of allowed HTTP headers for cross-origin requests.
+     * Retrieves the list of allowed http headers for cross-origin requests.
      *
-     * @return A list of allowed HTTP headers.
+     * @return A list of allowed http headers.
      */
     public @Unmodifiable List<String> getAllowedHeaders() {
         return Collections.unmodifiableList(allowedHeaders);
@@ -301,7 +301,7 @@ public class CorsPolicy {
     }
 
     /**
-     * Checks if all HTTP methods are allowed for cross-origin requests.
+     * Checks if all http methods are allowed for cross-origin requests.
      *
      * @return true if all methods are allowed, false otherwise.
      */
@@ -310,7 +310,7 @@ public class CorsPolicy {
     }
 
     /**
-     * Checks if all HTTP headers are allowed for cross-origin requests.
+     * Checks if all http headers are allowed for cross-origin requests.
      *
      * @return true if all headers are allowed, false otherwise.
      */
@@ -381,25 +381,31 @@ public class CorsPolicy {
         Request request = exchange.request();
         Response response = exchange.response();
 
-        if (allowAllOrigins) response.setHeader("Access-Control-Allow-Origin", "*");
-        else if (!allowedOrigins.isEmpty() && allowedOrigins.contains(getOrigin(request)))
-            response.setHeader("Access-Control-Allow-Origin", getOrigin(request, false));
+        String origin = getOrigin(request, false);
+        if (allowAllOrigins) response.setHeader(ALLOW_ORIGIN_HEADER, origin);
+        else if (!allowedOrigins.isEmpty() && allowedOrigins.contains(origin.replaceFirst(".*://", "")))
+            response.setHeader(ALLOW_ORIGIN_HEADER, origin);
         else if (!allowedOrigins.isEmpty())
-            response.setHeader("Access-Control-Allow-Origin", allowedOrigins.get(0));
+            response.setHeader(ALLOW_ORIGIN_HEADER, allowedOrigins.get(0));
 
-        if (allowAllMethods) response.setHeader("Access-Control-Allow-Methods", String.join(", ", HttpMethod.ALL_RAW.getMethods()));
+        if (allowAllMethods) response.setHeader(ALLOW_METHODS_HEADER, HttpMethod.join(", ", HttpMethod.ALL_RAW));
         else if (!allowedMethods.isEmpty())
-            response.setHeader("Access-Control-Allow-Methods", String.join(", ", allowedMethods.parallelStream().map(Enum::name).toList()));
+            response.setHeader(ALLOW_METHODS_HEADER, HttpMethod.join(", ", allowedMethods.toArray(HttpMethod[]::new)));
 
-        if (allowAllHeaders) response.setHeader("Access-Control-Allow-Headers", "*");
-        else if (!allowedHeaders.isEmpty())
-            response.setHeader("Access-Control-Allow-Headers", String.join(", ", String.join(", ", allowedHeaders)));
+        if (allowAllHeaders) {
+
+            if (request.hasHeader(REQUEST_HEADERS_HEADER))
+                response.setHeader(ALLOW_HEADERS_HEADER, String.join(", ", request.getHeaders().get(REQUEST_HEADERS_HEADER)));
+            else response.setHeader(ALLOW_HEADERS_HEADER, "*");
+
+        } else if (!allowedHeaders.isEmpty())
+            response.setHeader(ALLOW_HEADERS_HEADER, String.join(", ", allowedHeaders));
 
         if (!exposedHeaders.isEmpty())
-            response.setHeader("Access-Control-Expose-Headers", String.join(", ", String.join(", ", exposedHeaders)));
+            response.setHeader(EXPOSE_HEADERS_HEADER, String.join(", ", exposedHeaders));
 
-        if (overrideCredentials) response.setHeader("Access-Control-Allow-Credentials", "" + allowCredentials);
-        if (controlMaxAge >= 0) response.setHeader("Access-Control-Max-Age", "" + controlMaxAge);
+        if (overrideCredentials) response.setHeader(ALLOW_CREDENTIALS_HEADER, "" + allowCredentials);
+        if (controlMaxAge >= 0) response.setHeader(MAX_AGE_HEADER, "" + controlMaxAge);
     }
 
     /**
@@ -428,12 +434,14 @@ public class CorsPolicy {
     private String getOrigin(Request request, boolean strip) {
         if (request.hasHeader("Origin")) {
             String origin = request.getHeader("Origin");
+
             if (strip) return origin.replaceFirst(".*://", "");
             return origin;
         }
 
-        if (strip) return request.getDomain();
-        return "http" + (request.getCraftsNet().webServer().isSSL() ? "s" : "") + "://" + request.getDomain();
+        String domain = request.getDomain();
+        if (strip) return domain;
+        return "http" + (request.getCraftsNet().webServer().isSSL() ? "s" : "") + "://" + domain;
     }
 
 }
