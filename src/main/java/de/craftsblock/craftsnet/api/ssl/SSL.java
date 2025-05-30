@@ -29,7 +29,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.4
+ * @version 1.2.5
  * @since 2.1.1-SNAPSHOT
  */
 public class SSL {
@@ -73,7 +73,7 @@ public class SSL {
 
         File privkeyFile = file(privkey);
 
-        byte[] passphrase = PassphraseUtils.generateSecure();
+        byte[] passphrase = PassphraseUtils.generateSecure(55, 75, true);
         char[] key = SecureEncodingUtils.decode(passphrase, StandardCharsets.UTF_8);
         PassphraseUtils.erase(passphrase);
 
