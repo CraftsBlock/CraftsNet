@@ -13,7 +13,7 @@ import java.util.Objects;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.2.1
  * @see Route
  * @since 1.0.0-SNAPSHOT
  */
@@ -77,7 +77,7 @@ public enum HttpMethod {
     /**
      * Represents all request methods + raw request methods
      */
-    ALL_RAW(HttpMethod.normalize(ALL, HEAD, OPTIONS)),
+    ALL_RAW(POST, GET, PUT, DELETE, PATCH, HEAD, OPTIONS),
 
     ;
 
