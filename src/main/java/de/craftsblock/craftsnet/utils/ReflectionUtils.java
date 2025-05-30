@@ -13,7 +13,7 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.0
+ * @version 1.3.0
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
@@ -150,6 +150,19 @@ public class ReflectionUtils {
             clazz = clazz.getSuperclass(); // Move to the superclass for further field search
         }
         return field;
+    }
+
+    /**
+     * Extracts the generic type parameter from a Class.
+     *
+     * @param clazz The Class to extract the generic type from.
+     * @param index The index of the generic.
+     * @param <T>   The type of handler.
+     * @return The class type corresponding to the handler's generic type.
+     * @since 3.4.3-SNAPSHOT
+     */
+    public static <T> Class<T> extractGeneric(Class<?> clazz, @Range(from = 0, to = Integer.MAX_VALUE) int index) {
+        return extractGeneric(clazz, Object.class, index);
     }
 
     /**
