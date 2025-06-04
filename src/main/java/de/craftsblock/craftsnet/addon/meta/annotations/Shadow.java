@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.addon.meta.annotations;
 
-import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftsnet.addon.meta.ShadowType;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.lang.annotation.*;
 
@@ -16,7 +16,7 @@ import java.lang.annotation.*;
  * @see ShadowType
  * @since 3.3.4-SNAPSHOT
  */
-@Experimental
+@ApiStatus.Experimental
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Repeatable(ShadowCollection.class)

@@ -1,6 +1,5 @@
 package de.craftsblock.craftsnet.api.session;
 
-import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftsnet.api.session.drivers.SessionDriver;
 import de.craftsblock.craftsnet.api.session.drivers.builtin.FileSessionDriver;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
@@ -41,7 +40,6 @@ public class SessionStorage {
      * @param defaultDriver The new default {@link SessionDriver}.
      * @since 3.3.5-SNAPSHOT
      */
-    @Experimental
     @ApiStatus.Experimental
     public static void setDefaultDriver(SessionDriver defaultDriver) {
         SessionStorage.defaultDriver = defaultDriver;

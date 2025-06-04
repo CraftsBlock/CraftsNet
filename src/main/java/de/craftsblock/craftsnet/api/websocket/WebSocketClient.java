@@ -1,7 +1,6 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import com.sun.net.httpserver.Headers;
-import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftsnet.CraftsNet;
@@ -27,6 +26,7 @@ import de.craftsblock.craftsnet.events.sockets.message.ReceivedPongMessageEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
@@ -625,7 +625,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      *
      * @return true if fragmentation is enabled, false otherwise
      */
-    @Experimental
+    @ApiStatus.Experimental
     public boolean shouldFragment() {
         return server.shouldFragment() && shouldFragment || shouldFragment;
     }
@@ -635,7 +635,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      *
      * @param shouldFragment true if fragmentation should be enabled, false otherwise.
      */
-    @Experimental
+    @ApiStatus.Experimental
     public void setFragmentationEnabled(boolean shouldFragment) {
         this.shouldFragment = shouldFragment;
     }
@@ -645,7 +645,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      *
      * @return The max size of each frame.
      */
-    @Experimental
+    @ApiStatus.Experimental
     public int getFragmentSize() {
         if (fragmentSize <= 0) return server.getFragmentSize();
         return fragmentSize;
@@ -656,7 +656,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      *
      * @param fragmentSize The max size of the fragments.
      */
-    @Experimental
+    @ApiStatus.Experimental
     public void setFragmentSize(int fragmentSize) {
         this.fragmentSize = fragmentSize;
     }

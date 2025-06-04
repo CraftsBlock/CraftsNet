@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.api.http.body.parser;
 
-import de.craftsblock.craftscore.utils.Validator;
+import de.craftsblock.craftscore.json.JsonValidator;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.body.BodyParser;
 import de.craftsblock.craftsnet.api.http.body.ContentType;
@@ -45,7 +45,7 @@ public class JsonBodyParser extends BodyParser<JsonBody> {
             while ((line = reader.readLine()) != null)
                 lines.append(line).append("\n");
             reader.close();
-            if (Validator.isJsonValid(lines.toString()))
+            if (JsonValidator.isValid(lines.toString()))
                 return new JsonBody(request, lines.toString());
         } catch (Exception e) {
             throw new RuntimeException(e);

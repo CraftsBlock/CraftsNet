@@ -1,7 +1,5 @@
 package de.craftsblock.craftsnet.addon.meta.annotations;
 
-
-import de.craftsblock.craftscore.annotations.Experimental;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.lang.annotation.ElementType;
@@ -23,7 +21,6 @@ import java.lang.annotation.Target;
  * @see Depends
  * @since 3.1.0-SNAPSHOT
  */
-@Experimental
 @ApiStatus.Internal
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)

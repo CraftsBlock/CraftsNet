@@ -2,7 +2,7 @@ package de.craftsblock.craftsnet.api.http.body.bodies;
 
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
-import de.craftsblock.craftscore.utils.Validator;
+import de.craftsblock.craftscore.json.JsonValidator;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.body.Body;
 
@@ -60,7 +60,7 @@ public final class JsonBody extends Body {
         while ((line = reader.readLine()) != null)
             lines.append(line).append("\n");
         reader.close();
-        if (Validator.isJsonValid(lines.toString())) return new JsonBody(request, lines.toString());
+        if (JsonValidator.isValid(lines.toString())) return new JsonBody(request, lines.toString());
         return null;
     }
 

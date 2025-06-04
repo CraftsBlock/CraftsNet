@@ -1,10 +1,10 @@
 package de.craftsblock.craftsnet.api.websocket;
 
-import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.builder.ActivateType;
 import de.craftsblock.craftsnet.api.ssl.SSL;
+import org.jetbrains.annotations.ApiStatus;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -260,7 +260,7 @@ public class WebSocketServer extends Server {
      *
      * @return true if fragmentation is enabled, false otherwise
      */
-    @Experimental
+    @ApiStatus.Experimental
     public boolean shouldFragment() {
         return shouldFragment;
     }
@@ -270,7 +270,7 @@ public class WebSocketServer extends Server {
      *
      * @param shouldFragment true if fragmentation should be enabled, false otherwise.
      */
-    @Experimental
+    @ApiStatus.Experimental
     public void setFragmentationEnabled(boolean shouldFragment) {
         this.shouldFragment = shouldFragment;
     }
@@ -280,7 +280,7 @@ public class WebSocketServer extends Server {
      *
      * @return The max size of each frame.
      */
-    @Experimental
+    @ApiStatus.Experimental
     public int getFragmentSize() {
         return fragmentSize;
     }
@@ -290,7 +290,7 @@ public class WebSocketServer extends Server {
      *
      * @param fragmentSize The max size of the fragments.
      */
-    @Experimental
+    @ApiStatus.Experimental
     public void setFragmentSize(int fragmentSize) {
         if (fragmentSize <= 0) return;
         this.fragmentSize = fragmentSize;

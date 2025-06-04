@@ -1,6 +1,5 @@
 package de.craftsblock.craftsnet.events.requests;
 
-import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.http.Exchange;
 import org.jetbrains.annotations.NotNull;
@@ -16,7 +15,6 @@ import org.jetbrains.annotations.NotNull;
  * @see GenericRequestEventBase
  * @since 3.1.0-SNAPSHOT
  */
-@Experimental
 public class PostRequestEvent extends Event implements GenericRequestEventBase {
 
     private final Exchange exchange;

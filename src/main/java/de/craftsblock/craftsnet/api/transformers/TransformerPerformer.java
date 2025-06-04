@@ -1,6 +1,5 @@
 package de.craftsblock.craftsnet.api.transformers;
 
-import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftscore.cache.DoubleKeyedCache;
 import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftsnet.CraftsNet;
@@ -164,7 +163,6 @@ public class TransformerPerformer {
      * @throws IllegalAccessException if access to the constructor of Transformable or
      *                                access to the method Transformable.transform(String) is restricted.
      */
-    @Experimental
     private boolean applyTransformers(Object[] args, Object obj) throws NoSuchMethodException, InstantiationException, IllegalAccessException {
         TransformerCollection transformers = (obj instanceof Method method ? method : obj.getClass()).getAnnotation(TransformerCollection.class);
         if (transformers != null) {

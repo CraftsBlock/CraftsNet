@@ -1,7 +1,5 @@
 package de.craftsblock.craftsnet.addon.meta.annotations;
 
-import de.craftsblock.craftscore.annotations.Experimental;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -19,7 +17,6 @@ import java.lang.annotation.Target;
  * @version 1.0.0
  * @since 3.1.0-SNAPSHOT
  */
-@Experimental
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Meta {

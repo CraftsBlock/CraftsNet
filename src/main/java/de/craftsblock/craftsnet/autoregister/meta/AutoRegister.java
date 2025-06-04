@@ -1,6 +1,5 @@
 package de.craftsblock.craftsnet.autoregister.meta;
 
-import de.craftsblock.craftscore.annotations.Experimental;
 import de.craftsblock.craftsnet.addon.meta.Startup;
 
 import java.lang.annotation.*;
@@ -13,16 +12,12 @@ import java.lang.annotation.*;
  * <p>The default value of the annotation is {@link Startup#ENABLE}, meaning auto registration
  * is performed after the addon has been enabled.</p>
  *
- * <p>This annotation is marked as {@link Experimental}, indicating that it might be subject to
- * changes or removal in future releases.</p>
- *
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.1.2
  * @since 3.2.0-SNAPSHOT
  */
 @Documented
-@Experimental
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface AutoRegister {

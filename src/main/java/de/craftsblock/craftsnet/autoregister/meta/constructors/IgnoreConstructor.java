@@ -1,7 +1,5 @@
 package de.craftsblock.craftsnet.autoregister.meta.constructors;
 
-import de.craftsblock.craftscore.annotations.Experimental;
-
 import java.lang.annotation.*;
 
 /**
@@ -15,7 +13,6 @@ import java.lang.annotation.*;
  * @since 3.3.5-SNAPSHOT
  */
 @Documented
-@Experimental
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.CONSTRUCTOR)
 public @interface IgnoreConstructor {

@@ -1,7 +1,5 @@
 package de.craftsblock.craftsnet.api.requirements.meta;
 
-import de.craftsblock.craftscore.annotations.Experimental;
-
 import java.lang.annotation.*;
 
 /**
@@ -27,7 +25,6 @@ import java.lang.annotation.*;
  * @since 3.1.0-SNAPSHOT
  */
 @Documented
-@Experimental
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.ANNOTATION_TYPE)
 @RequirementMeta

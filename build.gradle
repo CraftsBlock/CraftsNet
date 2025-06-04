@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'application'
+    id 'maven-publish'
 }
 
 java {
@@ -16,7 +17,7 @@ application {
 }
 
 group = 'de.craftsblock'
-version = '3.4.2-SNAPSHOT'
+version = '3.4.3-pre3'
 
 repositories {
     mavenCentral()
@@ -26,13 +27,24 @@ repositories {
 dependencies {
     // CraftsBlock related dependencies ---------------------------------------------------------------------------------------
 
-    // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore
-    implementation 'de.craftsblock:craftscore:3.8.4-SNAPSHOT'
+    def craftscoreVersion = "3.8.6"
+
+    // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/utils
+    implementation "de.craftsblock.craftscore:utils:$craftscoreVersion"
+
+    // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/cache
+    implementation "de.craftsblock.craftscore:cache:$craftscoreVersion"
+
+    // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/event
+    implementation "de.craftsblock.craftscore:event:$craftscoreVersion"
+
+    // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/json
+    implementation "de.craftsblock.craftscore:json:$craftscoreVersion"
 
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
-    implementation 'com.google.code.gson:gson:2.12.1'
+    implementation 'com.google.code.gson:gson:2.13.1'
 
     // https://mvnrepository.com/artifact/org.apache.tika/tika-core
     implementation 'org.apache.tika:tika-core:3.1.0'
@@ -66,3 +78,45 @@ jar {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
+publishing {
+    publications {
+        normal(MavenPublication) {
+            artifactId "craftsnet"
+            from components.java
+            pom {
+                name = 'CraftsNet'
+                description = 'Easy creation of HTTP routes and WebSocket endpoints in Java.'
+
+                scm {
+                    url = 'https://github.com/CraftsBlock/CraftsNet'
+                    connection = 'scm:git:git://github.com/CraftsBlock/CraftsNet.git'
+                    developerConnection = 'scm:git:git@github.com:CraftsBlock/CraftsNet.git'
+                }
+
+                issueManagement {
+                    system = 'github'
+                    url = 'https://github.com/CraftsBlock/CraftsNet/issues'
+                }
+
+                licenses {
+                    license {
+                        name = 'Apache License 2.0'
+                        url = 'https://github.com/CraftsBlock/CraftsNet/blob/master/LICENSE'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            url('https://repo.craftsblock.de/experimental')
+            authentication {
+                basic(BasicAuthentication)
+            }
+            credentials {
+                username = project.findProperty("craftsblockRepoUsername")
+                password = project.findProperty("craftsblockRepoPassword")
+            }
+        }
+    }
+}

@@ -1,6 +1,5 @@
 package de.craftsblock.craftsnet.api.http.body;
 
-import de.craftsblock.craftscore.annotations.Beta;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.body.bodies.FormBody;
 import de.craftsblock.craftsnet.api.http.body.bodies.JsonBody;
@@ -138,8 +137,6 @@ public abstract class Body implements AutoCloseable {
      * @param type The type which should be checked.
      * @return true if the type is the type of the current request body, false otherwise.
      */
-    @Beta
-    @ApiStatus.Experimental
     public final boolean isBodyFromType(Class<? extends Body> type) {
         if (closed) throw new IllegalStateException("Can not check the body type as it is already closed!");
         if (bodies.getOrDefault(this.request, new ConcurrentHashMap<>()).containsKey(type)) return true;
@@ -158,8 +155,6 @@ public abstract class Body implements AutoCloseable {
      * @param <T>  The type of the request body.
      * @return The object after casting, or null if the current request body is not an instance of the type.
      */
-    @Beta
-    @ApiStatus.Experimental
     public final <T extends Body> @Nullable T getAsType(Class<T> type) {
         if (closed) throw new IllegalStateException("Can not cast the body as it is already closed!");
         ConcurrentHashMap<Class<? extends Body>, Body> bodies = Body.bodies.getOrDefault(this.request, new ConcurrentHashMap<>());
@@ -183,8 +178,6 @@ public abstract class Body implements AutoCloseable {
      *
      * @return The set containing all body types as classes.
      */
-    @Beta
-    @ApiStatus.Experimental
     public final Set<Class<? extends Body>> getBodyTypes() {
         return getBodies().keySet();
     }
@@ -196,8 +189,6 @@ public abstract class Body implements AutoCloseable {
      *
      * @return The {@link ConcurrentHashMap} containing all parsed bodies.
      */
-    @Beta
-    @ApiStatus.Experimental
     public final ConcurrentHashMap<Class<? extends Body>, Body> getBodies() {
         if (closed) throw new IllegalStateException("Can not access the bodies as they are already closed!");
         return bodies.get(this.request);
@@ -209,9 +200,7 @@ public abstract class Body implements AutoCloseable {
      *
      * @param request The request which should be cleaned.
      */
-    @Beta
     @ApiStatus.Internal
-    @ApiStatus.Experimental
     public static void cleanUp(Request request) {
         if (!bodies.containsKey(request)) return;
         bodies.remove(request).values().forEach(Body::close);

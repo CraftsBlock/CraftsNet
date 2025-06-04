@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.addon.meta.annotations;
 
-import de.craftsblock.craftscore.annotations.Experimental;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -16,7 +16,7 @@ import java.lang.annotation.Target;
  * @see Shadow
  * @since 3.3.4-SNAPSHOT
  */
-@Experimental
+@ApiStatus.Experimental
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ShadowCollection {
