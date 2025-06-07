@@ -12,6 +12,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.net.URL;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
  * ensuring proper dependency management and validation of addon metadata.
  * </p>
  *
- * @param file      The {@link File} which contains the addon.
+ * @param path      The {@link Path} which contains the addon.
  * @param json      {@link Json} representation of the addon configuration.
  * @param classpath Array of {@link URL}s representing the classpath of the addon.
  * @param services  Collection of {@link RegisteredService} instances associated with the addon.
@@ -33,10 +34,10 @@ import java.util.stream.Collectors;
  * @param meta      Reference to the {@link AddonMeta} metadata of the addon.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.1
+ * @version 1.3.0
  * @since 3.1.0-SNAPSHOT
  */
-public record AddonConfiguration(File file, Json json, URL[] classpath, Collection<RegisteredService> services, AtomicReference<Addon> addon,
+public record AddonConfiguration(Path path, Json json, URL[] classpath, Collection<RegisteredService> services, AtomicReference<Addon> addon,
                                  AtomicReference<AddonMeta> meta, AtomicReference<AddonClassLoader> classLoader)
         implements Comparable<AddonConfiguration> {
 
@@ -46,14 +47,14 @@ public record AddonConfiguration(File file, Json json, URL[] classpath, Collecti
     /**
      * Creates an {@link AddonConfiguration} instance from the provided params.
      *
-     * @param file      The jar file
+     * @param path      The {@link Path} to the jar.
      * @param json      Content of the addon.json
-     * @param classpath Classpath of the jar file
+     * @param classpath The classpath which contains the jar file and all dependencies.
      * @param services  Services that should be registered
      * @return A new instance of {@link AddonConfiguration}.
      */
-    public static AddonConfiguration of(File file, Json json, URL[] classpath, Collection<RegisteredService> services) {
-        return new AddonConfiguration(file, json, classpath, services,
+    public static AddonConfiguration of(Path path, Json json, URL[] classpath, Collection<RegisteredService> services) {
+        return new AddonConfiguration(path, json, classpath, services,
                 new AtomicReference<>(), new AtomicReference<>(), new AtomicReference<>());
     }
 

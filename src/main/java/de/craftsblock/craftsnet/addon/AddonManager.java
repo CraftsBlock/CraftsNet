@@ -2,8 +2,10 @@ package de.craftsblock.craftsnet.addon;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
+import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
 import de.craftsblock.craftsnet.events.addons.AllAddonsDisabledEvent;
 import de.craftsblock.craftsnet.logging.Logger;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
@@ -11,10 +13,11 @@ import org.jetbrains.annotations.Unmodifiable;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 /**
  * The AddonManager class is responsible for managing addons in the application.
@@ -23,18 +26,21 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.2
+ * @version 1.3.0
  * @see Addon
  * @see AddonLoader
  * @since 1.0.0-SNAPSHOT
  */
 public final class AddonManager {
 
+    private final List<AddonConfiguration> configurations = new ArrayList<>();
+    private final long start = System.currentTimeMillis();
+
     private final CraftsNet craftsNet;
     private final Logger logger;
     private final ConcurrentHashMap<String, Addon> addons = new ConcurrentHashMap<>();
 
-    private boolean filesLoaded = false;
+    private final AddonLoader addonLoader;
 
     /**
      * Constructor for the AddonManager class. It loads and initializes the addons present in the "./addons/" folder.
@@ -45,6 +51,25 @@ public final class AddonManager {
     public AddonManager(CraftsNet craftsNet) {
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.logger();
+
+        this.addonLoader = new AddonLoader(craftsNet);
+    }
+
+    /**
+     * Performs the startup of the addon system and loads all present
+     * addon configurations.
+     *
+     * @since 3.4.3
+     */
+    public void startup() {
+        if (configurations.isEmpty()) {
+            logger.info("No addons found to load");
+            return;
+        }
+
+        logger.info("Load all available addons");
+        addonLoader.load(configurations);
+        logger.info("All addons were loaded within " + (System.currentTimeMillis() - start) + "ms");
     }
 
     /**
@@ -52,23 +77,23 @@ public final class AddonManager {
      *
      * @throws IOException if there is an I/O error while accessing the addons folder.
      */
-    public void loadAllFromFiles() throws IOException {
-        if (filesLoaded)
-            throw new IllegalStateException("");
+    public void fromFiles() throws IOException {
+        addonLoader.reset();
 
-        filesLoaded = true;
-
-        File folder = new File("./addons/");
-        logger.debug("Addon folder set to " + folder.getAbsolutePath());
-        if (!folder.isDirectory()) {
-            folder.delete();
-            folder.mkdirs();
+        Path folder = Path.of("addons");
+        logger.debug("Addon folder set to " + folder.toAbsolutePath().toFile().getAbsolutePath());
+        if (Files.notExists(folder) || !Files.isDirectory(folder)) {
+            Files.deleteIfExists(folder);
+            Files.createDirectories(folder);
         }
 
-        AddonLoader addonLoader = new AddonLoader(craftsNet);
-        for (File file : Objects.requireNonNull(folder.listFiles()))
-            if (file.getName().endsWith(".jar") && file.isFile()) addonLoader.add(file);
-        addonLoader.load();
+        try (Stream<Path> stream = Files.walk(folder)) {
+            stream.filter(Files::isRegularFile)
+                    .filter(path -> path.endsWith(".jar"))
+                    .forEach(addonLoader::update);
+        }
+
+        configurations.addAll(addonLoader.load());
     }
 
     /**
@@ -172,6 +197,18 @@ public final class AddonManager {
      */
     public boolean isRegistered(@NotNull String name) {
         return addons.values().stream().anyMatch(addon -> addon.getName().equalsIgnoreCase(name));
+    }
+
+    /**
+     * Gets the underlying {@link AddonLoader} which is used for
+     * loading the addons.
+     *
+     * @return The {@link AddonLoader}
+     * @since 3.4.3
+     */
+    @ApiStatus.Internal
+    public AddonLoader getAddonLoader() {
+        return addonLoader;
     }
 
 }

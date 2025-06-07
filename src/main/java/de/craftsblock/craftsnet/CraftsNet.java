@@ -49,7 +49,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.4.0
+ * @version 3.4.1
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -181,10 +181,16 @@ public class CraftsNet {
         logger.debug("Initialization of the auto register registry");
         autoRegisterRegistry = new AutoRegisterRegistry(this);
 
-        logger.debug("Initialization of the addon manager");
-        addonManager = new AddonManager(this);
-        if (!builder.isAddonSystem(ActivateType.DISABLED)) addonManager.loadAllFromFiles();
-        if (builder instanceof AddonContainingBuilder addonBuilder) addonBuilder.loadAddons(this);
+        if (!builder.isAddonSystem(ActivateType.DISABLED)) {
+            logger.debug("Initialization of the addon manager");
+            addonManager = new AddonManager(this);
+            addonManager.fromFiles();
+
+            if (builder instanceof AddonContainingBuilder addonBuilder)
+                addonBuilder.loadAddons(this);
+
+            addonManager.startup();
+        }
 
         // Check if http routes are registered and start the web server if needed
         if (builder.isWebServer(ActivateType.ENABLED) || builder.isWebServer(ActivateType.DYNAMIC)) {

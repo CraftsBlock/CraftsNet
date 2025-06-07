@@ -31,7 +31,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.4
+ * @version 2.0.5
  * @see <a href="https://maven.apache.org/resolver/index.html">Eclipse Aether</a>
  * @since 3.0.0-SNAPSHOT
  */
@@ -138,7 +138,7 @@ public final class ArtifactLoader {
             File file = artifact.getArtifact().getPath().toFile();
             try (JarFile jarFile = new JarFile(file, true, ZipFile.OPEN_READ, Runtime.version())) {
                 urls.add(file.toURI().toURL());
-                services.addAll(addonLoader.loadServices(jarFile));
+                services.addAll(addonLoader.retrieveServices(jarFile));
             } catch (IOException e) {
                 logger.error(e, "Error while loading libraries for " + addon);
                 return;

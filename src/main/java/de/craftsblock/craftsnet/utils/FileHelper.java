@@ -80,7 +80,7 @@ public class FileHelper {
      * If a custom directory was selected during initialization, the file will be created there.
      * Otherwise, the system's default temporary file directory is used.
      * <p>
-     * If no POSIX file permissions are explicitly provided and it is supported by the file system,
+     * If no POSIX file permissions are explicitly provided, and it is supported by the file system,
      * the file will be created with default POSIX permissions: read and write access for the owner.
      * </p>
      *
@@ -111,7 +111,7 @@ public class FileHelper {
     /**
      * Creates and returns a {@link JarFile} instance from the provided directory or file path.
      * <p>
-     * If the provided path is a regular file, a {@link JarFile} is created directly from the file.
+     * If the provided path is a regular file, a {@link JarFile} is created directly from the path.
      * If the path is a directory, a temporary jar file is created by adding all files in the directory to the jar.
      * The temporary jar file is deleted when the JVM exits.
      * </p>

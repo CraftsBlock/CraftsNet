@@ -19,7 +19,9 @@ import de.craftsblock.craftsnet.utils.ReflectionUtils;
 
 import java.io.*;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -31,18 +33,18 @@ import java.util.zip.ZipFile;
 
 /**
  * The AddonLoader class is responsible for loading and managing addons in the application.
- * It loads addon JAR files, extracts necessary information, and initializes addon instances.
+ * It loads addon jar files, extracts necessary information, and initializes addon instances.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.12
+ * @version 2.2.0
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
  */
 public final class AddonLoader {
 
-    private final Stack<File> addons = new Stack<>();
+    private final Stack<Path> addons = new Stack<>();
     private final CraftsNet craftsNet;
     private final Logger logger;
 
@@ -61,20 +63,42 @@ public final class AddonLoader {
      *
      * @param file The name of the addon file.
      */
-    public void add(String file) {
-        add(new File("./addons/", file));
+    public void update(String file) {
+        update(Path.of("addons", file));
     }
 
     /**
-     * Adds a new addon file to the loader using the file object.
+     * Adds a new addon to the loader using the path to the file.
      *
-     * @param file The addon file to add.
+     * @param path The addon path to add.
      */
-    public void add(File file) {
-        if (!file.getParentFile().exists()) file.getParentFile().mkdirs();
-        if (!file.exists()) throw new NullPointerException("The file (" + file.getPath() + ") does not exist!");
-        if (!addons.contains(file))
-            addons.push(file);
+    public void update(Path path) {
+        try {
+            if (path.getParent() != null && Files.notExists(path.getParent()))
+                Files.createDirectories(path.getParent());
+
+            if (Files.notExists(path))
+                throw new NullPointerException("The path (%s) does not exist!".formatted(
+                        path.toFile().getAbsolutePath()
+                ));
+
+            if (!addons.contains(path))
+                addons.push(path);
+
+        } catch (IOException e) {
+            throw new RuntimeException("Could not load addon from path %s".formatted(
+                    path.toFile().getAbsolutePath()
+            ), e);
+        }
+    }
+
+    /**
+     * Clears all addon paths from the stack.
+     *
+     * @since 3.4.3
+     */
+    public void reset() {
+        addons.clear();
     }
 
     /**
@@ -82,26 +106,24 @@ public final class AddonLoader {
      *
      * @throws IOException if there is an I/O error while loading the addons.
      */
-    public void load() throws IOException {
-        long start = System.currentTimeMillis();
+    public List<AddonConfiguration> load() throws IOException {
         Logger logger = craftsNet.logger();
-        logger.info("Load all available addons");
 
         // Create a new artifact loader
         ArtifactLoader artifactLoader = new ArtifactLoader();
 
         // Load all the dependencies and repositories from the addons
         List<AddonConfiguration> configurations = new ArrayList<>();
-        for (File file : addons) {
-            if (file.isDirectory()) continue;
+        for (Path path : addons) {
+            if (Files.isDirectory(path)) continue;
 
-            try (JarFile jarFile = new JarFile(file, true, ZipFile.OPEN_READ, Runtime.version())) {
-                logger.debug("Loading jar file " + file.getAbsolutePath());
+            try (JarFile jarFile = new JarFile(path.toFile(), true, ZipFile.OPEN_READ, Runtime.version())) {
+                logger.debug("Loading jar file " + path.toFile().getAbsolutePath());
 
                 // Load the configuration file from the jar
-                AddonConfiguration configuration = loadConfig(file, jarFile);
+                AddonConfiguration configuration = retrieveConfig(path, jarFile);
                 if (configuration == null) {
-                    logger.error(new FileNotFoundException("Could not locate the addon.json within " + file.getPath() + "!"));
+                    logger.error(new FileNotFoundException("Could not locate the addon.json within " + path.toFile().getPath() + "!"));
                     continue;
                 }
                 Json addon = configuration.json();
@@ -112,10 +134,10 @@ public final class AddonLoader {
 
                 try {
                     compatibleOrThrow(jarFile);
-                    logger.debug(file.getAbsolutePath() + " is jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
+                    logger.debug(path.toFile().getAbsolutePath() + " is jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
                 } catch (RuntimeException e) {
                     logger.error(e);
-                    logger.error(file.getAbsolutePath() + " is not jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
+                    logger.error(path.toFile().getAbsolutePath() + " is not jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
                     continue;
                 }
 
@@ -134,28 +156,18 @@ public final class AddonLoader {
                 // Generate classpath
                 URL[] classpath;
                 if (dependencies != null)
-                    classpath = Stream.concat(Arrays.stream(dependencies), Stream.of(file.toURI().toURL())).toArray(URL[]::new);
-                else classpath = new URL[]{file.toURI().toURL()};
+                    classpath = Stream.concat(Arrays.stream(dependencies), Stream.of(path.toUri().toURL())).toArray(URL[]::new);
+                else classpath = new URL[]{path.toUri().toURL()};
 
                 // Put the configuration in the configurations map
-                configurations.add(new AddonConfiguration(file, configuration.json(), classpath,
+                configurations.add(new AddonConfiguration(path, configuration.json(), classpath,
                         configuration.services(), configuration.addon(), configuration.meta(), configuration.classLoader()));
             }
         }
         artifactLoader.stop();
 
-        load(configurations);
-        configurations.clear();
-
-        if (addons.isEmpty()) logger.info("No addons found to load");
-        else logger.info("All addons were loaded within " + (System.currentTimeMillis() - start) + "ms");
         addons.clear();
-
-        try {
-            craftsNet.listenerRegistry().call(new AllAddonsLoadedEvent());
-        } catch (Exception e) {
-            logger.error(e, "Can not fire addons loaded event!");
-        }
+        return configurations;
     }
 
     /**
@@ -168,95 +180,20 @@ public final class AddonLoader {
         AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader();
         HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources = new HashMap<>();
 
-        configurations.forEach(configuration -> configuration.classLoader().set(new AddonClassLoader(this.craftsNet, configuration)));
+        configurations.forEach(configuration -> {
+            configuration.classLoader().set(new AddonClassLoader(this.craftsNet, configuration));
+            Addon addon = instantiateAddon(configuration);
 
-        for (AddonConfiguration configuration : configurations)
-            try {
-                AddonMeta meta = AddonMeta.of(configuration);
+            if (addon == null) return;
 
-                String name = meta.name();
-                Pattern pattern = Pattern.compile("^[a-zA-Z0-9]*$");
-                if (!pattern.matcher(name).matches())
-                    throw new IllegalArgumentException("Plugin names must not contain special characters / spaces! Plugin name: \"" + name + "\"");
-                if (loadOrder.contains(name))
-                    throw new IllegalStateException("There are two plugins with the same name: \"" + name + "\"!");
+            craftsNet.addonManager().register(addon);
+            configuration.addon().set(addon);
 
-                logger.info("Found addon " + name + ", add it to load order");
-
-                // Create addon class loader
-                AddonClassLoader classLoader = configuration.classLoader().get();
-
-                // Load the main class of the addon using the class loader
-                String className = meta.mainClass();
-                Class<?> clazz = className != null && !className.isBlank() ? classLoader.loadClass(className) : HollowAddon.class;
-                if (clazz == null)
-                    throw new NullPointerException("The main class could not be found!");
-                if (!Addon.class.isAssignableFrom(clazz))
-                    throw new IllegalArgumentException("The loaded main class (" + className +
-                            ") is not an instance of " + Addon.class.getSimpleName() + "!");
-
-                // Create an instance of the main class and inject dependencies using reflection
-                Class<? extends Addon> addonClass = clazz.asSubclass(Addon.class);
-                Addon addon = ReflectionUtils.getConstructor(addonClass).newInstance();
-                ReflectionUtils.setField("craftsNet", addon, craftsNet);
-                ReflectionUtils.setField("meta", addon, meta);
-                ReflectionUtils.setField("logger", addon, logger.cloneWithName(name));
-                ReflectionUtils.setField("classLoader", addon, classLoader);
-
-                loadOrder.addAddon(addon);
-                Json addonConfig = configuration.json();
-                if (addonConfig.contains("depends"))
-                    for (String depended : addonConfig.getStringList("depends"))
-                        loadOrder.depends(addon, depended);
-
-                if (addonConfig.contains("softDepends"))
-                    for (String depended : addonConfig.getStringList("softDepends"))
-                        loadOrder.softDepends(addon, depended);
-
-                craftsNet.addonManager().register(addon);
-                configuration.addon().set(addon);
-
-                // Load the file the addon is located in
-                URI uri;
-                JarFile jarFile;
-                if (configuration.file() != null) {
-                    uri = configuration.file().toURI();
-                    jarFile = new JarFile(configuration.file());
-                } else {
-                    // Use the code source of the addon when it is not located in the addons folder
-                    Path path = Path.of(addon.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
-                    uri = path.toUri();
-                    jarFile = craftsNet.fileHelper().getJarFileAt(path);
-                }
-
-                codesSources.computeIfAbsent(uri, f -> Map.entry(jarFile, new ArrayList<>())).getValue().add(addon);
-            } catch (Exception e) {
-                logger.error(e);
-            }
-
-        // ToDo: Fix that currently the first addon in the jar is loading all autoregister infos.
-
-        final HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos = new HashMap<>();
-        codesSources.values().forEach((info) -> {
-            final JarFile file = info.getKey();
-            final ArrayList<Addon> bounding = info.getValue();
-
-            // Skip if the jar file is null
-            if (file == null) return;
-
-            // Perform the actual load of the jar file if it is not null
-            try (file) {
-                bounding.forEach(addon -> {
-                    try {
-                        autoRegisterInfos.put(addon, autoRegisterLoader.loadFrom(addon.getClassLoader(), bounding, file));
-                    } catch (NoClassDefFoundError ignored) {
-                    }
-                });
-            } catch (IOException e) {
-                throw new RuntimeException("Could not load auto register infos!", e);
-            }
+            addToLoadOrder(loadOrder, configuration, addon);
+            addCodeSource(configuration, addon, codesSources);
         });
-        codesSources.clear();
+
+        HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos = convertToAutoRegister(autoRegisterLoader, codesSources);
 
         // Loading all addons
         Collection<Addon> orderedLoad = loadOrder.getLoadOrder();
@@ -277,25 +214,181 @@ public final class AddonLoader {
             craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.ENABLE);
         }
 
-        // Load all the registrable services
-        ServiceManager serviceManager = craftsNet.serviceManager();
-        for (AddonConfiguration configuration : configurations) {
-            if (configuration.services() != null && !configuration.services().isEmpty() && configuration.addon().get() != null) {
-                if (!(configuration.addon().get().getClassLoader() instanceof AddonClassLoader classLoader)) continue;
-                configuration.services().forEach(service -> {
-                    for (String provider : service.provider().split(";"))
-                        try {
-                            Class<?> spi = classLoader.loadClass(service.spi());
-                            Class<?> providerClass = classLoader.loadClass(provider);
-                            if (serviceManager.load(spi, providerClass))
-                                logger.debug("Registered service " + provider + " for " + spi.getName());
-                            else
-                                logger.debug("No service loader found for service " + spi.getName());
-                        } catch (ClassNotFoundException e) {
-                            throw new RuntimeException(e);
-                        }
+        configurations.forEach(this::loadServices);
+        configurations.clear();
+
+        try {
+            craftsNet.listenerRegistry().call(new AllAddonsLoadedEvent());
+        } catch (Exception e) {
+            logger.error(e, "Can not fire addons loaded event!");
+        }
+    }
+
+    /**
+     * Add an addon to the specified load order.
+     *
+     * @param loadOrder     The load order in which the addon should be placed.
+     * @param configuration The configuration of the addon.
+     * @param addon         The instance of the addon.
+     * @since 3.4.3
+     */
+    private void addToLoadOrder(AddonLoadOrder loadOrder, AddonConfiguration configuration, Addon addon) {
+        String name = addon.getName();
+        if (loadOrder.contains(name))
+            throw new IllegalStateException("There are two plugins with the same name: \"%s\"!".formatted(name));
+
+        loadOrder.addAddon(addon);
+
+        Json addonConfig = configuration.json();
+        if (addonConfig.contains("depends"))
+            for (String depended : addonConfig.getStringList("depends"))
+                loadOrder.depends(addon, depended);
+
+        if (addonConfig.contains("softDepends"))
+            for (String depended : addonConfig.getStringList("softDepends"))
+                loadOrder.softDepends(addon, depended);
+    }
+
+    /**
+     * Add the code source of an addon to the specified code sources hash map
+     *
+     * @param configuration The configuration of the addon.
+     * @param addon         The instance of the addon.
+     * @param codesSources  The hash map which should store the code source.
+     * @since 3.4.3
+     */
+    private void addCodeSource(AddonConfiguration configuration, Addon addon,
+                               HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources) {
+        try {
+            Path path;
+            if (configuration.path() != null) path = configuration.path();
+            else
+                // Use the code source of the addon when it is not located in the addons folder
+                path = Path.of(addon.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
+
+            URI uri = path.toUri();
+            JarFile jarFile = craftsNet.fileHelper().getJarFileAt(path);
+
+            codesSources.computeIfAbsent(uri, f -> Map.entry(jarFile, new ArrayList<>())).getValue().add(addon);
+        } catch (IOException | URISyntaxException e) {
+            throw new RuntimeException("Could not handle code source for addon %s!".formatted(
+                    addon.getName()
+            ), e);
+        }
+    }
+
+    /**
+     * Instantiates a new instance of the addon which is described via the
+     * {@link AddonConfiguration configuration}.
+     *
+     * @param configuration The configuration containing the information about the addon.
+     * @return A new instance of the addon.
+     * @since 3.4.3
+     */
+    private Addon instantiateAddon(AddonConfiguration configuration) {
+        try {
+            AddonMeta meta = AddonMeta.of(configuration);
+            configuration.meta().set(meta);
+
+            String name = meta.name();
+            Pattern pattern = Pattern.compile("^[a-zA-Z0-9]*$");
+            if (!pattern.matcher(name).matches())
+                throw new IllegalArgumentException("Plugin names must not contain special characters / spaces! Plugin name: \"" + name + "\"");
+
+            logger.info("Found addon " + name + ", add it to load order");
+
+            // Create addon class loader
+            AddonClassLoader classLoader = configuration.classLoader().get();
+
+            // Load the main class of the addon using the class loader
+            String className = meta.mainClass();
+            Class<?> clazz = className != null && !className.isBlank() ? classLoader.loadClass(className) : HollowAddon.class;
+            if (clazz == null)
+                throw new NullPointerException("The main class could not be found!");
+            if (!Addon.class.isAssignableFrom(clazz))
+                throw new IllegalArgumentException("The loaded main class (" + className +
+                        ") is not an instance of " + Addon.class.getSimpleName() + "!");
+
+            // Create an instance of the main class and inject dependencies using reflection
+            Class<? extends Addon> addonClass = clazz.asSubclass(Addon.class);
+            Addon addon = ReflectionUtils.getNewInstance(addonClass);
+            ReflectionUtils.setField("craftsNet", addon, craftsNet);
+            ReflectionUtils.setField("meta", addon, meta);
+            ReflectionUtils.setField("logger", addon, logger.cloneWithName(name));
+            ReflectionUtils.setField("classLoader", addon, classLoader);
+
+            return addon;
+        } catch (Exception e) {
+            logger.error(e, "Could not load addon %s!".formatted(
+                    configuration.meta().get().name()
+            ));
+        }
+        return null;
+    }
+
+    /**
+     * Converts all given code sources in the respective {@link AutoRegisterInfo auto register info}
+     * which then can be used to perform an auto register action.
+     *
+     * @param loader       The {@link AutoRegisterLoader} which is used to load the infos.
+     * @param codesSources The code sources which should be converted.
+     * @return A hash map which contains all converted {@link AutoRegisterInfo infos}.
+     * @since 3.4.3
+     */
+    private HashMap<Addon, List<AutoRegisterInfo>> convertToAutoRegister(AutoRegisterLoader loader,
+                                                                         HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources) {
+        // ToDo: Fix that currently the first addon in the jar is loading all autoregister infos.
+
+        final HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos = new HashMap<>();
+        codesSources.values().forEach((info) -> {
+            final JarFile file = info.getKey();
+            final ArrayList<Addon> bounding = info.getValue();
+
+            // Skip if the jar file is null
+            if (file == null) return;
+
+            // Perform the actual load of the jar file if it is not null
+            try (file) {
+                bounding.forEach(addon -> {
+                    try {
+                        autoRegisterInfos.put(addon, loader.loadFrom(addon.getClassLoader(), bounding, file));
+                    } catch (NoClassDefFoundError ignored) {
+                    }
                 });
+            } catch (IOException e) {
+                throw new RuntimeException("Could not load auto register infos!", e);
             }
+        });
+        codesSources.clear();
+        return autoRegisterInfos;
+    }
+
+    /**
+     * Loads all the services from the {@link AddonConfiguration configuration}.
+     *
+     * @param configuration The {@link AddonConfiguration configuration} from which
+     *                      the services are loaded.
+     * @since 3.4.3
+     */
+    private void loadServices(AddonConfiguration configuration) {
+        ServiceManager serviceManager = craftsNet.serviceManager();
+
+        if (configuration.services() != null && !configuration.services().isEmpty() && configuration.addon().get() != null) {
+            if (!(configuration.addon().get().getClassLoader() instanceof AddonClassLoader classLoader)) return;
+
+            configuration.services().forEach(service -> {
+                for (String provider : service.provider().split(";"))
+                    try {
+                        Class<?> spi = classLoader.loadClass(service.spi());
+                        Class<?> providerClass = classLoader.loadClass(provider);
+                        if (serviceManager.load(spi, providerClass))
+                            logger.debug("Registered service " + provider + " for " + spi.getName());
+                        else
+                            logger.debug("No service loader found for service " + spi.getName());
+                    } catch (ClassNotFoundException e) {
+                        throw new RuntimeException(e);
+                    }
+            });
         }
     }
 
@@ -332,14 +425,14 @@ public final class AddonLoader {
     }
 
     /**
-     * Loads the addon JAR file and extracts the configuration.
+     * Loads the addon jar file and extracts the configuration.
      *
-     * @param source The source {@link File} from which the addon is loaded.
+     * @param source The source {@link Path} from which the addon is loaded.
      * @param file   The addon {@link JarFile} to load.
      * @return The addon configuration if found, otherwise null.
-     * @throws IOException if there is an I/O error while loading the JAR file.
+     * @throws IOException if there is an I/O error while loading the jar file.
      */
-    private AddonConfiguration loadConfig(File source, JarFile file) throws IOException {
+    private AddonConfiguration retrieveConfig(Path source, JarFile file) throws IOException {
         AddonConfiguration configuration;
         JarEntry entry = file.getJarEntry("addon.json");
         if (entry == null) return null;
@@ -351,23 +444,23 @@ public final class AddonLoader {
             configuration = AddonConfiguration.of(source, JsonParser.parse(json.toString()), null, new ConcurrentLinkedQueue<>());
         }
 
-        // Load the services from the file
-        configuration.services().addAll(loadServices(file));
+        // Load the services from the path
+        configuration.services().addAll(retrieveServices(file));
         return configuration;
     }
 
     /**
-     * Utility method for loading RegistrableService instances from a JAR file.
+     * Utility method for loading RegistrableService instances from a jar file.
      *
-     * @param file The JAR file from which to load RegistrableService instances.
-     * @return A list of RegistrableService instances loaded from the specified JAR file.
-     * @throws IOException If an I/O error occurs while processing the JAR file or reading its contents.
+     * @param file The jar file from which to load RegistrableService instances.
+     * @return A list of RegistrableService instances loaded from the specified jar file.
+     * @throws IOException If an I/O error occurs while processing the jar file or reading its contents.
      * @see RegisteredService
      */
-    List<RegisteredService> loadServices(JarFile file) throws IOException {
+    List<RegisteredService> retrieveServices(JarFile file) throws IOException {
         List<RegisteredService> services = new ArrayList<>();
 
-        // Iterate over all entries in the JAR file
+        // Iterate over all entries in the jar file
         Iterator<JarEntry> iterator = file.stream().iterator();
         while (iterator.hasNext()) {
             JarEntry entry = iterator.next();
@@ -376,7 +469,7 @@ public final class AddonLoader {
             if (!entry.getName().trim().toLowerCase().startsWith("meta-inf/services") || entry.isDirectory())
                 continue;
 
-            // Read the contents of the file in the JAR entry
+            // Read the contents of the file in the jar entry
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(entry)))) {
                 StringBuilder provider = new StringBuilder();
 

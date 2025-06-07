@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.builder;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.Addon;
+import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
 import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
 import de.craftsblock.craftsnet.logging.Logger;
@@ -20,7 +21,7 @@ import java.util.TreeSet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.6
+ * @version 1.3.0
  * @see CraftsNetBuilder
  * @since 3.1.0-SNAPSHOT
  */
@@ -344,11 +345,13 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
      */
     @ApiStatus.Internal
     public void loadAddons(CraftsNet craftsNet) {
+        AddonManager manager = craftsNet.addonManager();
         List<AddonConfiguration> configurations = new ArrayList<>();
 
-        AddonLoader loader = new AddonLoader(craftsNet);
+        AddonLoader loader = manager.getAddonLoader();
         for (Class<? extends Addon> addon : this.addons)
             configurations.addAll(AddonConfiguration.of(craftsNet, loader, addon));
+
         loader.load(new TreeSet<>(configurations).stream().toList());
     }
 
