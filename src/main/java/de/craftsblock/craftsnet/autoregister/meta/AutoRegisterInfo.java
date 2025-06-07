@@ -21,7 +21,7 @@ import java.util.*;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 2.1.0
+ * @version 2.1.1
  * @since 3.2.0-SNAPSHOT
  */
 public class AutoRegisterInfo {
@@ -115,7 +115,7 @@ public class AutoRegisterInfo {
 
             for (Class<?> type : con.getParameterTypes())
                 if (CraftsNet.class.isAssignableFrom(type)) args.add(craftsNet);
-                else if (hasBounding()) {
+                else if (Addon.class.isAssignableFrom(type)) {
                     Optional<Addon> matchingAddon = addons.stream()
                             .filter(addon -> addon.getClass().isAssignableFrom(type))
                             .findFirst();
