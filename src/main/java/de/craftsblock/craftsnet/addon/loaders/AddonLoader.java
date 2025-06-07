@@ -215,7 +215,6 @@ public final class AddonLoader {
         }
 
         configurations.forEach(this::loadServices);
-        configurations.clear();
 
         try {
             craftsNet.listenerRegistry().call(new AllAddonsLoadedEvent());

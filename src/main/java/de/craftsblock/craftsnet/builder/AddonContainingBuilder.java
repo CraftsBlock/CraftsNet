@@ -21,7 +21,7 @@ import java.util.TreeSet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.0
+ * @version 1.3.1
  * @see CraftsNetBuilder
  * @since 3.1.0-SNAPSHOT
  */
@@ -352,7 +352,7 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
         for (Class<? extends Addon> addon : this.addons)
             configurations.addAll(AddonConfiguration.of(craftsNet, loader, addon));
 
-        loader.load(new TreeSet<>(configurations).stream().toList());
+        manager.addDirectly(new TreeSet<>(configurations));
     }
 
     /**

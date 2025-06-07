@@ -10,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
-import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
@@ -26,7 +25,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.0
+ * @version 1.3.1
  * @see Addon
  * @see AddonLoader
  * @since 1.0.0-SNAPSHOT
@@ -56,6 +55,17 @@ public final class AddonManager {
     }
 
     /**
+     * Adds {@link AddonConfiguration} directly to the configurations which
+     * will be loaded on startup.
+     *
+     * @param configurations The {@link AddonConfiguration} to add.
+     * @since 3.4.3
+     */
+    public void addDirectly(Collection<AddonConfiguration> configurations) {
+        this.configurations.addAll(configurations);
+    }
+
+    /**
      * Performs the startup of the addon system and loads all present
      * addon configurations.
      *
@@ -69,7 +79,11 @@ public final class AddonManager {
 
         logger.info("Load all available addons");
         addonLoader.load(configurations);
-        logger.info("All addons were loaded within " + (System.currentTimeMillis() - start) + "ms");
+        logger.info("Loaded %s addons were loaded within %sms".formatted(
+                configurations.size(), System.currentTimeMillis() - start
+        ));
+
+        configurations.clear();
     }
 
     /**
@@ -93,7 +107,7 @@ public final class AddonManager {
                     .forEach(addonLoader::update);
         }
 
-        configurations.addAll(addonLoader.load());
+        this.addDirectly(addonLoader.load());
     }
 
     /**
