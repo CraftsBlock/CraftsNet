@@ -14,7 +14,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @since 3.0.3-SNAPSHOT
  */
 public final class AddonClassLoader extends URLClassLoader {
@@ -129,6 +129,17 @@ public final class AddonClassLoader extends URLClassLoader {
      */
     public static Set<AddonClassLoader> getAddonLoaders() {
         return Collections.unmodifiableSet(addonLoaders);
+    }
+
+    /**
+     * Retrieves the {@link CraftsNet} instance which this class loader is linked
+     * to.
+     *
+     * @return The {@link CraftsNet} instance.
+     * @since 3.4.3
+     */
+    public CraftsNet getCraftsNet() {
+        return craftsNet;
     }
 
 }
