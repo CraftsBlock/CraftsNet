@@ -4,6 +4,11 @@ plugins {
     id 'maven-publish'
 }
 
+def env = new Properties()
+file(".env").withInputStream {
+    env.load(it)
+}
+
 java {
     sourceCompatibility = JavaVersion.VERSION_17
     targetCompatibility = JavaVersion.VERSION_17
@@ -114,8 +119,8 @@ publishing {
                 basic(BasicAuthentication)
             }
             credentials {
-                username = project.findProperty("craftsblockRepoUsername")
-                password = project.findProperty("craftsblockRepoPassword")
+                username = env["username"]
+                password = env["password"]
             }
         }
     }
