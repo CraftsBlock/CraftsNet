@@ -31,7 +31,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.5
+ * @version 2.0.6
  * @see <a href="https://maven.apache.org/resolver/index.html">Eclipse Aether</a>
  * @since 3.0.0-SNAPSHOT
  */
@@ -76,9 +76,7 @@ public final class ArtifactLoader {
      * Cleanup internal repository cache
      */
     public void cleanup() {
-        repositories.parallelStream()
-                .filter(remoteRepository -> !remoteRepository.equals(defaultRepo))
-                .forEach(repositories::remove);
+        repositories.removeIf(remoteRepository -> !remoteRepository.equals(defaultRepo));
     }
 
     /**
