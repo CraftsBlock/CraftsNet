@@ -13,7 +13,7 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.3.0
+ * @version 1.3.1
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
@@ -119,16 +119,22 @@ public class ReflectionUtils {
     /**
      * Sets a field in the given object using reflection.
      *
-     * @param name The name of the field to set.
-     * @param obj  The object whose field needs to be set.
-     * @param arg  The value to set the field to.
-     * @throws IllegalAccessException if the field cannot be accessed.
+     * @param name   The name of the field to set.
+     * @param target The object whose field needs to be set.
+     * @param value  The value to set the field to.
      */
-    public static void setField(String name, Object obj, Object arg) throws IllegalAccessException {
-        Field field = getField(obj.getClass(), name); // Find the specified field in the object's class hierarchy using reflection
-        field.setAccessible(true); // Set the fields accessibility to true
-        field.set(obj, arg); // Set the field value to the provided argument
-        field.setAccessible(false); // Set the fields accessibility to false
+    public static void setField(String name, Object target, Object value) {
+        Field field = getField(target.getClass(), name);
+        try {
+            field.setAccessible(true);
+            field.set(target, value);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Can not set field %s of class %s!".formatted(
+                    name, target.getClass().getSimpleName()
+            ), e);
+        } finally {
+            field.setAccessible(false);
+        }
     }
 
 
@@ -144,7 +150,10 @@ public class ReflectionUtils {
         while (clazz != null && field == null) {
             try {
                 field = clazz.getDeclaredField(name); // Attempt to get the specified field from the current class
-            } catch (Exception ignored) {
+            } catch (NoSuchFieldException e) {
+                throw new RuntimeException("Can not get field %s from class %s!".formatted(
+                        name, clazz.getSimpleName()
+                ), e);
             }
 
             clazz = clazz.getSuperclass(); // Move to the superclass for further field search
