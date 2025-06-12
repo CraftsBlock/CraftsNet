@@ -32,19 +32,20 @@ repositories {
 dependencies {
     // CraftsBlock related dependencies ---------------------------------------------------------------------------------------
 
-    def craftscoreVersion = "3.8.6"
+    // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/bom
+    implementation platform("de.craftsblock.craftscore:bom:3.8.6")
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/utils
-    implementation "de.craftsblock.craftscore:utils:$craftscoreVersion"
+    implementation "de.craftsblock.craftscore:utils"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/cache
-    implementation "de.craftsblock.craftscore:cache:$craftscoreVersion"
+    implementation "de.craftsblock.craftscore:cache"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/event
-    implementation "de.craftsblock.craftscore:event:$craftscoreVersion"
+    implementation "de.craftsblock.craftscore:event"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/json
-    implementation "de.craftsblock.craftscore:json:$craftscoreVersion"
+    implementation "de.craftsblock.craftscore:json"
 
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
