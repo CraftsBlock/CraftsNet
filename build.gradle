@@ -72,7 +72,9 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
-jar {
+tasks.register("runnableJar", Jar) {
+    archiveClassifier.set("runnable")
+
     manifest {
         attributes 'Main-Class': application.mainClass.get()
     }
@@ -88,7 +90,14 @@ publishing {
     publications {
         normal(MavenPublication) {
             artifactId "craftsnet"
+
             from components.java
+
+            artifact(tasks.named("runnableJar")) {
+                classifier = "runnable"
+                extension = "jar"
+            }
+
             pom {
                 name = 'CraftsNet'
                 description = 'Easy creation of HTTP routes and WebSocket endpoints in Java.'
