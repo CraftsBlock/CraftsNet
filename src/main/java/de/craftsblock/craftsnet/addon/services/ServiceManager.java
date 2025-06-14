@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.addon.services;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.services.builtin.IIOServiceLoader;
+import de.craftsblock.craftsnet.addon.services.builtin.SQLDriverLoader;
 import de.craftsblock.craftsnet.addon.services.builtin.handlers.GenericHandlerLoader;
 import de.craftsblock.craftsnet.addon.services.builtin.handlers.MiddlewareHandlerLoader;
 import de.craftsblock.craftsnet.addon.services.builtin.handlers.RequestHandlerLoader;
@@ -22,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.5
+ * @version 1.0.6
  * @since 3.0.0-SNAPSHOT
  */
 public class ServiceManager {
@@ -47,6 +48,8 @@ public class ServiceManager {
         register(new MiddlewareHandlerLoader(craftsNet));
         register(new RequestHandlerLoader(craftsNet));
         register(new SocketHandlerLoader(craftsNet));
+
+        register(new SQLDriverLoader());
 
         register(new ListenerAdapterLoader(craftsNet));
     }
