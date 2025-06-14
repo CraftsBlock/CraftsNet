@@ -25,7 +25,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.1
+ * @version 1.3.2
  * @see Addon
  * @see AddonLoader
  * @since 1.0.0-SNAPSHOT
@@ -110,9 +110,6 @@ public final class AddonManager {
 
             try (Stream<Path> stream = Files.walk(folder, 1)) {
                 stream.filter(Files::isRegularFile)
-                        .peek(path -> System.out.printf(
-                                "%s.endsWith(\".jar\") -> %s%n", path, path.toString().endsWith(".jar")
-                        ))
                         .filter(path -> path.toString().endsWith(".jar"))
                         .forEach(addonLoader::update);
             }
