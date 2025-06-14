@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.6.1
+ * @version 1.6.2
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -228,7 +228,7 @@ public class WebHandler implements HttpHandler {
 
         // Create a transformer performer which handles all transformers
         TransformerPerformer transformerPerformer = new TransformerPerformer(this.craftsNet, validator, 1, e -> {
-            response.println(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).toString());
+            response.print(Json.empty().set("error", "Could not process transformer: " + e.getMessage()));
         });
 
         // Loop through all priorities
