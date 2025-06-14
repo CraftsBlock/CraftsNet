@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.2.1-SNAPSHOT
  */
 public class RequirementRegistry {
@@ -112,9 +112,10 @@ public class RequirementRegistry {
      * @param requirement The requirement which should be registered.
      * @param process     Whether if all registered endpoints should receive the new requirement (true) or not (false).
      */
-    private void registerRaw(Class<? extends Server> target, Requirement<? extends RequireAble, RouteRegistry.EndpointMapping> requirement, boolean process) {
+    private void registerRaw(Class<? extends Server> target, Requirement<? extends RequireAble, RouteRegistry.EndpointMapping> requirement,
+                             boolean process) {
         this.requirements.computeIfAbsent(target, c -> new ConcurrentLinkedQueue<>()).add(requirement);
-        ConcurrentHashMap<Class<? extends Server>, ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<RouteRegistry.EndpointMapping>>> serverMappings = routeRegistry.getServerMappings();
+        var serverMappings = routeRegistry.getServerMappings();
         if (!process || !serverMappings.containsKey(target)) return;
 
         ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<RouteRegistry.EndpointMapping>> patternedMappings = serverMappings.get(target);
@@ -179,7 +180,8 @@ public class RequirementRegistry {
      * @param handler      The handler object that contains the method and acts as the parent context.
      */
     @ApiStatus.Internal
-    public void loadRequirements(ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements, List<Class<? extends Annotation>> annotations, Method method, Object handler) {
+    public void loadRequirements(ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements,
+                                 Collection<Class<? extends Annotation>> annotations, Method method, Object handler) {
         loadRequirements(requirements, annotations, handler.getClass());
         loadRequirements(requirements, annotations, method);
     }
@@ -192,7 +194,8 @@ public class RequirementRegistry {
      * @param element      The object (either a Method or another class instance) to process.
      */
     @ApiStatus.Internal
-    private void loadRequirements(ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements, List<Class<? extends Annotation>> annotations, AnnotatedElement element) {
+    private void loadRequirements(ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements,
+                                  Collection<Class<? extends Annotation>> annotations, AnnotatedElement element) {
         for (Class<? extends Annotation> type : annotations) {
             Annotation annotation = ReflectionUtils.retrieveRawAnnotation(element, type);
             if (annotation == null) continue;
