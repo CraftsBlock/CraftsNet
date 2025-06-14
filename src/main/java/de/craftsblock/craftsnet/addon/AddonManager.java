@@ -62,7 +62,9 @@ public final class AddonManager {
      * @since 3.4.3
      */
     public void addDirectly(Collection<AddonConfiguration> configurations) {
-        this.configurations.addAll(configurations);
+        synchronized (this.configurations) {
+            this.configurations.addAll(configurations);
+        }
     }
 
     /**
@@ -72,18 +74,22 @@ public final class AddonManager {
      * @since 3.4.3
      */
     public void startup() {
-        if (configurations.isEmpty()) {
-            logger.info("No addons found to load");
-            return;
+        synchronized (configurations) {
+            if (configurations.isEmpty()) {
+                logger.info("No addons found to load");
+                return;
+            }
+
+            synchronized (addonLoader) {
+                logger.info("Load all available addons");
+                addonLoader.load(configurations);
+                logger.info("Loaded %s addons were loaded within %sms".formatted(
+                        configurations.size(), System.currentTimeMillis() - start
+                ));
+            }
+
+            configurations.clear();
         }
-
-        logger.info("Load all available addons");
-        addonLoader.load(configurations);
-        logger.info("Loaded %s addons were loaded within %sms".formatted(
-                configurations.size(), System.currentTimeMillis() - start
-        ));
-
-        configurations.clear();
     }
 
     /**
@@ -92,22 +98,27 @@ public final class AddonManager {
      * @throws IOException if there is an I/O error while accessing the addons folder.
      */
     public void fromFiles() throws IOException {
-        addonLoader.reset();
+        synchronized (addonLoader) {
+            addonLoader.reset();
 
-        Path folder = Path.of("addons");
-        logger.debug("Addon folder set to " + folder.toAbsolutePath().toFile().getAbsolutePath());
-        if (Files.notExists(folder) || !Files.isDirectory(folder)) {
-            Files.deleteIfExists(folder);
-            Files.createDirectories(folder);
+            Path folder = Path.of("addons");
+            logger.debug("Addon folder set to " + folder.toAbsolutePath().toFile().getAbsolutePath());
+            if (Files.notExists(folder) || !Files.isDirectory(folder)) {
+                Files.deleteIfExists(folder);
+                Files.createDirectories(folder);
+            }
+
+            try (Stream<Path> stream = Files.walk(folder, 1)) {
+                stream.filter(Files::isRegularFile)
+                        .peek(path -> System.out.printf(
+                                "%s.endsWith(\".jar\") -> %s%n", path, path.toString().endsWith(".jar")
+                        ))
+                        .filter(path -> path.toString().endsWith(".jar"))
+                        .forEach(addonLoader::update);
+            }
+
+            this.addDirectly(addonLoader.load());
         }
-
-        try (Stream<Path> stream = Files.walk(folder)) {
-            stream.filter(Files::isRegularFile)
-                    .filter(path -> path.endsWith(".jar"))
-                    .forEach(addonLoader::update);
-        }
-
-        this.addDirectly(addonLoader.load());
     }
 
     /**

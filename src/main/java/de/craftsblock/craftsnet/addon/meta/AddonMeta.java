@@ -12,19 +12,24 @@ import java.util.Optional;
  * Represents metadata information for an addon, such as its name, main class, authors, website, version, and dependencies.
  * This metadata is typically loaded from a configuration file in JSON format.
  *
- * @param name        The name of the addon.
- * @param mainClass   The main class responsible for initializing the addon.
- * @param description The description of the addon.
- * @param authors     A list of authors of the addon.
- * @param website     The website associated with the addon.
- * @param version     The version of the addon.
- * @param depends     The dependencies required by the addon.
+ * @param name         The name of the addon.
+ * @param mainClass    The main class responsible for initializing the addon.
+ * @param description  The description of the addon.
+ * @param authors      A list of authors of the addon.
+ * @param website      The website associated with the addon.
+ * @param version      The version of the addon.
+ * @param depends      An array of addon names that must be present and loaded before this.
+ * @param softDepends  An array of addon names that may be present and loaded before this when present.
+ * @param repositories The maven repositories that should be used while the dependencies are resolved.
+ * @param dependencies The maven dependencies this addon needs.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
+ * @version 1.1.0
  * @since 3.1.0-SNAPSHOT
  */
-public record AddonMeta(String name, String mainClass, String description, List<String> authors, String website, String version, String[] depends) {
+public record AddonMeta(String name, String mainClass, String description, List<String> authors,
+                        String website, String version, String[] depends, String[] softDepends,
+                        String[] repositories, String[] dependencies) {
 
     /**
      * Creates an {@link AddonMeta} instance from the configuration provided by the {@link AddonConfiguration}.
@@ -49,7 +54,10 @@ public record AddonMeta(String name, String mainClass, String description, List<
                 authors,
                 Optional.ofNullable(json.getString("website")).orElse(""),
                 Optional.ofNullable(json.getString("version")).orElse(""),
-                Optional.ofNullable(json.getStringList("depends").toArray(String[]::new)).orElse(new String[0])
+                Optional.ofNullable(json.getStringList("depends").toArray(String[]::new)).orElse(new String[0]),
+                Optional.ofNullable(json.getStringList("softDepends").toArray(String[]::new)).orElse(new String[0]),
+                Optional.ofNullable(json.getStringList("repositories").toArray(String[]::new)).orElse(new String[0]),
+                Optional.ofNullable(json.getStringList("dependencies").toArray(String[]::new)).orElse(new String[0])
         );
     }
 

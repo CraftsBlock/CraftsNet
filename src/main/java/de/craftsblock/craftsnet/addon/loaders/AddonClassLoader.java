@@ -14,7 +14,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
+ * @version 1.2.0
  * @since 3.0.3-SNAPSHOT
  */
 public final class AddonClassLoader extends URLClassLoader {
@@ -84,7 +84,7 @@ public final class AddonClassLoader extends URLClassLoader {
         } catch (ClassNotFoundException ignored) {
         }
 
-        if (lookup)
+        if (lookup) {
             for (AddonClassLoader loader : addonLoaders)
                 try {
                     Class<?> result = loader.loadClass0(name, resolve, false);
@@ -103,6 +103,13 @@ public final class AddonClassLoader extends URLClassLoader {
                 } catch (ClassNotFoundException ignored) {
                 }
 
+            var dependencyLoaders = addon.dependencyLoaders();
+            if (dependencyLoaders != null && dependencyLoaders.length >= 1)
+                try {
+                    return dependencyLoaders[0].loadClass(name, resolve);
+                } catch (ClassNotFoundException ignored) {
+                }
+        }
 
         throw new ClassNotFoundException(name);
     }

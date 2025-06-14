@@ -59,8 +59,8 @@ final class AddonLoadOrder {
      * @param addon     the addon that declares the dependency
      * @param dependsOn the name of the addon that is depended on
      */
-    public void depends(Addon addon, String dependsOn) {
-        this.depends(addon, dependsOn, true);
+    public void depends(String addon, String dependsOn) {
+        this.dryDepends(addon, dependsOn, true);
     }
 
     /**
@@ -70,8 +70,8 @@ final class AddonLoadOrder {
      * @param dependsOn the name of the addon that is optionally depended on
      * @since 3.3.4-SNAPSHOT
      */
-    public void softDepends(Addon addon, String dependsOn) {
-        this.depends(addon, dependsOn, false);
+    public void softDepends(String addon, String dependsOn) {
+        this.dryDepends(addon, dependsOn, false);
     }
 
     /**
@@ -89,11 +89,11 @@ final class AddonLoadOrder {
      * @throws IllegalStateException if the addon attempts to depend on itself
      * @since 3.3.4-SNAPSHOT
      */
-    private void depends(Addon addon, String dependsOn, boolean required) {
-        if (addon.getName().equalsIgnoreCase(dependsOn))
-            throw new IllegalStateException("Can not add " + addon.getName() + " as depends to itself!");
+    private void dryDepends(String addon, String dependsOn, boolean required) {
+        if (addon.equalsIgnoreCase(dependsOn))
+            throw new IllegalStateException("Can not add " + addon + " as depends to itself!");
 
-        final int addonPriority = getPriority(addon.getName());
+        final int addonPriority = getPriority(addon);
         addonLoadOrder.merge(dependsOn, new BootMapping(dependsOn, addonPriority + 1, null, required),
                 (existingMapping, newMapping) -> {
                     int dependsOnPriority = getPriority(dependsOn);
@@ -105,18 +105,27 @@ final class AddonLoadOrder {
     }
 
     /**
-     * Retrieves an unmodifiable collection representing the load order of addons.
+     * Retrieves an unmodifiable collection representing the load order of addons names.
      * The method generates a sorted list of addon names based on their load priorities,
      * and then maps the names to their corresponding addons using the addonLoadOrder map.
+     *
+     * @return An unmodifiable Collection of addons, representing the load order.
+     * @since 3.4.3
+     */
+    public @Unmodifiable List<String> getPreLoadOrder() {
+        List<String> bootOrderList = new ArrayList<>(addonLoadOrder.keySet());
+        bootOrderList.sort(Comparator.comparingInt(value -> addonLoadOrder.get(value.toString()).priority()).reversed());
+        return bootOrderList;
+    }
+
+    /**
+     * Retrieves an unmodifiable collection representing the load order of addons.
      * The resulting list of addons is filtered to exclude any null values, and the final collection is returned.
      *
      * @return An unmodifiable Collection of addons, representing the load order.
      */
-    public @Unmodifiable Collection<Addon> getLoadOrder() {
-        List<String> bootOrderList = new ArrayList<>(addonLoadOrder.keySet());
-        bootOrderList.sort(Comparator.comparingInt(value -> addonLoadOrder.get(value.toString()).priority()).reversed());
-
-        return bootOrderList.stream()
+    public @Unmodifiable List<Addon> getLoadOrder() {
+        return getPreLoadOrder().stream()
                 .map(addonLoadOrder::get)
                 .filter(Objects::nonNull)
                 .filter(BootMapping::presenceFilter)

@@ -6,6 +6,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.addon.HollowAddon;
+import de.craftsblock.craftsnet.addon.artifacts.ArtifactLoader;
 import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
 import de.craftsblock.craftsnet.addon.meta.AddonMeta;
 import de.craftsblock.craftsnet.addon.meta.RegisteredService;
@@ -25,6 +26,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.BiConsumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
@@ -37,7 +39,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.2.0
+ * @version 2.3.0
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -150,17 +152,18 @@ public final class AddonLoader {
                 // Load all required dependencies
                 URL[] dependencies;
                 if (addon.contains("dependencies"))
-                    dependencies = artifactLoader.loadLibraries(this.craftsNet, this, configuration.services(), name, addon.getStringList("dependencies").toArray(String[]::new));
-                else dependencies = null;
+                    dependencies = artifactLoader.loadLibraries(this.craftsNet, this, configuration.services(),
+                            name, addon.getStringList("dependencies").toArray(String[]::new));
+                else dependencies = new URL[0];
+
+                DependencyClassLoader[] dependencyClassLoaders = Arrays.stream(dependencies)
+                        .map(url -> DependencyClassLoader.safelyNew(craftsNet, url)).toArray(DependencyClassLoader[]::new);
 
                 // Generate classpath
-                URL[] classpath;
-                if (dependencies != null)
-                    classpath = Stream.concat(Arrays.stream(dependencies), Stream.of(path.toUri().toURL())).toArray(URL[]::new);
-                else classpath = new URL[]{path.toUri().toURL()};
+                URL[] classpath = new URL[]{path.toUri().toURL()};
 
                 // Put the configuration in the configurations map
-                configurations.add(new AddonConfiguration(path, configuration.json(), classpath,
+                configurations.add(new AddonConfiguration(path, configuration.json(), classpath, dependencyClassLoaders,
                         configuration.services(), configuration.addon(), configuration.meta(), configuration.classLoader()));
             }
         }
@@ -173,48 +176,63 @@ public final class AddonLoader {
     /**
      * Loads all the addons from the provided list of {@link AddonConfiguration}.
      *
-     * @param configurations The list of {@link AddonConfiguration}.
+     * @param rawConfigurations The list of {@link AddonConfiguration}.
      */
-    public void load(List<AddonConfiguration> configurations) {
+    public void load(List<AddonConfiguration> rawConfigurations) {
+        // Ensure that rawConfigurations is an array list
+        List<AddonConfiguration> configurations;
+        if (rawConfigurations instanceof ArrayList<AddonConfiguration>)
+            configurations = rawConfigurations;
+        else configurations = new ArrayList<>(rawConfigurations);
+
         AddonLoadOrder loadOrder = new AddonLoadOrder();
         AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader();
         HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources = new HashMap<>();
 
+        // Pre setup tasks
         configurations.forEach(configuration -> {
-            configuration.classLoader().set(new AddonClassLoader(this.craftsNet, configuration));
-            Addon addon = instantiateAddon(configuration);
+            configuration.meta().set(AddonMeta.of(configuration));
 
+            configuration.classLoader().set(new AddonClassLoader(this.craftsNet, configuration));
+            preBuildLoadOrder(loadOrder, configuration);
+        });
+
+        sortConfigurations(loadOrder, configurations);
+
+        // Initialize tasks
+        configurations.forEach(configuration -> {
+            Addon addon = instantiateAddon(configuration);
             if (addon == null) return;
 
             craftsNet.addonManager().register(addon);
             configuration.addon().set(addon);
 
-            addToLoadOrder(loadOrder, configuration, addon);
+            addToLoadOrder(loadOrder, addon);
             addCodeSource(configuration, addon, codesSources);
         });
+
+        configurations.forEach(this::loadServices);
 
         HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos = convertToAutoRegister(autoRegisterLoader, codesSources);
 
         // Loading all addons
         Collection<Addon> orderedLoad = loadOrder.getLoadOrder();
-        for (Addon addon : orderedLoad) {
+        orderedLoad.forEach(addon -> {
             logger.info("Loading addon " + addon.getName() + "...");
             addon.onLoad();
 
-            if (!autoRegisterInfos.containsKey(addon)) break;
+            if (!autoRegisterInfos.containsKey(addon)) return;
             craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.LOAD);
-        }
+        });
 
         // Enabling all addons
-        for (Addon addon : orderedLoad) {
+        orderedLoad.forEach(addon -> {
             logger.info("Enabling addon " + addon.getName() + "...");
             addon.onEnable();
 
-            if (!autoRegisterInfos.containsKey(addon)) break;
+            if (!autoRegisterInfos.containsKey(addon)) return;
             craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.ENABLE);
-        }
-
-        configurations.forEach(this::loadServices);
+        });
 
         try {
             craftsNet.listenerRegistry().call(new AllAddonsLoadedEvent());
@@ -224,28 +242,60 @@ public final class AddonLoader {
     }
 
     /**
-     * Add an addon to the specified load order.
+     * Sorts the configurations according to the load order.
      *
-     * @param loadOrder     The load order in which the addon should be placed.
-     * @param configuration The configuration of the addon.
-     * @param addon         The instance of the addon.
+     * @param loadOrder      The load order which holds the order of the addons.
+     * @param configurations The configurations to sort
      * @since 3.4.3
      */
-    private void addToLoadOrder(AddonLoadOrder loadOrder, AddonConfiguration configuration, Addon addon) {
-        String name = addon.getName();
+    private void sortConfigurations(AddonLoadOrder loadOrder, List<AddonConfiguration> configurations) {
+        var orderedConfigurationNames = loadOrder.getPreLoadOrder();
+        Map<String, Integer> sortMap = new HashMap<>();
+        for (int i = 0; i < orderedConfigurationNames.size(); i++)
+            sortMap.put(orderedConfigurationNames.get(i), i);
+
+        configurations.sort(Comparator.comparingInt(c -> sortMap.getOrDefault(c.meta().get().name(), Integer.MAX_VALUE)));
+    }
+
+    /**
+     * Pre-building the load order with just the names of the addons.
+     *
+     * @param loadOrder     The load order which stores the order of the addons.
+     * @param configuration The addon configuration which should be added to the load order.
+     * @since 3.4.3
+     */
+    private void preBuildLoadOrder(AddonLoadOrder loadOrder, AddonConfiguration configuration) {
+        AddonMeta meta = configuration.meta().get();
+        String name = meta.name();
         if (loadOrder.contains(name))
             throw new IllegalStateException("There are two plugins with the same name: \"%s\"!".formatted(name));
 
+        processDepends(name, meta.depends(), loadOrder::depends);
+        processDepends(name, meta.softDepends(), loadOrder::softDepends);
+    }
+
+    /**
+     * Injects the specified depends on using the given consumer.
+     *
+     * @param name     The name of the addon.
+     * @param depends  The addon names which should be injected.
+     * @param consumer The consumer which handles the injection.
+     * @since 3.4.3
+     */
+    private void processDepends(String name, String[] depends, BiConsumer<String, String> consumer) {
+        if (depends.length == 0) return;
+        Arrays.stream(depends).distinct().forEach(depended -> consumer.accept(name, depended));
+    }
+
+    /**
+     * Add an addon to the specified load order.
+     *
+     * @param loadOrder The load order in which the addon should be placed.
+     * @param addon     The instance of the addon.
+     * @since 3.4.3
+     */
+    private void addToLoadOrder(AddonLoadOrder loadOrder, Addon addon) {
         loadOrder.addAddon(addon);
-
-        Json addonConfig = configuration.json();
-        if (addonConfig.contains("depends"))
-            for (String depended : addonConfig.getStringList("depends"))
-                loadOrder.depends(addon, depended);
-
-        if (addonConfig.contains("softDepends"))
-            for (String depended : addonConfig.getStringList("softDepends"))
-                loadOrder.softDepends(addon, depended);
     }
 
     /**
@@ -286,8 +336,7 @@ public final class AddonLoader {
      */
     private Addon instantiateAddon(AddonConfiguration configuration) {
         try {
-            AddonMeta meta = AddonMeta.of(configuration);
-            configuration.meta().set(meta);
+            AddonMeta meta = configuration.meta().get();
 
             String name = meta.name();
             Pattern pattern = Pattern.compile("^[a-zA-Z0-9]*$");
@@ -372,23 +421,25 @@ public final class AddonLoader {
     private void loadServices(AddonConfiguration configuration) {
         ServiceManager serviceManager = craftsNet.serviceManager();
 
-        if (configuration.services() != null && !configuration.services().isEmpty() && configuration.addon().get() != null) {
-            if (!(configuration.addon().get().getClassLoader() instanceof AddonClassLoader classLoader)) return;
+        if (configuration.services() == null || configuration.services().isEmpty()) return;
+        if (configuration.addon().get() == null) return;
+        if (!(configuration.addon().get().getClassLoader() instanceof AddonClassLoader classLoader)) return;
 
-            configuration.services().forEach(service -> {
-                for (String provider : service.provider().split(";"))
-                    try {
-                        Class<?> spi = classLoader.loadClass(service.spi());
-                        Class<?> providerClass = classLoader.loadClass(provider);
-                        if (serviceManager.load(spi, providerClass))
-                            logger.debug("Registered service " + provider + " for " + spi.getName());
-                        else
-                            logger.debug("No service loader found for service " + spi.getName());
-                    } catch (ClassNotFoundException e) {
-                        throw new RuntimeException(e);
-                    }
-            });
-        }
+        configuration.services().forEach(service -> {
+            for (String provider : service.provider().split(";"))
+                try {
+                    Class<?> spi = classLoader.loadClass(service.spi());
+                    Class<?> providerClass = classLoader.loadClass(provider);
+                    if (serviceManager.load(spi, providerClass))
+                        logger.debug("Registered service " + provider + " for " + spi.getName());
+                    else
+                        logger.debug("No service loader found for service " + spi.getName());
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException("Could not register service %s for %s!".formatted(
+                            provider, configuration.addon().get().getName()
+                    ), e);
+                }
+        });
     }
 
     /**
@@ -440,7 +491,7 @@ public final class AddonLoader {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(entry)))) {
             StringBuilder json = new StringBuilder();
             reader.lines().forEach(json::append);
-            configuration = AddonConfiguration.of(source, JsonParser.parse(json.toString()), null, new ConcurrentLinkedQueue<>());
+            configuration = AddonConfiguration.of(source, JsonParser.parse(json.toString()), null, null, new ConcurrentLinkedQueue<>());
         }
 
         // Load the services from the path
@@ -456,7 +507,7 @@ public final class AddonLoader {
      * @throws IOException If an I/O error occurs while processing the jar file or reading its contents.
      * @see RegisteredService
      */
-    List<RegisteredService> retrieveServices(JarFile file) throws IOException {
+    public List<RegisteredService> retrieveServices(JarFile file) throws IOException {
         List<RegisteredService> services = new ArrayList<>();
 
         // Iterate over all entries in the jar file
