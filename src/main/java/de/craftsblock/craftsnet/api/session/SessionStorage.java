@@ -22,7 +22,7 @@ import java.util.concurrent.LinkedBlockingQueue;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.4.2
+ * @version 3.4.3
  * @see Session
  * @see ByteBuffer
  * @since 3.3.0-SNAPSHOT
@@ -155,11 +155,13 @@ public class SessionStorage {
     private void forcePerformJob(JobType type, Object... args) {
         try {
             String sessionID = this.session.getSessionInfo().getSessionID();
-            switch (type) {
-                case LOAD -> this.driver.load(this.session, sessionID);
-                case SAVE -> this.driver.save(this.session, sessionID);
-                case DESTROY -> this.driver.destroy(this.session, sessionID);
-                case MIGRATE -> this.driver.migrate(this.session, sessionID, (SessionDriver) args[0]);
+            synchronized (session) {
+                switch (type) {
+                    case LOAD -> this.driver.load(this.session, sessionID);
+                    case SAVE -> this.driver.save(this.session, sessionID);
+                    case DESTROY -> this.driver.destroy(this.session, sessionID);
+                    case MIGRATE -> this.driver.migrate(this.session, sessionID, (SessionDriver) args[0]);
+                }
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
