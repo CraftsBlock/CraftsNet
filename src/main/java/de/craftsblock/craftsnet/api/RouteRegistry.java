@@ -28,6 +28,8 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -39,7 +41,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.4.1
+ * @version 3.5.0
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -136,9 +138,11 @@ public class RouteRegistry {
             this.unregister(DefaultRoute.getInstance());
 
         // Loop through all active servers and turn them on as they are now needed.
-        for (ServerMapping mapping : annotations.values())
-            if (mapping.server() != null)
-                mapping.server().awakeOrWarn();
+        for (ServerMapping mapping : annotations.values()) {
+            Server server = mapping.server(craftsNet);
+            if (server == null) continue;
+            server.awakeOrWarn();
+        }
     }
 
     /**
@@ -267,9 +271,11 @@ public class RouteRegistry {
             }
 
         // Loop through all active servers and turn them off if they are not needed.
-        for (ServerMapping mapping : annotations.values())
-            if (mapping.server() != null)
-                mapping.server().sleepIfNotNeeded();
+        for (ServerMapping mapping : annotations.values()) {
+            Server server = mapping.server(craftsNet);
+            if (server == null) continue;
+            server.sleepIfNotNeeded();
+        }
     }
 
     /**
@@ -583,10 +589,10 @@ public class RouteRegistry {
     private ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> retrieveHandlerInfoMap(Class<? extends Handler> handler) {
         ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = new ConcurrentHashMap<>();
         if (RequestHandler.class.isAssignableFrom(handler))
-            annotations.computeIfAbsent(Route.class, c -> new ServerMapping(craftsNet.webServer()));
+            annotations.computeIfAbsent(Route.class, c -> new ServerMapping(WebServer.class));
 
         if (SocketHandler.class.isAssignableFrom(handler))
-            annotations.computeIfAbsent(Socket.class, c -> new ServerMapping(craftsNet.webSocketServer()));
+            annotations.computeIfAbsent(Socket.class, c -> new ServerMapping(WebSocketServer.class));
 
         if (annotations.isEmpty())
             throw new IllegalStateException("Invalid handler type " + handler.getClass().getSimpleName() + " only RequestHandler and SocketHandler are allowed!");
@@ -682,20 +688,35 @@ public class RouteRegistry {
     /**
      * The ServerMapping class represents a mapping of a server, and it's instance.
      *
-     * @param server The server object.
+     * @param rawServer The type of the server.
      * @version 1.1.0
      * @since 3.0.3-SNAPSHOT
      */
-    private record ServerMapping(Server server) implements Mapping {
+    private record ServerMapping(Class<? extends Server> rawServer) implements Mapping {
 
         /**
-         * Retrieves the type of the server.
+         * Retrieves the server instance from {@link CraftsNet}.
          *
-         * @return The type of the server.
+         * @return The server instance.
          * @since 3.4.3
          */
-        public Class<? extends Server> rawServer() {
-            return server.getClass();
+        public Function<CraftsNet, Server> server() {
+            return craftsNet -> {
+                if (this.rawServer.equals(WebServer.class)) return craftsNet.webServer();
+                if (this.rawServer.equals(WebSocketServer.class)) return craftsNet.webSocketServer();
+                return null;
+            };
+        }
+
+        /**
+         * Retrieves the server instance from {@link CraftsNet}.
+         *
+         * @param craftsNet The instance of craftsnet.
+         * @return The server instance.
+         * @since 3.4.3
+         */
+        public Server server(CraftsNet craftsNet) {
+            return server().apply(craftsNet);
         }
 
     }
