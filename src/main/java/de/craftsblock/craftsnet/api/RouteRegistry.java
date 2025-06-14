@@ -39,7 +39,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.4.0
+ * @version 3.4.1
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -70,10 +70,11 @@ public class RouteRegistry {
 
         for (Class<? extends Annotation> annotation : annotations.keySet())
             try {
-                Class<? extends Server> rawServer = annotations.get(annotation).rawServer();
-                ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<EndpointMapping>> endpoints = serverMappings.computeIfAbsent(rawServer, c -> new ConcurrentHashMap<>());
-                List<Class<? extends Annotation>> requirementAnnotations = new ArrayList<>(craftsNet.requirementRegistry().getRequirements(rawServer)
-                        .parallelStream().map(Requirement::getAnnotation).toList());
+                ServerMapping serverMapping = annotations.get(annotation);
+                Class<? extends Server> rawServer = serverMapping.rawServer();
+                var endpoints = serverMappings.computeIfAbsent(rawServer, c -> new ConcurrentHashMap<>());
+                Collection<Class<? extends Annotation>> requirementAnnotations = new ArrayList<>(craftsNet.requirementRegistry()
+                        .getRequirements(rawServer).parallelStream().map(Requirement::getAnnotation).toList());
 
                 String parent = ReflectionUtils.retrieveValueOfAnnotation(handler.getClass(), annotation, String.class, true);
 
@@ -125,7 +126,9 @@ public class RouteRegistry {
                 }
 
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("Could not correctly register handlers for @%s of %s!".formatted(
+                        annotation.getSimpleName(), handler.getClass().getSimpleName()
+                ), e);
             }
 
         // Unregister the DefaultRoute
@@ -237,7 +240,7 @@ public class RouteRegistry {
 
         ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = retrieveHandlerInfoMap(handler.getClass());
 
-        for (Class<? extends Annotation> annotation : annotations.keySet()) {
+        for (Class<? extends Annotation> annotation : annotations.keySet())
             try {
                 ServerMapping mapping = annotations.get(annotation);
 
@@ -258,9 +261,10 @@ public class RouteRegistry {
                             });
                 }
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("Could not correctly unregister handlers for @%s of %s!".formatted(
+                        annotation.getSimpleName(), handler.getClass().getSimpleName()
+                ), e);
             }
-        }
 
         // Loop through all active servers and turn them off if they are not needed.
         for (ServerMapping mapping : annotations.values())
@@ -476,16 +480,24 @@ public class RouteRegistry {
                 .filter(entry -> entry.getKey().matcher(formatUrl(url)).matches())
                 .map(Map.Entry::getValue)
                 .flatMap(Collection::stream)
-                .filter(entry -> craftsNet.requirementRegistry().getRequirements(server).stream()
+                .filter(mapping -> craftsNet.requirementRegistry().getRequirements(server).parallelStream()
                         .filter(requirement ->
                                 Utils.checkForMethod(requirement.getClass(), "applies", target.getClass(), EndpointMapping.class))
-                        .map(requirement ->
-                                Map.entry(requirement, Utils.getMethod(requirement.getClass(), "applies", target.getClass(), EndpointMapping.class)))
-                        .allMatch(requirement -> {
+                        .map(requirement -> {
+                            var method = Utils.getMethod(requirement.getClass(), "applies", target.getClass(), EndpointMapping.class);
+                            return Map.entry(requirement, Objects.requireNonNull(method));
+                        })
+                        .allMatch(requirementEntry -> {
+                            var requirement = requirementEntry.getKey();
+                            var method = requirementEntry.getValue();
+
                             try {
-                                return (boolean) requirement.getValue().invoke(requirement.getKey(), target, entry);
+                                return (boolean) method.invoke(requirement, target, mapping);
                             } catch (IllegalAccessException | InvocationTargetException e) {
-                                throw new RuntimeException(e);
+                                throw new RuntimeException("Could not apply requirement %s to %s#%s(%s)!".formatted(
+                                        requirement.getClass().getSimpleName(), method.getDeclaringClass().getSimpleName(), method.getName(),
+                                        String.join(", ", Arrays.stream(method.getParameterTypes()).map(Class::getSimpleName).toList())
+                                ), e);
                             }
                         })
                 );
@@ -571,10 +583,10 @@ public class RouteRegistry {
     private ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> retrieveHandlerInfoMap(Class<? extends Handler> handler) {
         ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = new ConcurrentHashMap<>();
         if (RequestHandler.class.isAssignableFrom(handler))
-            annotations.computeIfAbsent(Route.class, c -> new ServerMapping(WebServer.class, craftsNet.webServer()));
+            annotations.computeIfAbsent(Route.class, c -> new ServerMapping(craftsNet.webServer()));
 
         if (SocketHandler.class.isAssignableFrom(handler))
-            annotations.computeIfAbsent(Socket.class, c -> new ServerMapping(WebSocketServer.class, craftsNet.webSocketServer()));
+            annotations.computeIfAbsent(Socket.class, c -> new ServerMapping(craftsNet.webSocketServer()));
 
         if (annotations.isEmpty())
             throw new IllegalStateException("Invalid handler type " + handler.getClass().getSimpleName() + " only RequestHandler and SocketHandler are allowed!");
@@ -670,9 +682,22 @@ public class RouteRegistry {
     /**
      * The ServerMapping class represents a mapping of a server, and it's instance.
      *
+     * @param server The server object.
+     * @version 1.1.0
      * @since 3.0.3-SNAPSHOT
      */
-    private record ServerMapping(Class<? extends Server> rawServer, Server server) implements Mapping {
+    private record ServerMapping(Server server) implements Mapping {
+
+        /**
+         * Retrieves the type of the server.
+         *
+         * @return The type of the server.
+         * @since 3.4.3
+         */
+        public Class<? extends Server> rawServer() {
+            return server.getClass();
+        }
+
     }
 
     /**
