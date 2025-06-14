@@ -7,13 +7,14 @@ import org.jetbrains.annotations.Range;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.Arrays;
+import java.util.Objects;
 
 /**
  * Some reflection utilities.
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.3.1
+ * @version 1.3.2
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
@@ -147,17 +148,16 @@ public class ReflectionUtils {
      */
     public static Field getField(Class<?> clazz, String name) {
         Field field = null;
+
         while (clazz != null && field == null) {
             try {
                 field = clazz.getDeclaredField(name); // Attempt to get the specified field from the current class
-            } catch (NoSuchFieldException e) {
-                throw new RuntimeException("Can not get field %s from class %s!".formatted(
-                        name, clazz.getSimpleName()
-                ), e);
+            } catch (NoSuchFieldException ignored) {
             }
 
             clazz = clazz.getSuperclass(); // Move to the superclass for further field search
         }
+
         return field;
     }
 
