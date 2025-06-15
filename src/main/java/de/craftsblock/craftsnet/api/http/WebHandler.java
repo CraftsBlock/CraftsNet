@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.6.2
+ * @version 1.6.3
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -249,7 +249,8 @@ public class WebHandler implements HttpHandler {
                 // Call the method of the route handler
                 try {
                     method.setAccessible(true);
-                    method.invoke(handler, passingArgs);
+                    Object result = method.invoke(handler, passingArgs);
+                    if (result != null) exchange.response().print(result);
                 } catch (IllegalArgumentException e) {
                     throw new RuntimeException("Could not call %s#%s(%s) with argument (%s)".formatted(
                             method.getDeclaringClass().getSimpleName(),

@@ -57,7 +57,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.2
+ * @version 3.6.3
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -398,6 +398,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             if (passingArgs == null)
                 return;
 
+            // @FixMe: Using switch when upgrading to java 21+
             // Only check the parameter types if there are two parameters
             if (method.getParameterCount() >= 2)
                 switch (method.getParameterTypes()[1].getName()) {
@@ -410,7 +411,9 @@ public class WebSocketClient implements Runnable, RequireAble {
             // Invoke the handler method
             try {
                 method.setAccessible(true);
-                method.invoke(handler, passingArgs);
+                Object result = method.invoke(handler, passingArgs);
+                if (result == null) return;
+                this.sendMessage(result);
             } catch (IllegalArgumentException e) {
                 throw new RuntimeException("Could not call %s#%s(%s) with argument (%s)".formatted(
                         method.getDeclaringClass().getSimpleName(),
@@ -682,7 +685,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     /**
      * Sends a message to the connected WebSocket client.
      *
-     * @param data The message to be sent, as a byte buffer.
+     * @param data The message to be sent, as a bytebuffer.
      */
     public void sendMessage(ByteBuffer data) {
         sendMessage(data.getSource(), Opcode.BINARY);
@@ -691,10 +694,37 @@ public class WebSocketClient implements Runnable, RequireAble {
     /**
      * Sends a message to the connected WebSocket client.
      *
-     * @param data The message to be sent, as a byte array.
+     * @param data The message to be sent, as an array of bytes.
      */
     public void sendMessage(byte[] data) {
         sendMessage(data, Opcode.BINARY);
+    }
+
+    /**
+     * Sends a message to the connected WebSocket client.
+     * <p>
+     * This method will try to parse the object in the following order:
+     * <ol>
+     *     <li>{@link String}</li>
+     *     <li>{@code byte[]}</li>
+     *     <li>{@link Json}</li>
+     *     <li>{@link ByteBuffer}</li>
+     * </ol>
+     * If none of these types can be applied, the object is converted
+     * into a string with {@link Object#toString()} and then sent.
+     * </p>
+     *
+     * @param data The message to be sent, as an object.
+     * @since 3.4.3
+     */
+    public void sendMessage(Object data) {
+        // @FixMe: Using switch when upgrading to java 21+
+
+        if (data instanceof String string) this.sendMessage(string);
+        else if (data instanceof byte[] bytes) this.sendMessage(bytes);
+        else if (data instanceof Json json) this.sendMessage(json);
+        else if (data instanceof ByteBuffer buffer) this.sendMessage(buffer);
+        else this.sendMessage(data.toString());
     }
 
     /**
