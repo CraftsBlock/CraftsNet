@@ -22,7 +22,7 @@ application {
 }
 
 group = 'de.craftsblock'
-version = '3.4.3-pre3'
+version = '3.4.3'
 
 repositories {
     mavenCentral()
@@ -135,7 +135,7 @@ publishing {
     }
     repositories {
         maven {
-            url('https://repo.craftsblock.de/experimental')
+            url('https://repo.craftsblock.de/releases')
             authentication {
                 basic(BasicAuthentication)
             }
