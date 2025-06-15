@@ -19,6 +19,7 @@ import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.supplier.RepositorySystemSupplier;
 import org.eclipse.aether.util.artifact.DefaultArtifactTypeRegistry;
+import org.eclipse.aether.util.filter.OrDependencyFilter;
 import org.eclipse.aether.util.graph.manager.ClassicDependencyManager;
 import org.eclipse.aether.util.graph.selector.AndDependencySelector;
 import org.eclipse.aether.util.graph.selector.ExclusionDependencySelector;
@@ -39,7 +40,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.6
+ * @version 2.1.1
  * @see <a href="https://maven.apache.org/resolver/index.html">Eclipse Aether</a>
  * @since 3.0.0-SNAPSHOT
  */
@@ -73,6 +74,7 @@ public final class ArtifactLoader {
                 .setIgnoreArtifactDescriptorRepositories(false)
                 .withLocalRepositories(new LocalRepository("libraries"))
                 .setChecksumPolicy(RepositoryPolicy.CHECKSUM_POLICY_FAIL)
+                .setSystemProperties(System.getProperties())
                 .build();
 
         defaultRepos = List.of(
