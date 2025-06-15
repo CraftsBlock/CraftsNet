@@ -33,7 +33,7 @@ dependencies {
     // CraftsBlock related dependencies ---------------------------------------------------------------------------------------
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/bom
-    implementation platform("de.craftsblock.craftscore:bom:3.8.6")
+    implementation platform("de.craftsblock.craftscore:bom:3.8.7")
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/utils
     implementation "de.craftsblock.craftscore:utils"
