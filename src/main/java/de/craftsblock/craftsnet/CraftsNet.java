@@ -49,7 +49,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.4.1
+ * @version 3.4.2
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -130,7 +130,8 @@ public class CraftsNet {
         Runtime.Version jvmVersion = Runtime.version();
         logger.debug("JVM Version: " + jvmVersion.toString() + "; Max recognizable class file version: " + (jvmVersion.feature() + 44) + "." + jvmVersion.interim());
 
-        if (!builder.shouldSkipVersionCheck() && version.endsWith("-SNAPSHOT"))
+        // Check if version is a release as the version check is disabled for experimental builds
+        if (version.matches("^(?:\\d+\\.?)+$"))
             Versions.verbalCheck(this);
 
         logger.debug("Preloading gson for faster processing");
