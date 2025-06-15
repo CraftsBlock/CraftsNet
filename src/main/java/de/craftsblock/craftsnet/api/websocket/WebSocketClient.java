@@ -712,7 +712,6 @@ public class WebSocketClient implements Runnable, RequireAble {
      * </ol>
      * If none of these types can be applied, the object is converted
      * into a string with {@link Object#toString()} and then sent.
-     * </p>
      *
      * @param data The message to be sent, as an object.
      * @since 3.4.3
