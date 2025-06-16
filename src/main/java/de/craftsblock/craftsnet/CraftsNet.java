@@ -49,7 +49,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.4.2
+ * @version 3.4.3
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -182,6 +182,18 @@ public class CraftsNet {
         logger.debug("Initialization of the auto register registry");
         autoRegisterRegistry = new AutoRegisterRegistry(this);
 
+        logger.info("Preparing the webserver");
+        webServer = new WebServer(this, builder.getWebServerPort(), builder.isSSL());
+
+        logger.debug("Initialization of the websocket extension registry");
+        webSocketExtensionRegistry = new WebSocketExtensionRegistry();
+
+        logger.debug("Initialization of the body registry");
+        bodyRegistry = new BodyRegistry();
+
+        logger.info("Preparing the websocket server");
+        webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), builder.isSSL());
+
         if (!builder.isAddonSystem(ActivateType.DISABLED)) {
             logger.debug("Initialization of the addon manager");
             addonManager = new AddonManager(this);
@@ -195,13 +207,6 @@ public class CraftsNet {
 
         // Check if http routes are registered and start the web server if needed
         if (builder.isWebServer(ActivateType.ENABLED) || builder.isWebServer(ActivateType.DYNAMIC)) {
-            logger.info("Preparing the webserver");
-            webServer = new WebServer(this, builder.getWebServerPort(), builder.isSSL());
-
-            // Set the bodyRegistry if the webserver is enabled.
-            logger.debug("Initialization of the body registry");
-            bodyRegistry = new BodyRegistry();
-
             // Register a default route if nothing has been registered.
             if (!builder.shouldSkipDefaultRoute() && !routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
                 logger.debug("No routes and sockets found, creating the default route");
@@ -217,16 +222,11 @@ public class CraftsNet {
 
         // Check if webSocket routes are registered and start the websocket server if needed
         if (builder.isWebSocketServer(ActivateType.ENABLED) || builder.isWebSocketServer(ActivateType.DYNAMIC)) {
-            logger.info("Preparing the websocket server");
-            logger.debug("Initialization of the websocket extension registry");
-            webSocketExtensionRegistry = new WebSocketExtensionRegistry();
-            webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), builder.isSSL());
             logger.debug("Implementing the default ping responder");
             DefaultPingResponder.register(this);
 
-            if (routeRegistry.hasWebsockets() || builder.isWebSocketServer(ActivateType.ENABLED)) {
+            if (routeRegistry.hasWebsockets() || builder.isWebSocketServer(ActivateType.ENABLED))
                 webSocketServer.start();
-            }
         } else if (builder.isWebSocketServer(ActivateType.DISABLED) && routeRegistry.hasWebsockets())
             logger.warning("The websocket server is forcible disabled, but has registered endpoints!");
 
@@ -247,20 +247,22 @@ public class CraftsNet {
         logger.debug("JVM Shutdown Hook is implemented");
 
         // Add all with @AutoRegister annotated classes from the current jar file to the list
-        AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader();
-
-        for (CodeSource codeSource : builder.getCodeSources())
-            try {
-                Path path = Path.of(codeSource.getLocation().toURI());
-                try (JarFile file = fileHelper.getJarFileAt(path)) {
-                    autoRegisterRegistry.handleAll(autoRegisterLoader.loadFrom(null, null, file));
-                } catch (NoSuchFileException ignored) {
-                } catch (IOException e) {
+        try (AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader()) {
+            for (CodeSource codeSource : builder.getCodeSources())
+                try {
+                    Path path = Path.of(codeSource.getLocation().toURI());
+                    try (JarFile file = fileHelper.getJarFileAt(path)) {
+                        var handlers = autoRegisterLoader.loadFrom(null, null, file);
+                        autoRegisterRegistry.handleAll(handlers);
+                        handlers.clear();
+                    } catch (NoSuchFileException ignored) {
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                } catch (URISyntaxException e) {
                     throw new RuntimeException(e);
                 }
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
-            }
+        }
 
         // Log successful startup message with elapsed time
         logger.info("CraftsNet was successfully started after " + (System.currentTimeMillis() - start) + "ms");
