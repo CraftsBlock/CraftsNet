@@ -1,10 +1,9 @@
 package de.craftsblock.craftsnet.api.http.body;
 
-import de.craftsblock.craftsnet.api.http.body.parser.JsonBodyParser;
-import de.craftsblock.craftsnet.api.http.body.parser.MultipartFormBodyParser;
-import de.craftsblock.craftsnet.api.http.body.parser.StandardFormBodyParser;
 import de.craftsblock.craftsnet.api.http.body.parser.*;
+import de.craftsblock.craftsnet.api.http.body.parser.typed.ByteArrayBodyParser;
 import de.craftsblock.craftsnet.api.http.body.parser.typed.JsonBodyParser;
+import de.craftsblock.craftsnet.api.http.body.parser.typed.StringBodyParser;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,7 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.3
+ * @version 1.1.4
  * @see BodyParser
  * @since 3.0.4-SNAPSHOT
  */
@@ -31,7 +30,12 @@ public class BodyRegistry {
      * This constructor initializes the registry with parsers for JSON, multipart form, and standard form bodies.
      */
     public BodyRegistry() {
+        // Typed
+        register(new ByteArrayBodyParser());
         register(new JsonBodyParser());
+        register(new StringBodyParser());
+
+        // Complex
         register(new MultipartFormBodyParser());
         register(new StandardFormBodyParser());
     }
