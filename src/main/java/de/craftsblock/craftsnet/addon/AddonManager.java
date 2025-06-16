@@ -83,7 +83,7 @@ public final class AddonManager {
             synchronized (addonLoader) {
                 logger.info("Load all available addons");
                 addonLoader.load(configurations);
-                logger.info("Loaded %s addons were loaded within %sms".formatted(
+                logger.info("Loaded %s addons within %sms".formatted(
                         configurations.size(), System.currentTimeMillis() - start
                 ));
             }
