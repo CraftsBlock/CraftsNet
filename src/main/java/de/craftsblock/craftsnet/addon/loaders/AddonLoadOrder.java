@@ -1,11 +1,15 @@
 package de.craftsblock.craftsnet.addon.loaders;
 
 import de.craftsblock.craftsnet.addon.Addon;
+import de.craftsblock.craftsnet.autoregister.loaders.AutoRegisterLoader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Represents a system for managing the load order of addons.
@@ -14,10 +18,10 @@ import java.util.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @since 3.0.2-SNAPSHOT
  */
-final class AddonLoadOrder {
+final class AddonLoadOrder implements Closeable {
 
     private final Map<String, BootMapping> addonLoadOrder = Collections.synchronizedMap(new LinkedHashMap<>());
 
@@ -31,6 +35,15 @@ final class AddonLoadOrder {
     public void addAddon(Addon addon) {
         addonLoadOrder.compute(addon.getName(), (name, bootMapping) ->
                 (bootMapping == null) ? new BootMapping(name, 0, addon, true) : bootMapping.addon(addon));
+    }
+
+    /**
+     * Perform cleanup for the current {@link AddonLoadOrder}
+     * when it is no longer used.
+     */
+    @Override
+    public void close() {
+        addonLoadOrder.clear();
     }
 
     /**
@@ -132,7 +145,7 @@ final class AddonLoadOrder {
                 .sorted((o1, o2) -> Integer.compare(o2.priority(), o1.priority()))
                 .map(BootMapping::addon)
                 .filter(Objects::nonNull)
-                .toList();
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     /**

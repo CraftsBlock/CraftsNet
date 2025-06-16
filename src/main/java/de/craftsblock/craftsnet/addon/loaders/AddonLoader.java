@@ -17,6 +17,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import de.craftsblock.craftsnet.events.addons.AllAddonsLoadedEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.net.URI;
@@ -39,7 +40,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.3.0
+ * @version 2.3.1
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -84,8 +85,10 @@ public final class AddonLoader {
                         path.toFile().getAbsolutePath()
                 ));
 
-            if (!addons.contains(path))
-                addons.push(path);
+            synchronized (addons) {
+                if (!addons.contains(path))
+                    addons.push(path);
+            }
 
         } catch (IOException e) {
             throw new RuntimeException("Could not load addon from path %s".formatted(
@@ -100,7 +103,9 @@ public final class AddonLoader {
      * @since 3.4.3
      */
     public void reset() {
-        addons.clear();
+        synchronized (addons) {
+            addons.clear();
+        }
     }
 
     /**
@@ -116,60 +121,63 @@ public final class AddonLoader {
 
         // Load all the dependencies and repositories from the addons
         List<AddonConfiguration> configurations = new ArrayList<>();
-        for (Path path : addons) {
-            if (Files.isDirectory(path)) continue;
+        synchronized (addons) {
+            for (Path path : addons) {
+                if (Files.isDirectory(path)) continue;
 
-            try (JarFile jarFile = new JarFile(path.toFile(), true, ZipFile.OPEN_READ, Runtime.version())) {
-                logger.debug("Loading jar file " + path.toFile().getAbsolutePath());
+                try (JarFile jarFile = new JarFile(path.toFile(), true, ZipFile.OPEN_READ, Runtime.version())) {
+                    logger.debug("Loading jar file " + path.toFile().getAbsolutePath());
 
-                // Load the configuration file from the jar
-                AddonConfiguration configuration = retrieveConfig(path, jarFile);
-                if (configuration == null) {
-                    logger.error(new FileNotFoundException("Could not locate the addon.json within " + path.toFile().getPath() + "!"));
-                    continue;
+                    // Load the configuration file from the jar
+                    AddonConfiguration configuration = retrieveConfig(path, jarFile);
+                    if (configuration == null) {
+                        logger.error(new FileNotFoundException("Could not locate the addon.json within " + path.toFile().getPath() + "!"));
+                        continue;
+                    }
+                    Json addon = configuration.json();
+                    String name = addon.getString("name");
+
+                    // Check if the jar version is compatible
+                    long checkStart = System.currentTimeMillis();
+
+                    try {
+                        compatibleOrThrow(jarFile);
+                        logger.debug(path.toFile().getAbsolutePath() + " is jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
+                    } catch (RuntimeException e) {
+                        logger.error(e);
+                        logger.error(path.toFile().getAbsolutePath() + " is not jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
+                        continue;
+                    }
+
+                    // Inject all repositories
+                    artifactLoader.cleanup();
+                    if (addon.contains("repositories"))
+                        for (String repo : addon.getStringList("repositories"))
+                            artifactLoader.addRepository(repo);
+
+                    // Load all required dependencies
+                    URL[] dependencies;
+                    if (addon.contains("dependencies"))
+                        dependencies = artifactLoader.loadLibraries(this.craftsNet, this, configuration.services(),
+                                name, addon.getStringList("dependencies").toArray(String[]::new));
+                    else dependencies = new URL[0];
+
+                    DependencyClassLoader[] dependencyClassLoaders = Arrays.stream(dependencies)
+                            .map(url -> DependencyClassLoader.safelyNew(craftsNet, url)).toArray(DependencyClassLoader[]::new);
+
+                    // Generate classpath
+                    URL[] classpath = new URL[]{path.toUri().toURL()};
+
+                    // Put the configuration in the configurations map
+                    configurations.add(new AddonConfiguration(path, configuration.json(), classpath, dependencyClassLoaders,
+                            configuration.services(), configuration.addon(), configuration.meta(), configuration.classLoader()));
                 }
-                Json addon = configuration.json();
-                String name = addon.getString("name");
-
-                // Check if the jar version is compatible
-                long checkStart = System.currentTimeMillis();
-
-                try {
-                    compatibleOrThrow(jarFile);
-                    logger.debug(path.toFile().getAbsolutePath() + " is jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
-                } catch (RuntimeException e) {
-                    logger.error(e);
-                    logger.error(path.toFile().getAbsolutePath() + " is not jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
-                    continue;
-                }
-
-                // Inject all repositories
-                artifactLoader.cleanup();
-                if (addon.contains("repositories"))
-                    for (String repo : addon.getStringList("repositories"))
-                        artifactLoader.addRepository(repo);
-
-                // Load all required dependencies
-                URL[] dependencies;
-                if (addon.contains("dependencies"))
-                    dependencies = artifactLoader.loadLibraries(this.craftsNet, this, configuration.services(),
-                            name, addon.getStringList("dependencies").toArray(String[]::new));
-                else dependencies = new URL[0];
-
-                DependencyClassLoader[] dependencyClassLoaders = Arrays.stream(dependencies)
-                        .map(url -> DependencyClassLoader.safelyNew(craftsNet, url)).toArray(DependencyClassLoader[]::new);
-
-                // Generate classpath
-                URL[] classpath = new URL[]{path.toUri().toURL()};
-
-                // Put the configuration in the configurations map
-                configurations.add(new AddonConfiguration(path, configuration.json(), classpath, dependencyClassLoaders,
-                        configuration.services(), configuration.addon(), configuration.meta(), configuration.classLoader()));
             }
-        }
-        artifactLoader.stop();
 
-        addons.clear();
+            addons.clear();
+        }
+
+        artifactLoader.stop();
         return configurations;
     }
 
@@ -186,7 +194,6 @@ public final class AddonLoader {
         else configurations = new ArrayList<>(rawConfigurations);
 
         AddonLoadOrder loadOrder = new AddonLoadOrder();
-        AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader();
         HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources = new HashMap<>();
 
         // Pre setup tasks
@@ -213,10 +220,36 @@ public final class AddonLoader {
 
         configurations.forEach(this::loadServices);
 
-        HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos = convertToAutoRegister(autoRegisterLoader, codesSources);
+        HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos;
+        try (AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader()) {
+            autoRegisterInfos = convertToAutoRegister(autoRegisterLoader, codesSources);
+        }
+
+        Collection<Addon> orderedLoad = enableAddons(loadOrder, autoRegisterInfos);
+
+        autoRegisterInfos.clear();
+        orderedLoad.clear();
+        loadOrder.close();
+
+        try {
+            craftsNet.listenerRegistry().call(new AllAddonsLoadedEvent());
+        } catch (Exception e) {
+            logger.error(e, "Can not fire addons loaded event!");
+        }
+    }
+
+    /**
+     * Loads and enables all addons that have been found.
+     *
+     * @param loadOrder         The {@link AddonLoadOrder load order} in which the addons will be loaded.
+     * @param autoRegisterInfos A list of {@link AutoRegisterInfo} which should be applied for the addons.
+     * @return The list of all loaded addons.
+     * @since 3.4.4
+     */
+    private @NotNull Collection<Addon> enableAddons(AddonLoadOrder loadOrder, HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos) {
+        Collection<Addon> orderedLoad = loadOrder.getLoadOrder();
 
         // Loading all addons
-        Collection<Addon> orderedLoad = loadOrder.getLoadOrder();
         orderedLoad.forEach(addon -> {
             logger.info("Loading addon " + addon.getName() + "...");
             addon.onLoad();
@@ -234,11 +267,7 @@ public final class AddonLoader {
             craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.ENABLE);
         });
 
-        try {
-            craftsNet.listenerRegistry().call(new AllAddonsLoadedEvent());
-        } catch (Exception e) {
-            logger.error(e, "Can not fire addons loaded event!");
-        }
+        return orderedLoad;
     }
 
     /**
@@ -407,7 +436,9 @@ public final class AddonLoader {
                 throw new RuntimeException("Could not load auto register infos!", e);
             }
         });
+
         codesSources.clear();
+
         return autoRegisterInfos;
     }
 
