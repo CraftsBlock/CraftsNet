@@ -3,6 +3,8 @@ package de.craftsblock.craftsnet.api.http.body;
 import de.craftsblock.craftsnet.api.http.body.parser.JsonBodyParser;
 import de.craftsblock.craftsnet.api.http.body.parser.MultipartFormBodyParser;
 import de.craftsblock.craftsnet.api.http.body.parser.StandardFormBodyParser;
+import de.craftsblock.craftsnet.api.http.body.parser.*;
+import de.craftsblock.craftsnet.api.http.body.parser.typed.JsonBodyParser;
 import de.craftsblock.craftsnet.utils.ReflectionUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -16,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.2
+ * @version 1.1.3
  * @see BodyParser
  * @since 3.0.4-SNAPSHOT
  */

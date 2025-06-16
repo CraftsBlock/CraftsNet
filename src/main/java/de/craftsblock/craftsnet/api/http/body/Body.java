@@ -41,7 +41,6 @@ public abstract class Body implements AutoCloseable {
      *
      * @param request The representation of the http request.
      */
-
     public Body(Request request) {
         this.request = request;
         bodies.computeIfAbsent(request, b -> new ConcurrentHashMap<>()).put(getClass(), this);
