@@ -6,11 +6,14 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 /**
@@ -22,11 +25,11 @@ import java.util.stream.StreamSupport;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.0
+ * @version 1.2.1
  * @see AutoRegisterInfo
  * @since 3.2.0-SNAPSHOT
  */
-public class AutoRegisterLoader {
+public class AutoRegisterLoader implements Closeable {
 
     /**
      * List of package names to skip when processing class files in the JAR.
@@ -36,7 +39,18 @@ public class AutoRegisterLoader {
             "com/google", "com/ctc"
     ));
 
-    private final ExecutorService executor = Executors.newCachedThreadPool();
+    private final ExecutorService executor = Executors.newFixedThreadPool(
+            Runtime.getRuntime().availableProcessors(), r -> new Thread(r, "CraftsNet autoregister performer")
+    );
+
+    /**
+     * Perform cleanup for the current {@link AutoRegisterLoader}
+     * when it is no longer used.
+     */
+    @Override
+    public void close() {
+        executor.shutdown();
+    }
 
     /**
      * Loads and processes all classes annotated with {@link AutoRegister} from the provided {@link JarFile} using the provided
@@ -87,7 +101,8 @@ public class AutoRegisterLoader {
             } catch (InterruptedException | ExecutionException ignored) {
             }
 
-        return infos.stream().distinct().toList();
+        futures.clear();
+        return infos.stream().distinct().collect(Collectors.toCollection(ArrayList::new));
     }
 
     /**
