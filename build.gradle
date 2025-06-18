@@ -90,6 +90,8 @@ tasks.register("runnableJar", Jar) {
         attributes 'Main-Class': application.mainClass.get()
     }
 
+    from sourceSets.main.output
+
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }
