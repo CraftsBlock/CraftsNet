@@ -87,7 +87,7 @@ public class CraftsNet {
     private WebServer webServer;
     private WebSocketServer webSocketServer;
 
-    // Status varialbes
+    // Status variables
     private boolean started;
 
     /**
