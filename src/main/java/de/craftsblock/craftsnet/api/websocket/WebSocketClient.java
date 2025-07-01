@@ -57,7 +57,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.3
+ * @version 3.6.4
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -630,7 +630,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     @ApiStatus.Experimental
     public boolean shouldFragment() {
-        return server.shouldFragment() && shouldFragment || shouldFragment;
+        return server.shouldFragment() || shouldFragment;
     }
 
     /**
