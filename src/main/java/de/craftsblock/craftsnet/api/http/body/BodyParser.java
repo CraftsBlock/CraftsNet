@@ -16,14 +16,14 @@ import java.util.regex.Pattern;
  * @param <T> The type of body that this parser can parse.
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @see Body
  * @see BodyRegistry
  * @since 3.0.4-SNAPSHOT
  */
 public abstract class BodyParser<T extends Body> {
 
-    private final List<Pattern> contentTypes;
+    private final List<String> contentTypes;
 
     /**
      * Constructs a new BodyParser with the given content types.
@@ -35,7 +35,8 @@ public abstract class BodyParser<T extends Body> {
         List<String> types = new ArrayList<>();
         types.add(contentType);
         types.addAll(List.of(contentTypes));
-        this.contentTypes = types.parallelStream().map(Pattern::compile).toList();
+
+        this.contentTypes = types;
     }
 
     /**
@@ -52,7 +53,7 @@ public abstract class BodyParser<T extends Body> {
      *
      * @return The list of supported content types as patterns.
      */
-    public final @Unmodifiable List<Pattern> contentTypes() {
+    public final @Unmodifiable List<String> contentTypes() {
         return contentTypes;
     }
 
@@ -63,8 +64,7 @@ public abstract class BodyParser<T extends Body> {
      * @return true if the parser supports the given content type, false otherwise.
      */
     public boolean isParseable(String contentType) {
-        return this.contentTypes.parallelStream()
-                .anyMatch(pattern -> pattern.matcher(contentType).matches());
+        return this.contentTypes.parallelStream().anyMatch(contentType::matches);
     }
 
 }
