@@ -57,7 +57,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.4
+ * @version 3.6.5
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -1016,6 +1016,8 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @since 3.4.0-SNAPSHOT
      */
     private Stream<WebsocketMiddleware> getWebsocketMiddlewares() {
+        if (this.mappings == null) return Stream.empty();
+
         return Stream.concat(
                         craftsNet.middlewareRegistry().getMiddlewares(WebSocketServer.class).stream(),
                         this.mappings.values().stream().flatMap(Collection::stream)
