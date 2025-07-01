@@ -15,9 +15,10 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.2.0
+ * @see CraftsNetClassLoader
  * @since 3.0.3-SNAPSHOT
  */
-public final class AddonClassLoader extends URLClassLoader {
+public final class AddonClassLoader extends CraftsNetClassLoader {
 
     static {
         ClassLoader.registerAsParallelCapable();
@@ -25,7 +26,6 @@ public final class AddonClassLoader extends URLClassLoader {
 
     private static final Set<AddonClassLoader> addonLoaders = new CopyOnWriteArraySet<>();
 
-    private final CraftsNet craftsNet;
     private final Logger logger;
 
     private final Set<AddonConfiguration> ignoreNotDepended = new HashSet<>();
@@ -41,9 +41,8 @@ public final class AddonClassLoader extends URLClassLoader {
      * @param configuration The configuration of the addon.
      */
     AddonClassLoader(CraftsNet craftsNet, AddonConfiguration configuration) {
-        super(configuration.classpath(), ClassLoader.getSystemClassLoader());
-        this.craftsNet = craftsNet;
-        this.logger = this.craftsNet.logger();
+        super(craftsNet, configuration.classpath(), ClassLoader.getSystemClassLoader());
+        this.logger = this.getCraftsNet().logger();
 
         addonLoaders.add(this);
         this.addon = configuration;
@@ -136,17 +135,6 @@ public final class AddonClassLoader extends URLClassLoader {
      */
     public static Set<AddonClassLoader> getAddonLoaders() {
         return Collections.unmodifiableSet(addonLoaders);
-    }
-
-    /**
-     * Retrieves the {@link CraftsNet} instance which this class loader is linked
-     * to.
-     *
-     * @return The {@link CraftsNet} instance.
-     * @since 3.4.3
-     */
-    public CraftsNet getCraftsNet() {
-        return craftsNet;
     }
 
 }

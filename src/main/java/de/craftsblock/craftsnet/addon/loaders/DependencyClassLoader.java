@@ -13,17 +13,16 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
+ * @see CraftsNetClassLoader
  * @since 3.4.3
  */
-public class DependencyClassLoader extends URLClassLoader {
+public class DependencyClassLoader extends CraftsNetClassLoader {
 
     static {
         ClassLoader.registerAsParallelCapable();
     }
 
     private static final Map<URI, DependencyClassLoader> dependenciesLoaders = new ConcurrentHashMap<>();
-
-    private final CraftsNet craftsNet;
 
     private final URL url;
 
@@ -34,10 +33,9 @@ public class DependencyClassLoader extends URLClassLoader {
      * @param url       The url which contains the source of the dependency.
      */
     DependencyClassLoader(CraftsNet craftsNet, URL url) {
-        super(new URL[]{url}, ClassLoader.getSystemClassLoader());
+        super(craftsNet, new URL[]{url}, ClassLoader.getSystemClassLoader());
 
         this.url = url;
-        this.craftsNet = craftsNet;
     }
 
     /**
@@ -88,16 +86,6 @@ public class DependencyClassLoader extends URLClassLoader {
      */
     public URL getUrl() {
         return url;
-    }
-
-    /**
-     * Retrieves the {@link CraftsNet} instance which this class loader is linked
-     * to.
-     *
-     * @return The {@link CraftsNet} instance.
-     */
-    public CraftsNet getCraftsNet() {
-        return craftsNet;
     }
 
     /**
