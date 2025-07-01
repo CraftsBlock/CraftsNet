@@ -142,7 +142,7 @@ public class CraftsNetBuilder {
             // Arguments
             case "http-port", "httpport" -> withWebServer(Integer.parseInt(value));
             case "log-rotate", "logrotate" -> withLogRotate(Integer.parseInt(value));
-            case "socket-port", "socketport" -> withWebSocketServer(Integer.parseInt(value));
+            case "socket-port", "socketport", "websocket-port", "websocketport" -> withWebSocketServer(Integer.parseInt(value));
 
             case "sessioncache", "sessioncachesize" -> withSessionCache(Integer.parseInt(value));
 
