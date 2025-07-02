@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.4.0-SNAPSHOT
  */
 public class MiddlewareAutoRegisterHandler extends AutoRegisterHandler<Middleware> {
@@ -27,13 +27,13 @@ public class MiddlewareAutoRegisterHandler extends AutoRegisterHandler<Middlewar
      */
     public MiddlewareAutoRegisterHandler(CraftsNet craftsNet) {
         super(craftsNet);
-        this.middlewareRegistry = craftsNet.middlewareRegistry();
+        this.middlewareRegistry = craftsNet.getMiddlewareRegistry();
     }
 
     /**
      * Handles the registration of the provided {@link Middleware}.
      *
-     * <p>This method attempts to register the given {@link Middleware} with the {@link CraftsNet#middlewareRegistry()}
+     * <p>This method attempts to register the given {@link Middleware} with the {@link CraftsNet#getMiddlewareRegistry()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
      * returns {@code true}. If any exception occurs during the registration process, a
      * {@link RuntimeException} is thrown.</p>

@@ -49,13 +49,13 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.4.4
+ * @version 3.5.0
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
 
     // Global variables
-    public static final String version = "3.4.3";
+    public static final String version = "3.4.4-pre5";
 
     // Local instance
     private CraftsNetBuilder builder;
@@ -210,7 +210,7 @@ public class CraftsNet {
             // Register a default route if nothing has been registered.
             if (!builder.shouldSkipDefaultRoute() && !routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
                 logger.debug("No routes and sockets found, creating the default route");
-                routeRegistry().register(DefaultRoute.getInstance());
+                getRouteRegistry().register(DefaultRoute.getInstance());
             }
 
             // Start the webserver if needed
@@ -399,8 +399,8 @@ public class CraftsNet {
 
                     String line = consoleReader.readLine();
                     if (line == null) {
-                        logger().error("Unexpected console input: null");
-                        logger().error("Console reader will be closed after this!");
+                        getLogger().error("Unexpected console input: null");
+                        getLogger().error("Console reader will be closed after this!");
                         break;
                     }
 
@@ -419,8 +419,19 @@ public class CraftsNet {
      * Retrieves the addon manager instance for managing addons.
      *
      * @return The addon manager instance.
+     * @deprecated Use {@link #getAddonManager()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public AddonManager addonManager() {
+        return this.getAddonManager();
+    }
+
+    /**
+     * Retrieves the addon manager instance for managing addons.
+     *
+     * @return The addon manager instance.
+     */
+    public AddonManager getAddonManager() {
         return addonManager;
     }
 
@@ -429,8 +440,20 @@ public class CraftsNet {
      *
      * @return The auto register registry instance.
      * @since 3.2.0-SNAPSHOT
+     * @deprecated Use {@link #getAutoRegisterRegistry()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public AutoRegisterRegistry autoRegisterRegistry() {
+        return this.getAutoRegisterRegistry();
+    }
+
+    /**
+     * Retrieves the auto register registry instance for auto registrable types.
+     *
+     * @return The auto register registry instance.
+     * @since 3.2.0-SNAPSHOT
+     */
+    public AutoRegisterRegistry getAutoRegisterRegistry() {
         return autoRegisterRegistry;
     }
 
@@ -439,8 +462,20 @@ public class CraftsNet {
      *
      * @return The body registry instance.
      * @since 3.0.4-SNAPSHOT
+     * @deprecated Use {@link #getBodyRegistry()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public BodyRegistry bodyRegistry() {
+        return this.getBodyRegistry();
+    }
+
+    /**
+     * Retrieves the body registry instance for manging body types.
+     *
+     * @return The body registry instance.
+     * @since 3.0.4-SNAPSHOT
+     */
+    public BodyRegistry getBodyRegistry() {
         return bodyRegistry;
     }
 
@@ -448,8 +483,19 @@ public class CraftsNet {
      * Retrieves the command registry instance for managing commands.
      *
      * @return The command registry instance.
+     * @deprecated Use {@link #getCommandRegistry()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public CommandRegistry commandRegistry() {
+        return commandRegistry;
+    }
+
+    /**
+     * Retrieves the command registry instance for managing commands.
+     *
+     * @return The command registry instance.
+     */
+    public CommandRegistry getCommandRegistry() {
         return commandRegistry;
     }
 
@@ -457,8 +503,19 @@ public class CraftsNet {
      * Retrieves the listener registry instance for managing event listeners.
      *
      * @return The listener registry instance.
+     * @deprecated Use {@link #getListenerRegistry()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public ListenerRegistry listenerRegistry() {
+        return this.getListenerRegistry();
+    }
+
+    /**
+     * Retrieves the listener registry instance for managing event listeners.
+     *
+     * @return The listener registry instance.
+     */
+    public ListenerRegistry getListenerRegistry() {
         return listenerRegistry;
     }
 
@@ -468,8 +525,21 @@ public class CraftsNet {
      *
      * @return The {@link MiddlewareRegistry middleware registry} instance.
      * @since 3.4.0-SNAPSHOT
+     * @deprecated Use {@link #getMiddlewareRegistry()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public MiddlewareRegistry middlewareRegistry() {
+        return middlewareRegistry;
+    }
+
+    /**
+     * Retrieves the middleware registry instance for manging
+     * {@link de.craftsblock.craftsnet.api.middlewares.Middleware middlewares}
+     *
+     * @return The {@link MiddlewareRegistry middleware registry} instance.
+     * @since 3.4.0-SNAPSHOT
+     */
+    public MiddlewareRegistry getMiddlewareRegistry() {
         return middlewareRegistry;
     }
 
@@ -478,8 +548,20 @@ public class CraftsNet {
      *
      * @return The requirement registry instance.
      * @since 3.2.1-SNAPSHOT
+     * @deprecated Use {@link #getRequirementRegistry()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public RequirementRegistry requirementRegistry() {
+        return this.getRequirementRegistry();
+    }
+
+    /**
+     * Retrieves the route registry instance for managing web and web requirements.
+     *
+     * @return The requirement registry instance.
+     * @since 3.2.1-SNAPSHOT
+     */
+    public RequirementRegistry getRequirementRegistry() {
         return requirementRegistry;
     }
 
@@ -487,8 +569,19 @@ public class CraftsNet {
      * Retrieves the route registry instance for managing web and web socket routes.
      *
      * @return The route registry instance.
+     * @deprecated Use {@link #getRouteRegistry()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public RouteRegistry routeRegistry() {
+        return this.getRouteRegistry();
+    }
+
+    /**
+     * Retrieves the route registry instance for managing web and web socket routes.
+     *
+     * @return The route registry instance.
+     */
+    public RouteRegistry getRouteRegistry() {
         return routeRegistry;
     }
 
@@ -496,8 +589,19 @@ public class CraftsNet {
      * Retrieves the service manager instance for managing services.
      *
      * @return The service manager instance.
+     * @deprecated Use {@link #getServiceManager()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public ServiceManager serviceManager() {
+        return this.getServiceManager();
+    }
+
+    /**
+     * Retrieves the service manager instance for managing services.
+     *
+     * @return The service manager instance.
+     */
+    public ServiceManager getServiceManager() {
         return serviceManager;
     }
 
@@ -505,8 +609,19 @@ public class CraftsNet {
      * Retrieves the session cache instance which is in charge of caching session.
      *
      * @return The session cache instance.
+     * @deprecated Use {@link #getSessionCache()} ()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public SessionCache sessionCache() {
+        return this.getSessionCache();
+    }
+
+    /**
+     * Retrieves the session cache instance which is in charge of caching session.
+     *
+     * @return The session cache instance.
+     */
+    public SessionCache getSessionCache() {
         return sessionCache;
     }
 
@@ -514,8 +629,19 @@ public class CraftsNet {
      * Retrieves the stream encoder registry instance for managing stream encoders.
      *
      * @return The stream encoder registry instance.
+     * @deprecated Use {@link #getStreamEncoderRegistry()} ()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public StreamEncoderRegistry streamEncoderRegistry() {
+        return this.getStreamEncoderRegistry();
+    }
+
+    /**
+     * Retrieves the stream encoder registry instance for managing stream encoders.
+     *
+     * @return The stream encoder registry instance.
+     */
+    public StreamEncoderRegistry getStreamEncoderRegistry() {
         return streamEncoderRegistry;
     }
 
@@ -523,8 +649,19 @@ public class CraftsNet {
      * Retrieves the extension registry for the websocket protocol.
      *
      * @return The websocket extension registry.
+     * @deprecated Use {@link #getFileHelper()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public WebSocketExtensionRegistry webSocketExtensionRegistry() {
+        return this.getWebSocketExtensionRegistry();
+    }
+
+    /**
+     * Retrieves the extension registry for the websocket protocol.
+     *
+     * @return The websocket extension registry.
+     */
+    public WebSocketExtensionRegistry getWebSocketExtensionRegistry() {
         return webSocketExtensionRegistry;
     }
 
@@ -532,8 +669,19 @@ public class CraftsNet {
      * Retrieves the web server instance for handling HTTP requests.
      *
      * @return The web server instance.
+     * @deprecated Use {@link #getWebServer()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public WebServer webServer() {
+        return webServer;
+    }
+
+    /**
+     * Retrieves the web server instance for handling HTTP requests.
+     *
+     * @return The web server instance.
+     */
+    public WebServer getWebServer() {
         return webServer;
     }
 
@@ -541,8 +689,19 @@ public class CraftsNet {
      * Retrieves the WebSocket server instance for handling WebSocket connections.
      *
      * @return The WebSocket server instance.
+     * @deprecated Use {@link #getWebSocketServer()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public WebSocketServer webSocketServer() {
+        return this.getWebSocketServer();
+    }
+
+    /**
+     * Retrieves the WebSocket server instance for handling WebSocket connections.
+     *
+     * @return The WebSocket server instance.
+     */
+    public WebSocketServer getWebSocketServer() {
         return webSocketServer;
     }
 
@@ -550,8 +709,19 @@ public class CraftsNet {
      * Retrieves the logger instance for logging messages.
      *
      * @return The logger instance.
+     * @deprecated Use {@link #getLogger()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public Logger logger() {
+        return this.getLogger();
+    }
+
+    /**
+     * Retrieves the logger instance for logging messages.
+     *
+     * @return The logger instance.
+     */
+    public Logger getLogger() {
         return logger;
     }
 
@@ -559,8 +729,19 @@ public class CraftsNet {
      * Retrieves the {@link LogStream} instance for advanced log creation.
      *
      * @return The {@link LogStream} instance.
+     * @deprecated Use {@link #getLogStream()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public LogStream logStream() {
+        return this.getLogStream();
+    }
+
+    /**
+     * Retrieves the {@link LogStream} instance for advanced log creation.
+     *
+     * @return The {@link LogStream} instance.
+     */
+    public LogStream getLogStream() {
         return logStream;
     }
 
@@ -577,8 +758,19 @@ public class CraftsNet {
      * Returns the {@link FileHelper} instance used for handling temporary files.
      *
      * @return the {@link FileHelper} instance.
+     * @deprecated Use {@link #getFileHelper()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public FileHelper fileHelper() {
+        return this.getFileHelper();
+    }
+
+    /**
+     * Returns the {@link FileHelper} instance used for handling temporary files.
+     *
+     * @return the {@link FileHelper} instance.
+     */
+    public FileHelper getFileHelper() {
         return fileHelper;
     }
 

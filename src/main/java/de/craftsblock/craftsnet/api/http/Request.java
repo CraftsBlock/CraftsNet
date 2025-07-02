@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.6.1
+ * @version 1.6.2
  * @see Exchange
  * @since 1.0.0-SNAPSHOT
  */
@@ -94,7 +94,7 @@ public class Request implements AutoCloseable, RequireAble {
     private void retrieveBody() {
         if (!httpMethod.isRequestBodyAble()) return;
 
-        StreamEncoderRegistry streamEncoderRegistry = craftsNet.streamEncoderRegistry();
+        StreamEncoderRegistry streamEncoderRegistry = craftsNet.getStreamEncoderRegistry();
         String encoding = getHeaders().getFirst("Content-Encoding");
         if (encoding != null) streamEncoder = streamEncoderRegistry.retrieveEncoder(encoding);
         else streamEncoder = streamEncoderRegistry.retrieveEncoder(IdentityStreamEncoder.class);
@@ -106,7 +106,7 @@ public class Request implements AutoCloseable, RequireAble {
             public void close() {
             }
         })) {
-            bodyLocation = craftsNet.fileHelper().createTempFile("craftsnet_", ".body").toFile();
+            bodyLocation = craftsNet.getFileHelper().createTempFile("craftsnet_", ".body").toFile();
             bodyLocation.deleteOnExit();
             try (FileOutputStream destination = new FileOutputStream(bodyLocation, true)) {
 

@@ -17,7 +17,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.3.2-SNAPSHOT
  */
 public enum Scheme {
@@ -89,8 +89,8 @@ public enum Scheme {
      * @throws UnknownSchemeException If no server instance is found for the current scheme.
      */
     public @NotNull Server getServer(@NotNull CraftsNet craftsNet) {
-        if (this.server.equals(WebServer.class)) return craftsNet.webServer();
-        if (this.server.equals(WebSocketServer.class)) return craftsNet.webSocketServer();
+        if (this.server.equals(WebServer.class)) return craftsNet.getWebServer();
+        if (this.server.equals(WebSocketServer.class)) return craftsNet.getWebSocketServer();
         throw new UnknownSchemeException("No server instance for scheme (" + this.name() + ") found!");
     }
 

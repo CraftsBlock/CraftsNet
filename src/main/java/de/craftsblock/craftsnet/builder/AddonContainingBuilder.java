@@ -21,7 +21,7 @@ import java.util.TreeSet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.1
+ * @version 1.3.2
  * @see CraftsNetBuilder
  * @since 3.1.0-SNAPSHOT
  */
@@ -345,7 +345,7 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
      */
     @ApiStatus.Internal
     public void loadAddons(CraftsNet craftsNet) {
-        AddonManager manager = craftsNet.addonManager();
+        AddonManager manager = craftsNet.getAddonManager();
         List<AddonConfiguration> configurations = new ArrayList<>();
 
         AddonLoader loader = manager.getAddonLoader();

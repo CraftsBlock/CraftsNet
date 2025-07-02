@@ -11,7 +11,7 @@ import de.craftsblock.craftsnet.api.websocket.SocketHandler;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.1.0-SNAPSHOT
  */
 public class SocketHandlerLoader implements ServiceLoader<SocketHandler> {
@@ -35,7 +35,7 @@ public class SocketHandlerLoader implements ServiceLoader<SocketHandler> {
      */
     @Override
     public boolean load(SocketHandler provider) {
-        craftsNet.routeRegistry().register(provider);
+        craftsNet.getRouteRegistry().register(provider);
         return true;
     }
 

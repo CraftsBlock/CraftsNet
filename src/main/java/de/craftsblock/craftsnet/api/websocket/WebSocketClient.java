@@ -57,7 +57,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.5
+ * @version 3.6.6
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -125,7 +125,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.shouldFragment = server.shouldFragment();
         this.fragmentSize = -1;
         this.craftsNet = craftsNet;
-        this.logger = this.craftsNet.logger();
+        this.logger = this.craftsNet.getLogger();
 
         // Create a transformer performer which handles all transformers
         this.transformerPerformer = new TransformerPerformer(this.craftsNet, null, 2, e -> {
@@ -181,8 +181,8 @@ public class WebSocketClient implements Runnable, RequireAble {
             // Loadup extensions
             if (getHeader("Sec-websocket-extensions") != null)
                 for (String extension : getHeader("Sec-websocket-extensions").split(";\\s+"))
-                    if (craftsNet.webSocketExtensionRegistry().hasExtension(extension))
-                        this.extensions.add(craftsNet.webSocketExtensionRegistry().getExtensionByName(extension));
+                    if (craftsNet.getWebSocketExtensionRegistry().hasExtension(extension))
+                        this.extensions.add(craftsNet.getWebSocketExtensionRegistry().getExtensionByName(extension));
 
             // Send a WebSocket handshake to establish the connection
             sendHandshake();
@@ -196,7 +196,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             // Trigger the ClientConnectEvent to handle the client connection
             ClientConnectEvent event = new ClientConnectEvent(exchange);
-            craftsNet.listenerRegistry().call(event);
+            craftsNet.getListenerRegistry().call(event);
 
             // If the event is cancelled, disconnect the client
             if (event.isCancelled()) {
@@ -285,7 +285,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         // Fire an incoming socket message event and continue if it was cancelled
         IncomingSocketMessageEvent incomingMessageEvent = new IncomingSocketMessageEvent(exchange, frame);
-        craftsNet.listenerRegistry().call(incomingMessageEvent);
+        craftsNet.getListenerRegistry().call(incomingMessageEvent);
         if (incomingMessageEvent.isCancelled()) return false;
 
         // Handle middlewares
@@ -319,12 +319,12 @@ public class WebSocketClient implements Runnable, RequireAble {
     private boolean validateOrClose(Frame frame) throws InvocationTargetException, IllegalAccessException {
         return switch (frame.getOpcode()) {
             case PING -> {
-                craftsNet.listenerRegistry().call(new ReceivedPingMessageEvent(exchange, frame));
+                craftsNet.getListenerRegistry().call(new ReceivedPingMessageEvent(exchange, frame));
                 yield false;
             }
 
             case PONG -> {
-                craftsNet.listenerRegistry().call(new ReceivedPongMessageEvent(exchange, frame));
+                craftsNet.getListenerRegistry().call(new ReceivedPongMessageEvent(exchange, frame));
                 yield false;
             }
 
@@ -384,8 +384,8 @@ public class WebSocketClient implements Runnable, RequireAble {
             Method method = mapping.method();
 
             // Process the requirements
-            if (craftsNet.requirementRegistry().getRequirements().containsKey(WebSocketServer.class))
-                for (Requirement requirement : craftsNet.requirementRegistry().getRequirements().get(WebSocketServer.class))
+            if (craftsNet.getRequirementRegistry().getRequirements().containsKey(WebSocketServer.class))
+                for (Requirement requirement : craftsNet.getRequirementRegistry().getRequirements().get(WebSocketServer.class))
                     try {
                         Method m = Utils.getMethod(requirement.getClass(), "applies", Frame.class, EndpointMapping.class);
                         if (m == null) continue;
@@ -435,8 +435,8 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param t the throwable which has been thrown
      */
     private void createErrorLog(Throwable t) {
-        if (craftsNet.logStreamMutator() != null) {
-            long errorID = craftsNet.logStreamMutator().createErrorLog(this.craftsNet, t, this.scheme.getName(), path);
+        if (craftsNet.getLogStream() != null) {
+            long errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), path);
             logger.error(t, "Error: " + errorID);
             sendMessage(Json.empty()
                     .set("error.message", "An unexpected exception happened whilst processing your message!")
@@ -482,7 +482,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     @Nullable
     public EnumMap<ProcessPriority.Priority, List<EndpointMapping>> getEndpoint() {
-        return this.mappings != null ? mappings : craftsNet.routeRegistry().getSocket(this);
+        return this.mappings != null ? mappings : craftsNet.getRouteRegistry().getSocket(this);
     }
 
     /**
@@ -884,7 +884,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(exchange, frame);
             if (!opcode.equals(Opcode.CLOSE) && !opcode.equals(Opcode.CONTINUATION)) {
-                craftsNet.listenerRegistry().call(event);
+                craftsNet.getListenerRegistry().call(event);
                 if (event.isCancelled())
                     return;
 
@@ -976,7 +976,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             if (socket != null) socket.close();
 
-            craftsNet.listenerRegistry().call(new ClientDisconnectEvent(exchange, closeCode, closeReason, closeByServer));
+            craftsNet.getListenerRegistry().call(new ClientDisconnectEvent(exchange, closeCode, closeReason, closeByServer));
 
             if (!closeByServer && this.connected) logger.warning(ip + " disconnected abnormal: The underlying tcp connection has been killed!");
             else if (!closeByServer && closeCode != -1 && closeCode != ClosureCode.NORMAL.intValue()) {
@@ -1019,7 +1019,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         if (this.mappings == null) return Stream.empty();
 
         return Stream.concat(
-                        craftsNet.middlewareRegistry().getMiddlewares(WebSocketServer.class).stream(),
+                        craftsNet.getMiddlewareRegistry().getMiddlewares(WebSocketServer.class).stream(),
                         this.mappings.values().stream().flatMap(Collection::stream)
                                 .map(EndpointMapping::middlewares)
                                 .flatMap(Stack::stream)

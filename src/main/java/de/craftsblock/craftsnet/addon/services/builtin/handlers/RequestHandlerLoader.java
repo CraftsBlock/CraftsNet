@@ -11,7 +11,7 @@ import de.craftsblock.craftsnet.api.http.RequestHandler;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.1.0-SNAPSHOT
  */
 public class RequestHandlerLoader implements ServiceLoader<RequestHandler> {
@@ -35,7 +35,7 @@ public class RequestHandlerLoader implements ServiceLoader<RequestHandler> {
      */
     @Override
     public boolean load(RequestHandler provider) {
-        craftsNet.routeRegistry().register(provider);
+        craftsNet.getRouteRegistry().register(provider);
         return true;
     }
 

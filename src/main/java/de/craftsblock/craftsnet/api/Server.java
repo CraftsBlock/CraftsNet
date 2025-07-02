@@ -8,7 +8,7 @@ import de.craftsblock.craftsnet.logging.Logger;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.0.3-SNAPSHOT
  */
 public abstract class Server {
@@ -43,7 +43,7 @@ public abstract class Server {
      */
     public Server(CraftsNet craftsNet, int port, int backlog, boolean ssl) {
         this.craftsNet = craftsNet;
-        this.logger = this.craftsNet.logger();
+        this.logger = this.craftsNet.getLogger();
 
         this.bind(port, backlog);
         this.ssl = ssl;

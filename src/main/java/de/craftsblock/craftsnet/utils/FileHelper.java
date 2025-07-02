@@ -27,7 +27,7 @@ import java.util.stream.Stream;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.1.0-SNAPSHOT
  */
 public class FileHelper {
@@ -60,9 +60,9 @@ public class FileHelper {
             double size = (double) temp.getUsableSpace() / 1000 / 1000;
             temp.delete();
             if (size < 250) {
-                craftsNet.logger().warning("Your temporary folder has less than 250 MB free space!");
-                craftsNet.logger().warning("Switched to the file system on which craftsnet is running for temporary files.");
-                craftsNet.logger().warning("If you want to hide this warning, add `--placeTempFileInNormal` to your start command.");
+                craftsNet.getLogger().warning("Your temporary folder has less than 250 MB free space!");
+                craftsNet.getLogger().warning("Switched to the file system on which craftsnet is running for temporary files.");
+                craftsNet.getLogger().warning("If you want to hide this warning, add `--placeTempFileInNormal` to your start command.");
                 File t = new File("./temp/");
                 t.mkdirs();
                 tempDir = t.toPath();

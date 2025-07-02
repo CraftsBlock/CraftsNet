@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.3
+ * @version 1.0.4
  * @since 3.2.1-SNAPSHOT
  */
 public class RequirementRegistry {
@@ -46,7 +46,7 @@ public class RequirementRegistry {
      */
     public RequirementRegistry(CraftsNet craftsNet) {
         this.craftsNet = craftsNet;
-        this.routeRegistry = craftsNet.routeRegistry();
+        this.routeRegistry = craftsNet.getRouteRegistry();
 
         // Built in http requirements
         register(new BodyRequirement(), false);

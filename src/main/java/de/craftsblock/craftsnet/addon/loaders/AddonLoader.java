@@ -40,7 +40,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.3.1
+ * @version 2.3.2
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -58,7 +58,7 @@ public final class AddonLoader {
      */
     public AddonLoader(CraftsNet craftsNet) {
         this.craftsNet = craftsNet;
-        this.logger = this.craftsNet.logger();
+        this.logger = this.craftsNet.getLogger();
     }
 
     /**
@@ -114,7 +114,7 @@ public final class AddonLoader {
      * @throws IOException if there is an I/O error while loading the addons.
      */
     public List<AddonConfiguration> load() throws IOException {
-        Logger logger = craftsNet.logger();
+        Logger logger = craftsNet.getLogger();
 
         // Create a new artifact loader
         ArtifactLoader artifactLoader = new ArtifactLoader();
@@ -211,7 +211,7 @@ public final class AddonLoader {
             Addon addon = instantiateAddon(configuration);
             if (addon == null) return;
 
-            craftsNet.addonManager().register(addon);
+            craftsNet.getAddonManager().register(addon);
             configuration.addon().set(addon);
 
             addToLoadOrder(loadOrder, addon);
@@ -232,7 +232,7 @@ public final class AddonLoader {
         loadOrder.close();
 
         try {
-            craftsNet.listenerRegistry().call(new AllAddonsLoadedEvent());
+            craftsNet.getListenerRegistry().call(new AllAddonsLoadedEvent());
         } catch (Exception e) {
             logger.error(e, "Can not fire addons loaded event!");
         }
@@ -255,7 +255,7 @@ public final class AddonLoader {
             addon.onLoad();
 
             if (!autoRegisterInfos.containsKey(addon)) return;
-            craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.LOAD);
+            craftsNet.getAutoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.LOAD);
         });
 
         // Enabling all addons
@@ -264,7 +264,7 @@ public final class AddonLoader {
             addon.onEnable();
 
             if (!autoRegisterInfos.containsKey(addon)) return;
-            craftsNet.autoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.ENABLE);
+            craftsNet.getAutoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.ENABLE);
         });
 
         return orderedLoad;
@@ -345,7 +345,7 @@ public final class AddonLoader {
                 path = Path.of(addon.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
 
             URI uri = path.toUri();
-            JarFile jarFile = craftsNet.fileHelper().getJarFileAt(path);
+            JarFile jarFile = craftsNet.getFileHelper().getJarFileAt(path);
 
             codesSources.computeIfAbsent(uri, f -> Map.entry(jarFile, new ArrayList<>())).getValue().add(addon);
         } catch (IOException | URISyntaxException e) {
@@ -450,7 +450,7 @@ public final class AddonLoader {
      * @since 3.4.3
      */
     private void loadServices(AddonConfiguration configuration) {
-        ServiceManager serviceManager = craftsNet.serviceManager();
+        ServiceManager serviceManager = craftsNet.getServiceManager();
 
         if (configuration.services() == null || configuration.services().isEmpty()) return;
         if (configuration.addon().get() == null) return;

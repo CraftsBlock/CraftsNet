@@ -28,7 +28,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.0
+ * @version 1.5.1
  * @see Exchange
  * @see RequestHandler
  * @see Route
@@ -139,7 +139,7 @@ public class WebServer extends Server {
     public void awakeOrWarn() {
         if (!isRunning() && isEnabled())
             // Start the web server as it is needed and currently not running
-            this.craftsNet.webServer().start();
+            this.craftsNet.getWebServer().start();
         else if (!isEnabled())
             // Print a warning if the web server is disabled and routes has been registered
             logger.warning("A route has been registered, but the web server is disabled!");
@@ -150,7 +150,7 @@ public class WebServer extends Server {
      */
     @Override
     public void sleepIfNotNeeded() {
-        if (isRunning() && !craftsNet.routeRegistry().hasRoutes() && isStatus(ActivateType.DYNAMIC))
+        if (isRunning() && !craftsNet.getRouteRegistry().hasRoutes() && isStatus(ActivateType.DYNAMIC))
             stop();
     }
 

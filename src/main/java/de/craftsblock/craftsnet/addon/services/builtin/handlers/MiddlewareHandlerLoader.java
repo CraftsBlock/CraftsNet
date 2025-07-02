@@ -11,7 +11,7 @@ import de.craftsblock.craftsnet.api.middlewares.MiddlewareRegistry;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.4.0-SNAPSHOT
  */
 public class MiddlewareHandlerLoader implements ServiceLoader<Middleware> {
@@ -35,7 +35,7 @@ public class MiddlewareHandlerLoader implements ServiceLoader<Middleware> {
      */
     @Override
     public boolean load(Middleware provider) {
-        craftsNet.middlewareRegistry().register(provider);
+        craftsNet.getMiddlewareRegistry().register(provider);
         return true;
     }
 

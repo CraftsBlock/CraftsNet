@@ -11,7 +11,7 @@ import de.craftsblock.craftsnet.addon.services.ServiceLoader;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.1.0-SNAPSHOT
  */
 public class ListenerAdapterLoader implements ServiceLoader<ListenerAdapter> {
@@ -35,7 +35,7 @@ public class ListenerAdapterLoader implements ServiceLoader<ListenerAdapter> {
      */
     @Override
     public boolean load(ListenerAdapter provider) {
-        craftsNet.listenerRegistry().register(provider);
+        craftsNet.getListenerRegistry().register(provider);
         return true;
     }
 

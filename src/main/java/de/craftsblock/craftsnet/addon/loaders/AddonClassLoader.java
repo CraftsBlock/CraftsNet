@@ -14,7 +14,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.2.1
  * @see CraftsNetClassLoader
  * @since 3.0.3-SNAPSHOT
  */
@@ -42,7 +42,7 @@ public final class AddonClassLoader extends CraftsNetClassLoader {
      */
     AddonClassLoader(CraftsNet craftsNet, AddonConfiguration configuration) {
         super(craftsNet, configuration.classpath(), ClassLoader.getSystemClassLoader());
-        this.logger = this.getCraftsNet().logger();
+        this.logger = this.getCraftsNet().getLogger();
 
         addonLoaders.add(this);
         this.addon = configuration;

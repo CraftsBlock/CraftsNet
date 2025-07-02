@@ -25,7 +25,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.2
+ * @version 1.3.3
  * @see Addon
  * @see AddonLoader
  * @since 1.0.0-SNAPSHOT
@@ -49,7 +49,7 @@ public final class AddonManager {
      */
     public AddonManager(CraftsNet craftsNet) {
         this.craftsNet = craftsNet;
-        this.logger = this.craftsNet.logger();
+        this.logger = this.craftsNet.getLogger();
 
         this.addonLoader = new AddonLoader(craftsNet);
     }
@@ -128,9 +128,9 @@ public final class AddonManager {
         });
 
         try {
-            craftsNet.listenerRegistry().call(new AllAddonsDisabledEvent());
+            craftsNet.getListenerRegistry().call(new AllAddonsDisabledEvent());
         } catch (InvocationTargetException | IllegalAccessException e) {
-            craftsNet.logger().error(e, "Error while performing the all addons disabled event!");
+            craftsNet.getLogger().error(e, "Error while performing the all addons disabled event!");
         }
 
         addons.clear();

@@ -21,7 +21,7 @@ import java.util.*;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 2.1.1
+ * @version 2.1.2
  * @since 3.2.0-SNAPSHOT
  */
 public class AutoRegisterInfo {
@@ -109,7 +109,7 @@ public class AutoRegisterInfo {
         Constructor<?> constructor = null;
         Object[] constructorArgs = null;
 
-        Collection<Addon> addons = craftsNet.addonManager().getAddons().values();
+        Collection<Addon> addons = craftsNet.getAddonManager().getAddons().values();
         for (Constructor<?> con : constructors.values().stream().flatMap(Collection::stream).toList()) {
             Collection<Object> args = new ArrayList<>();
 

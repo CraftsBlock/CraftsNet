@@ -40,7 +40,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.1
+ * @version 2.1.2
  * @see <a href="https://maven.apache.org/resolver/index.html">Eclipse Aether</a>
  * @since 3.0.0-SNAPSHOT
  */
@@ -132,7 +132,7 @@ public final class ArtifactLoader {
      */
     public URL[] loadLibraries(CraftsNet craftsNet, AddonLoader addonLoader, Collection<RegisteredService> services,
                                String addon, String... libraries) {
-        Logger logger = craftsNet.logger();
+        Logger logger = craftsNet.getLogger();
         logger.debug("Loading " + libraries.length + " libraries for " + addon + "...");
         List<Dependency> dependencies = new ArrayList<>();
         for (String library : libraries) {

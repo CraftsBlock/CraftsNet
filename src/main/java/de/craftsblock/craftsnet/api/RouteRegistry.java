@@ -28,7 +28,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -41,7 +40,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.5.0
+ * @version 3.5.1
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -75,7 +74,7 @@ public class RouteRegistry {
                 ServerMapping serverMapping = annotations.get(annotation);
                 Class<? extends Server> rawServer = serverMapping.rawServer();
                 var endpoints = serverMappings.computeIfAbsent(rawServer, c -> new ConcurrentHashMap<>());
-                Collection<Class<? extends Annotation>> requirementAnnotations = new ArrayList<>(craftsNet.requirementRegistry()
+                Collection<Class<? extends Annotation>> requirementAnnotations = new ArrayList<>(craftsNet.getRequirementRegistry()
                         .getRequirements(rawServer).parallelStream().map(Requirement::getAnnotation).toList());
 
                 String parent = ReflectionUtils.retrieveValueOfAnnotation(handler.getClass(), annotation, String.class, true);
@@ -115,9 +114,9 @@ public class RouteRegistry {
 
                     // Load requirements
                     ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements = new ConcurrentHashMap<>();
-                    craftsNet.requirementRegistry().loadRequirements(requirements, requirementAnnotations, method, handler);
+                    craftsNet.getRequirementRegistry().loadRequirements(requirements, requirementAnnotations, method, handler);
 
-                    Stack<Middleware> middlewares = craftsNet.middlewareRegistry().resolveMiddlewares(handler, method);
+                    Stack<Middleware> middlewares = craftsNet.getMiddlewareRegistry().resolveMiddlewares(handler, method);
 
                     // Register the endpoint mapping
                     ConcurrentLinkedQueue<EndpointMapping> mappings = endpoints.computeIfAbsent(validator, pattern -> new ConcurrentLinkedQueue<>());
@@ -230,8 +229,8 @@ public class RouteRegistry {
         shares.put(pattern, new ShareMapping(folder.toAbsolutePath().toString(), onlyGet));
 
         // Only continue if the web server was set
-        if (this.craftsNet.webServer() != null)
-            this.craftsNet.webServer().awakeOrWarn();
+        if (this.craftsNet.getWebServer() != null)
+            this.craftsNet.getWebServer().awakeOrWarn();
     }
 
     /**
@@ -486,7 +485,7 @@ public class RouteRegistry {
                 .filter(entry -> entry.getKey().matcher(formatUrl(url)).matches())
                 .map(Map.Entry::getValue)
                 .flatMap(Collection::stream)
-                .filter(mapping -> craftsNet.requirementRegistry().getRequirements(server).parallelStream()
+                .filter(mapping -> craftsNet.getRequirementRegistry().getRequirements(server).parallelStream()
                         .filter(requirement ->
                                 Utils.checkForMethod(requirement.getClass(), "applies", target.getClass(), EndpointMapping.class))
                         .map(requirement -> {
@@ -702,8 +701,8 @@ public class RouteRegistry {
          */
         public Function<CraftsNet, Server> server() {
             return craftsNet -> {
-                if (this.rawServer.equals(WebServer.class)) return craftsNet.webServer();
-                if (this.rawServer.equals(WebSocketServer.class)) return craftsNet.webSocketServer();
+                if (this.rawServer.equals(WebServer.class)) return craftsNet.getWebServer();
+                if (this.rawServer.equals(WebSocketServer.class)) return craftsNet.getWebSocketServer();
                 return null;
             };
         }

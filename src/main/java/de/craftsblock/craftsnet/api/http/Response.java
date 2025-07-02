@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.2
+ * @version 1.2.3
  * @see Exchange
  * @see WebServer
  * @since 1.0.0-SNAPSHOT
@@ -74,7 +74,7 @@ public class Response implements AutoCloseable {
     protected Response(CraftsNet craftsNet, StreamEncoder streamEncoder, HttpExchange httpExchange,
                        HttpMethod httpMethod) {
         this.craftsNet = craftsNet;
-        this.logger = this.craftsNet.logger();
+        this.logger = this.craftsNet.getLogger();
 
         this.httpExchange = httpExchange;
         this.streamEncoder = streamEncoder;
@@ -181,7 +181,7 @@ public class Response implements AutoCloseable {
                 return;
             }
 
-            Path encodedFileLocation = craftsNet.fileHelper().createTempFile("response", ".body");
+            Path encodedFileLocation = craftsNet.getFileHelper().createTempFile("response", ".body");
             try {
                 try (OutputStream output = streamEncoder.encodeOutputStream(Files.newOutputStream(encodedFileLocation))) {
                     IOUtils.copy(fileInput, output, 2048);
@@ -345,10 +345,10 @@ public class Response implements AutoCloseable {
      * @since 3.3.5-SNAPSHOT
      */
     public void setStreamEncoder(String encodingName) {
-        if (!this.craftsNet.streamEncoderRegistry().isAvailable(encodingName))
+        if (!this.craftsNet.getStreamEncoderRegistry().isAvailable(encodingName))
             throw new IllegalStateException("No available stream encoder found for name " + encodingName + "!");
 
-        this.setStreamEncoder(Objects.requireNonNull(this.craftsNet.streamEncoderRegistry().retrieveEncoder(encodingName)));
+        this.setStreamEncoder(Objects.requireNonNull(this.craftsNet.getStreamEncoderRegistry().retrieveEncoder(encodingName)));
     }
 
     /**

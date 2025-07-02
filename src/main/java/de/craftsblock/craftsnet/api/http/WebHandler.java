@@ -39,7 +39,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.6.3
+ * @version 1.6.4
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -58,8 +58,8 @@ public class WebHandler implements HttpHandler {
      */
     public WebHandler(CraftsNet craftsNet) {
         this.craftsNet = craftsNet;
-        this.logger = this.craftsNet.logger();
-        this.registry = this.craftsNet.routeRegistry();
+        this.logger = this.craftsNet.getLogger();
+        this.registry = this.craftsNet.getRouteRegistry();
         this.scheme = Scheme.HTTP.getSsl(Scheme.HTTP.getServer(craftsNet).isSSL());
     }
 
@@ -79,7 +79,7 @@ public class WebHandler implements HttpHandler {
             String url = httpExchange.getRequestURI().toString().replaceAll("//+", "/");
             Headers headers = httpExchange.getRequestHeaders();
 
-            StreamEncoderRegistry streamEncoderRegistry = craftsNet.streamEncoderRegistry();
+            StreamEncoderRegistry streamEncoderRegistry = craftsNet.getStreamEncoderRegistry();
             AtomicReference<StreamEncoder> streamEncoder = new AtomicReference<>(streamEncoderRegistry.retrieveEncoder(IdentityStreamEncoder.class));
             if (craftsNet.getBuilder().responseEncodingAllowed() && headers.containsKey("Accept-Encoding")) {
                 var requestedEncodings = AcceptEncodingHelper.parseHeader(headers.getFirst("Accept-Encoding"));
@@ -105,20 +105,20 @@ public class WebHandler implements HttpHandler {
 
                 // Create a Request object to encapsulate the incoming request information.
                 try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod);
-                     Session session = craftsNet.sessionCache().getOrNew(SessionInfo.extractSession(request));
+                     Session session = craftsNet.getSessionCache().getOrNew(SessionInfo.extractSession(request));
                      Exchange exchange = new Exchange(protocolVersion, request, response, session)) {
                     exchange.session().setExchange(exchange);
 
                     PreRequestEvent event = new PreRequestEvent(exchange);
-                    craftsNet.listenerRegistry().call(event);
+                    craftsNet.getListenerRegistry().call(event);
                     if (event.isCancelled()) return;
 
                     Map.Entry<Boolean, Boolean> result = handle(exchange);
-                    craftsNet.listenerRegistry().call(new PostRequestEvent(exchange, result.getKey(), result.getValue()));
+                    craftsNet.getListenerRegistry().call(new PostRequestEvent(exchange, result.getKey(), result.getValue()));
                 }
             } catch (Throwable t) {
-                if (craftsNet.logStreamMutator() != null) {
-                    long errorID = craftsNet.logStreamMutator().createErrorLog(this.craftsNet, t, this.scheme.getName(), url);
+                if (craftsNet.getLogStream() != null) {
+                    long errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), url);
                     logger.error(t, "Error: " + errorID);
                     if (!response.headersSent()) response.setCode(500);
                     if (!httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN))
@@ -155,7 +155,7 @@ public class WebHandler implements HttpHandler {
 
         // Handle global middlewares
         MiddlewareCallbackInfo callback = new MiddlewareCallbackInfo();
-        craftsNet.middlewareRegistry().getMiddlewares(exchange).stream().filter(middleware -> middleware.isApplicable(exchange))
+        craftsNet.getMiddlewareRegistry().getMiddlewares(exchange).stream().filter(middleware -> middleware.isApplicable(exchange))
                 .forEach(middleware -> middleware.handle(callback, exchange));
 
         // Cancel if the middleware callback is cancelled
@@ -204,7 +204,7 @@ public class WebHandler implements HttpHandler {
 
         // Create a RequestEvent and call listeners before invoking the API handler method.
         RouteRequestEvent event = new RouteRequestEvent(exchange);
-        craftsNet.listenerRegistry().call(event);
+        craftsNet.getListenerRegistry().call(event);
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "ABORTED";
             logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[" + cancelReason + "]");
@@ -293,7 +293,7 @@ public class WebHandler implements HttpHandler {
         }
 
         ShareRequestEvent event = new ShareRequestEvent(url, matcher.group(1), exchange, registry.getShare(url));
-        craftsNet.listenerRegistry().call(event);
+        craftsNet.getListenerRegistry().call(event);
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "SHARE ABORTED";
             logger.info(httpMethod + " " + url + " from " + ip + " \u001b[38;5;9m[" + cancelReason + "]");
@@ -304,7 +304,7 @@ public class WebHandler implements HttpHandler {
         logger.info(httpMethod + " " + url + " from " + ip + " \u001b[38;5;205m[SHARED]");
 
         ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(exchange, folder.resolve((path.isBlank() ? "index.html" : path)));
-        craftsNet.listenerRegistry().call(fileLoadedEvent);
+        craftsNet.getListenerRegistry().call(fileLoadedEvent);
         if (fileLoadedEvent.isCancelled()) return;
         Path share = fileLoadedEvent.getPath().toAbsolutePath();
 

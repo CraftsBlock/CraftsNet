@@ -31,7 +31,7 @@ import java.util.concurrent.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.2
+ * @version 1.2.3
  * @see WebSocketClient
  * @since 2.1.1-SNAPSHOT
  */
@@ -201,7 +201,7 @@ public class WebSocketServer extends Server {
     public void awakeOrWarn() {
         if (!isRunning() && isEnabled())
             // Start the web socket server as it is needed and currently not running
-            this.craftsNet.webSocketServer().start();
+            this.craftsNet.getWebSocketServer().start();
         else if (!isEnabled())
             // Print a warning if the web socket server is disabled and socket endpoints has been registered
             logger.warning("A socket endpoint has been registered, but the web socket server is disabled!");
@@ -212,7 +212,7 @@ public class WebSocketServer extends Server {
      */
     @Override
     public void sleepIfNotNeeded() {
-        if (isRunning() && !craftsNet.routeRegistry().hasWebsockets() && isStatus(ActivateType.DYNAMIC))
+        if (isRunning() && !craftsNet.getRouteRegistry().hasWebsockets() && isStatus(ActivateType.DYNAMIC))
             stop();
     }
 

@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.3
+ * @version 1.0.4
  * @since 3.2.0-SNAPSHOT
  */
 public class ListenerAutoRegisterHandler extends AutoRegisterHandler<ListenerAdapter> {
@@ -27,13 +27,13 @@ public class ListenerAutoRegisterHandler extends AutoRegisterHandler<ListenerAda
      */
     public ListenerAutoRegisterHandler(CraftsNet craftsNet) {
         super(craftsNet);
-        this.listenerRegistry = craftsNet.listenerRegistry();
+        this.listenerRegistry = craftsNet.getListenerRegistry();
     }
 
     /**
      * Handles the registration of the provided {@link ListenerAdapter}.
      *
-     * <p>This method attempts to register the given {@link ListenerAdapter} with the {@link CraftsNet#listenerRegistry()}
+     * <p>This method attempts to register the given {@link ListenerAdapter} with the {@link CraftsNet#getListenerRegistry()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
      * returns {@code true}. If any exception occurs during the registration process, a
      * {@link RuntimeException} is thrown.</p>

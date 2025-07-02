@@ -11,7 +11,7 @@ import de.craftsblock.craftsnet.events.sockets.message.ReceivedPingMessageEvent;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.0.2
  * @see ReceivedPingMessageEvent
  * @see WebSocketClient
  * @since 3.0.5-SNAPSHOT
@@ -37,7 +37,7 @@ public class DefaultPingResponder implements ListenerAdapter {
      * @param craftsNet The CraftsNet instance from which to unregister the responder.
      */
     public static void unregister(CraftsNet craftsNet) {
-        craftsNet.listenerRegistry().unregister(PING_RESPONDER);
+        craftsNet.getListenerRegistry().unregister(PING_RESPONDER);
     }
 
     /**
@@ -48,7 +48,7 @@ public class DefaultPingResponder implements ListenerAdapter {
      */
     public static void register(CraftsNet craftsNet) {
         unregister(craftsNet);
-        craftsNet.listenerRegistry().register(PING_RESPONDER);
+        craftsNet.getListenerRegistry().register(PING_RESPONDER);
     }
 
 }

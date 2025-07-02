@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.0
+ * @version 2.0.1
  * @see FormBody
  * @see JsonBody
  * @since 2.2.0-SNAPSHOT
@@ -141,7 +141,7 @@ public abstract class Body implements AutoCloseable {
         if (bodies.getOrDefault(this.request, new ConcurrentHashMap<>()).containsKey(type)) return true;
 
         // Check if a body parser exists which could parse to the expected type.
-        BodyRegistry registry = this.request.getCraftsNet().bodyRegistry();
+        BodyRegistry registry = this.request.getCraftsNet().getBodyRegistry();
         if (!registry.isParserPresent(type)) return false;
         return registry.getParser(type).isParseable(getRawContentType().split(";")[0]);
     }
@@ -161,10 +161,10 @@ public abstract class Body implements AutoCloseable {
 
         try {
             // Try to parse the body to the wanted type if it's not present
-            BodyRegistry registry = this.request.getCraftsNet().bodyRegistry();
+            BodyRegistry registry = this.request.getCraftsNet().getBodyRegistry();
             if (!registry.isParserPresent(type)) return null;
             try (InputStream stream = this.request.getRawBody()) {
-                return this.request.getCraftsNet().bodyRegistry().getParser(type).parse(this.request, stream);
+                return this.request.getCraftsNet().getBodyRegistry().getParser(type).parse(this.request, stream);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);

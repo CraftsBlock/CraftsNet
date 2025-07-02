@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.3
+ * @version 1.0.4
  * @since 3.2.0-SNAPSHOT
  */
 public class HandlerAutoRegisterHandler extends AutoRegisterHandler<Handler> {
@@ -27,13 +27,13 @@ public class HandlerAutoRegisterHandler extends AutoRegisterHandler<Handler> {
      */
     public HandlerAutoRegisterHandler(CraftsNet craftsNet) {
         super(craftsNet);
-        this.routeRegistry = craftsNet.routeRegistry();
+        this.routeRegistry = craftsNet.getRouteRegistry();
     }
 
     /**
      * Handles the registration of the provided {@link Handler}.
      *
-     * <p>This method attempts to register the given {@link Handler} with the {@link CraftsNet#routeRegistry()}
+     * <p>This method attempts to register the given {@link Handler} with the {@link CraftsNet#getRouteRegistry()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
      * returns {@code true}. If any exception occurs during the registration process, a
      * {@link RuntimeException} is thrown.</p>

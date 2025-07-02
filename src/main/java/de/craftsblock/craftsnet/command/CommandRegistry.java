@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.0.2
  * @see Command
  * @since 2.2.0-SNAPSHOT
  */
@@ -33,7 +33,7 @@ public class CommandRegistry {
     public CommandRegistry(CraftsNet craftsNet) {
         this.craftsNet = craftsNet;
 
-        craftsNet.logger().debug("Registering the default commands");
+        craftsNet.getLogger().debug("Registering the default commands");
         getCommand("pl").setExecutor(new PluginCommand(craftsNet));
         getCommand("pl").addAlias("plugin", "plugins", "addons");
         getCommand("restart").setExecutor(new ReloadCommand(craftsNet));
@@ -72,7 +72,7 @@ public class CommandRegistry {
      * @param args The arguments to pass to the command executor.
      */
     public void perform(String name, String[] args) {
-        Logger logger = craftsNet.logger();
+        Logger logger = craftsNet.getLogger();
         Command command;
 
         if (commands.containsKey(name)) command = commands.get(name);

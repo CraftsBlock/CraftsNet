@@ -25,7 +25,7 @@ import java.util.List;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.1.0
  */
 public class CorsPolicy {
@@ -441,7 +441,7 @@ public class CorsPolicy {
 
         String domain = request.getDomain();
         if (strip) return domain;
-        return "http" + (request.getCraftsNet().webServer().isSSL() ? "s" : "") + "://" + domain;
+        return "http" + (request.getCraftsNet().getWebServer().isSSL() ? "s" : "") + "://" + domain;
     }
 
 }

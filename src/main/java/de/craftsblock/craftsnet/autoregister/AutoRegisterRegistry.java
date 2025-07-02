@@ -33,7 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.4
+ * @version 1.2.5
  * @see AutoRegisterInfo
  * @see AutoRegisterHandler
  * @since 3.2.0-SNAPSHOT
@@ -138,7 +138,7 @@ public class AutoRegisterRegistry {
                 .toList();
 
         if (handlers.isEmpty()) {
-            craftsNet.logger().warning("Found @AutoRegister on " + info.getClassName() + " but no registry found!");
+            craftsNet.getLogger().warning("Found @AutoRegister on " + info.getClassName() + " but no registry found!");
             return false;
         }
 
@@ -152,7 +152,7 @@ public class AutoRegisterRegistry {
                 method.setAccessible(true);
                 boolean result = (boolean) method.invoke(handler, obj, info, args);
                 if (result)
-                    craftsNet.logger().debug("Auto registered " + info.getClassName() + " with " + handler.getClass().getSimpleName());
+                    craftsNet.getLogger().debug("Auto registered " + info.getClassName() + " with " + handler.getClass().getSimpleName());
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }

@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.2
  * @see Comparison
  * @since 3.1.0-SNAPSHOT
  */
@@ -78,7 +78,7 @@ public class Versions {
      * @param craftsNet The current {@link CraftsNet} instance.
      */
     public static void verbalCheck(CraftsNet craftsNet) {
-        Logger logger = craftsNet.logger();
+        Logger logger = craftsNet.getLogger();
         logger.info("Checking for new version...");
         try {
             URL url = new URL("https://repo.craftsblock.de/api/maven/latest/version/releases/de/craftsblock/craftsnet?type=json");

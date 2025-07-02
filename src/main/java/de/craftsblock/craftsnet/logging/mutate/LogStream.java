@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.2.1
  * @see MutatedPrintStream
  * @since 3.0.2-SNAPSHOT
  */
@@ -223,7 +223,7 @@ public class LogStream {
 
                 throwable.printStackTrace(stream);
             } catch (FileNotFoundException e) {
-                craftsNet.logger().error(e, "Failed to create error log file");
+                craftsNet.getLogger().error(e, "Failed to create error log file");
             }
 
             return identifier;

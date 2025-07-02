@@ -11,9 +11,12 @@ import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoderRegistry;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareRegistry;
 import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
+import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterRegistry;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.logging.mutate.LogStream;
+import de.craftsblock.craftsnet.utils.FileHelper;
 
 import java.io.File;
 
@@ -36,7 +39,7 @@ import java.io.File;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.3.0
  * @see AddonLoader
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -79,8 +82,21 @@ public abstract class Addon {
      *
      * @return The CraftsNet instance on which the addon was registered.
      * @since 3.1.0-SNAPSHOT
+     * @deprecated Use {@link #getCraftsNet()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public final CraftsNet craftsNet() {
+        return craftsNet;
+    }
+
+    /**
+     * Get the CraftsNet instance on which the addon was registered.
+     * This method is marked as final to prevent subclasses from modifying the registry directly.
+     *
+     * @return The CraftsNet instance on which the addon was registered.
+     * @since 3.1.0-SNAPSHOT
+     */
+    public CraftsNet getCraftsNet() {
         return craftsNet;
     }
 
@@ -104,14 +120,51 @@ public abstract class Addon {
     }
 
     /**
+     * Retrieves the {@link AddonManager} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying it directly.
+     *
+     * @return The {@link AddonManager} instance used by the addon.
+     * @since 3.4.4
+     */
+    public final AddonManager getAddonManager() {
+        return craftsNet.getAddonManager();
+    }
+
+    /**
+     * Retrieves the {@link AutoRegisterRegistry} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the registry directly.
+     *
+     * @return The {@link AutoRegisterRegistry} instance used by the addon.
+     * @since 3.2.0-SNAPSHOT
+     * @deprecated Use {@link #getAutoRegisterRegistry()} instead. This will be removed in the future.
+     */
+    @Deprecated(since = "3.4.4", forRemoval = true)
+    public final AutoRegisterRegistry autoRegisterRegistry() {
+        return this.getAutoRegisterRegistry();
+    }
+
+    /**
      * Retrieves the {@link AutoRegisterRegistry} instance used by the addon.
      * This method is marked as final to prevent subclasses from modifying the registry directly.
      *
      * @return The {@link AutoRegisterRegistry} instance used by the addon.
      * @since 3.2.0-SNAPSHOT
      */
-    public final AutoRegisterRegistry autoRegisterRegistry() {
-        return craftsNet.autoRegisterRegistry();
+    public final AutoRegisterRegistry getAutoRegisterRegistry() {
+        return craftsNet.getAutoRegisterRegistry();
+    }
+
+    /**
+     * Get the {@link BodyRegistry} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the registry directly.
+     *
+     * @return The {@link BodyRegistry} instance used by the addon.
+     * @since 3.0.4-SNAPSHOT
+     * @deprecated Use {@link #getBodyRegistry()} instead. This will be removed in the future.
+     */
+    @Deprecated(since = "3.4.4", forRemoval = true)
+    public final BodyRegistry bodyRegistry() {
+        return this.getBodyRegistry();
     }
 
     /**
@@ -121,8 +174,20 @@ public abstract class Addon {
      * @return The {@link BodyRegistry} instance used by the addon.
      * @since 3.0.4-SNAPSHOT
      */
-    public final BodyRegistry bodyRegistry() {
-        return craftsNet.bodyRegistry();
+    public final BodyRegistry getBodyRegistry() {
+        return craftsNet.getBodyRegistry();
+    }
+
+    /**
+     * Get the {@link CommandRegistry} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the registry directly.
+     *
+     * @return The {@link CommandRegistry} instance used by the addon.
+     * @deprecated Use {@link #getCommandRegistry()} instead. This will be removed in the future.
+     */
+    @Deprecated(since = "3.4.4", forRemoval = true)
+    public final CommandRegistry commandRegistry() {
+        return this.getCommandRegistry();
     }
 
     /**
@@ -131,8 +196,30 @@ public abstract class Addon {
      *
      * @return The {@link CommandRegistry} instance used by the addon.
      */
-    public final CommandRegistry commandRegistry() {
-        return craftsNet.commandRegistry();
+    public final CommandRegistry getCommandRegistry() {
+        return craftsNet.getCommandRegistry();
+    }
+
+    /**
+     * Get the {@link FileHelper} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying it directly.
+     *
+     * @return The {@link FileHelper} instance used by the addon.
+     */
+    public final FileHelper getFileHelper() {
+        return craftsNet.getFileHelper();
+    }
+
+    /**
+     * Get the {@link ListenerRegistry} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the registry directly.
+     *
+     * @return The {@link ListenerRegistry} instance used by the addon.
+     * @deprecated Use {@link #getListenerRegistry()} instead. This will be removed in the future.
+     */
+    @Deprecated(since = "3.4.4", forRemoval = true)
+    public final ListenerRegistry listenerRegistry() {
+        return this.getListenerRegistry();
     }
 
     /**
@@ -141,8 +228,31 @@ public abstract class Addon {
      *
      * @return The {@link ListenerRegistry} instance used by the addon.
      */
-    public final ListenerRegistry listenerRegistry() {
-        return craftsNet.listenerRegistry();
+    public final ListenerRegistry getListenerRegistry() {
+        return craftsNet.getListenerRegistry();
+    }
+
+    /**
+     * Get the {@link LogStream} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying it directly.
+     *
+     * @return The {@link LogStream} instance used by the addon.
+     */
+    public final LogStream getLogStream() {
+        return craftsNet.getLogStream();
+    }
+
+    /**
+     * Get the {@link MiddlewareRegistry} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the registry directly.
+     *
+     * @return The {@link MiddlewareRegistry} instance used by the addon.
+     * @since 3.4.0-SNAPSHOT
+     * @deprecated Use {@link #getMiddlewareRegistry()} instead. This will be removed in the future.
+     */
+    @Deprecated(since = "3.4.4", forRemoval = true)
+    public final MiddlewareRegistry middlewareRegistry() {
+        return this.getMiddlewareRegistry();
     }
 
     /**
@@ -152,8 +262,21 @@ public abstract class Addon {
      * @return The {@link MiddlewareRegistry} instance used by the addon.
      * @since 3.4.0-SNAPSHOT
      */
-    public final MiddlewareRegistry middlewareRegistry() {
-        return craftsNet.middlewareRegistry();
+    public final MiddlewareRegistry getMiddlewareRegistry() {
+        return craftsNet.getMiddlewareRegistry();
+    }
+
+    /**
+     * Get the {@link RequirementRegistry} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the registry directly.
+     *
+     * @return The {@link RequirementRegistry} instance used by the addon.
+     * @since 3.2.1-SNAPSHOT
+     * @deprecated Use {@link #getRequirementRegistry()} instead. This will be removed in the future.
+     */
+    @Deprecated(since = "3.4.4", forRemoval = true)
+    public final RequirementRegistry requirementRegistry() {
+        return this.getRequirementRegistry();
     }
 
     /**
@@ -163,8 +286,20 @@ public abstract class Addon {
      * @return The {@link RequirementRegistry} instance used by the addon.
      * @since 3.2.1-SNAPSHOT
      */
-    public final RequirementRegistry requirementRegistry() {
-        return craftsNet.requirementRegistry();
+    public final RequirementRegistry getRequirementRegistry() {
+        return craftsNet.getRequirementRegistry();
+    }
+
+    /**
+     * Get the {@link RouteRegistry} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the handler directly.
+     *
+     * @return The {@link RouteRegistry} instance used by the addon.
+     * @deprecated Use {@link #getRouteRegistry()} instead. This will be removed in the future.
+     */
+    @Deprecated(since = "3.4.4", forRemoval = true)
+    public final RouteRegistry routeRegistry() {
+        return this.getRouteRegistry();
     }
 
     /**
@@ -173,8 +308,20 @@ public abstract class Addon {
      *
      * @return The {@link RouteRegistry} instance used by the addon.
      */
-    public final RouteRegistry routeRegistry() {
-        return craftsNet.routeRegistry();
+    public final RouteRegistry getRouteRegistry() {
+        return craftsNet.getRouteRegistry();
+    }
+
+    /**
+     * Get the {@link ServiceManager} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the handler directly.
+     *
+     * @return The {@link ServiceManager} instance used by the addon.
+     * @deprecated Use {@link #getServiceManager()} instead. This will be removed in the future.
+     */
+    @Deprecated(since = "3.4.4", forRemoval = true)
+    public final ServiceManager serviceManager() {
+        return this.getServiceManager();
     }
 
     /**
@@ -183,8 +330,21 @@ public abstract class Addon {
      *
      * @return The {@link ServiceManager} instance used by the addon.
      */
-    public final ServiceManager serviceManager() {
-        return craftsNet.serviceManager();
+    public final ServiceManager getServiceManager() {
+        return craftsNet.getServiceManager();
+    }
+
+    /**
+     * Get the {@link StreamEncoderRegistry} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the handler directly.
+     *
+     * @return The {@link StreamEncoderRegistry} instance used by the addon.
+     * @since 3.3.3-SNAPSHOT
+     * @deprecated Use {@link #getStreamEncoderRegistry()} instead. This will be removed in the future.
+     */
+    @Deprecated(since = "3.4.4", forRemoval = true)
+    public final StreamEncoderRegistry streamEncoderRegistry() {
+        return this.getStreamEncoderRegistry();
     }
 
     /**
@@ -194,8 +354,19 @@ public abstract class Addon {
      * @return The {@link StreamEncoderRegistry} instance used by the addon.
      * @since 3.3.3-SNAPSHOT
      */
-    public final StreamEncoderRegistry streamEncoderRegistry() {
-        return craftsNet.streamEncoderRegistry();
+    public final StreamEncoderRegistry getStreamEncoderRegistry() {
+        return craftsNet.getStreamEncoderRegistry();
+    }
+
+    /**
+     * Retrieves the {@link WebSocketExtensionRegistry} instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying it directly.
+     *
+     * @return The {@link WebSocketExtensionRegistry} instance used by the addon.
+     * @since 3.4.4
+     */
+    public final WebSocketExtensionRegistry getWebsocketExtensionRegistry() {
+        return craftsNet.getWebSocketExtensionRegistry();
     }
 
     /**
@@ -213,8 +384,20 @@ public abstract class Addon {
      * This method is marked as final to prevent subclasses from modifying the logger directly.
      *
      * @return The logger instance used by the addon.
+     * @deprecated Use {@link #getLogger()} instead. This will be removed in the future.
      */
+    @Deprecated(since = "3.4.4", forRemoval = true)
     public final Logger logger() {
+        return this.getLogger();
+    }
+
+    /**
+     * Get the logger instance used by the addon.
+     * This method is marked as final to prevent subclasses from modifying the logger directly.
+     *
+     * @return The logger instance used by the addon.
+     */
+    public Logger getLogger() {
         return logger;
     }
 
@@ -245,7 +428,7 @@ public abstract class Addon {
      * @return An instance of the specified addon type if found, or {@code null} if not present.
      */
     public <T extends Addon> T getAddon(Class<T> addon) {
-        return craftsNet.addonManager().getAddon(addon);
+        return craftsNet.getAddonManager().getAddon(addon);
     }
 
     /**
@@ -257,7 +440,7 @@ public abstract class Addon {
      * @since 3.3.5-SNAPSHOT
      */
     public <T extends Addon> T getAddon(String name) {
-        return craftsNet.addonManager().getAddon(name);
+        return craftsNet.getAddonManager().getAddon(name);
     }
 
 }

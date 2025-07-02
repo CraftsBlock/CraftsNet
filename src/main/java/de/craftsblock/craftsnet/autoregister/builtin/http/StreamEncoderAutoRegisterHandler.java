@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.3
+ * @version 1.0.4
  * @since 3.3.3-SNAPSHOT
  */
 public class StreamEncoderAutoRegisterHandler extends AutoRegisterHandler<StreamEncoder> {
@@ -27,13 +27,13 @@ public class StreamEncoderAutoRegisterHandler extends AutoRegisterHandler<Stream
      */
     public StreamEncoderAutoRegisterHandler(CraftsNet craftsNet) {
         super(craftsNet);
-        this.streamEncoderRegistry = craftsNet.streamEncoderRegistry();
+        this.streamEncoderRegistry = craftsNet.getStreamEncoderRegistry();
     }
 
     /**
      * Handles the registration of the provided {@link StreamEncoder}.
      *
-     * <p>This method attempts to register the given {@link StreamEncoder} with the {@link CraftsNet#streamEncoderRegistry()}
+     * <p>This method attempts to register the given {@link StreamEncoder} with the {@link CraftsNet#getStreamEncoderRegistry()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
      * returns {@code true}. If any exception occurs during the registration process, a
      * {@link RuntimeException} is thrown.</p>

@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.3
+ * @version 1.0.4
  * @since 3.2.0-SNAPSHOT
  */
 public class ServiceLoaderAutoRegisterHandler extends AutoRegisterHandler<ServiceLoader<?>> {
@@ -27,13 +27,13 @@ public class ServiceLoaderAutoRegisterHandler extends AutoRegisterHandler<Servic
      */
     public ServiceLoaderAutoRegisterHandler(CraftsNet craftsNet) {
         super(craftsNet);
-        this.serviceManager = craftsNet.serviceManager();
+        this.serviceManager = craftsNet.getServiceManager();
     }
 
     /**
      * Handles the registration of the provided {@link ServiceLoader}.
      *
-     * <p>This method attempts to register the given {@link ServiceLoader} with the {@link CraftsNet#serviceManager()}
+     * <p>This method attempts to register the given {@link ServiceLoader} with the {@link CraftsNet#getServiceManager()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
      * returns {@code true}. If any exception occurs during the registration process, a
      * {@link RuntimeException} is thrown.</p>

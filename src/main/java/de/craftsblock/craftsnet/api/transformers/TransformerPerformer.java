@@ -30,7 +30,7 @@ import static de.craftsblock.craftsnet.utils.Utils.getGroupNames;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.2.1
  * @see Transformer
  * @see TransformerCollection
  * @see Transformable
@@ -69,7 +69,7 @@ public class TransformerPerformer {
         setValidator(validator);
         this.argsOffset = argsOffset;
         this.callback = callback;
-        this.logger = craftsNet.logger();
+        this.logger = craftsNet.getLogger();
     }
 
     /**

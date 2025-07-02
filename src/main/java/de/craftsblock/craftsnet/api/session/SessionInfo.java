@@ -24,7 +24,7 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.1.6
+ * @version 3.1.7
  * @see Session
  * @see BaseExchange
  * @since 3.0.6-SNAPSHOT
@@ -86,7 +86,7 @@ public class SessionInfo {
             return;
         }
 
-        this.logger = craftsNet.logger();
+        this.logger = craftsNet.getLogger();
 
         if (this.sessionID == null) return;
 
@@ -99,7 +99,7 @@ public class SessionInfo {
         }
 
         if (this.craftsNet != null)
-            this.craftsNet.sessionCache().put(this.sessionID, this.session);
+            this.craftsNet.getSessionCache().put(this.sessionID, this.session);
 
         this.session.getSessionStorage().load();
     }
@@ -135,7 +135,7 @@ public class SessionInfo {
         this.persistent = true;
 
         if (craftsNet != null)
-            craftsNet.sessionCache().put(this.sessionID, this.session);
+            craftsNet.getSessionCache().put(this.sessionID, this.session);
 
         if (this.session.getExchange() instanceof Exchange http)
             http.response().setCookie(SID_COOKIE_NAME)
@@ -150,7 +150,7 @@ public class SessionInfo {
         compatibleOrThrow();
         if (!isPersistent()) return;
 
-        if (craftsNet != null) craftsNet.sessionCache().remove(this.sessionID);
+        if (craftsNet != null) craftsNet.getSessionCache().remove(this.sessionID);
         this.session.getSessionStorage().destroy();
 
         if (this.session.getExchange() instanceof Exchange http)

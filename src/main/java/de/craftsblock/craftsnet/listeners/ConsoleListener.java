@@ -15,7 +15,7 @@ import static de.craftsblock.craftscore.event.EventPriority.MONITOR;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.2
+ * @version 1.0.3
  * @see de.craftsblock.craftsnet.command.CommandRegistry
  * @since 2.2.0-SNAPSHOT
  */
@@ -43,14 +43,14 @@ public class ConsoleListener implements ListenerAdapter {
 
         String message = event.getMessage();
         if (message.isBlank()) return;
-        if (craftsNet.logStream() != null) craftsNet.logStream().addLine("> " + message);
+        if (craftsNet.getLogStream() != null) craftsNet.getLogStream().addLine("> " + message);
 
         String[] cli = message.split(" ");
 
         String command = cli[0];
         String[] args = Arrays.stream(cli).skip(1).toArray(String[]::new);
 
-        craftsNet.commandRegistry().perform(command, args);
+        craftsNet.getCommandRegistry().perform(command, args);
     }
 
 }

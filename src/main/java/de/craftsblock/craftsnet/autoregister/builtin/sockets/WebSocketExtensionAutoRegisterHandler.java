@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.3
+ * @version 1.0.4
  * @since 3.2.0-SNAPSHOT
  */
 public class WebSocketExtensionAutoRegisterHandler extends AutoRegisterHandler<WebSocketExtension> {
@@ -27,13 +27,13 @@ public class WebSocketExtensionAutoRegisterHandler extends AutoRegisterHandler<W
      */
     public WebSocketExtensionAutoRegisterHandler(CraftsNet craftsNet) {
         super(craftsNet);
-        this.webSocketExtensionRegistry = craftsNet.webSocketExtensionRegistry();
+        this.webSocketExtensionRegistry = craftsNet.getWebSocketExtensionRegistry();
     }
 
     /**
      * Handles the registration of the provided {@link WebSocketExtension}.
      *
-     * <p>This method attempts to register the given {@link WebSocketExtension} with the {@link CraftsNet#webSocketExtensionRegistry()}
+     * <p>This method attempts to register the given {@link WebSocketExtension} with the {@link CraftsNet#getWebSocketExtensionRegistry()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
      * returns {@code true}. If any exception occurs during the registration process, a
      * {@link RuntimeException} is thrown.</p>

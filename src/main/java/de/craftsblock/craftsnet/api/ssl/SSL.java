@@ -29,7 +29,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.5
+ * @version 1.2.6
  * @since 2.1.1-SNAPSHOT
  */
 public class SSL {
@@ -81,7 +81,7 @@ public class SSL {
              InputStream privateKeyStream = new FileInputStream(privkeyFile)) {
             X509Certificate[] certificates = getCertificateChain(fullchainStream);
             if (certificates == null || certificates.length != 2) {
-                craftsNet.logger().error("Your fullchain (" + fullchain + ") is not valid. Expected Certificates: 2, Got: " + (certificates != null ? certificates.length : "null"));
+                craftsNet.getLogger().error("Your fullchain (" + fullchain + ") is not valid. Expected Certificates: 2, Got: " + (certificates != null ? certificates.length : "null"));
                 return null;
             }
 
@@ -93,11 +93,11 @@ public class SSL {
                     try {
                         certificate.checkValidity(Date.from(OffsetDateTime.now().plusDays(30).toInstant()));
                     } catch (CertificateExpiredException | CertificateNotYetValidException e) {
-                        craftsNet.logger().warning("The lifespan of your certificate is less than 30 days!");
+                        craftsNet.getLogger().warning("The lifespan of your certificate is less than 30 days!");
                     }
                 }
             } catch (CertificateExpiredException | CertificateNotYetValidException e) {
-                craftsNet.logger().error(e, "Could not activate ssl!");
+                craftsNet.getLogger().error(e, "Could not activate ssl!");
                 return null;
             }
 
@@ -105,7 +105,7 @@ public class SSL {
                 if (!verify(certificates[0], privateKey))
                     throw new InvalidKeyException("The value signed with the private key could not be verified with the public key!");
             } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException | NullPointerException e) {
-                craftsNet.logger().error(e, "Could not activate ssl: There was an unexpected exception while verifying the key pair!");
+                craftsNet.getLogger().error(e, "Could not activate ssl: There was an unexpected exception while verifying the key pair!");
                 return null;
             }
 
@@ -217,7 +217,7 @@ public class SSL {
                 KeyFactory keyFactory = KeyFactory.getInstance("RSA");
                 return keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decodedKey));
             } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-                craftsNet.logger().error(e);
+                craftsNet.getLogger().error(e);
             }
         }
         return null;

@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.0.2-SNAPSHOT
  */
 public class PluginCommand implements CommandExecutor {
@@ -41,7 +41,7 @@ public class PluginCommand implements CommandExecutor {
      */
     @Override
     public void onCommand(@NotNull Command command, @NotNull String alias, @NotNull String[] args, @NotNull Logger logger) {
-        AddonManager addonManager = craftsNet.addonManager();
+        AddonManager addonManager = craftsNet.getAddonManager();
         if (addonManager.getAddons().isEmpty()) {
             logger.info("Currently there are no addons installed!");
             return;
