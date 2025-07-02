@@ -111,6 +111,7 @@ public final class AddonLoader {
     /**
      * Loads all the addons from the provided addon files.
      *
+     * @return A list of {@link AddonConfiguration} which where loaded from the addon files.
      * @throws IOException if there is an I/O error while loading the addons.
      */
     public List<AddonConfiguration> load() throws IOException {
