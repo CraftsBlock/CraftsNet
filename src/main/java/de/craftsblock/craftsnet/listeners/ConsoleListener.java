@@ -15,7 +15,7 @@ import static de.craftsblock.craftscore.event.EventPriority.MONITOR;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @version 1.0.1
  * @see de.craftsblock.craftsnet.command.CommandRegistry
  * @since 2.2.0-SNAPSHOT
  */
@@ -39,13 +39,16 @@ public class ConsoleListener implements ListenerAdapter {
      */
     @EventHandler(priority = MONITOR)
     public void handleConsoleMessage(ConsoleMessageEvent event) {
-        if (event.isCancelled())
-            return;
+        if (event.isCancelled()) return;
+
         String message = event.getMessage();
-        if (craftsNet.logStreamMutator() != null) craftsNet.logStreamMutator().addLine("> " + message);
-        String[] args = message.split(" ");
-        String command = args[0];
-        args = Arrays.stream(args).skip(1).toArray(String[]::new);
+        if (craftsNet.logStream() != null) craftsNet.logStream().addLine("> " + message);
+
+        String[] cli = message.split(" ");
+
+        String command = cli[0];
+        String[] args = Arrays.stream(cli).skip(1).toArray(String[]::new);
+
         craftsNet.commandRegistry().perform(command, args);
     }
 

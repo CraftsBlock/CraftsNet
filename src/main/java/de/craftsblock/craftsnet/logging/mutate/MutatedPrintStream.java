@@ -1,6 +1,5 @@
-package de.craftsblock.craftsnet.logging;
+package de.craftsblock.craftsnet.logging.mutate;
 
-import de.craftsblock.craftsnet.utils.Utils;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
@@ -8,6 +7,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
 
 /**
@@ -16,28 +16,28 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
+ * @version 1.2.0
  * @since 3.0.2-SNAPSHOT
  */
-class LoggerPrintStream extends PrintStream {
+class MutatedPrintStream extends PrintStream {
 
     // Regular expression pattern to match ANSI escape sequences for colors
     private static final Pattern pattern = Pattern.compile("\u001B\\[[;\\d]*m");
 
-    private final LogStreamMutator logStreamMutator;
+    private final LogStream logStream;
     private final OutputStream stream;
 
     private int skipLines = 0;
 
     /**
-     * Constructs a new {@code LoggerPrintStream} instance.
+     * Constructs a new {@link MutatedPrintStream} instance.
      *
      * @param console The original console print stream.
      * @param stream  The output stream where the log messages will be written.
      */
-    LoggerPrintStream(LogStreamMutator logStreamMutator, PrintStream console, @Nullable OutputStream stream) {
+    MutatedPrintStream(LogStream logStream, PrintStream console, @Nullable OutputStream stream) {
         super(console);
-        this.logStreamMutator = logStreamMutator;
+        this.logStream = logStream;
         this.stream = stream;
     }
 
@@ -100,9 +100,13 @@ class LoggerPrintStream extends PrintStream {
      * @since 3.4.0-SNAPSHOT
      */
     protected String mutateLogLine(String input) {
-        if (logStreamMutator.getCraftsNet().getBuilder().shouldHideIps())
-            return Utils.blurIPs(input);
-        return input;
+        AtomicReference<String> line = new AtomicReference<>(input);
+
+        logStream.getLogStreamMutators().forEach(
+                mutator -> line.set(mutator.mutate(logStream, line.get()))
+        );
+
+        return line.get();
     }
 
     /**

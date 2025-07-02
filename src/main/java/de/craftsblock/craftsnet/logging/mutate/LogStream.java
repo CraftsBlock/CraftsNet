@@ -1,8 +1,9 @@
-package de.craftsblock.craftsnet.logging;
+package de.craftsblock.craftsnet.logging.mutate;
 
 import de.craftsblock.craftscore.utils.FileUtils;
 import de.craftsblock.craftscore.utils.id.Snowflake;
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.logging.mutate.builtin.BlurIPsMutator;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
@@ -17,7 +18,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
@@ -28,33 +31,74 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
- * @see LoggerPrintStream
+ * @version 1.2.0
+ * @see MutatedPrintStream
  * @since 3.0.2-SNAPSHOT
  */
-public class LogStreamMutator {
+public class LogStream {
 
     private final Path folder = Path.of("logs");
     private final CraftsNet craftsNet;
     private final boolean logToFiles;
     private final long max;
 
+    private final List<LogStreamMutator> logStreamMutators = new ArrayList<>();
+
     private OutputStream stream;
     private PrintStream oldOut;
     private PrintStream oldErr;
 
     /**
-     * Constructs a new {@link LogStreamMutator} instance with a specified maximum number of log files.
+     * Constructs a new {@link LogStream} instance with a specified maximum number of log files.
      *
      * @param craftsNet  The instance of {@link CraftsNet}, which is using this logging utils.
      * @param logToFiles {@code true} if logging to files is enabled, {@code false} otherwise.
      * @param max        the maximum number of log files to retain. Once this limit is reached, older log files
      *                   may be deleted or rotated out to maintain the limit.
      */
-    public LogStreamMutator(CraftsNet craftsNet, boolean logToFiles, long max) {
+    public LogStream(CraftsNet craftsNet, boolean logToFiles, long max) {
         this.craftsNet = craftsNet;
         this.logToFiles = logToFiles;
         this.max = max;
+
+        this.registerLogStreamMutator(new BlurIPsMutator());
+    }
+
+    /**
+     * Registers a new {@link LogStreamMutator} that will be applied to each line
+     * written to the log stream.
+     *
+     * @param mutator The {@link LogStreamMutator} to register.
+     * @since 3.4.4
+     */
+    public void registerLogStreamMutator(LogStreamMutator mutator) {
+        synchronized (logStreamMutators) {
+            logStreamMutators.add(mutator);
+        }
+    }
+
+    /**
+     * Unregisters a previously registered {@link LogStreamMutator}.
+     *
+     * @param mutator The {@link LogStreamMutator} to remove.
+     * @since 3.4.4
+     */
+    public void unregisterLogStreamMutator(LogStreamMutator mutator) {
+        synchronized (logStreamMutators) {
+            logStreamMutators.remove(mutator);
+        }
+    }
+
+    /**
+     * Returns an unmodifiable list of all currently registered {@link LogStreamMutator}s.
+     *
+     * @return A list of registered log stream mutators.
+     * @since 3.4.4
+     */
+    public List<LogStreamMutator> getLogStreamMutators() {
+        synchronized (logStreamMutators) {
+            return Collections.unmodifiableList(logStreamMutators);
+        }
     }
 
     /**
@@ -62,15 +106,15 @@ public class LogStreamMutator {
      * This method sets up file logging by redirecting standard output and error streams to log files.
      */
     public void start() {
-        if (System.out instanceof LoggerPrintStream || System.err instanceof LoggerPrintStream) return;
+        if (System.out instanceof MutatedPrintStream || System.err instanceof MutatedPrintStream) return;
 
         try {
             oldOut = System.out;
             oldErr = System.err;
 
             this.stream = this.createFileLogStream();
-            System.setOut(new LoggerPrintStream(this, oldOut, stream));
-            System.setErr(new LoggerPrintStream(this, oldErr, stream));
+            System.setOut(new MutatedPrintStream(this, oldOut, stream));
+            System.setErr(new MutatedPrintStream(this, oldErr, stream));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -108,7 +152,7 @@ public class LogStreamMutator {
         if (stream == null || line == null) return;
 
         try {
-            stream.write((LoggerPrintStream.removeAsciiColors(line) + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+            stream.write((MutatedPrintStream.removeAsciiColors(line) + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
             stream.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -215,7 +259,7 @@ public class LogStreamMutator {
      * @param line the amount of inputs to be skipped
      */
     public synchronized void skipNext(@Range(from = 1, to = Integer.MAX_VALUE) int line) {
-        if (System.out instanceof LoggerPrintStream logStream)
+        if (System.out instanceof MutatedPrintStream logStream)
             logStream.skipNext(line);
     }
 
@@ -271,7 +315,7 @@ public class LogStreamMutator {
     }
 
     /**
-     * The instance of {@link CraftsNet} which is owning the {@link LogStreamMutator}.
+     * The instance of {@link CraftsNet} which is owning the {@link LogStream}.
      *
      * @return The instance of {@link CraftsNet}.
      */
