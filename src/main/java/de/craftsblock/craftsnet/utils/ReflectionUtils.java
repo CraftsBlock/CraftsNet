@@ -7,14 +7,13 @@ import org.jetbrains.annotations.Range;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.*;
 import java.util.Arrays;
-import java.util.Objects;
 
 /**
  * Some reflection utilities.
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.3.2
+ * @version 1.3.3
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
@@ -57,6 +56,28 @@ public class ReflectionUtils {
                         .map(StackWalker.StackFrame::getDeclaringClass)
                         .orElseThrow()
                 );
+    }
+
+    /**
+     * Ensures that the caller's caller is of one of the specified allowed types.
+     * <p>
+     * This method is intended to restrict access to internal APIs or methods,
+     * by validating that the method is only invoked (indirectly) by allowed classes.
+     * If the caller's caller is not assignable to any of the specified classes, an
+     * {@link IllegalStateException} is thrown.
+     *
+     * @param allowed The list of classes that are allowed to indirectly call the current method.
+     * @throws IllegalStateException If the caller's caller is not permitted to call the method.
+     * @since 3.4.4
+     */
+    public static void restrictToCallers(Class<?>... allowed) {
+        Class<?> caller = ReflectionUtils.getCallerClass();
+        Class<?> callersCaller = ReflectionUtils.getCallerClass(4);
+
+        for (Class<?> allow : allowed)
+            if (allow.isAssignableFrom(callersCaller)) break;
+
+        throw new IllegalStateException(callersCaller.getName() + " is not permitted to call a " + caller.getSimpleName());
     }
 
     /**
