@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.logging.mutate;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Functional interface for mutating log output lines before they are written to the output stream.
@@ -10,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @see LogStream
  * @since 3.4.4
  */
@@ -22,8 +23,8 @@ public interface LogStreamMutator {
      *
      * @param logStream The {@link LogStream} that produced the original log line.
      * @param line      The original log line.
-     * @return The mutated (possibly modified or filtered) log line. Must not be {@code null}.
+     * @return The mutated (possibly modified or filtered) log line. May be {@code null} if the mutator should be ignored.
      */
-    @NotNull String mutate(@NotNull LogStream logStream, @NotNull String line);
+    @Nullable String mutate(@NotNull LogStream logStream, @NotNull String line);
 
 }

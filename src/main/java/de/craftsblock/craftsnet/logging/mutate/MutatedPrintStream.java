@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @version 1.2.1
  * @since 3.0.2-SNAPSHOT
  */
 class MutatedPrintStream extends PrintStream {
@@ -103,7 +103,12 @@ class MutatedPrintStream extends PrintStream {
         AtomicReference<String> line = new AtomicReference<>(input);
 
         logStream.getLogStreamMutators().forEach(
-                mutator -> line.set(mutator.mutate(logStream, line.get()))
+                mutator -> {
+                    String mutated = mutator.mutate(logStream, line.get());
+
+                    if (mutated == null) return;
+                    line.set(mutated);
+                }
         );
 
         return line.get();
