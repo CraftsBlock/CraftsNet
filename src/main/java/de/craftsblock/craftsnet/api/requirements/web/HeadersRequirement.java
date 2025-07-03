@@ -12,7 +12,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @see WebRequirement
  * @since 3.0.5-SNAPSHOT
  */
@@ -37,11 +37,12 @@ public class HeadersRequirement extends WebRequirement {
         if (!endpointMapping.isPresent(getAnnotation(), "value")) return true;
 
         List<String> requirements = endpointMapping.getRequirements(getAnnotation(), "value");
-        Headers headers = request.getHeaders();
-        if (headers == null) return false;
+        if (requirements == null) return true;
 
-        if (!headers.isEmpty()) return headers.keySet().containsAll(requirements);
-        return false;
+        Headers headers = request.getHeaders();
+        if (headers == null || headers.isEmpty()) return false;
+
+        return headers.keySet().containsAll(requirements);
     }
 
 }

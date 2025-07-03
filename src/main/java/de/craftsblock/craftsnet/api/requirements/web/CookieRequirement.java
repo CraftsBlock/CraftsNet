@@ -13,7 +13,7 @@ import java.util.Set;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @see WebRequirement
  * @since 3.0.6-SNAPSHOT
  */
@@ -38,10 +38,12 @@ public class CookieRequirement extends WebRequirement {
         if (!endpointMapping.isPresent(getAnnotation(), "value")) return true;
 
         List<String> requirements = endpointMapping.getRequirements(getAnnotation(), "value");
-        if (request.getCookies().isEmpty()) return false;
+        if (requirements == null) return true;
 
         Set<String> cookies = request.getCookies().keySet();
-        return new HashSet<>(requirements).containsAll(cookies);
+        if (cookies.isEmpty()) return false;
+
+        return new HashSet<>(cookies).containsAll(requirements);
     }
 
 }

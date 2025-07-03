@@ -13,7 +13,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @see WebRequirement
  * @since 3.0.5-SNAPSHOT
  */
@@ -38,6 +38,8 @@ public class ContentTypeRequirement extends WebRequirement {
         if (!endpointMapping.isPresent(getAnnotation(), "value")) return true;
 
         List<String> requirements = endpointMapping.getRequirements(getAnnotation(), "value");
+        if (requirements == null) return true;
+
         Headers headers = request.getHeaders();
         if (headers == null || headers.isEmpty() || !headers.containsKey("content-type")) return false;
 
