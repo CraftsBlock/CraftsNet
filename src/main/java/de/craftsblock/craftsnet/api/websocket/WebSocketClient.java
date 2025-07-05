@@ -11,7 +11,6 @@ import de.craftsblock.craftsnet.api.middlewares.MiddlewareCallbackInfo;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareRegistry;
 import de.craftsblock.craftsnet.api.middlewares.WebsocketMiddleware;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
-import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
@@ -383,15 +382,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             if (!(mapping.handler() instanceof SocketHandler handler)) return;
             Method method = mapping.method();
 
-            // Process the requirements
-            if (craftsNet.getRequirementRegistry().getRequirements().containsKey(WebSocketServer.class))
-                for (Requirement requirement : craftsNet.getRequirementRegistry().getRequirements().get(WebSocketServer.class))
-                    try {
-                        Method m = Utils.getMethod(requirement.getClass(), "applies", Frame.class, EndpointMapping.class);
-                        if (m == null) continue;
-                        if (!((Boolean) m.invoke(requirement, frame, mapping))) return;
-                    } catch (NullPointerException | AssertionError | IllegalAccessException | InvocationTargetException ignored) {
-                    }
+            if (processRequirements(mapping, frame)) return;
 
             // Perform all transformers and continue if passingArgs is null
             Object[] passingArgs = transformerPerformer.perform(mapping.handler(), method, args);
@@ -427,6 +418,28 @@ public class WebSocketClient implements Runnable, RequireAble {
         } catch (Throwable t) {
             throw new RuntimeException("Unexpected exception whilst handling websocket mappings", t);
         }
+    }
+
+    /**
+     * Processes the requirements for a specific {@link EndpointMapping mapping}.
+     *
+     * @param mapping The {@link EndpointMapping} to check.
+     * @param frame   The {@link Frame} representing the incoming message.
+     * @return {@code true} if there is a requirement mismatch, {@code false} otherwise.
+     * @since 3.5.0
+     */
+    private boolean processRequirements(EndpointMapping mapping, Frame frame) {
+        if (!craftsNet.getRequirementRegistry().getRequirements().containsKey(WebSocketServer.class)) return false;
+
+        for (var requirement : craftsNet.getRequirementRegistry().getRequirements().get(WebSocketServer.class))
+            try {
+                Method m = Utils.getMethod(requirement.getClass(), "applies", Frame.class, EndpointMapping.class);
+                if (m == null) continue;
+                if (!((Boolean) m.invoke(requirement, frame, mapping))) return true;
+            } catch (NullPointerException | AssertionError | IllegalAccessException | InvocationTargetException ignored) {
+            }
+
+        return false;
     }
 
     /**
