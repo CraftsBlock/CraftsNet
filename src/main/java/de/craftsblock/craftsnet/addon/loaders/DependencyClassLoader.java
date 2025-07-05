@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see CraftsNetClassLoader
  * @since 3.4.3
  */
-public class DependencyClassLoader extends CraftsNetClassLoader {
+public final class DependencyClassLoader extends CraftsNetClassLoader {
 
     static {
         ClassLoader.registerAsParallelCapable();
