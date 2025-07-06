@@ -84,7 +84,7 @@ public abstract class Addon {
      * @since 3.1.0-SNAPSHOT
      * @deprecated Use {@link #getCraftsNet()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public final CraftsNet craftsNet() {
         return craftsNet;
     }
@@ -124,7 +124,7 @@ public abstract class Addon {
      * This method is marked as final to prevent subclasses from modifying it directly.
      *
      * @return The {@link AddonManager} instance used by the addon.
-     * @since 3.4.4
+     * @since 3.1.0-SNAPSHOT
      */
     public final AddonManager getAddonManager() {
         return craftsNet.getAddonManager();
@@ -138,7 +138,7 @@ public abstract class Addon {
      * @since 3.2.0-SNAPSHOT
      * @deprecated Use {@link #getAutoRegisterRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public final AutoRegisterRegistry autoRegisterRegistry() {
         return this.getAutoRegisterRegistry();
     }
@@ -162,7 +162,7 @@ public abstract class Addon {
      * @since 3.0.4-SNAPSHOT
      * @deprecated Use {@link #getBodyRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public final BodyRegistry bodyRegistry() {
         return this.getBodyRegistry();
     }
@@ -185,7 +185,7 @@ public abstract class Addon {
      * @return The {@link CommandRegistry} instance used by the addon.
      * @deprecated Use {@link #getCommandRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public final CommandRegistry commandRegistry() {
         return this.getCommandRegistry();
     }
@@ -217,7 +217,7 @@ public abstract class Addon {
      * @return The {@link ListenerRegistry} instance used by the addon.
      * @deprecated Use {@link #getListenerRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public final ListenerRegistry listenerRegistry() {
         return this.getListenerRegistry();
     }
@@ -250,7 +250,7 @@ public abstract class Addon {
      * @since 3.4.0-SNAPSHOT
      * @deprecated Use {@link #getMiddlewareRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public final MiddlewareRegistry middlewareRegistry() {
         return this.getMiddlewareRegistry();
     }
@@ -274,7 +274,7 @@ public abstract class Addon {
      * @since 3.2.1-SNAPSHOT
      * @deprecated Use {@link #getRequirementRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public final RequirementRegistry requirementRegistry() {
         return this.getRequirementRegistry();
     }
@@ -297,7 +297,7 @@ public abstract class Addon {
      * @return The {@link RouteRegistry} instance used by the addon.
      * @deprecated Use {@link #getRouteRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public final RouteRegistry routeRegistry() {
         return this.getRouteRegistry();
     }
@@ -319,7 +319,7 @@ public abstract class Addon {
      * @return The {@link ServiceManager} instance used by the addon.
      * @deprecated Use {@link #getServiceManager()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public final ServiceManager serviceManager() {
         return this.getServiceManager();
     }
@@ -342,7 +342,7 @@ public abstract class Addon {
      * @since 3.3.3-SNAPSHOT
      * @deprecated Use {@link #getStreamEncoderRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public final StreamEncoderRegistry streamEncoderRegistry() {
         return this.getStreamEncoderRegistry();
     }
@@ -363,7 +363,7 @@ public abstract class Addon {
      * This method is marked as final to prevent subclasses from modifying it directly.
      *
      * @return The {@link WebSocketExtensionRegistry} instance used by the addon.
-     * @since 3.4.4
+     * @since 3.5.0
      */
     public final WebSocketExtensionRegistry getWebsocketExtensionRegistry() {
         return craftsNet.getWebSocketExtensionRegistry();
@@ -386,7 +386,7 @@ public abstract class Addon {
      * @return The logger instance used by the addon.
      * @deprecated Use {@link #getLogger()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public final Logger logger() {
         return this.getLogger();
     }

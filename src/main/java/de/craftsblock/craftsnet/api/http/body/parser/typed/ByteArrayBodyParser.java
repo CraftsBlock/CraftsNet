@@ -13,7 +13,7 @@ import java.io.IOException;
  * @author CraftsBlock
  * @version 1.0.0
  * @see BodyParser
- * @since 3.4.4
+ * @since 3.5.0
  */
 public class ByteArrayBodyParser extends TypedBodyParser<ByteArrayBody> {
 

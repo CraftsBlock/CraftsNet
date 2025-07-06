@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
  * @author Philipp Maywald
  * @version 1.0.0
  * @see TypedBody
- * @since 3.4.4
+ * @since 3.5.0
  */
 public final class StringBody extends TypedBody<String> {
 

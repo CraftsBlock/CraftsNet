@@ -422,7 +422,7 @@ public class CraftsNet {
      * @return The addon manager instance.
      * @deprecated Use {@link #getAddonManager()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public AddonManager addonManager() {
         return this.getAddonManager();
     }
@@ -443,7 +443,7 @@ public class CraftsNet {
      * @since 3.2.0-SNAPSHOT
      * @deprecated Use {@link #getAutoRegisterRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public AutoRegisterRegistry autoRegisterRegistry() {
         return this.getAutoRegisterRegistry();
     }
@@ -465,7 +465,7 @@ public class CraftsNet {
      * @since 3.0.4-SNAPSHOT
      * @deprecated Use {@link #getBodyRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public BodyRegistry bodyRegistry() {
         return this.getBodyRegistry();
     }
@@ -486,7 +486,7 @@ public class CraftsNet {
      * @return The command registry instance.
      * @deprecated Use {@link #getCommandRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public CommandRegistry commandRegistry() {
         return commandRegistry;
     }
@@ -506,7 +506,7 @@ public class CraftsNet {
      * @return The listener registry instance.
      * @deprecated Use {@link #getListenerRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public ListenerRegistry listenerRegistry() {
         return this.getListenerRegistry();
     }
@@ -528,7 +528,7 @@ public class CraftsNet {
      * @since 3.4.0-SNAPSHOT
      * @deprecated Use {@link #getMiddlewareRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public MiddlewareRegistry middlewareRegistry() {
         return middlewareRegistry;
     }
@@ -551,7 +551,7 @@ public class CraftsNet {
      * @since 3.2.1-SNAPSHOT
      * @deprecated Use {@link #getRequirementRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public RequirementRegistry requirementRegistry() {
         return this.getRequirementRegistry();
     }
@@ -572,7 +572,7 @@ public class CraftsNet {
      * @return The route registry instance.
      * @deprecated Use {@link #getRouteRegistry()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public RouteRegistry routeRegistry() {
         return this.getRouteRegistry();
     }
@@ -592,7 +592,7 @@ public class CraftsNet {
      * @return The service manager instance.
      * @deprecated Use {@link #getServiceManager()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public ServiceManager serviceManager() {
         return this.getServiceManager();
     }
@@ -612,7 +612,7 @@ public class CraftsNet {
      * @return The session cache instance.
      * @deprecated Use {@link #getSessionCache()} ()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public SessionCache sessionCache() {
         return this.getSessionCache();
     }
@@ -632,7 +632,7 @@ public class CraftsNet {
      * @return The stream encoder registry instance.
      * @deprecated Use {@link #getStreamEncoderRegistry()} ()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public StreamEncoderRegistry streamEncoderRegistry() {
         return this.getStreamEncoderRegistry();
     }
@@ -652,7 +652,7 @@ public class CraftsNet {
      * @return The websocket extension registry.
      * @deprecated Use {@link #getFileHelper()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public WebSocketExtensionRegistry webSocketExtensionRegistry() {
         return this.getWebSocketExtensionRegistry();
     }
@@ -672,7 +672,7 @@ public class CraftsNet {
      * @return The web server instance.
      * @deprecated Use {@link #getWebServer()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public WebServer webServer() {
         return webServer;
     }
@@ -692,7 +692,7 @@ public class CraftsNet {
      * @return The WebSocket server instance.
      * @deprecated Use {@link #getWebSocketServer()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public WebSocketServer webSocketServer() {
         return this.getWebSocketServer();
     }
@@ -712,7 +712,7 @@ public class CraftsNet {
      * @return The logger instance.
      * @deprecated Use {@link #getLogger()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public Logger logger() {
         return this.getLogger();
     }
@@ -732,7 +732,7 @@ public class CraftsNet {
      * @return The {@link LogStream} instance.
      * @deprecated Use {@link #getLogStream()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public LogStream logStream() {
         return this.getLogStream();
     }
@@ -761,7 +761,7 @@ public class CraftsNet {
      * @return the {@link FileHelper} instance.
      * @deprecated Use {@link #getFileHelper()} instead. This will be removed in the future.
      */
-    @Deprecated(since = "3.4.4", forRemoval = true)
+    @Deprecated(since = "3.5.0", forRemoval = true)
     public FileHelper fileHelper() {
         return this.getFileHelper();
     }

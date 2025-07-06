@@ -68,7 +68,7 @@ public class ReflectionUtils {
      *
      * @param allowed The list of classes that are allowed to indirectly call the current method.
      * @throws IllegalStateException If the caller's caller is not permitted to call the method.
-     * @since 3.4.4
+     * @since 3.5.0
      */
     public static void restrictToCallers(Class<?>... allowed) {
         Class<?> caller = ReflectionUtils.getCallerClass();

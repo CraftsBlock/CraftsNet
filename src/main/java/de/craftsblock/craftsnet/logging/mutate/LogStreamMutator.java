@@ -13,7 +13,7 @@ import org.jetbrains.annotations.Nullable;
  * @author CraftsBlock
  * @version 1.0.1
  * @see LogStream
- * @since 3.4.4
+ * @since 3.5.0
  */
 @FunctionalInterface
 public interface LogStreamMutator {

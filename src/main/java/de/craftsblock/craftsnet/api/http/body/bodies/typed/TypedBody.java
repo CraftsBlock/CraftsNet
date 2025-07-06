@@ -12,7 +12,7 @@ import org.jetbrains.annotations.NotNull;
  * @author CraftsBlock
  * @version 1.0.0
  * @see Body
- * @since 3.4.4
+ * @since 3.5.0
  */
 public abstract class TypedBody<T> extends Body {
 

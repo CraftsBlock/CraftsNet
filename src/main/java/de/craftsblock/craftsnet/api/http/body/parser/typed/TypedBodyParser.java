@@ -15,7 +15,7 @@ import java.util.function.BiFunction;
  * @author CraftsBlock
  * @version 1.0.0
  * @see BodyParser
- * @since 3.4.4
+ * @since 3.5.0
  */
 public abstract class TypedBodyParser<T extends TypedBody<?>> extends BodyParser<T> {
 

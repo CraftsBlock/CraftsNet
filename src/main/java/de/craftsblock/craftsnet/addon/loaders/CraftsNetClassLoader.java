@@ -17,7 +17,7 @@ import java.net.URLClassLoader;
  * @author CraftsBlock
  * @version 1.0.0
  * @see URLClassLoader
- * @since 3.4.4
+ * @since 3.5.0
  */
 public abstract class CraftsNetClassLoader extends URLClassLoader {
 

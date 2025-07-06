@@ -69,7 +69,7 @@ public class LogStream {
      * written to the log stream.
      *
      * @param mutator The {@link LogStreamMutator} to register.
-     * @since 3.4.4
+     * @since 3.5.0
      */
     public void registerLogStreamMutator(LogStreamMutator mutator) {
         synchronized (logStreamMutators) {
@@ -81,7 +81,7 @@ public class LogStream {
      * Unregisters a previously registered {@link LogStreamMutator}.
      *
      * @param mutator The {@link LogStreamMutator} to remove.
-     * @since 3.4.4
+     * @since 3.5.0
      */
     public void unregisterLogStreamMutator(LogStreamMutator mutator) {
         synchronized (logStreamMutators) {
@@ -93,7 +93,7 @@ public class LogStream {
      * Returns an unmodifiable list of all currently registered {@link LogStreamMutator}s.
      *
      * @return A list of registered log stream mutators.
-     * @since 3.4.4
+     * @since 3.5.0
      */
     public List<LogStreamMutator> getLogStreamMutators() {
         synchronized (logStreamMutators) {

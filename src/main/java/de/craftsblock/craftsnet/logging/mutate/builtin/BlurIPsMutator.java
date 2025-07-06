@@ -19,7 +19,7 @@ import org.jetbrains.annotations.NotNull;
  * @author CraftsBlock
  * @version 1.0.0
  * @see Utils#blurIPs(String)
- * @since 3.4.4
+ * @since 3.5.0
  */
 public class BlurIPsMutator implements LogStreamMutator {
 

@@ -245,7 +245,7 @@ public final class AddonLoader {
      * @param loadOrder         The {@link AddonLoadOrder load order} in which the addons will be loaded.
      * @param autoRegisterInfos A list of {@link AutoRegisterInfo} which should be applied for the addons.
      * @return The list of all loaded addons.
-     * @since 3.4.4
+     * @since 3.5.0
      */
     private @NotNull Collection<Addon> enableAddons(AddonLoadOrder loadOrder, HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos) {
         Collection<Addon> orderedLoad = loadOrder.getLoadOrder();
