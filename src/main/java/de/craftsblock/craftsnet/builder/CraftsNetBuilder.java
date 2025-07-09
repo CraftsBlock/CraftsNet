@@ -5,7 +5,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.impl.LoggerImpl;
 import de.craftsblock.craftsnet.logging.impl.PlainLogger;
-import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import org.jetbrains.annotations.Range;
 
 import java.io.IOException;
@@ -85,7 +85,7 @@ public class CraftsNetBuilder {
         ArgumentParser parser = new ArgumentParser(args);
 
         try {
-            Field field = ReflectionUtils.getField(parser.getClass(), "arguments");
+            Field field = ReflectionUtils.findField(parser.getClass(), "arguments");
 
             if (field == null)
                 throw new IllegalStateException("Can not load the arguments field!");

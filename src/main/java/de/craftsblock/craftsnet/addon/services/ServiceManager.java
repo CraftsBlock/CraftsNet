@@ -8,7 +8,7 @@ import de.craftsblock.craftsnet.addon.services.builtin.handlers.MiddlewareHandle
 import de.craftsblock.craftsnet.addon.services.builtin.handlers.RequestHandlerLoader;
 import de.craftsblock.craftsnet.addon.services.builtin.handlers.SocketHandlerLoader;
 import de.craftsblock.craftsnet.addon.services.builtin.listeners.ListenerAdapterLoader;
-import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;

@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.builtin.sockets.WebSocketExtensionA
 import de.craftsblock.craftsnet.autoregister.builtin.sockets.WebSocketRequirementAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
-import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

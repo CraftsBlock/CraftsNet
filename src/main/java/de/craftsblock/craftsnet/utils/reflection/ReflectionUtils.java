@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.utils;
+package de.craftsblock.craftsnet.utils.reflection;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -132,6 +132,7 @@ public class ReflectionUtils {
 
         Constructor<T> constructor = getConstructor(type, argTypes);
         try {
+            constructor.setAccessible(true);
             return constructor.newInstance(args);
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
             throw new RuntimeException("Could not a new instance of " + type.getSimpleName() + "!", e);
@@ -146,7 +147,7 @@ public class ReflectionUtils {
      * @param value  The value to set the field to.
      */
     public static void setField(String name, Object target, Object value) {
-        Field field = getField(target.getClass(), name);
+        Field field = findField(target.getClass(), name);
         try {
             field.setAccessible(true);
             field.set(target, value);
@@ -154,11 +155,8 @@ public class ReflectionUtils {
             throw new RuntimeException("Can not set field %s of class %s!".formatted(
                     name, target.getClass().getSimpleName()
             ), e);
-        } finally {
-            field.setAccessible(false);
         }
     }
-
 
     /**
      * Finds a field with the given name in the specified class, including inherited classes.
@@ -167,19 +165,17 @@ public class ReflectionUtils {
      * @param name  The name of the field to find.
      * @return The field if found, otherwise null.
      */
-    public static Field getField(Class<?> clazz, String name) {
-        Field field = null;
-
-        while (clazz != null && field == null) {
+    public static Field findField(Class<?> clazz, String name) {
+        while (clazz != null) {
             try {
-                field = clazz.getDeclaredField(name); // Attempt to get the specified field from the current class
+                return clazz.getDeclaredField(name); // Attempt to get the specified field from the current class
             } catch (NoSuchFieldException ignored) {
             }
 
             clazz = clazz.getSuperclass(); // Move to the superclass for further field search
         }
 
-        return field;
+        return null;
     }
 
     /**

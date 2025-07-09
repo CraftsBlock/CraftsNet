@@ -24,7 +24,7 @@ import de.craftsblock.craftsnet.events.sockets.message.ReceivedPingMessageEvent;
 import de.craftsblock.craftsnet.events.sockets.message.ReceivedPongMessageEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
-import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.addon;
 
 import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
-import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 
 /**
  * An instance of {@link Addon} which is only capable of holding dummy

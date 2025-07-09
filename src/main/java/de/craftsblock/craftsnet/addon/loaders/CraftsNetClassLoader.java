@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.addon.loaders;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

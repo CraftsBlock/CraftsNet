@@ -11,7 +11,7 @@ import de.craftsblock.craftsnet.api.requirements.websocket.MessageTypeRequiremen
 import de.craftsblock.craftsnet.api.requirements.websocket.WSDomainRequirement;
 import de.craftsblock.craftsnet.api.requirements.websocket.WebSocketRequirement;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
-import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.lang.annotation.Annotation;

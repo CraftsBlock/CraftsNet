@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.api.requirements.meta.RequirementInfo;
 import de.craftsblock.craftsnet.api.websocket.*;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
-import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

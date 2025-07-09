@@ -16,7 +16,7 @@ import de.craftsblock.craftsnet.autoregister.loaders.AutoRegisterLoader;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import de.craftsblock.craftsnet.events.addons.AllAddonsLoadedEvent;
 import de.craftsblock.craftsnet.logging.Logger;
-import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -31,7 +31,6 @@ import java.util.function.BiConsumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
 /**

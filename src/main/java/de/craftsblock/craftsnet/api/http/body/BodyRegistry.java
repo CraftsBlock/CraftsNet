@@ -4,7 +4,7 @@ import de.craftsblock.craftsnet.api.http.body.parser.*;
 import de.craftsblock.craftsnet.api.http.body.parser.typed.ByteArrayBodyParser;
 import de.craftsblock.craftsnet.api.http.body.parser.typed.JsonBodyParser;
 import de.craftsblock.craftsnet.api.http.body.parser.typed.StringBodyParser;
-import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;

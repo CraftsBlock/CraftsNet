@@ -27,7 +27,7 @@ import de.craftsblock.craftsnet.listeners.ConsoleListener;
 import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.FileHelper;
-import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import de.craftsblock.craftsnet.utils.versions.Versions;
 import org.jetbrains.annotations.Nullable;
 

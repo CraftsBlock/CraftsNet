@@ -4,7 +4,7 @@ import de.craftsblock.craftsnet.api.BaseExchange;
 import de.craftsblock.craftsnet.api.Handler;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.api.middlewares.annotation.ApplyMiddleware;
-import de.craftsblock.craftsnet.utils.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
