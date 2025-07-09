@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.1
+ * @version 1.2.2
  * @see MutatedPrintStream
  * @since 3.0.2-SNAPSHOT
  */
@@ -239,7 +239,9 @@ public class LogStream {
      */
     private void ensureParentFolder(Path file) {
         try {
-            if (file.getParent() != null && Files.notExists(file.getParent())) Files.createDirectories(file.getParent());
+            var parent = file.getParent();
+            if (parent != null && Files.notExists(parent))
+                Files.createDirectories(parent);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -285,7 +287,7 @@ public class LogStream {
 
         Path file = folder.resolve("latest.log");
         while (!Thread.currentThread().isInterrupted()) {
-            if (!Files.exists(file)) break;
+            if (Files.notExists(file)) break;
 
             BasicFileAttributes attributes = Files.readAttributes(file, BasicFileAttributes.class);
             OffsetDateTime creationTime = OffsetDateTime.ofInstant(attributes.creationTime().toInstant(), ZoneId.systemDefault());
@@ -309,7 +311,8 @@ public class LogStream {
         }
 
         ensureParentFolder(file);
-        Files.createFile(file);
+        if (Files.notExists(file)) Files.createFile(file);
+        else craftsNet.getLogger().warning("Failed to create a new latest.log appending to existing!");
 
         return Files.newOutputStream(file);
     }
