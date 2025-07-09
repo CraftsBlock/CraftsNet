@@ -13,7 +13,7 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.3.3
+ * @version 1.4.0
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
@@ -176,6 +176,104 @@ public class ReflectionUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Invokes a method with the given name and arguments on the specified owner object.
+     *
+     * @param owner The object on which the method is to be invoked.
+     * @param name  The name of the method.
+     * @param args  The arguments to pass to the method.
+     * @return The result returned by the invoked method.
+     * @throws IllegalStateException If no matching method is found.
+     * @throws RuntimeException      If the method invocation fails.
+     * @since 3.5.0
+     */
+    public static Object invokeMethod(Object owner, String name, Object... args) {
+        Class<?> type = owner.getClass();
+        Class<?>[] argTypes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
+
+        Method method = findMethod(type, name, argTypes);
+        if (method == null)
+            throw new IllegalStateException("No method %s(%s) found in %s!".formatted(
+                    name, String.join(", ", Arrays.stream(argTypes).map(Class::getSimpleName).toList()),
+                    type.getSimpleName()
+            ));
+
+        try {
+            boolean isStatic = Modifier.isStatic(method.getModifiers());
+
+            method.setAccessible(true);
+            return method.invoke(isStatic ? null : owner, args);
+        } catch (InvocationTargetException | IllegalAccessException e) {
+            throw new RuntimeException("Could not invoke " + method.toGenericString(), e);
+        }
+    }
+
+    /**
+     * Finds a method by name and argument types in the given class, its superclasses, and interfaces.
+     *
+     * @param type The class to search for the method.
+     * @param name The name of the method.
+     * @param args The argument types of the method.
+     * @return The {@link Method} if found; {@code null} otherwise.
+     * @since 3.5.0
+     */
+    public static Method findMethod(Class<?> type, String name, Class<?>... args) {
+        if (type == null) return null;
+
+        for (Method method : type.getDeclaredMethods()) {
+            if (!method.getName().equals(name)) continue;
+            if (!areArgsCompatible(method, args)) continue;
+
+            return method;
+        }
+
+        if (Object.class.equals(type)) return null;
+
+        // Search the superclass
+        var fromSuperclass = findMethod(type.getSuperclass(), name, args);
+        if (fromSuperclass != null) return fromSuperclass;
+
+        // Search the interfaces
+        for (Class<?> iface : type.getInterfaces()) {
+            var method = findMethod(iface, name, args);
+            if (method == null) continue;
+            return method;
+        }
+
+        return null;
+    }
+
+    /**
+     * Checks whether the provided argument types are compatible with the parameter types of the executable.
+     *
+     * <p>Supports checking compatibility for varargs methods.</p>
+     *
+     * @param executable The {@link Executable} (method or constructor) to check against.
+     * @param args       The argument types to verify.
+     * @return {@code true} if the argument types are compatible; {@code false} otherwise.
+     * @since 3.5.0
+     */
+    public static boolean areArgsCompatible(Executable executable, Class<?>... args) {
+        Class<?>[] paramTypes = executable.getParameterTypes();
+        boolean isVarArgs = executable.isVarArgs();
+        int fixedParamCount = paramTypes.length - (isVarArgs ? 1 : 0);
+
+        if (args.length < fixedParamCount || (!isVarArgs && args.length != paramTypes.length))
+            return false;
+
+        for (int i = 0; i < fixedParamCount; i++)
+            if (!TypeUtils.isAssignable(paramTypes[i], args[i])) return false;
+
+        if (!isVarArgs || args.length == paramTypes.length - 1) return true;
+
+        // Check vararg arguments
+        Class<?> varArgType = paramTypes[paramTypes.length - 1].getComponentType();
+        for (int i = fixedParamCount; i < args.length; i++)
+            if (!TypeUtils.isAssignable(varArgType, args[i])) return false;
+
+        return true;
     }
 
     /**
