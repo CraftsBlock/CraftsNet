@@ -16,7 +16,7 @@ import java.nio.charset.StandardCharsets;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @see BodyParser
  * @since 3.0.4-SNAPSHOT
  */
@@ -31,7 +31,7 @@ public class JsonBodyParser extends TypedBodyParser<JsonBody> {
                 byte[] data = Utils.readAllBytes(body);
                 String json = new String(data, StandardCharsets.UTF_8);
 
-                if (JsonValidator.isValid(json)) return null;
+                if (!JsonValidator.isValid(json)) return null;
                 return new JsonBody(request, JsonParser.parse(json));
             } catch (IOException e) {
                 throw new RuntimeException("Could not parse body to an json object!", e);
