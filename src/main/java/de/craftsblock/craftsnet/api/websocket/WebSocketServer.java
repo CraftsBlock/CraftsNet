@@ -2,6 +2,8 @@ package de.craftsblock.craftsnet.api.websocket;
 
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Server;
+import de.craftsblock.craftsnet.api.codec.registry.TypeEncoderRegistry;
+import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeEncoder;
 import de.craftsblock.craftsnet.builder.ActivateType;
 import de.craftsblock.craftsnet.api.ssl.SSL;
 import org.jetbrains.annotations.ApiStatus;
@@ -31,7 +33,7 @@ import java.util.concurrent.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.3
+ * @version 1.2.4
  * @see WebSocketClient
  * @since 2.1.1-SNAPSHOT
  */
@@ -40,6 +42,8 @@ public class WebSocketServer extends Server {
     private final ThreadFactory threadFactory = Executors.defaultThreadFactory();
     private final ThreadPoolExecutor executor;
     private ConcurrentHashMap<String, ConcurrentLinkedQueue<WebSocketClient>> connected;
+
+    private final TypeEncoderRegistry<WebSocketSafeTypeEncoder<?, ?>> typeEncoderRegistry = new TypeEncoderRegistry<>();
 
     private Thread connector;
     private ServerSocket serverSocket;
@@ -253,6 +257,17 @@ public class WebSocketServer extends Server {
      */
     private boolean isStatus(ActivateType type) {
         return craftsNet.getBuilder().isWebSocketServer(type);
+    }
+
+    /**
+     * Retrieves the {@link TypeEncoderRegistry} instance managing
+     * the registration and lookup of {@link WebSocketSafeTypeEncoder} codecs.
+     *
+     * @return the {@link TypeEncoderRegistry} for {@link WebSocketSafeTypeEncoder} instances
+     * @since 3.5.0
+     */
+    public TypeEncoderRegistry<WebSocketSafeTypeEncoder<?, ?>> getTypeEncoderRegistry() {
+        return typeEncoderRegistry;
     }
 
     /**

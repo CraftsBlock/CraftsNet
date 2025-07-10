@@ -6,6 +6,7 @@ import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.api.codec.registry.TypeEncoderRegistry;
 import de.craftsblock.craftsnet.api.http.WebServer;
 import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
 import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
@@ -15,6 +16,7 @@ import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
 import de.craftsblock.craftsnet.api.session.SessionCache;
 import de.craftsblock.craftsnet.api.websocket.DefaultPingResponder;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
+import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeEncoder;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterRegistry;
 import de.craftsblock.craftsnet.autoregister.loaders.AutoRegisterLoader;
@@ -644,6 +646,16 @@ public class CraftsNet {
      */
     public StreamEncoderRegistry getStreamEncoderRegistry() {
         return streamEncoderRegistry;
+    }
+
+    /**
+     * Retrieves the {@link TypeEncoderRegistry} dedicated to managing
+     * {@link WebSocketSafeTypeEncoder} instances used by the {@link WebSocketServer}.
+     *
+     * @return the {@link TypeEncoderRegistry} for {@link WebSocketSafeTypeEncoder} codecs
+     */
+    public TypeEncoderRegistry<WebSocketSafeTypeEncoder<?, ?>> getWebSocketEncoderRegistry() {
+        return webSocketServer.getTypeEncoderRegistry();
     }
 
     /**

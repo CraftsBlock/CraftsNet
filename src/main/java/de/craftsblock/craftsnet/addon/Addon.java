@@ -7,10 +7,12 @@ import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
 import de.craftsblock.craftsnet.addon.meta.AddonMeta;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.api.codec.registry.TypeEncoderRegistry;
 import de.craftsblock.craftsnet.api.http.body.BodyRegistry;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoderRegistry;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareRegistry;
 import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
+import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeEncoder;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterRegistry;
 import de.craftsblock.craftsnet.command.CommandRegistry;
@@ -39,7 +41,7 @@ import java.io.File;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.0
+ * @version 1.3.1
  * @see AddonLoader
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -356,6 +358,16 @@ public abstract class Addon {
      */
     public final StreamEncoderRegistry getStreamEncoderRegistry() {
         return craftsNet.getStreamEncoderRegistry();
+    }
+
+    /**
+     * Retrieves the {@link TypeEncoderRegistry} dedicated to managing
+     * {@link WebSocketSafeTypeEncoder} instances used by the {@link de.craftsblock.craftsnet.api.websocket.WebSocketServer}.
+     *
+     * @return the {@link TypeEncoderRegistry} for {@link WebSocketSafeTypeEncoder} codecs
+     */
+    public final TypeEncoderRegistry<WebSocketSafeTypeEncoder<?, ?>> getWebSocketEncoderRegistry() {
+        return craftsNet.getWebSocketEncoderRegistry();
     }
 
     /**

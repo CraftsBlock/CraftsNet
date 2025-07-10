@@ -15,6 +15,8 @@ import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
+import de.craftsblock.craftsnet.api.websocket.annotations.ApplyDecoder;
+import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeDecoder;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
 import de.craftsblock.craftsnet.events.sockets.ClientConnectEvent;
 import de.craftsblock.craftsnet.events.sockets.ClientDisconnectEvent;
@@ -56,7 +58,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.6
+ * @version 3.6.7
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -389,15 +391,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             if (passingArgs == null)
                 return;
 
-            // @FixMe: Using switch when upgrading to java 21+
-            // Only check the parameter types if there are two parameters
-            if (method.getParameterCount() >= 2)
-                switch (method.getParameterTypes()[1].getName()) {
-                    case "java.lang.String" -> passingArgs[1] = new String(frame.getData(), StandardCharsets.UTF_8);
-                    case "de.craftsblock.craftsnet.api.websocket.Frame" -> passingArgs[1] = frame.clone();
-                    case "de.craftsblock.craftsnet.utils.ByteBuffer" -> passingArgs[1] = new ByteBuffer(frame.getData());
-                }
-
+            preprocessMethodParameters(method, frame, passingArgs);
 
             // Invoke the handler method
             try {
@@ -440,6 +434,45 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
 
         return false;
+    }
+
+    /**
+     * Preprocesses the parameters for a given WebSocket handler method by resolving and decoding
+     * the second argument based on the method signature or annotations.
+     * <p>
+     * If the method is annotated with {@link ApplyDecoder}, the specified {@link WebSocketSafeTypeDecoder}
+     * is instantiated and used to decode the {@link Frame} into the expected parameter type.
+     * Otherwise, the second parameter is automatically filled with a default interpretation based on its type:
+     * <ul>
+     *     <li>{@link String} -> UTF-8 decoded string from frame data</li>
+     *     <li>{@link Frame} -> Cloned {@link Frame} instance</li>
+     *     <li>{@link ByteBuffer} -> Raw buffer from the frame</li>
+     * </ul>
+     *
+     * @param method The handler method whose parameters are being prepared.
+     * @param frame  The incoming {@link Frame} containing WebSocket data.
+     * @param args   The argument array to be passed to the method (modified in-place).
+     * @since 3.5.0
+     */
+    private void preprocessMethodParameters(Method method, Frame frame, Object[] args) {
+        if (method.getParameterCount() < 2) return;
+
+        ApplyDecoder applyDecoder = method.getAnnotation(ApplyDecoder.class);
+        if (applyDecoder != null) {
+            Class<? extends WebSocketSafeTypeDecoder<?>> decoderType = applyDecoder.value();
+            WebSocketSafeTypeDecoder<?> decoder = ReflectionUtils.getNewInstance(decoderType);
+
+            args[1] = decoder.decode(frame);
+            return;
+        }
+
+        // @FixMe: Using switch when upgrading to java 21+
+        args[1] = switch (method.getParameterTypes()[1].getName()) {
+            case "java.lang.String" -> new String(frame.getData(), StandardCharsets.UTF_8);
+            case "de.craftsblock.craftsnet.api.websocket.Frame" -> frame.clone();
+            case "de.craftsblock.craftsnet.utils.ByteBuffer" -> frame.getBuffer();
+            default -> args[1];
+        };
     }
 
     /**
@@ -740,7 +773,20 @@ public class WebSocketClient implements Runnable, RequireAble {
         else if (data instanceof byte[] bytes) this.sendMessage(bytes);
         else if (data instanceof Json json) this.sendMessage(json);
         else if (data instanceof ByteBuffer buffer) this.sendMessage(buffer);
-        else this.sendMessage(data.toString());
+        else {
+            // Check for encoders
+            var encoders = server.getTypeEncoderRegistry();
+            Class<?> type = data.getClass();
+            if (encoders.hasCodec(type)) {
+                var encoder = encoders.getCodec(type);
+                var result = ReflectionUtils.invokeMethod(encoder, "encode", data);
+                this.sendMessage(result);
+                return;
+            }
+
+            // Convert the object to string when no encoder is present
+            this.sendMessage(data.toString());
+        }
     }
 
     /**
