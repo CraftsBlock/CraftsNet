@@ -11,6 +11,7 @@ import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.requirements.meta.RequirementInfo;
 import de.craftsblock.craftsnet.api.websocket.*;
+import de.craftsblock.craftsnet.api.websocket.annotations.ApplyDecoder;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
@@ -40,7 +41,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.5.1
+ * @version 3.5.2
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -83,29 +84,50 @@ public class RouteRegistry {
                 if (!Utils.hasMethodsWithAnnotation(handler.getClass(), annotation)) continue;
 
                 for (Method method : Utils.getMethodsByAnnotation(handler.getClass(), annotation)) {
+                    var firstParamMismatchExceptionText = "The method %s has the annotation %s but does not require %s as the first parameter!";
                     if (WebServer.class.isAssignableFrom(rawServer)) {
+                        var firstParamMismatchException = new IllegalStateException(firstParamMismatchExceptionText.formatted(
+                                method.getName(), annotation.getName(), Exchange.class.getName()
+                        ));
+
                         if (method.getParameterCount() <= 0)
-                            throw new IllegalStateException("The method " + method.getName() + " has the annotation " + annotation.getName() +
-                                    " but does not require " + Exchange.class.getName() + " as the first parameter!");
+                            throw firstParamMismatchException;
 
                         if (!Exchange.class.isAssignableFrom(method.getParameterTypes()[0]))
-                            throw new IllegalStateException("The method " + method.getName() + " has the annotation " + annotation.getName() +
-                                    " but does not require " + Exchange.class.getName() + " as the first parameter!");
+                            throw firstParamMismatchException;
                     } else {
+                        var firstParamMismatchException = new IllegalStateException(firstParamMismatchExceptionText.formatted(
+                                method.getName(), annotation.getName(), SocketExchange.class.getName()
+                        ));
+
                         if (method.getParameterCount() <= 1)
-                            throw new IllegalStateException("The method " + method.getName() + " has the annotation " + annotation.getName() +
-                                    " but does not require " + SocketExchange.class.getName() + " and a data type as parameters!");
+                            throw firstParamMismatchException;
 
                         if (!SocketExchange.class.isAssignableFrom(method.getParameterTypes()[0]))
-                            throw new IllegalStateException("The method " + method.getName() + " has the annotation " + annotation.getName() +
-                                    " but does not require " + SocketExchange.class.getName() + " as the first parameter!");
+                            throw firstParamMismatchException;
 
-                        if (!String.class.isAssignableFrom(method.getParameterTypes()[1]) &&
-                                !byte[].class.isAssignableFrom(method.getParameterTypes()[1]) &&
-                                !Frame.class.isAssignableFrom(method.getParameterTypes()[1]) &&
-                                !ByteBuffer.class.isAssignableFrom(method.getParameterTypes()[1]))
-                            throw new IllegalStateException("The method " + method.getName() + " has the annotation " + annotation.getName() +
-                                    " but does not require a Frame, ByteBuffer, String or byte[] as the second parameter!");
+                        var secondParameter = method.getParameterTypes()[1];
+                        if (method.isAnnotationPresent(ApplyDecoder.class)) {
+                            var applyDecoder = method.getAnnotation(ApplyDecoder.class);
+                            var decoder = applyDecoder.value();
+                            var type = ReflectionUtils.extractGenericInterface(decoder, 0);
+
+                            if (type == null)
+                                throw new IllegalStateException("Could not fetch the type of the decoder %s".formatted(decoder.getSimpleName()));
+
+                            if (!type.isAssignableFrom(secondParameter))
+                                throw new IllegalStateException(("The method %s has the annotation %s but does not require a %s" +
+                                        "as the second parameter!").formatted(
+                                        method.getName(), annotation.getName(), type.getSimpleName()
+                                ));
+                        } else if (!String.class.isAssignableFrom(secondParameter) &&
+                                !byte[].class.isAssignableFrom(secondParameter) &&
+                                !Frame.class.isAssignableFrom(secondParameter) &&
+                                !ByteBuffer.class.isAssignableFrom(secondParameter))
+                            throw new IllegalStateException(("The method %s has the annotation %s but does not require a Frame," +
+                                    "ByteBuffer, String or byte[] as the second parameter!").formatted(
+                                    method.getName(), annotation.getName()
+                            ));
                     }
 
                     String child = ReflectionUtils.retrieveValueOfAnnotation(method, annotation, String.class, true);
