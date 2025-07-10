@@ -35,24 +35,18 @@ public class ServiceLoaderAutoRegisterHandler extends AutoRegisterHandler<Servic
      *
      * <p>This method attempts to register the given {@link ServiceLoader} with the {@link CraftsNet#getServiceManager()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
-     * returns {@code true}. If any exception occurs during the registration process, a
-     * {@link RuntimeException} is thrown.</p>
+     * returns {@code true}.</p>
      *
      * @param serviceLoader The {@link ServiceLoader} to be registered.
      * @param args          Additional arguments (not used in this implementation but provided for extensibility).
      * @return {@code true} if the registration was successful, {@code false} otherwise.
-     * @throws RuntimeException If an error occurs during the registration process.
      */
     @Override
     protected boolean handle(ServiceLoader<?> serviceLoader, AutoRegisterInfo info, Object... args) {
-        try {
-            if (serviceManager.isRegistered(serviceLoader)) return false;
+        if (serviceManager.isRegistered(serviceLoader)) return false;
 
-            serviceManager.register(serviceLoader);
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        serviceManager.register(serviceLoader);
+        return true;
     }
 
 }

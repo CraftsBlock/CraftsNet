@@ -35,24 +35,18 @@ public class ListenerAutoRegisterHandler extends AutoRegisterHandler<ListenerAda
      *
      * <p>This method attempts to register the given {@link ListenerAdapter} with the {@link CraftsNet#getListenerRegistry()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
-     * returns {@code true}. If any exception occurs during the registration process, a
-     * {@link RuntimeException} is thrown.</p>
+     * returns {@code true}.</p>
      *
      * @param adapter The {@link ListenerAdapter} to be registered.
      * @param args    Additional arguments (not used in this implementation but provided for extensibility).
      * @return {@code true} if the registration was successful, {@code false} otherwise.
-     * @throws RuntimeException If an error occurs during the registration process.
      */
     @Override
     protected boolean handle(ListenerAdapter adapter, AutoRegisterInfo info, Object... args) {
-        try {
-            if (listenerRegistry.isRegistered(adapter)) return false;
+        if (listenerRegistry.isRegistered(adapter)) return false;
 
-            listenerRegistry.register(adapter);
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        listenerRegistry.register(adapter);
+        return true;
     }
 
 }

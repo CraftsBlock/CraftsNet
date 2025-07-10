@@ -36,24 +36,18 @@ public class BodyAutoRegisterHandler extends AutoRegisterHandler<BodyParser<? ex
      *
      * <p>This method attempts to register the given {@link BodyParser} with the {@link CraftsNet#getBodyRegistry()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
-     * returns {@code true}. If any exception occurs during the registration process, a
-     * {@link RuntimeException} is thrown.</p>
+     * returns {@code true}.</p>
      *
      * @param bodyParser The {@link BodyParser} to be registered.
      * @param args       Additional arguments (not used in this implementation but provided for extensibility).
      * @return {@code true} if the registration was successful, {@code false} otherwise.
-     * @throws RuntimeException If an error occurs during the registration process.
      */
     @Override
     protected boolean handle(BodyParser<? extends Body> bodyParser, AutoRegisterInfo info, Object... args) {
-        try {
-            if (bodyRegistry.isRegistered(bodyParser)) return false;
+        if (bodyRegistry.isRegistered(bodyParser)) return false;
 
-            bodyRegistry.register(bodyParser);
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        bodyRegistry.register(bodyParser);
+        return true;
     }
 
 }

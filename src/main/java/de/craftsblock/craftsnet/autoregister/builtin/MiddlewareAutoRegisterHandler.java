@@ -35,24 +35,18 @@ public class MiddlewareAutoRegisterHandler extends AutoRegisterHandler<Middlewar
      *
      * <p>This method attempts to register the given {@link Middleware} with the {@link CraftsNet#getMiddlewareRegistry()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
-     * returns {@code true}. If any exception occurs during the registration process, a
-     * {@link RuntimeException} is thrown.</p>
+     * returns {@code true}.</p>
      *
      * @param middleware The {@link Middleware} to be registered.
      * @param args       Additional arguments (not used in this implementation but provided for extensibility).
      * @return {@code true} if the registration was successful, {@code false} otherwise.
-     * @throws RuntimeException If an error occurs during the registration process.
      */
     @Override
     protected boolean handle(Middleware middleware, AutoRegisterInfo info, Object... args) {
-        try {
-            if (middlewareRegistry.isRegistered(middleware)) return false;
+        if (middlewareRegistry.isRegistered(middleware)) return false;
 
-            middlewareRegistry.register(middleware);
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        middlewareRegistry.register(middleware);
+        return true;
     }
 
 }

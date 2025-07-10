@@ -36,24 +36,18 @@ public class WebSocketRequirementAutoRegisterHandler extends AutoRegisterHandler
      *
      * <p>This method attempts to register the given {@link WebSocketRequirement} with the {@link CraftsNet#getRequirementRegistry()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
-     * returns {@code true}. If any exception occurs during the registration process, a
-     * {@link RuntimeException} is thrown.</p>
+     * returns {@code true}.</p>
      *
      * @param webSocketRequirement The {@link WebSocketRequirement} to be registered.
      * @param args                 Additional arguments (not used in this implementation but provided for extensibility).
      * @return {@code true} if the registration was successful, {@code false} otherwise.
-     * @throws RuntimeException If an error occurs during the registration process.
      */
     @Override
     protected boolean handle(WebSocketRequirement<? extends RequireAble> webSocketRequirement, AutoRegisterInfo info, Object... args) {
-        try {
-            if (requirementRegistry.isRegistered(webSocketRequirement)) return false;
+        if (requirementRegistry.isRegistered(webSocketRequirement)) return false;
 
-            requirementRegistry.register(webSocketRequirement, true);
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        requirementRegistry.register(webSocketRequirement, true);
+        return true;
     }
 
 }

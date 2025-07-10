@@ -35,24 +35,18 @@ public class StreamEncoderAutoRegisterHandler extends AutoRegisterHandler<Stream
      *
      * <p>This method attempts to register the given {@link StreamEncoder} with the {@link CraftsNet#getStreamEncoderRegistry()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
-     * returns {@code true}. If any exception occurs during the registration process, a
-     * {@link RuntimeException} is thrown.</p>
+     * returns {@code true}.</p>
      *
      * @param streamEncoder The {@link StreamEncoder} to be registered.
      * @param args          Additional arguments (not used in this implementation but provided for extensibility).
      * @return {@code true} if the registration was successful, {@code false} otherwise.
-     * @throws RuntimeException If an error occurs during the registration process.
      */
     @Override
     protected boolean handle(StreamEncoder streamEncoder, AutoRegisterInfo info, Object... args) {
-        try {
-            if (streamEncoderRegistry.isRegistered(streamEncoder)) return false;
+        if (streamEncoderRegistry.isRegistered(streamEncoder)) return false;
 
-            streamEncoderRegistry.register(streamEncoder);
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        streamEncoderRegistry.register(streamEncoder);
+        return true;
     }
 
 }

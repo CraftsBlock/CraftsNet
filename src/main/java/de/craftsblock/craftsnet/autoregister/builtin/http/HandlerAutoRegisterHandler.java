@@ -35,24 +35,18 @@ public class HandlerAutoRegisterHandler extends AutoRegisterHandler<Handler> {
      *
      * <p>This method attempts to register the given {@link Handler} with the {@link CraftsNet#getRouteRegistry()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
-     * returns {@code true}. If any exception occurs during the registration process, a
-     * {@link RuntimeException} is thrown.</p>
+     * returns {@code true}.</p>
      *
      * @param handler The {@link Handler} to be registered.
      * @param args    Additional arguments (not used in this implementation but provided for extensibility).
      * @return {@code true} if the registration was successful, {@code false} otherwise.
-     * @throws RuntimeException If an error occurs during the registration process.
      */
     @Override
     protected boolean handle(Handler handler, AutoRegisterInfo info, Object... args) {
-        try {
-            if (routeRegistry.isRegistered(handler)) return false;
+        if (routeRegistry.isRegistered(handler)) return false;
 
-            routeRegistry.register(handler);
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        routeRegistry.register(handler);
+        return true;
     }
 
 }

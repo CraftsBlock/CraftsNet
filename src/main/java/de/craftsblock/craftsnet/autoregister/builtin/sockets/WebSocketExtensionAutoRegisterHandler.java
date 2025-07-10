@@ -35,24 +35,18 @@ public class WebSocketExtensionAutoRegisterHandler extends AutoRegisterHandler<W
      *
      * <p>This method attempts to register the given {@link WebSocketExtension} with the {@link CraftsNet#getWebSocketExtensionRegistry()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
-     * returns {@code true}. If any exception occurs during the registration process, a
-     * {@link RuntimeException} is thrown.</p>
+     * returns {@code true}.</p>
      *
      * @param extension The {@link WebSocketExtension} to be registered.
      * @param args      Additional arguments (not used in this implementation but provided for extensibility).
      * @return {@code true} if the registration was successful, {@code false} otherwise.
-     * @throws RuntimeException If an error occurs during the registration process.
      */
     @Override
     protected boolean handle(WebSocketExtension extension, AutoRegisterInfo info, Object... args) {
-        try {
-            if (webSocketExtensionRegistry.hasExtension(extension)) return false;
+        if (webSocketExtensionRegistry.hasExtension(extension)) return false;
 
-            webSocketExtensionRegistry.register(extension);
-            return true;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        webSocketExtensionRegistry.register(extension);
+        return true;
     }
 
 }
