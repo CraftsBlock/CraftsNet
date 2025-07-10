@@ -11,6 +11,8 @@ import de.craftsblock.craftsnet.autoregister.builtin.http.StreamEncoderAutoRegis
 import de.craftsblock.craftsnet.autoregister.builtin.http.WebRequirementAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.sockets.WebSocketExtensionAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.sockets.WebSocketRequirementAutoRegisterHandler;
+import de.craftsblock.craftsnet.autoregister.builtin.sockets.codec.WebSocketTypeDecoderAutoRegisterHandler;
+import de.craftsblock.craftsnet.autoregister.builtin.sockets.codec.WebSocketTypeEncoderAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
@@ -55,9 +57,14 @@ public class AutoRegisterRegistry {
         register(new HandlerAutoRegisterHandler(craftsNet));
         register(new ListenerAutoRegisterHandler(craftsNet));
         register(new MiddlewareAutoRegisterHandler(craftsNet));
+
         register(new ServiceLoaderAutoRegisterHandler(craftsNet));
+
         register(new StreamEncoderAutoRegisterHandler(craftsNet));
         register(new WebRequirementAutoRegisterHandler(craftsNet));
+
+        register(new WebSocketTypeDecoderAutoRegisterHandler(craftsNet));
+        register(new WebSocketTypeEncoderAutoRegisterHandler(craftsNet));
         register(new WebSocketExtensionAutoRegisterHandler(craftsNet));
         register(new WebSocketRequirementAutoRegisterHandler(craftsNet));
     }
