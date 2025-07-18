@@ -1,11 +1,11 @@
 package de.craftsblock.craftsnet.api.requirements.meta;
 
 import de.craftsblock.craftscore.utils.Utils;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -21,7 +21,7 @@ import java.util.stream.Stream;
  * @param values     A map of key-value pairs representing the annotation's values.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @see RequirementMeta
  * @see RequirementStore
  * @since 3.1.0-SNAPSHOT
@@ -86,19 +86,11 @@ public record RequirementInfo(Class<? extends Annotation> annotation, Requiremen
                 .distinct()
                 .filter(method -> !method.getReturnType().equals(Void.TYPE))
                 .map(method -> {
-                    try {
-                        method.setAccessible(true); // Ensure the method is accessible
+                    Object value = ReflectionUtils.invokeMethod(annotation, method);
+                    if (value == null) return null; // Skip null values
 
-                        Object value = method.invoke(annotation);
-                        if (value == null) return null; // Skip null values
-
-                        // Convert arrays to lists for better compatibility
-                        return Map.entry(method.getName(), value.getClass().isArray() ? List.of((Object[]) value) : value);
-                    } catch (InvocationTargetException | IllegalAccessException e) {
-                        throw new RuntimeException("Error invoking method: " + method.getName(), e);
-                    } finally {
-                        method.setAccessible(false);
-                    }
+                    // Convert arrays to lists for better compatibility
+                    return Map.entry(method.getName(), value.getClass().isArray() ? List.of((Object[]) value) : value);
                 }).filter(Objects::nonNull)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (o, o2) -> o));
     }

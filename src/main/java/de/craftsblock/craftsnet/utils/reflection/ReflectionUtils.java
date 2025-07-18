@@ -197,6 +197,19 @@ public class ReflectionUtils {
                     type.getSimpleName()
             ));
 
+        return invokeMethod(owner, method, args);
+    }
+
+    /**
+     * Invokes a specific method with the given arguments on the specified owner object.
+     *
+     * @param owner  The object on which the method is to be invoked.
+     * @param method The method to invoke.
+     * @param args   The arguments to pass to the method.
+     * @return The result returned by the invoked method.
+     * @since 3.5.1
+     */
+    public static Object invokeMethod(Object owner, Method method, Object... args) {
         try {
             boolean isStatic = Modifier.isStatic(method.getModifiers());
 
