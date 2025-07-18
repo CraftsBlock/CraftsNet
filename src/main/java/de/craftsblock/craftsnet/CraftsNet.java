@@ -51,7 +51,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.5.0
+ * @version 3.5.1
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -181,9 +181,6 @@ public class CraftsNet {
         logger.debug("Initialization of the service manager");
         serviceManager = new ServiceManager(this);
 
-        logger.debug("Initialization of the auto register registry");
-        autoRegisterRegistry = new AutoRegisterRegistry(this);
-
         logger.debug("Initialization of the websocket extension registry");
         webSocketExtensionRegistry = new WebSocketExtensionRegistry();
 
@@ -198,6 +195,9 @@ public class CraftsNet {
 
         logger.info("Preparing the websocket server");
         webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), builder.isSSL());
+
+        logger.debug("Initialization of the auto register registry");
+        autoRegisterRegistry = new AutoRegisterRegistry(this);
 
         if (!builder.isAddonSystem(ActivateType.DISABLED)) {
             addonManager.fromFiles();
