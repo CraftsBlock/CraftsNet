@@ -46,7 +46,7 @@ public final class TypeDecoderRegistry<D extends Decoder<?, ?>> extends TypeCode
     @Override
     @NotNull
     Constructor<? extends CodecPair<?, D>> getPairConstructor() {
-        return ReflectionUtils.getConstructor(this.codecPairTyp, Class.class, Decoder.class);
+        return ReflectionUtils.findConstructor(this.codecPairTyp, Class.class, Decoder.class);
     }
 
 }

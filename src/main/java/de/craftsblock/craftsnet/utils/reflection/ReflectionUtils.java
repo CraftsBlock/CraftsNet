@@ -13,7 +13,7 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.4.0
+ * @version 1.4.1
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
@@ -88,12 +88,7 @@ public class ReflectionUtils {
      * @return true if the constructor is present, false otherwise.
      */
     public static boolean isConstructorPresent(Class<?> clazz, Class<?>... args) {
-        try {
-            clazz.getDeclaredConstructor(args);
-            return true;
-        } catch (NoSuchMethodException e) {
-            return false;
-        }
+        return findConstructor(clazz, args) != null;
     }
 
     /**
@@ -104,12 +99,14 @@ public class ReflectionUtils {
      * @return The constructor of the class.
      * @throws RuntimeException If no constructor is found.
      */
-    public static <T> Constructor<T> getConstructor(Class<T> clazz, Class<?>... args) {
-        try {
-            return clazz.getDeclaredConstructor(args);
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        }
+    @SuppressWarnings("unchecked")
+    public static <T> Constructor<T> findConstructor(Class<T> clazz, Class<?>... args) {
+        if (clazz == null) return null;
+
+        for (Constructor<?> constructor : clazz.getDeclaredConstructors())
+            if (areArgsCompatible(constructor, args)) return (Constructor<T>) constructor;
+
+        return null;
     }
 
     /**
@@ -130,7 +127,7 @@ public class ReflectionUtils {
             throw new IllegalStateException("No constructor found for " + type.getSimpleName() + "(" +
                     String.join(", ", Arrays.stream(argTypes).map(Class::getSimpleName).toList()) + ")!");
 
-        Constructor<T> constructor = getConstructor(type, argTypes);
+        Constructor<T> constructor = findConstructor(type, argTypes);
         try {
             constructor.setAccessible(true);
             return constructor.newInstance(args);
