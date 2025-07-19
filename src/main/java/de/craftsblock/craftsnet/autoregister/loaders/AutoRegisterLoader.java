@@ -7,8 +7,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.jar.JarEntry;
@@ -25,7 +25,7 @@ import java.util.stream.StreamSupport;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.1
+ * @version 1.2.2
  * @see AutoRegisterInfo
  * @since 3.2.0-SNAPSHOT
  */
@@ -91,7 +91,7 @@ public class AutoRegisterLoader implements Closeable {
                 .filter(this::isValidClassEntry)
                 .map(JarEntry::getName)
                 .map(this::convertToJvmName)
-                .map(jvmName -> executor.submit(() -> processClass(jvmName, bounding, classLoader, type, infos)))
+                .map(jvmName -> executor.submit(() -> processEntry(jvmName, bounding, classLoader, type, infos)))
                 .forEach(futures::add);
 
         // Wait for all futures to complete
@@ -130,7 +130,7 @@ public class AutoRegisterLoader implements Closeable {
      * @return The corresponding JVM class name.
      */
     private String convertToJvmName(String name) {
-        return name.substring(0, name.lastIndexOf(name.contains("$") ? "$" : ".")).replaceAll("[/\\\\]", ".");
+        return name.substring(0, name.lastIndexOf(".")).replaceAll("[/\\\\]", ".");
     }
 
     /**
@@ -142,10 +142,11 @@ public class AutoRegisterLoader implements Closeable {
      * @param type        The annotation type to look for.
      * @param infos       A set to collect {@link AutoRegisterInfo} instances.
      */
-    private void processClass(@NotNull String jvmName, @Nullable Collection<Addon> bounding, @NotNull ClassLoader classLoader,
+    private void processEntry(@NotNull String jvmName, @Nullable Collection<Addon> bounding, @NotNull ClassLoader classLoader,
                               @NotNull Class<? extends Annotation> type, @NotNull Set<AutoRegisterInfo> infos) {
         try {
             Class<?> clazz = Class.forName(jvmName, false, classLoader);
+            if (clazz.isInterface() || clazz.isEnum() || Modifier.isAbstract(clazz.getModifiers())) return;
             if (!clazz.isAnnotationPresent(type)) return;
 
             Annotation annotation = clazz.getDeclaredAnnotation(type);
