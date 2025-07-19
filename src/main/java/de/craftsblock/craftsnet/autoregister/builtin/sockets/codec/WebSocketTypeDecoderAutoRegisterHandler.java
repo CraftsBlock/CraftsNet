@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.5.0
  */
 public class WebSocketTypeDecoderAutoRegisterHandler extends AutoRegisterHandler<WebSocketSafeTypeDecoder<?>> {
@@ -40,8 +40,8 @@ public class WebSocketTypeDecoderAutoRegisterHandler extends AutoRegisterHandler
      */
     @Override
     protected boolean handle(WebSocketSafeTypeDecoder<?> webSocketSafeTypeDecoder, AutoRegisterInfo info, Object... args) {
-        craftsNet.getLogger().warning("Websocket type decoders may only be applied using @%s!".formatted(
-                ApplyDecoder.class.getSimpleName()
+        craftsNet.getLogger().warning("%s may only be applied using @%s!".formatted(
+                webSocketSafeTypeDecoder.getClass().getName(), ApplyDecoder.class.getSimpleName()
         ));
         return true;
     }
