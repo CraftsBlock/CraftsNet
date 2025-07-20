@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.0
+ * @version 2.0.1
  * @see FormBody
  * @since 2.2.0-SNAPSHOT
  */
@@ -73,6 +73,7 @@ public final class MultipartFormBody extends FormBody<MultipartFormBody.Multipar
                     storage.computeIfAbsent(name.get(), s -> new ConcurrentLinkedQueue<>())
                             .add(new MultipartItem(List.copyOf(values), contentType.get()));
                 }
+
                 // Reset temporary variables
                 name.set(null);
                 values.clear();
@@ -81,8 +82,9 @@ public final class MultipartFormBody extends FormBody<MultipartFormBody.Multipar
                 continue;
             }
 
-            // Skip empty lines or lines that only contain whitespace when reading the header
-            if ((stringified.isEmpty() || stringified.isBlank()) && readHeader.get()) {
+            // Typically a blank line symbolizes that the header is over.
+            // So when we detect a blank line we can stop parsing the headers.
+            if (stringified.isBlank() && readHeader.get()) {
                 readHeader.set(false);
                 continue;
             }
