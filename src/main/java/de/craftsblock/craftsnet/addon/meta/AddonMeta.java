@@ -5,8 +5,10 @@ import de.craftsblock.craftscore.json.Json;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Represents metadata information for an addon, such as its name, main class, authors, website, version, and dependencies.
@@ -24,7 +26,7 @@ import java.util.Optional;
  * @param dependencies The maven dependencies this addon needs.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.0
+ * @version 1.1.1
  * @since 3.1.0-SNAPSHOT
  */
 public record AddonMeta(String name, String mainClass, String description, List<String> authors,
@@ -41,7 +43,7 @@ public record AddonMeta(String name, String mainClass, String description, List<
         if (configuration.json() == null)
             throw new IllegalStateException("The addon json config is null!");
 
-        Json json = configuration.json();
+        final Json json = configuration.json();
 
         List<String> authors = new ArrayList<>();
         addMultiple(authors, json, "author");
@@ -50,15 +52,31 @@ public record AddonMeta(String name, String mainClass, String description, List<
         return new AddonMeta(
                 json.getString("name"),
                 json.getString("main"),
-                Optional.ofNullable(json.getString("description")).orElse(""),
+                jsonSafelyGet(json, "description", json::getString, ""),
                 authors,
-                Optional.ofNullable(json.getString("website")).orElse(""),
-                Optional.ofNullable(json.getString("version")).orElse(""),
-                Optional.ofNullable(json.getStringList("depends").toArray(String[]::new)).orElse(new String[0]),
-                Optional.ofNullable(json.getStringList("softDepends").toArray(String[]::new)).orElse(new String[0]),
-                Optional.ofNullable(json.getStringList("repositories").toArray(String[]::new)).orElse(new String[0]),
-                Optional.ofNullable(json.getStringList("dependencies").toArray(String[]::new)).orElse(new String[0])
+                jsonSafelyGet(json, "website", json::getString, ""),
+                jsonSafelyGet(json, "version", json::getString, ""),
+                jsonSafelyGet(json, "depends", json::getStringList, new ArrayList<String>()).toArray(String[]::new),
+                jsonSafelyGet(json, "softDepends", json::getStringList, new ArrayList<String>()).toArray(String[]::new),
+                jsonSafelyGet(json, "repositories", json::getStringList, new ArrayList<String>()).toArray(String[]::new),
+                jsonSafelyGet(json, "dependencies", json::getStringList, new ArrayList<String>()).toArray(String[]::new)
         );
+    }
+
+    /**
+     * Utility method which is used to safely get data from a {@link Json} instance.
+     *
+     * @param json     The {@link Json} instance.
+     * @param key      The key which should be retrieved.
+     * @param producer A {@link Function} which is used to produce the actual value from the key.
+     * @param fallback A fallback value which will be return if the key is not present.
+     * @param <T>      The return type value which this method should produce.
+     * @return The value from the json, or the fallback value if the key is not present.
+     * @since 3.5.1
+     */
+    private static <T> T jsonSafelyGet(Json json, String key, Function<String, T> producer, T fallback) {
+        if (!json.contains(key)) return fallback;
+        return Optional.ofNullable(producer.apply(key)).orElse(fallback);
     }
 
     /**
