@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.2
+ * @version 1.2.3
  * @see MutatedPrintStream
  * @since 3.0.2-SNAPSHOT
  */
@@ -86,6 +86,20 @@ public class LogStream {
     public void unregisterLogStreamMutator(LogStreamMutator mutator) {
         synchronized (logStreamMutators) {
             logStreamMutators.remove(mutator);
+        }
+    }
+
+    /**
+     * Checks whether the given {@link LogStreamMutator} is already registered
+     * or not.
+     *
+     * @param mutator The {@link LogStreamMutator} to check.
+     * @return {@code true} if the {@link LogStreamMutator} is registered, {@code false} otherwise.
+     */
+    public boolean isLogStreamMutatorRegistered(LogStreamMutator mutator) {
+        synchronized (logStreamMutators) {
+            return logStreamMutators.stream().
+                    anyMatch(m -> m.getClass().equals(mutator.getClass()));
         }
     }
 

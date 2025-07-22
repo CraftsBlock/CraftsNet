@@ -4,6 +4,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.meta.Startup;
 import de.craftsblock.craftsnet.autoregister.builtin.MiddlewareAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.addons.ServiceLoaderAutoRegisterHandler;
+import de.craftsblock.craftsnet.autoregister.builtin.cli.LogStreamMutatorAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.events.ListenerAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.http.BodyAutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.builtin.http.HandlerAutoRegisterHandler;
@@ -57,6 +58,8 @@ public class AutoRegisterRegistry {
         register(new HandlerAutoRegisterHandler(craftsNet));
         register(new ListenerAutoRegisterHandler(craftsNet));
         register(new MiddlewareAutoRegisterHandler(craftsNet));
+
+        register(new LogStreamMutatorAutoRegisterHandler(craftsNet));
 
         register(new ServiceLoaderAutoRegisterHandler(craftsNet));
 
