@@ -87,7 +87,7 @@ public class WebSocketServer extends Server {
      * @param backlog {@inheritDoc}
      */
     @Override
-    public void bind(int port, int backlog) {
+    public synchronized void bind(int port, int backlog) {
         super.bind(port, backlog);
         if (logger != null) logger.info("Web socket server bound to port " + port);
     }
@@ -96,7 +96,7 @@ public class WebSocketServer extends Server {
      * {@inheritDoc}
      */
     @Override
-    public void start() {
+    public synchronized void start() {
         try {
             logger.info("Starting websocket server on port " + port);
             if (ssl) {
@@ -177,7 +177,7 @@ public class WebSocketServer extends Server {
      * {@inheritDoc}
      */
     @Override
-    public void stop() {
+    public synchronized void stop() {
         try {
             connected.values().stream().flatMap(ConcurrentLinkedQueue::stream)
                     .forEach(client -> {
@@ -191,6 +191,8 @@ public class WebSocketServer extends Server {
             serverSocket.close();
             if (connector != null)
                 connector.interrupt();
+
+            serverSocket = null;
         } catch (IOException e) {
             logger.error(e);
         } finally {
@@ -202,7 +204,7 @@ public class WebSocketServer extends Server {
      * {@inheritDoc}
      */
     @Override
-    public void awakeOrWarn() {
+    public synchronized void awakeOrWarn() {
         if (!isRunning() && isEnabled())
             // Start the web socket server as it is needed and currently not running
             this.craftsNet.getWebSocketServer().start();
@@ -215,7 +217,7 @@ public class WebSocketServer extends Server {
      * {@inheritDoc}
      */
     @Override
-    public void sleepIfNotNeeded() {
+    public synchronized void sleepIfNotNeeded() {
         if (isRunning() && !craftsNet.getRouteRegistry().hasWebsockets() && isStatus(ActivateType.DYNAMIC))
             stop();
     }
@@ -276,7 +278,7 @@ public class WebSocketServer extends Server {
      * @return true if fragmentation is enabled, false otherwise
      */
     @ApiStatus.Experimental
-    public boolean shouldFragment() {
+    public synchronized boolean shouldFragment() {
         return shouldFragment;
     }
 
@@ -286,7 +288,7 @@ public class WebSocketServer extends Server {
      * @param shouldFragment true if fragmentation should be enabled, false otherwise.
      */
     @ApiStatus.Experimental
-    public void setFragmentationEnabled(boolean shouldFragment) {
+    public synchronized void setFragmentationEnabled(boolean shouldFragment) {
         this.shouldFragment = shouldFragment;
     }
 
@@ -296,7 +298,7 @@ public class WebSocketServer extends Server {
      * @return The max size of each frame.
      */
     @ApiStatus.Experimental
-    public int getFragmentSize() {
+    public synchronized int getFragmentSize() {
         return fragmentSize;
     }
 
@@ -306,7 +308,7 @@ public class WebSocketServer extends Server {
      * @param fragmentSize The max size of the fragments.
      */
     @ApiStatus.Experimental
-    public void setFragmentSize(int fragmentSize) {
+    public synchronized void setFragmentSize(int fragmentSize) {
         if (fragmentSize <= 0) return;
         this.fragmentSize = fragmentSize;
     }
@@ -316,7 +318,7 @@ public class WebSocketServer extends Server {
      *
      * @param data The message to be sent.
      */
-    public void broadcast(String data) {
+    public synchronized void broadcast(String data) {
         connected.values().forEach(clients -> clients.forEach(client -> client.sendMessage(data)));
     }
 
@@ -326,7 +328,7 @@ public class WebSocketServer extends Server {
      * @param path The path to which the clients are assigned.
      * @param data The message to be sent.
      */
-    public void broadcast(String path, String data) {
+    public synchronized void broadcast(String path, String data) {
         if (connected.containsKey(path)) connected.get(path).forEach(client -> client.sendMessage(data));
     }
 

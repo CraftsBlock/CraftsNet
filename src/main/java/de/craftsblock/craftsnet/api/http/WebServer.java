@@ -65,7 +65,7 @@ public class WebServer extends Server {
      * @param backlog The maximum number of pending connections the server's socket may have in the queue.
      */
     @Override
-    public void bind(int port, int backlog) {
+    public synchronized void bind(int port, int backlog) {
         super.bind(port, backlog);
         if (logger != null) logger.info("Web server bound to port " + port);
     }
@@ -74,7 +74,7 @@ public class WebServer extends Server {
      * {@inheritDoc}
      */
     @Override
-    public void start() {
+    public synchronized void start() {
         if (running) return;
 
         logger.info("Starting web server on port " + port);
@@ -125,18 +125,20 @@ public class WebServer extends Server {
      * {@inheritDoc}
      */
     @Override
-    public void stop() {
+    public synchronized void stop() {
         if (!running) return;
         logger.debug("Web server will be stopped");
         server.stop(0);
         super.stop();
+
+        server = null;
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public void awakeOrWarn() {
+    public synchronized void awakeOrWarn() {
         if (!isRunning() && isEnabled())
             // Start the web server as it is needed and currently not running
             this.craftsNet.getWebServer().start();
@@ -149,7 +151,7 @@ public class WebServer extends Server {
      * {@inheritDoc}
      */
     @Override
-    public void sleepIfNotNeeded() {
+    public synchronized void sleepIfNotNeeded() {
         if (isRunning() && !craftsNet.getRouteRegistry().hasRoutes() && isStatus(ActivateType.DYNAMIC))
             stop();
     }
