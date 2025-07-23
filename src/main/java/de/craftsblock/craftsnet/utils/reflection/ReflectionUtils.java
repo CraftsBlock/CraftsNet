@@ -13,7 +13,7 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.4.1
+ * @version 1.4.2
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
@@ -278,7 +278,12 @@ public class ReflectionUtils {
 
         if (!isVarArgs || args.length == paramTypes.length - 1) return true;
 
-        // Check vararg arguments
+        // If the last arg is an array check the vararg as array
+        int lastIndexOfArg = args.length - 1;
+        if (args.length == paramTypes.length && args[lastIndexOfArg].isArray())
+            return TypeUtils.isAssignable(paramTypes[lastIndexOfArg], args[lastIndexOfArg]);
+
+        // Check all remaining args if it matches with the vararg
         Class<?> varArgType = paramTypes[paramTypes.length - 1].getComponentType();
         for (int i = fixedParamCount; i < args.length; i++)
             if (!TypeUtils.isAssignable(varArgType, args[i])) return false;
@@ -422,7 +427,7 @@ public class ReflectionUtils {
      * @return Returns the cast value or null if not cast able.
      */
     public static @Nullable <T> T castTo(Object o, Class<T> type) {
-        return type.isInstance(o) ? type.cast(o) : null;
+        return type != null && type.isInstance(o) ? type.cast(o) : null;
     }
 
 }

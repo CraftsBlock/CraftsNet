@@ -1,5 +1,7 @@
 package de.craftsblock.craftsnet.utils.reflection;
 
+import org.jetbrains.annotations.Contract;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,7 +16,7 @@ import java.util.Map;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.5.0
  */
 public class TypeUtils {
@@ -64,9 +66,14 @@ public class TypeUtils {
      * @param sourceType The source type to assign from; may be primitive or wrapper.
      * @return {@code true} if the {@code sourceType} is assignable to {@code targetType}, {@code false} otherwise.
      */
+    @Contract(value = "null, null -> false", pure = true)
     public static boolean isAssignable(Class<?> targetType, Class<?> sourceType) {
         if (targetType == null || sourceType == null) return false;
         if (targetType.isAssignableFrom(sourceType)) return true;
+
+        // Unpack array types
+        if (targetType.isArray() && sourceType.isArray())
+            return isAssignable(targetType.componentType(), sourceType.componentType());
 
         if (targetType.isPrimitive()) {
             var wrapper = PRIMITIVE_TO_WRAPPER.get(targetType);
@@ -88,6 +95,7 @@ public class TypeUtils {
      * @param type The type to convert; may be primitive or wrapper.
      * @return The wrapper class if {@code type} is primitive; otherwise, returns {@code type} unchanged.
      */
+    @Contract(value = "null -> null; !null -> !null", pure = true)
     public static Class<?> toWrapper(Class<?> type) {
         return type != null && type.isPrimitive()
                 ? PRIMITIVE_TO_WRAPPER.get(type)
@@ -101,6 +109,7 @@ public class TypeUtils {
      * @param type The type to convert; may be wrapper or primitive.
      * @return The primitive class if {@code type} is a wrapper; otherwise, returns {@code type} unchanged.
      */
+    @Contract(value = "null -> null; !null -> !null", pure = true)
     public static Class<?> toPrimitive(Class<?> type) {
         return WRAPPER_TO_PRIMITIVE.getOrDefault(type, type);
     }
@@ -111,6 +120,7 @@ public class TypeUtils {
      * @param type The type to check.
      * @return {@code true} if {@code type} is a primitive type, {@code false} otherwise.
      */
+    @Contract(value = "null -> false", pure = true)
     public static boolean isPrimitive(Class<?> type) {
         return type != null && type.isPrimitive();
     }
@@ -121,6 +131,7 @@ public class TypeUtils {
      * @param type The type to check.
      * @return {@code true} if {@code type} is a wrapper class for a primitive, {@code false} otherwise.
      */
+    @Contract(value = "null -> false", pure = true)
     public static boolean isWrapper(Class<?> type) {
         return WRAPPER_TO_PRIMITIVE.containsKey(type);
     }
@@ -136,6 +147,7 @@ public class TypeUtils {
      */
     public static boolean areEquivalent(Class<?> a, Class<?> b) {
         if (a == b) return true;
+        if (a.isArray() && b.isArray()) return equals(a.componentType(), b.componentType());
         return toWrapper(a).equals(toWrapper(b));
     }
 
