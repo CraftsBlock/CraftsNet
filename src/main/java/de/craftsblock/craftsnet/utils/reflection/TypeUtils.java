@@ -145,7 +145,7 @@ public class TypeUtils {
      * @param b The second type.
      * @return {@code true} if the two types are equivalent or both {@code null}, {@code false} otherwise.
      */
-    public static boolean areEquivalent(Class<?> a, Class<?> b) {
+    public static boolean equals(Class<?> a, Class<?> b) {
         if (a == b) return true;
         if (a.isArray() && b.isArray()) return equals(a.componentType(), b.componentType());
         return toWrapper(a).equals(toWrapper(b));
