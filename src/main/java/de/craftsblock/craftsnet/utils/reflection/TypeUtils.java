@@ -75,14 +75,14 @@ public class TypeUtils {
         if (targetType.isArray() && sourceType.isArray())
             return isAssignable(targetType.componentType(), sourceType.componentType());
 
-        if (targetType.isPrimitive()) {
-            var wrapper = PRIMITIVE_TO_WRAPPER.get(targetType);
-            return wrapper != null && wrapper.equals(sourceType);
+        if (isPrimitive(targetType)) {
+            var wrapper = toWrapper(targetType);
+            return wrapper.equals(sourceType);
         }
 
-        if (sourceType.isPrimitive()) {
-            var wrapper = PRIMITIVE_TO_WRAPPER.get(sourceType);
-            return wrapper != null && targetType.isAssignableFrom(wrapper);
+        if (isPrimitive(sourceType)) {
+            var wrapper = toWrapper(sourceType);
+            return targetType.isAssignableFrom(wrapper);
         }
 
         return false;
