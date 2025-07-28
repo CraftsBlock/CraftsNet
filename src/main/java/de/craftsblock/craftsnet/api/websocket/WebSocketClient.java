@@ -58,7 +58,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.7
+ * @version 3.6.8
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -779,9 +779,12 @@ public class WebSocketClient implements Runnable, RequireAble {
             Class<?> type = data.getClass();
             if (encoders.hasCodec(type)) {
                 var encoder = encoders.getCodec(type);
-                var result = ReflectionUtils.invokeMethod(encoder, "encode", data);
-                this.sendMessage(result);
-                return;
+
+                if (encoder != null) {
+                    var result = ReflectionUtils.invokeMethod(encoder, "encode", data);
+                    this.sendMessage(result);
+                    return;
+                }
             }
 
             // Convert the object to string when no encoder is present
