@@ -23,6 +23,13 @@ import org.jetbrains.annotations.NotNull;
  */
 public class BlurIPsMutator implements LogStreamMutator {
 
+    /**
+     * Mutates the log line blurring the line if it is enabled.
+     *
+     * @param logStream The {@link LogStream} that produced the original log line.
+     * @param line      The original log line.
+     * @return The mutated log line.
+     */
     @Override
     public @NotNull String mutate(@NotNull LogStream logStream, @NotNull String line) {
         if (!logStream.getCraftsNet().getBuilder().shouldHideIps()) return line;
