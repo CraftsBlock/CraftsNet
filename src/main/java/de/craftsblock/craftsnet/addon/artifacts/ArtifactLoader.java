@@ -112,12 +112,37 @@ public final class ArtifactLoader {
         repositories.add(createRepository(repo));
     }
 
+    /**
+     * Creates a {@link RemoteRepository} instance using the given repository url.
+     * <p>
+     * This is a convenience method that automatically formats the repository identifier
+     * using the provided url and delegates to
+     * {@link #createRepository(String, String)} for actual repository construction.
+     *
+     * @param repo The url of the Maven repository.
+     * @return A new {@link RemoteRepository} instance configured with the given url.
+     */
     private RemoteRepository createRepository(String repo) {
         return createRepository("maven(url: %s)".formatted(repo), repo);
     }
 
+    /**
+     * Creates a {@link RemoteRepository} instance with the specified identifier and url.
+     * <p>
+     * This method sets up the repository with the default layout ({@code "default"})
+     * and a default {@link RepositoryPolicy} for releases. Authentication and
+     * additional configuration are currently not applied, but may be added in the future.
+     *
+     * @param id  The identifier of the repository (used internally by the repository system).
+     * @param url The url of the Maven repository.
+     * @return A new {@link RemoteRepository} instance configured with the given identifier and url.
+     */
     private RemoteRepository createRepository(String id, String url) {
-        return new RemoteRepository.Builder(id, "default", url).setReleasePolicy(new RepositoryPolicy()).build();
+        // TODO: Load authentication from .credentials
+
+        return new RemoteRepository.Builder(id, "default", url)
+                .setReleasePolicy(new RepositoryPolicy())
+                .build();
     }
 
     /**
