@@ -137,7 +137,7 @@ public class FileHelper {
                     String suffix = directory && !name.endsWith("/") ? "/" : "";
                     jos.putNextEntry(new JarEntry(name + suffix));
                     if (!directory)
-                        try (InputStream is = new FileInputStream(location.toFile())) {
+                        try (InputStream is = Files.newInputStream(location)) {
                             byte[] buffer = new byte[1024];
                             int length;
                             while ((length = is.read(buffer)) != -1)

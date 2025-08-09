@@ -96,7 +96,7 @@ public class CraftsNetBuilder {
             Map<String, String> arguments = (Map<String, String>) field.get(parser);
             arguments.forEach(this::setArg);
         } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Could not unpack arguments!", e);
         }
 
         return this;
