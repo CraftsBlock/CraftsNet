@@ -255,16 +255,15 @@ public class CraftsNet {
             for (CodeSource codeSource : builder.getCodeSources())
                 try {
                     Path path = Path.of(codeSource.getLocation().toURI());
+
                     try (JarFile file = fileHelper.getJarFileAt(path)) {
                         var handlers = autoRegisterLoader.loadFrom(null, null, file);
                         autoRegisterRegistry.handleAll(handlers);
                         handlers.clear();
-                    } catch (NoSuchFileException ignored) {
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
                     }
-                } catch (URISyntaxException e) {
-                    throw new RuntimeException(e);
+                } catch (NoSuchFileException ignored) {
+                } catch (IOException | URISyntaxException e) {
+                    throw new RuntimeException("Could not autoregister from code sources!", e);
                 }
         }
 
@@ -355,7 +354,7 @@ public class CraftsNet {
             try {
                 start(builder);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new RuntimeException("Could not restart CraftsNet properly!", e);
             }
         }, "CraftsNet Main");
         restart.start();
