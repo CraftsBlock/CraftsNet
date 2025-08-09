@@ -22,6 +22,9 @@ import de.craftsblock.craftsnet.utils.FileHelper;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 /**
  * Abstract class representing an addon that extends the functionality of the application without modifying its core.
@@ -42,7 +45,7 @@ import java.io.File;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.1
+ * @version 1.3.2
  * @see AddonLoader
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -426,22 +429,45 @@ public abstract class Addon {
     }
 
     /**
-     * Get the data folder for the addon.
-     * The data folder is a directory specific to each addon where it can store any files or data it needs.
-     * If the data folder does not exist, it will be created.
-     * If the data folder exists but is not a directory, it will be deleted, and a new one will be created.
+     * Retrieves the data folder for this addon as a {@link File} object.
+     * <p>
+     * The folder location is determined by {@link #getDataPath()}, which ensures
+     * the directory exists before returning it. This method is a convenience
+     * wrapper to convert the {@link Path} into a {@link File}.
      *
-     * @return The data folder for the addon.
+     * @return The data folder for this addon as a {@link File}
      */
     public final File getDataFolder() {
-        File folder = new File("./addons/" + getName() + "/");
-        if (!folder.exists())
-            folder.mkdirs();
-        else if (folder.exists() && !folder.isDirectory()) {
-            folder.delete();
-            folder = getDataFolder();
+        return getDataPath().toFile();
+    }
+
+    /**
+     * Retrieves the data directory for this addon as a {@link Path}.
+     * <p>
+     * The path is resolved relative to the {@code addons} directory, using the
+     * addon's name as the subdirectory name. If the directory does not exist,
+     * it will be created. If the resolved path exists but is not a directory,
+     * an {@link IllegalStateException} will be thrown.
+     *
+     * @return The data path for this add-on
+     * @throws RuntimeException      If the data path cannot be created or accessed
+     * @throws IllegalStateException If the resolved path exists but is not a directory
+     * @since 3.5.2
+     */
+    public final Path getDataPath() {
+        try {
+            Path path = Path.of("addons", getName());
+
+            if (!Files.exists(path)) Files.createDirectories(path);
+            if (!Files.isDirectory(path))
+                throw new IllegalStateException("The path %s must be an directory!".formatted(
+                        path.toAbsolutePath()
+                ));
+
+            return path;
+        } catch (IOException e) {
+            throw new RuntimeException("Could not load the data path!", e);
         }
-        return folder;
     }
 
     /**
