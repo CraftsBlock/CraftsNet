@@ -90,14 +90,11 @@ public class CraftsNetBuilder {
             if (field == null)
                 throw new IllegalStateException("Can not load the arguments field!");
 
-            try {
-                field.setAccessible(true);
-                @SuppressWarnings("unchecked")
-                Map<String, String> arguments = (Map<String, String>) field.get(parser);
-                arguments.forEach(this::setArg);
-            } finally {
-                field.setAccessible(false);
-            }
+            field.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            Map<String, String> arguments = (Map<String, String>) field.get(parser);
+            arguments.forEach(this::setArg);
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
