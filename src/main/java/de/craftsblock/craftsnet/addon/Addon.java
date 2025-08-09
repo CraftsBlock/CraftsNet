@@ -19,6 +19,7 @@ import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.utils.FileHelper;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.io.File;
 
@@ -87,6 +88,7 @@ public abstract class Addon {
      * @deprecated Use {@link #getCraftsNet()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public final CraftsNet craftsNet() {
         return craftsNet;
     }
@@ -141,6 +143,7 @@ public abstract class Addon {
      * @deprecated Use {@link #getAutoRegisterRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public final AutoRegisterRegistry autoRegisterRegistry() {
         return this.getAutoRegisterRegistry();
     }
@@ -165,6 +168,7 @@ public abstract class Addon {
      * @deprecated Use {@link #getBodyRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public final BodyRegistry bodyRegistry() {
         return this.getBodyRegistry();
     }
@@ -188,6 +192,7 @@ public abstract class Addon {
      * @deprecated Use {@link #getCommandRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public final CommandRegistry commandRegistry() {
         return this.getCommandRegistry();
     }
@@ -220,6 +225,7 @@ public abstract class Addon {
      * @deprecated Use {@link #getListenerRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public final ListenerRegistry listenerRegistry() {
         return this.getListenerRegistry();
     }
@@ -253,6 +259,7 @@ public abstract class Addon {
      * @deprecated Use {@link #getMiddlewareRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public final MiddlewareRegistry middlewareRegistry() {
         return this.getMiddlewareRegistry();
     }
@@ -277,6 +284,7 @@ public abstract class Addon {
      * @deprecated Use {@link #getRequirementRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public final RequirementRegistry requirementRegistry() {
         return this.getRequirementRegistry();
     }
@@ -300,6 +308,7 @@ public abstract class Addon {
      * @deprecated Use {@link #getRouteRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public final RouteRegistry routeRegistry() {
         return this.getRouteRegistry();
     }
@@ -322,6 +331,7 @@ public abstract class Addon {
      * @deprecated Use {@link #getServiceManager()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public final ServiceManager serviceManager() {
         return this.getServiceManager();
     }
@@ -345,6 +355,7 @@ public abstract class Addon {
      * @deprecated Use {@link #getStreamEncoderRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public final StreamEncoderRegistry streamEncoderRegistry() {
         return this.getStreamEncoderRegistry();
     }
@@ -399,6 +410,7 @@ public abstract class Addon {
      * @deprecated Use {@link #getLogger()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public final Logger logger() {
         return this.getLogger();
     }

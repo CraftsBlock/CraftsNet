@@ -26,11 +26,12 @@ import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.events.ConsoleMessageEvent;
 import de.craftsblock.craftsnet.listeners.ConsoleListener;
-import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.utils.FileHelper;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import de.craftsblock.craftsnet.utils.versions.Versions;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
@@ -425,6 +426,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getAddonManager()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public AddonManager addonManager() {
         return this.getAddonManager();
     }
@@ -446,6 +448,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getAutoRegisterRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public AutoRegisterRegistry autoRegisterRegistry() {
         return this.getAutoRegisterRegistry();
     }
@@ -468,6 +471,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getBodyRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public BodyRegistry bodyRegistry() {
         return this.getBodyRegistry();
     }
@@ -489,6 +493,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getCommandRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public CommandRegistry commandRegistry() {
         return commandRegistry;
     }
@@ -509,6 +514,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getListenerRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public ListenerRegistry listenerRegistry() {
         return this.getListenerRegistry();
     }
@@ -531,6 +537,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getMiddlewareRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public MiddlewareRegistry middlewareRegistry() {
         return middlewareRegistry;
     }
@@ -554,6 +561,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getRequirementRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public RequirementRegistry requirementRegistry() {
         return this.getRequirementRegistry();
     }
@@ -575,6 +583,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getRouteRegistry()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public RouteRegistry routeRegistry() {
         return this.getRouteRegistry();
     }
@@ -595,6 +604,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getServiceManager()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public ServiceManager serviceManager() {
         return this.getServiceManager();
     }
@@ -615,6 +625,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getSessionCache()} ()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public SessionCache sessionCache() {
         return this.getSessionCache();
     }
@@ -635,6 +646,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getStreamEncoderRegistry()} ()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public StreamEncoderRegistry streamEncoderRegistry() {
         return this.getStreamEncoderRegistry();
     }
@@ -665,6 +677,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getFileHelper()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public WebSocketExtensionRegistry webSocketExtensionRegistry() {
         return this.getWebSocketExtensionRegistry();
     }
@@ -685,6 +698,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getWebServer()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public WebServer webServer() {
         return webServer;
     }
@@ -705,6 +719,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getWebSocketServer()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public WebSocketServer webSocketServer() {
         return this.getWebSocketServer();
     }
@@ -725,6 +740,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getLogger()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public Logger logger() {
         return this.getLogger();
     }
@@ -745,6 +761,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getLogStream()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public LogStream logStream() {
         return this.getLogStream();
     }
@@ -774,6 +791,7 @@ public class CraftsNet {
      * @deprecated Use {@link #getFileHelper()} instead. This will be removed in the future.
      */
     @Deprecated(since = "3.5.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public FileHelper fileHelper() {
         return this.getFileHelper();
     }
