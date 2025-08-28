@@ -126,7 +126,7 @@ public final class AddonLoader {
                 if (Files.isDirectory(path)) continue;
 
                 try (JarFile jarFile = new JarFile(path.toFile(), true, ZipFile.OPEN_READ, Runtime.version())) {
-                    logger.debug("Loading jar file " + path.toFile().getAbsolutePath());
+                    logger.debug("Loading jar file %s", path.toFile().getAbsolutePath());
 
                     // Load the configuration file from the jar
                     AddonConfiguration configuration = retrieveConfig(path, jarFile);
@@ -142,10 +142,11 @@ public final class AddonLoader {
 
                     try {
                         compatibleOrThrow(jarFile);
-                        logger.debug(path.toFile().getAbsolutePath() + " is jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
+                        logger.debug("%s is jvm compatible, checked within %sms",
+                                path.toFile().getAbsolutePath(), System.currentTimeMillis() - checkStart);
                     } catch (RuntimeException e) {
-                        logger.error(e);
-                        logger.error(path.toFile().getAbsolutePath() + " is not jvm compatible, checked within " + (System.currentTimeMillis() - checkStart) + "ms");
+                        logger.error("%s is not jvm compatible, checked within %sms", e,
+                                path.toFile().getAbsolutePath(), System.currentTimeMillis() - checkStart);
                         continue;
                     }
 
@@ -234,7 +235,7 @@ public final class AddonLoader {
         try {
             craftsNet.getListenerRegistry().call(new AllAddonsLoadedEvent());
         } catch (Exception e) {
-            logger.error(e, "Can not fire addons loaded event!");
+            logger.error("Can not fire addons loaded event!", e);
         }
     }
 
@@ -251,7 +252,7 @@ public final class AddonLoader {
 
         // Loading all addons
         orderedLoad.forEach(addon -> {
-            logger.info("Loading addon " + addon.getName() + "...");
+            logger.info("Loading addon %s...", addon.getName());
             addon.onLoad();
 
             if (!autoRegisterInfos.containsKey(addon)) return;
@@ -260,7 +261,7 @@ public final class AddonLoader {
 
         // Enabling all addons
         orderedLoad.forEach(addon -> {
-            logger.info("Enabling addon " + addon.getName() + "...");
+            logger.info("Enabling addon %s...", addon.getName());
             addon.onEnable();
 
             if (!autoRegisterInfos.containsKey(addon)) return;
@@ -372,7 +373,7 @@ public final class AddonLoader {
             if (!pattern.matcher(name).matches())
                 throw new IllegalArgumentException("Plugin names must not contain special characters / spaces! Plugin name: \"" + name + "\"");
 
-            logger.info("Found addon " + name + ", add it to load order");
+            logger.info("Found addon %s, add it to load order", name);
 
             // Create addon class loader
             AddonClassLoader classLoader = configuration.classLoader().get();
@@ -396,9 +397,7 @@ public final class AddonLoader {
 
             return addon;
         } catch (Exception e) {
-            logger.error(e, "Could not load addon %s!".formatted(
-                    configuration.meta().get().name()
-            ));
+            logger.error("Could not load addon %s!", e, configuration.meta().get().name());
         }
         return null;
     }
@@ -462,9 +461,9 @@ public final class AddonLoader {
                     Class<?> spi = classLoader.loadClass(service.spi());
                     Class<?> providerClass = classLoader.loadClass(provider);
                     if (serviceManager.load(spi, providerClass))
-                        logger.debug("Registered service " + provider + " for " + spi.getName());
+                        logger.debug("Registered service %s for %s", provider, spi.getName());
                     else
-                        logger.debug("No service loader found for service " + spi.getName());
+                        logger.debug("No service loader found for service %s", spi.getName());
                 } catch (ClassNotFoundException e) {
                     throw new RuntimeException("Could not register service %s for %s!".formatted(
                             provider, configuration.addon().get().getName()
@@ -500,7 +499,7 @@ public final class AddonLoader {
                                     "has been compiled by a more recent version of the Java Runtime (class file version " + major + "." + minor + "), " +
                                     "this version of the Java Runtime only recognizes class file versions up to " + maxMajor + "." + maxMinor);
                     } catch (IOException e) {
-                        throw new RuntimeException(e);
+                        throw new RuntimeException("Could not check the compatibility for %s".formatted(jarEntry.getName()), e);
                     }
                 });
     }

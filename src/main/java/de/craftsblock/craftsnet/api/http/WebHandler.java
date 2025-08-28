@@ -45,6 +45,9 @@ import java.util.regex.Pattern;
  */
 public class WebHandler implements HttpHandler {
 
+    private static final String MESSAGE_FORMAT_REQUEST = "%s %s from %s";
+    private static final String MESSAGE_FORMAT_REQUEST_ERROR = MESSAGE_FORMAT_REQUEST + " \u001b[38;5;9m[%s]";
+
     private final CraftsNet craftsNet;
     private final Logger logger;
     private final RouteRegistry registry;
@@ -119,7 +122,7 @@ public class WebHandler implements HttpHandler {
             } catch (Throwable t) {
                 if (craftsNet.getLogStream() != null) {
                     long errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), url);
-                    logger.error(t, "Error: " + errorID);
+                    logger.error("Error: %s", t, errorID);
                     if (!response.headersSent()) response.setCode(500);
                     if (!httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN))
                         response.print(Json.empty()
@@ -173,7 +176,7 @@ public class WebHandler implements HttpHandler {
 
         // If no matching route or share is found, respond with an error message and log the failed request
         respondWithError(response, 404, "Path do not match any API endpoint!");
-        logger.info(httpMethod.toString() + " " + url + " from " + request.getIp() + " \u001b[38;5;9m[NOT FOUND]");
+        logger.info(MESSAGE_FORMAT_REQUEST_ERROR, httpMethod.toString(), url, request.getIp(), "NOT FOUND");
         return Map.entry(false, false);
     }
 
@@ -207,10 +210,10 @@ public class WebHandler implements HttpHandler {
         craftsNet.getListenerRegistry().call(event);
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "ABORTED";
-            logger.info(requestMethod + " " + url + " from " + ip + " \u001b[38;5;9m[" + cancelReason + "]");
+            logger.info(MESSAGE_FORMAT_REQUEST_ERROR, requestMethod, url, ip, cancelReason);
             return true;
         }
-        logger.info(requestMethod + " " + url + " from " + ip);
+        logger.info(MESSAGE_FORMAT_REQUEST, requestMethod, url, ip);
 
         Pattern validator = routes.values().stream().flatMap(Collection::stream).findFirst().orElseThrow().validator();
         Matcher matcher = validator.matcher(url);
@@ -296,12 +299,12 @@ public class WebHandler implements HttpHandler {
         craftsNet.getListenerRegistry().call(event);
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "SHARE ABORTED";
-            logger.info(httpMethod + " " + url + " from " + ip + " \u001b[38;5;9m[" + cancelReason + "]");
+            logger.info(MESSAGE_FORMAT_REQUEST_ERROR, httpMethod, url, ip, cancelReason);
             return;
         }
 
         String path = event.getFilePath();
-        logger.info(httpMethod + " " + url + " from " + ip + " \u001b[38;5;205m[SHARED]");
+        logger.info(MESSAGE_FORMAT_REQUEST + " \u001b[38;5;205m[SHARED]", httpMethod, url, ip);
 
         ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(exchange, folder.resolve((path.isBlank() ? "index.html" : path)));
         craftsNet.getListenerRegistry().call(fileLoadedEvent);

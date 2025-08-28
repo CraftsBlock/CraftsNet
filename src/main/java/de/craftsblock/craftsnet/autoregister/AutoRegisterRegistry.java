@@ -148,7 +148,7 @@ public class AutoRegisterRegistry {
                 .toList();
 
         if (handlers.isEmpty()) {
-            craftsNet.getLogger().warning("Found @AutoRegister on " + info.getClassName() + " but no registry found!");
+            craftsNet.getLogger().warning("Found @AutoRegister on %s but no registry found!", info.getClassName());
             return false;
         }
 
@@ -162,7 +162,7 @@ public class AutoRegisterRegistry {
                 method.setAccessible(true);
                 boolean result = (boolean) method.invoke(handler, obj, info, args);
                 if (result)
-                    craftsNet.getLogger().debug("Auto registered " + info.getClassName() + " with " + handler.getClass().getSimpleName());
+                    craftsNet.getLogger().debug("Auto registered %s with %s", info.getClassName(), handler.getClass().getSimpleName());
             } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
                 throw new RuntimeException(e);
             }

@@ -83,9 +83,7 @@ public final class AddonManager {
             synchronized (addonLoader) {
                 logger.info("Load all available addons");
                 addonLoader.load(configurations);
-                logger.info("Loaded %s addons within %sms".formatted(
-                        configurations.size(), System.currentTimeMillis() - start
-                ));
+                logger.info("Loaded %s addons within %sms", configurations.size(), System.currentTimeMillis() - start);
             }
 
             configurations.clear();
@@ -102,7 +100,7 @@ public final class AddonManager {
             addonLoader.reset();
 
             Path folder = Path.of("addons");
-            logger.debug("Addon folder set to " + folder.toAbsolutePath().toFile().getAbsolutePath());
+            logger.debug("Addon folder set to %s", folder.toAbsolutePath().toFile().getAbsolutePath());
             if (Files.notExists(folder) || !Files.isDirectory(folder)) {
                 Files.deleteIfExists(folder);
                 Files.createDirectories(folder);
@@ -123,14 +121,14 @@ public final class AddonManager {
      */
     public void stop() {
         addons.values().forEach(addon -> {
-            logger.info("Disabling addon " + addon.getName());
+            logger.info("Disabling addon %s", addon.getName());
             this.unregister(addon);
         });
 
         try {
             craftsNet.getListenerRegistry().call(new AllAddonsDisabledEvent());
         } catch (InvocationTargetException | IllegalAccessException e) {
-            craftsNet.getLogger().error(e, "Error while performing the all addons disabled event!");
+            craftsNet.getLogger().error("Error while performing the all addons disabled event!", e);
         }
 
         addons.clear();

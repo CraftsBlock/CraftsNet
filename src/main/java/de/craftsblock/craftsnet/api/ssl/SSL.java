@@ -81,7 +81,8 @@ public class SSL {
              InputStream privateKeyStream = new FileInputStream(privkeyFile)) {
             X509Certificate[] certificates = getCertificateChain(fullchainStream);
             if (certificates == null || certificates.length != 2) {
-                craftsNet.getLogger().error("Your fullchain (" + fullchain + ") is not valid. Expected Certificates: 2, Got: " + (certificates != null ? certificates.length : "null"));
+                craftsNet.getLogger().error("Your fullchain (%s) is not valid. Expected Certificates: 2, Got: %s",
+                        fullchain, certificates != null ? certificates.length : "null");
                 return null;
             }
 
@@ -97,7 +98,7 @@ public class SSL {
                     }
                 }
             } catch (CertificateExpiredException | CertificateNotYetValidException e) {
-                craftsNet.getLogger().error(e, "Could not activate ssl!");
+                craftsNet.getLogger().error("Could not activate ssl!", e);
                 return null;
             }
 
@@ -105,7 +106,7 @@ public class SSL {
                 if (!verify(certificates[0], privateKey))
                     throw new InvalidKeyException("The value signed with the private key could not be verified with the public key!");
             } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException | NullPointerException e) {
-                craftsNet.getLogger().error(e, "Could not activate ssl: There was an unexpected exception while verifying the key pair!");
+                craftsNet.getLogger().error("Could not activate ssl: There was an unexpected exception while verifying the key pair!", e);
                 return null;
             }
 

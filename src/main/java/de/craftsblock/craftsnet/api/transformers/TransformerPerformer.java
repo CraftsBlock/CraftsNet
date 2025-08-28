@@ -202,7 +202,7 @@ public class TransformerPerformer {
         String parameter = transformer.parameter();
         // Abort if the dynamic parameter is not present in the named groups
         if (!groupNames.contains(parameter)) {
-            logger.warning("Parameter " + parameter + " has a transformer but is not used!");
+            logger.warning("Parameter %s has a transformer but is not used!", parameter);
             return;
         }
 

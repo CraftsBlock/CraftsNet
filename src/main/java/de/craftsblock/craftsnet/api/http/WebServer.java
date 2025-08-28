@@ -67,7 +67,7 @@ public class WebServer extends Server {
     @Override
     public synchronized void bind(int port, int backlog) {
         super.bind(port, backlog);
-        if (logger != null) logger.info("Web server bound to port " + port);
+        if (logger != null) logger.info("Web server bound to port %s", port);
     }
 
     /**
@@ -77,7 +77,7 @@ public class WebServer extends Server {
     public synchronized void start() {
         if (running) return;
 
-        logger.info("Starting web server on port " + port);
+        logger.info("Starting web server on port %s", port);
         try {
             // Create the HttpServer or HttpsServer based on the SSL flag.
             if (ssl) {
@@ -101,7 +101,7 @@ public class WebServer extends Server {
                 try {
                     server = HttpServer.create(new InetSocketAddress(port), 0);
                 } catch (IOException e) {
-                    logger.error("Error while creating the " + (ssl ? "fallback" : "") + " http server.");
+                    logger.error("Error while creating the %s http server.", ssl ? "fallback" : "");
                     logger.error(e);
                 }
             }

@@ -19,7 +19,7 @@ import java.time.format.DateTimeFormatter;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.1.0
  * @since 3.0.5-SNAPSHOT
  */
 public class LoggerImpl implements Logger {
@@ -48,9 +48,9 @@ public class LoggerImpl implements Logger {
     }
 
     /**
-     * Logs an informational message.
+     * {@inheritDoc}
      *
-     * @param text The message to be logged.
+     * @param text {@inheritDoc}
      */
     @Override
     public void info(@Nullable String text) {
@@ -58,9 +58,9 @@ public class LoggerImpl implements Logger {
     }
 
     /**
-     * Logs a warning message.
+     * {@inheritDoc}
      *
-     * @param text The warning message to be logged.
+     * @param text {@inheritDoc}
      */
     @Override
     public void warning(@Nullable String text) {
@@ -68,9 +68,9 @@ public class LoggerImpl implements Logger {
     }
 
     /**
-     * Logs an error message.
+     * {@inheritDoc}
      *
-     * @param text The error message to be logged.
+     * @param text {@inheritDoc}
      */
     @Override
     public void error(@Nullable String text) {
@@ -78,9 +78,9 @@ public class LoggerImpl implements Logger {
     }
 
     /**
-     * Logs an error message along with the stack trace of an exception.
+     * {@inheritDoc}
      *
-     * @param throwable The throwable to be logged.
+     * @param throwable {@inheritDoc}
      */
     @Override
     public void error(@NotNull Throwable throwable) {
@@ -92,21 +92,22 @@ public class LoggerImpl implements Logger {
     }
 
     /**
-     * Logs an error message along with the stack trace of an exception and an additional comment.
+     * {@inheritDoc}
      *
-     * @param throwable The exception to be logged.
-     * @param comment   An additional comment to be logged.
+     * @param message   {@inheritDoc}
+     * @param throwable {@inheritDoc}
+     * @since 3.5.2
      */
     @Override
-    public void error(@NotNull Throwable throwable, @Nullable String comment) {
-        log(LogLevel.EXCEPTION, comment);
+    public void error(@Nullable String message, @NotNull Throwable throwable) {
+        log(LogLevel.EXCEPTION, message);
         error(throwable);
     }
 
     /**
-     * Logs a debug message. Debug messages are only printed if debug mode is enabled.
+     * {@inheritDoc}
      *
-     * @param text The debug message to be logged.
+     * @param text {@inheritDoc}
      */
     @Override
     public void debug(@Nullable String text) {
@@ -115,10 +116,10 @@ public class LoggerImpl implements Logger {
     }
 
     /**
-     * Clone this instance of the {@link Logger} and set a custom name
+     * {@inheritDoc}
      *
-     * @param name The new name which should be used
-     * @return A new instance of {@link Logger} with the new name set
+     * @param name {@inheritDoc}
+     * @return {@inheritDoc}
      */
     @Override
     public Logger cloneWithName(String name) {

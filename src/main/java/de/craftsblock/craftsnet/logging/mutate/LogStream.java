@@ -237,7 +237,7 @@ public class LogStream {
 
                 throwable.printStackTrace(stream);
             } catch (FileNotFoundException e) {
-                craftsNet.getLogger().error(e, "Failed to create error log file");
+                craftsNet.getLogger().error("Failed to create error log file", e);
             }
 
             return identifier;

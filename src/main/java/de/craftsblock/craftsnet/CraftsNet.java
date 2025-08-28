@@ -129,9 +129,10 @@ public class CraftsNet {
         logStream.start();
 
         // Log startup message
-        logger.info("CraftsNet v" + version + " boots up");
+        logger.info("CraftsNet v%s boots up", version);
         Runtime.Version jvmVersion = Runtime.version();
-        logger.debug("JVM Version: " + jvmVersion.toString() + "; Max recognizable class file version: " + (jvmVersion.feature() + 44) + "." + jvmVersion.interim());
+        logger.debug("JVM Version: %s; Max recognizable class file version: %s.%s",
+                jvmVersion.toString(), jvmVersion.feature() + 44, jvmVersion.interim());
 
         // Check if version is a release as the version check is disabled for experimental builds
         if (version.matches("^\\d+(?:\\.\\d+)*$"))
@@ -145,7 +146,7 @@ public class CraftsNet {
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             if (logStream != null) {
                 long identifier = logStream.createErrorLog(this, e);
-                logger.error(e, "Throwable: " + identifier);
+                logger.error("Throwable: %s", e, identifier);
                 return;
             }
 
@@ -268,7 +269,7 @@ public class CraftsNet {
         }
 
         // Log successful startup message with elapsed time
-        logger.info("CraftsNet was successfully started after " + (System.currentTimeMillis() - start) + "ms");
+        logger.info("CraftsNet was successfully started after %sms", System.currentTimeMillis() - start);
         started = true;
     }
 

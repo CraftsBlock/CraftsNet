@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.1.0
  * @since 3.1.0-SNAPSHOT
  */
 public record PlainLogger(Logger previous) implements Logger {
@@ -28,16 +28,16 @@ public record PlainLogger(Logger previous) implements Logger {
      * Returns the previous {@link Logger} in the chain.
      * This can be used to access the logger that was previously used before this {@link PlainLogger}.
      *
-     * @return the previous {@link Logger} instance.
+     * @return The previous {@link Logger} instance.
      */
     public Logger previous() {
         return this.previous;
     }
 
     /**
-     * Logs an informational message.
+     * {@inheritDoc}
      *
-     * @param text the informational message to be logged, can be null.
+     * @param text {@inheritDoc}
      */
     @Override
     public void info(@Nullable String text) {
@@ -45,9 +45,9 @@ public record PlainLogger(Logger previous) implements Logger {
     }
 
     /**
-     * Logs a warning message.
+     * {@inheritDoc}
      *
-     * @param text the warning message to be logged, can be null.
+     * @param text {@inheritDoc}
      */
     @Override
     public void warning(@Nullable String text) {
@@ -55,9 +55,9 @@ public record PlainLogger(Logger previous) implements Logger {
     }
 
     /**
-     * Logs an error message.
+     * {@inheritDoc}
      *
-     * @param text the error message to be logged, can be null.
+     * @param text {@inheritDoc}
      */
     @Override
     public void error(@Nullable String text) {
@@ -65,9 +65,9 @@ public record PlainLogger(Logger previous) implements Logger {
     }
 
     /**
-     * Logs an error with a throwable.
+     * {@inheritDoc}
      *
-     * @param throwable the {@link Throwable} to be logged, must not be null.
+     * @param throwable {@inheritDoc}
      */
     @Override
     public void error(@NotNull Throwable throwable) {
@@ -75,21 +75,22 @@ public record PlainLogger(Logger previous) implements Logger {
     }
 
     /**
-     * Logs an error with a throwable and an additional comment.
+     * {@inheritDoc}
      *
-     * @param throwable the {@link Throwable} to be logged, must not be null.
-     * @param comment   an additional comment or message to be logged, can be null.
+     * @param message {@inheritDoc}
+     * @param throwable {@inheritDoc}
+     * @since 3.5.2
      */
     @Override
-    public void error(@NotNull Throwable throwable, @Nullable String comment) {
-        System.err.println(comment);
+    public void error(@Nullable String message, @NotNull Throwable throwable) {
+        System.err.println(message);
         throwable.printStackTrace(System.err);
     }
 
     /**
-     * Logs a debug message.
+     * {@inheritDoc}
      *
-     * @param text the debug message to be logged, can be null.
+     * @param text {@inheritDoc}
      */
     @Override
     public void debug(@Nullable String text) {
@@ -97,10 +98,10 @@ public record PlainLogger(Logger previous) implements Logger {
     }
 
     /**
-     * Returns this instance of the {@link PlainLogger}.
+     * {@inheritDoc}
      *
-     * @param name the name for the new logger instance. (Not used in any way!)
-     * @return the current instance of this {@link PlainLogger}.
+     * @param name {@inheritDoc} (Not used in any way!)
+     * @return {@inheritDoc}
      */
     @Override
     public Logger cloneWithName(String name) {

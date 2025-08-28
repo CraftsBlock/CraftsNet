@@ -39,7 +39,7 @@ public class ReloadCommand implements CommandExecutor {
     @Override
     public void onCommand(@NotNull Command command, @NotNull String alias, @NotNull String[] args, @NotNull Logger logger) {
         if (args.length != 1 || !args[0].equalsIgnoreCase("confirm")) {
-            logger.warning("Please use '" + alias + " confirm' if you really want to reload CraftsNet as it may break some things.");
+            logger.warning("Please use '%s confirm' if you really want to reload CraftsNet as it may break some things.", alias);
             return;
         }
 
@@ -50,7 +50,7 @@ public class ReloadCommand implements CommandExecutor {
                 System.out.println();
             });
         } catch (Exception e) {
-            logger.error(e, "Could not restart CraftsNet");
+            logger.error("Could not restart CraftsNet", e);
         }
     }
 

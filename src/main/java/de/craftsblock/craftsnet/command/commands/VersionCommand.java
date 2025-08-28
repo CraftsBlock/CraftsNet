@@ -29,7 +29,7 @@ public class VersionCommand implements CommandExecutor {
      */
     @Override
     public void onCommand(@NotNull Command command, @NotNull String alias, @NotNull String[] args, @NotNull Logger logger) {
-        logger.info("You are using CraftsNet v" + CraftsNet.version);
+        logger.info("You are using CraftsNet v%s", CraftsNet.version);
     }
 
 }

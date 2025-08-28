@@ -40,9 +40,8 @@ public class WebSocketTypeDecoderAutoRegisterHandler extends AutoRegisterHandler
      */
     @Override
     protected boolean handle(WebSocketSafeTypeDecoder<?> webSocketSafeTypeDecoder, AutoRegisterInfo info, Object... args) {
-        craftsNet.getLogger().warning("%s may only be applied using @%s!".formatted(
-                webSocketSafeTypeDecoder.getClass().getName(), ApplyDecoder.class.getSimpleName()
-        ));
+        craftsNet.getLogger().warning("%s may only be applied using @%s!",
+                webSocketSafeTypeDecoder.getClass().getName(), ApplyDecoder.class.getSimpleName());
         return true;
     }
 

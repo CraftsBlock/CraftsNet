@@ -11,7 +11,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.1.1
  * @since 3.4.0-SNAPSHOT
  */
 public record NoOpLogger(Logger previous) implements Logger {
@@ -25,75 +25,90 @@ public record NoOpLogger(Logger previous) implements Logger {
     }
 
     /**
-     * Logs an informational message.
+     * {@inheritDoc}
      * This implementation does nothing.
      *
-     * @param text the informational message to be logged, can be null.
+     * @param text {@inheritDoc}
      */
     @Override
     public void info(@Nullable String text) {
     }
 
     /**
-     * Logs a warning message.
+     * {@inheritDoc}
      * This implementation does nothing.
      *
-     * @param text the warning message to be logged, can be null.
+     * @param text {@inheritDoc}
      */
     @Override
     public void warning(@Nullable String text) {
     }
 
     /**
-     * Logs an error message.
+     * {@inheritDoc}
      * This implementation does nothing.
      *
-     * @param text the error message to be logged, can be null.
+     * @param text {@inheritDoc}
      */
     @Override
     public void error(@Nullable String text) {
     }
 
     /**
-     * Logs an error with a throwable.
+     * {@inheritDoc}
      * This implementation does nothing.
      *
-     * @param throwable the {@link Throwable} to be logged, must not be null.
+     * @param throwable {@inheritDoc}
      */
     @Override
     public void error(@NotNull Throwable throwable) {
     }
 
     /**
-     * Logs an error with a throwable and an additional comment.
+     * {@inheritDoc}
      * This implementation does nothing.
      *
-     * @param throwable the {@link Throwable} to be logged, must not be null.
-     * @param comment   an additional comment or message to be logged, can be null.
+     * @param message   {@inheritDoc}
+     * @param throwable {@inheritDoc}
      */
     @Override
-    public void error(@NotNull Throwable throwable, @Nullable String comment) {
+    public void error(@Nullable String message, @NotNull Throwable throwable) {
     }
 
     /**
-     * Logs a debug message.
+     * {@inheritDoc}
      * This implementation does nothing.
      *
-     * @param text the debug message to be logged, can be null.
+     * @param text {@inheritDoc}
      */
     @Override
     public void debug(@Nullable String text) {
     }
 
     /**
-     * Returns this instance of the {@link NoOpLogger}.
+     * {@inheritDoc}
      *
-     * @param name the name for the new logger instance. (Not used in any way!)
-     * @return the current instance of this {@link NoOpLogger}.
+     * @param name {@inheritDoc} (Not used in any way!)
+     * @return {@inheritDoc}
      */
     @Override
     public Logger cloneWithName(String name) {
         return this;
     }
 
+    /**
+     * Utility method for formatting a string with arguments.
+     * <p>
+     * This method just returns the unformatted format as this
+     * logger has no actions.
+     *
+     * @param format {@inheritDoc}
+     * @param args   {@inheritDoc}
+     * @return {@inheritDoc}
+     * @since 3.5.2
+     */
+    @Override
+    public String format(@NotNull String format, Object... args) {
+        return format;
+    }
 }

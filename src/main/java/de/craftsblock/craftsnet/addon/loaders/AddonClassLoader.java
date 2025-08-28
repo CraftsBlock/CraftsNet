@@ -93,7 +93,7 @@ public final class AddonClassLoader extends CraftsNetClassLoader {
                         String usedAddonName = usedAddonConfig.json().getString("name");
 
                         if (usedAddonConfig != addon && !ignoreNotDepended.contains(addon) && !depends.contains(usedAddonName)) {
-                            logger.warning(addonName + " loaded " + name + " from " + usedAddonName + " which is not marked as dependent!");
+                            logger.warning("%s loaded %s from %s which is not marked as dependent!", addonName, name, usedAddonName);
                             ignoreNotDepended.add(addon);
                         }
                     }

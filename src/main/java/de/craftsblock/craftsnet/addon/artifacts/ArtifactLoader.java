@@ -158,7 +158,7 @@ public final class ArtifactLoader {
     public URL[] loadLibraries(CraftsNet craftsNet, AddonLoader addonLoader, Collection<RegisteredService> services,
                                String addon, String... libraries) {
         Logger logger = craftsNet.getLogger();
-        logger.debug("Loading " + libraries.length + " libraries for " + addon + "...");
+        logger.debug("Loading %s libraries for %s...", libraries.length, addon);
         List<Dependency> dependencies = new ArrayList<>();
         for (String library : libraries) {
             DefaultArtifact artifact = new DefaultArtifact(library);
@@ -212,7 +212,7 @@ public final class ArtifactLoader {
                 ), e);
             }
 
-            logger.debug("Loaded library " + file.getName() + " for " + addon);
+            logger.debug("Loaded library %s for %s", file.getName(), addon);
         });
 
         return urls.toArray(URL[]::new);

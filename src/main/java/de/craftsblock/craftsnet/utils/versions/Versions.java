@@ -95,10 +95,10 @@ public class Versions {
                     return;
                 }
 
-                logger.warning("There is a newer version (" + json.getString("version") + ") of CraftsNet available");
+                logger.warning("There is a newer version (%s) of CraftsNet available", json.getString("version"));
             }
         } catch (Exception e) {
-            logger.error(e, "Failed to fetch the latest version of CraftsNet!");
+            logger.error("Failed to fetch the latest version of CraftsNet!", e);
         }
     }
 

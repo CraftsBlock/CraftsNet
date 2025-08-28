@@ -89,7 +89,7 @@ public class WebSocketServer extends Server {
     @Override
     public synchronized void bind(int port, int backlog) {
         super.bind(port, backlog);
-        if (logger != null) logger.info("Web socket server bound to port " + port);
+        if (logger != null) logger.info("Web socket server bound to port %s", port);
     }
 
     /**
@@ -98,7 +98,7 @@ public class WebSocketServer extends Server {
     @Override
     public synchronized void start() {
         try {
-            logger.info("Starting websocket server on port " + port);
+            logger.info("Starting websocket server on port %s", port);
             if (ssl) {
                 SSLContext sslContext = SSL.load(this.craftsNet);
                 if (sslContext != null) {
@@ -119,7 +119,7 @@ public class WebSocketServer extends Server {
                 try {
                     serverSocket = new ServerSocket(port, backlog);
                 } catch (IOException e) {
-                    logger.error("Error while creating the " + (ssl ? "fallback" : "") + " socket server.");
+                    logger.error("Error while creating the %s socket server.", ssl ? "fallback" : "");
                     logger.error(e);
                 }
             }

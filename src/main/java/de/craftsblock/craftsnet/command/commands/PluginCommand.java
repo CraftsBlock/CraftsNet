@@ -47,8 +47,9 @@ public class PluginCommand implements CommandExecutor {
             return;
         }
         logger.info(
-                "Plugins (" + addonManager.getAddons().size() + "): " +
-                        String.join(", ", addonManager.getAddons().values().stream().map(Addon::getName).toList())
+                "Plugins (%s): %s",
+                addonManager.getAddons().size(),
+                String.join(", ", addonManager.getAddons().values().stream().map(Addon::getName).toList())
         );
     }
 

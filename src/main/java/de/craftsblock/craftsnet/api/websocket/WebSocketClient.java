@@ -64,6 +64,8 @@ import java.util.stream.Stream;
  */
 public class WebSocketClient implements Runnable, RequireAble {
 
+    private static final String MESSAGE_TRIED_CONNECTING_ERROR = "%s tried to connect to %s \u001b[38;5;9m[%s]";
+
     private static final String WEBSOCKET_HANDSHAKE_MAGIC_TEXT = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
     private static final MessageDigest handshakeDigest;
 
@@ -204,7 +206,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 if (event.hasCancelReason())
                     sendMessage(event.getCancelReason());
                 disconnect();
-                logger.debug(ip + " tried to connect to " + path + " \u001b[38;5;9m[" + event.getCancelReason() + "]");
+                logger.debug(MESSAGE_TRIED_CONNECTING_ERROR, ip, path, event.getCancelReason());
                 return;
             }
 
@@ -216,14 +218,14 @@ public class WebSocketClient implements Runnable, RequireAble {
                 if (callbackInfo.hasCancelReason())
                     sendMessage(callbackInfo.getCancelReason());
                 disconnect();
-                logger.debug(ip + " tried to connect to " + path + " \u001b[38;5;9m[" + callbackInfo.getCancelReason() + "]");
+                logger.debug(MESSAGE_TRIED_CONNECTING_ERROR, ip, path, callbackInfo.getCancelReason());
                 return;
             }
 
             // Check if the requested path has a corresponding endpoint registered in the server
             if (!event.isAllowedWithoutMapping() && (mappings == null || mappings.isEmpty())) {
                 // If the requested path has no corresponding endpoint, send an error message
-                logger.debug(ip + " connected to " + path + " \u001b[38;5;9m[NOT FOUND]");
+                logger.debug("%s connected to %s \u001b[38;5;9m[NOT FOUND]", ip, path);
                 closeInternally(ClosureCode.BAD_GATEWAY, Json.empty().set("error", "Path do not match any API endpoint!").toString(), true);
                 return;
             }
@@ -246,7 +248,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             server.add(path, this);
 
             // If the event is not cancelled, process incoming messages from the client
-            logger.info(ip + " connected to " + path);
+            logger.info("%s connected to %s", ip, path);
 
             while (!Thread.currentThread().isInterrupted() && isConnected()) {
                 Frame frame = readMessage();
@@ -487,7 +489,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         if (craftsNet.getLogStream() != null) {
             long errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), path);
-            logger.error(t, "Error: " + errorID);
+            logger.error("Error: %s", t, errorID);
             message.set("error.identifier", errorID);
         } else logger.error(t);
 
@@ -1044,16 +1046,13 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             craftsNet.getListenerRegistry().call(new ClientDisconnectEvent(exchange, closeCode, closeReason, closeByServer));
 
-            if (!closeByServer && this.connected) logger.warning(ip + " disconnected abnormal: The underlying tcp connection has been killed!");
+            if (!closeByServer && this.connected) logger.warning("%s disconnected abnormal: The underlying tcp connection has been killed!", ip);
             else if (!closeByServer && closeCode != -1 && closeCode != ClosureCode.NORMAL.intValue()) {
                 ClosureCode code = ClosureCode.fromInt(closeCode);
-                logger.warning(
-                        ip + " disconnected abnormal " +
-                                "(Code: " + (code != null ? code : closeCode) + ")" +
-                                (closeReason != null && !closeReason.isEmpty() ? ": " + closeReason : "")
-                );
+                logger.warning("%s disconnected abnormal (Code: %s)%s",
+                        ip, code != null ? code : closeCode, closeReason != null && !closeReason.isEmpty() ? ": " + closeReason : "");
             } else
-                logger.debug(ip + " disconnected");
+                logger.debug("%s disconnected", ip);
 
             MiddlewareCallbackInfo callbackInfo = new MiddlewareCallbackInfo();
             getWebsocketMiddlewares().forEach(middleware -> middleware.handleDisconnect(callbackInfo, exchange));
