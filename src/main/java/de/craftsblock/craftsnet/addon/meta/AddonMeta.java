@@ -26,7 +26,7 @@ import java.util.function.Function;
  * @param dependencies The maven dependencies this addon needs.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.1
+ * @version 1.1.2
  * @since 3.1.0-SNAPSHOT
  */
 public record AddonMeta(String name, String mainClass, String description, List<String> authors,
@@ -44,6 +44,8 @@ public record AddonMeta(String name, String mainClass, String description, List<
             throw new IllegalStateException("The addon json config is null!");
 
         final Json json = configuration.json();
+        if (!json.contains("name"))
+            throw new IllegalStateException("Addon file %s does not contain a name!".formatted(configuration.path()));
 
         List<String> authors = new ArrayList<>();
         addMultiple(authors, json, "author");
@@ -51,7 +53,7 @@ public record AddonMeta(String name, String mainClass, String description, List<
 
         return new AddonMeta(
                 json.getString("name"),
-                json.getString("main"),
+                jsonSafelyGet(json, "main", json::getString, ""),
                 jsonSafelyGet(json, "description", json::getString, ""),
                 authors,
                 jsonSafelyGet(json, "website", json::getString, ""),
