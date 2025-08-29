@@ -50,7 +50,7 @@ dependencies {
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
     // https://mvnrepository.com/artifact/org.apache.tika/tika-core
-    implementation 'org.apache.tika:tika-core:3.2.1'
+    implementation 'org.apache.tika:tika-core:3.2.2'
 
     // https://mvnrepository.com/artifact/org.jetbrains/annotations
     implementation 'org.jetbrains:annotations:26.0.2'
