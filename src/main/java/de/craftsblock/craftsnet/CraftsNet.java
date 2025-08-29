@@ -58,7 +58,7 @@ import java.util.jar.JarFile;
 public class CraftsNet {
 
     // Global variables
-    public static final String version = "3.5.1";
+    public static final String version = "3.5.2";
 
     // Local instance
     private CraftsNetBuilder builder;
