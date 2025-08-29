@@ -13,7 +13,7 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.4.2
+ * @version 1.4.3
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
@@ -75,7 +75,7 @@ public class ReflectionUtils {
         Class<?> callersCaller = ReflectionUtils.getCallerClass(4);
 
         for (Class<?> allow : allowed)
-            if (allow.isAssignableFrom(callersCaller)) break;
+            if (allow.isAssignableFrom(callersCaller)) return;
 
         throw new IllegalStateException(callersCaller.getName() + " is not permitted to call a " + caller.getSimpleName());
     }
