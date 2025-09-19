@@ -1,9 +1,8 @@
 package de.craftsblock.craftsnet.api.websocket;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import org.jetbrains.annotations.ApiStatus;
+
+import java.util.*;
 
 /**
  * Enumeration representing WebSocket closure codes along with their integer values and internal status.
@@ -11,7 +10,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.1.0
  * @since 3.0.5-SNAPSHOT
  */
 public enum ClosureCode {
@@ -86,28 +85,44 @@ public enum ClosureCode {
      */
     TLS_HANDSHAKE_FAIL(1015, true);
 
+    private static final Map<Integer, ClosureCode> LOOKUP = new HashMap<>();
+
     /**
      * List of all {@link ClosureCode closure codes} that are specified in RFC 6455.
+     *
      * @since 3.4.0-SNAPSHOT
      */
+    @Deprecated(since = "3.5.3", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public static final List<Integer> SPECIFIED_CODES = Arrays.stream(ClosureCode.values()).map(ClosureCode::intValue).toList();
 
     /**
      * List of ClosureCode values that are considered internal.
+     *
+     * @deprecated Use {@link ClosureCode#isInternal(int)} instead!
      */
-    public static final List<ClosureCode> INTERNAL_CODES;
+    @Deprecated(since = "3.5.3", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
+    public static final Set<ClosureCode> INTERNAL_CODES;
 
     /**
      * List of integer values corresponding to ClosureCode values that are considered internal.
+     *
+     * @deprecated Use {@link ClosureCode#isInternal(int)} instead!
      */
+    @Deprecated(since = "3.5.3", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
     public static final List<Integer> RAW_INTERNAL_CODES;
 
     static {
-        List<ClosureCode> internal_codes = new ArrayList<>();
-        for (ClosureCode closureCode : ClosureCode.values())
-            if (closureCode.isInternal()) internal_codes.add(closureCode);
-        INTERNAL_CODES = Collections.unmodifiableList(internal_codes);
+        EnumSet<ClosureCode> internal_codes = EnumSet.noneOf(ClosureCode.class);
 
+        for (ClosureCode closureCode : ClosureCode.values()) {
+            LOOKUP.put(closureCode.code, closureCode);
+            if (closureCode.isInternal()) internal_codes.add(closureCode);
+        }
+
+        INTERNAL_CODES = Collections.unmodifiableSet(internal_codes);
         RAW_INTERNAL_CODES = INTERNAL_CODES.parallelStream().map(ClosureCode::intValue).toList();
     }
 
@@ -150,10 +165,7 @@ public enum ClosureCode {
      * @return The corresponding {@link ClosureCode}.
      */
     public static ClosureCode fromInt(int code) {
-        for (ClosureCode closureCode : ClosureCode.values())
-            if (closureCode.intValue() == code)
-                return closureCode;
-        return null;
+        return LOOKUP.get(code);
     }
 
 }
