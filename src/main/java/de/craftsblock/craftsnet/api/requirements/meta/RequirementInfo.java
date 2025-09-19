@@ -51,6 +51,7 @@ public record RequirementInfo(Class<? extends Annotation> annotation, Requiremen
      * Retrieves the value associated with a given key from the annotation's values.
      *
      * @param key The key to retrieve the value for.
+     * @param <T> The expected return value type.
      * @return The value associated with the key, or {@code null} if not present.
      */
     @SuppressWarnings("unchecked")

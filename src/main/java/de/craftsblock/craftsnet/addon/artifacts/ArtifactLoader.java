@@ -54,6 +54,7 @@ public final class ArtifactLoader {
     /**
      * Creates a new instance of the artifact loader
      */
+    @SuppressWarnings("deprecation")
     public ArtifactLoader() {
         RepositorySystemSupplier repositorySupplier = new RepositorySystemSupplier();
         repository = repositorySupplier.get();

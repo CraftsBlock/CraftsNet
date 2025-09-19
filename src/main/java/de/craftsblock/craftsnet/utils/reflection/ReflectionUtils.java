@@ -96,6 +96,7 @@ public class ReflectionUtils {
      *
      * @param clazz The class to get the constructor for.
      * @param args  The argument types for the constructor.
+     * @param <T>   The type to load the constructor from.
      * @return The constructor of the class.
      * @throws RuntimeException If no constructor is found.
      */

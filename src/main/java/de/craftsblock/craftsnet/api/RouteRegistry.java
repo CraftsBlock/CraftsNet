@@ -757,6 +757,7 @@ public class RouteRegistry {
          * Checks whether a specific annotation is present in the mapping's requirements.
          *
          * @param annotation The annotation class to check for.
+         * @param <A>        The type of the annotation.
          * @return {@code true} if the annotation is present, {@code false} otherwise.
          */
         default <A extends Annotation> boolean isPresent(@NotNull Class<A> annotation) {
@@ -768,6 +769,7 @@ public class RouteRegistry {
          *
          * @param annotation The annotation class to check for.
          * @param key        The specific key to check within the annotation's requirements.
+         * @param <A>        The type of the annotation.
          * @return {@code true} if the key is present, {@code false} otherwise.
          */
         default <A extends Annotation> boolean isPresent(@NotNull Class<A> annotation, @NotNull String key) {
@@ -778,6 +780,8 @@ public class RouteRegistry {
          * Retrieves a value associated with a specific annotation's default key ("value").
          *
          * @param annotation The annotation class to retrieve the value from.
+         * @param <A>        The type of the annotation.
+         * @param <T>        The type of the returned value.
          * @return The value associated with the annotation's default key, or {@code null} if not present.
          */
         default <A extends Annotation, T> @Unmodifiable T getRequirements(@NotNull Class<A> annotation) {
@@ -789,6 +793,8 @@ public class RouteRegistry {
          *
          * @param annotation The annotation class to retrieve the value from.
          * @param key        The specific key to retrieve from the annotation's requirements.
+         * @param <A>        The type of the annotation.
+         * @param <T>        The type of the returned value.
          * @return The value associated with the given key, or {@code null} if not present.
          */
         default <A extends Annotation, T> @Unmodifiable T getRequirements(@NotNull Class<A> annotation, @NotNull String key) {
