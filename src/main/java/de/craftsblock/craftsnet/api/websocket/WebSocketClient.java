@@ -881,10 +881,14 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @throws IllegalStateException If the code used to close the connection is only for internal use.
      */
     public void close(@Range(from = 1000, to = 4999) int code, String reason) {
-        if (!ClosureCode.SPECIFIED_CODES.contains(code) && code < 4000
-                || ClosureCode.RAW_INTERNAL_CODES.contains(code)) {
+        if (ClosureCode.isInternal(code))
+            throw new IllegalArgumentException("Invalid close code %s: not allowed to use internal close codes!".formatted(
+                    code
+            ));
+
+        if (code < 1000 || code > 4999) {
             closeInternally(ClosureCode.SERVER_ERROR, "Used close code " + code, true);
-            throw new IllegalArgumentException("Invalid close code " + code + ": must be between 4000–4999 or a non reserved close code.");
+            throw new IllegalArgumentException("Invalid close code " + code + ": must be between 1000–4999!");
         }
 
         closeInternally(code, reason, true);
