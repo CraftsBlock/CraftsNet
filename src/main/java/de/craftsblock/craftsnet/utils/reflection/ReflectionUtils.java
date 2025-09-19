@@ -133,7 +133,7 @@ public class ReflectionUtils {
             constructor.setAccessible(true);
             return constructor.newInstance(args);
         } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException("Could not a new instance of " + type.getSimpleName() + "!", e);
+            throw new RuntimeException("Could not create a new instance of " + type.getSimpleName() + "!", e);
         }
     }
 
@@ -322,16 +322,12 @@ public class ReflectionUtils {
                 // Subtract the length by one to make Integer.MAX_VALUE possible as index
                 if ((type.getActualTypeArguments().length - 1) >= index) {
                     Type t = type.getActualTypeArguments()[index];
-
-                    if (t instanceof ParameterizedType sub)
-                        return (Class<T>) sub.getRawType();
-
-                    return (Class<T>) t;
+                    return (Class<T>) TypeUtils.convertTypeToClass(t);
                 }
         } catch (ClassCastException ignored) {
         }
 
-        if (!Object.class.equals(clazz.getSuperclass()) && base.isAssignableFrom(clazz.getSuperclass()))
+        if (!Object.class.equals(clazz.getSuperclass()) && TypeUtils.isAssignable(base, clazz.getSuperclass()))
             return extractGeneric(clazz.getSuperclass(), base, index);
 
         return null;
@@ -351,13 +347,17 @@ public class ReflectionUtils {
     @Nullable
     @SuppressWarnings("unchecked")
     public static <T> Class<T> extractGenericInterface(Class<?> clazz, @Range(from = 0, to = Integer.MAX_VALUE) int index) {
-        return Arrays.stream(clazz.getGenericInterfaces())
-                .filter(type -> type instanceof ParameterizedType)
-                .map(type -> (ParameterizedType) type)
-                .filter(type -> (type.getActualTypeArguments().length - 1) >= index)
-                .map(type -> (Class<T>) type.getActualTypeArguments()[index])
+        Type type = Arrays.stream(clazz.getGenericInterfaces())
+                .filter(t -> t instanceof ParameterizedType)
+                .map(t -> (ParameterizedType) t)
+                .filter(t -> (t.getActualTypeArguments().length - 1) >= index)
+                .map(t -> t.getActualTypeArguments()[index])
                 .findFirst()
-                .orElse(null);
+                .orElseThrow(() -> new IllegalArgumentException("Could not extract generic interface from class %s at index %s!".formatted(
+                        clazz.getName(), index
+                )));
+
+        return (Class<T>) TypeUtils.convertTypeToClass(type);
     }
 
     /**

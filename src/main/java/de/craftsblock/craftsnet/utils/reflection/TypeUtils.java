@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.utils.reflection;
 
 import org.jetbrains.annotations.Contract;
 
+import java.lang.reflect.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -149,6 +150,47 @@ public class TypeUtils {
         if (a == b) return true;
         if (a.isArray() && b.isArray()) return equals(a.componentType(), b.componentType());
         return toWrapper(a).equals(toWrapper(b));
+    }
+
+    /**
+     * Converts the given {@link Type} into its corresponding {@link Class} representation, if possible.
+     * <p>
+     * This method supports the following cases:
+     * <ul>
+     *   <li>{@link Class}: returned as-is.</li>
+     *   <li>{@link ParameterizedType}: returns its raw type as a {@link Class}.</li>
+     *   <li>{@link GenericArrayType}: constructs an array class of the resolved component type.</li>
+     *   <li>{@link TypeVariable}: resolves to the first bound or defaults to {@link Object}.</li>
+     *   <li>{@link WildcardType}: resolves to the first upper bound or defaults to {@link Object}.</li>
+     * </ul>
+     *
+     * @param type The {@link Type} to convert; may represent classes, generics, arrays, or wildcards.
+     * @return The corresponding {@link Class} object.
+     * @throws IllegalArgumentException if the given type cannot be converted to a {@link Class}.
+     * @since 3.5.3
+     */
+    public static Class<?> convertTypeToClass(Type type) {
+        if (type instanceof Class<?>) return (Class<?>) type;
+
+        if (type instanceof ParameterizedType parameterizedType)
+            return (Class<?>) parameterizedType.getRawType();
+
+        if (type instanceof GenericArrayType genericArrayType) {
+            Class<?> comp = convertTypeToClass(genericArrayType.getGenericComponentType());
+            return Array.newInstance(comp, 0).getClass();
+        }
+
+        Type[] bounds;
+        if (type instanceof TypeVariable<?> typeVariable)
+            bounds = typeVariable.getBounds();
+        else if (type instanceof WildcardType wildcardType)
+            bounds = wildcardType.getUpperBounds();
+        else bounds = null;
+
+        if (bounds != null)
+            return bounds.length > 0 ? convertTypeToClass(bounds[0]) : Object.class;
+
+        throw new IllegalArgumentException("Unknown type: " + type);
     }
 
 }
