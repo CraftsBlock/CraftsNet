@@ -1,6 +1,8 @@
 package de.craftsblock.craftsnet.api.websocket;
 
-import java.util.List;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Enumeration representing WebSocket opcodes along with their integer values.
@@ -8,7 +10,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @version 1.1.0
  * @since 3.0.5-SNAPSHOT
  */
 public enum Opcode {
@@ -46,19 +48,26 @@ public enum Opcode {
     /**
      * Indicates that an opcode is unknown.
      */
-    UNKNOWN(null);
+    UNKNOWN(-1);
 
-    private static final List<Opcode> DATA_CODES = List.of(TEXT, BINARY, CONTINUATION);
-    private static final List<Opcode> CONTROL_CODES = List.of(CLOSE, PING, PONG);
+    private static final Map<Integer, Opcode> LOOKUP = new HashMap<>();
+    private static final EnumSet<Opcode> DATA_CODES = EnumSet.of(TEXT, BINARY, CONTINUATION);
+    private static final EnumSet<Opcode> CONTROL_CODES = EnumSet.of(CLOSE, PING, PONG);
 
-    private final Integer intValue;
+    static {
+        for (Opcode opcode : Opcode.values())
+            if (opcode != UNKNOWN)
+                LOOKUP.put(opcode.intValue, opcode);
+    }
+
+    private final int intValue;
 
     /**
      * Constructs an Opcode with the specified integer value.
      *
      * @param intValue The int value representing the opcode.
      */
-    Opcode(Integer intValue) {
+    Opcode(int intValue) {
         this.intValue = intValue;
     }
 
@@ -68,7 +77,7 @@ public enum Opcode {
      * @return The integer value representing the opcode.
      */
     public int intValue() {
-        return intValue == null ? -1 : intValue;
+        return intValue;
     }
 
     /**
@@ -81,25 +90,26 @@ public enum Opcode {
     }
 
     /**
-     * Checks if the opcode is a code which should contain data
+     * Checks if the opcode is a code which should contain data.
      *
-     * @return true if is a data code, false otherwise
+     * @return true if is a data code, false otherwise.
      */
     public boolean isDataCode() {
         return DATA_CODES.contains(this);
     }
 
     /**
-     * Checks if the opcode is a code which should contain control instruction
+     * Checks if the opcode is a code which should contain control instruction.
      *
-     * @return true if is a control code, false otherwise
+     * @return true if is a control code, false otherwise.
      */
     public boolean isControlCode() {
         return CONTROL_CODES.contains(this);
     }
 
     /**
-     * Checks if the opcode is not a valid opcode as defined in <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-5.2">RFC 6455</a>
+     * Checks if the opcode is not a valid opcode as defined in
+     * <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-5.2">RFC 6455</a>.
      *
      * @return {@code true} if the opcode is defined, {@code false} otherwise
      */
@@ -114,11 +124,7 @@ public enum Opcode {
      * @return The ControlByte corresponding to the integer value, or null if not found.
      */
     public static Opcode fromInt(int controlByte) {
-        for (Opcode b : Opcode.values())
-            if (b.equals(UNKNOWN)) continue;
-            else if ((b.byteValue() & 0x0F) == (controlByte & 0x0F))
-                return b;
-        return UNKNOWN;
+        return LOOKUP.getOrDefault(controlByte & 0x0F, UNKNOWN);
     }
 
     /**
