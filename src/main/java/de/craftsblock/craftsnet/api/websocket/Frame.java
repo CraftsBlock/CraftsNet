@@ -367,6 +367,12 @@ public class Frame implements RequireAble {
             // Mark the frame as end-masked
             if (masked) frame[1] &= 0x7F;
 
+            int actualLength = payloadBuilder.size();
+            if (payloadLength != actualLength)
+                throw new IllegalStateException("Incorrect payload length, while reading a frame. (Got: %s, Expected: %s)".formatted(
+                        payloadLength, actualLength
+                ));
+
             return new Frame(frame, payloadBuilder.toByteArray());
         } finally {
             Arrays.fill(chunk, (byte) 0);
