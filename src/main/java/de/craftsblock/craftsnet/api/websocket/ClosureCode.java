@@ -159,6 +159,30 @@ public enum ClosureCode {
     }
 
     /**
+     * Checks if a closure code exists in as defined in
+     * <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-5.2">RFC 6455</a>.
+     *
+     * @param code The integer value of the closure code.
+     * @return {@code true} if the closure code exists, {@code false} otherwise.
+     * @since 3.5.3
+     */
+    public static boolean exists(int code) {
+        return LOOKUP.containsKey(code);
+    }
+
+    /**
+     * Checks if a closure code is considered internal.
+     *
+     * @param code The integer value of the closure code.
+     * @return {@code true} if the code exists and is internal, {@code false} otherwise.
+     * @since 3.5.3
+     */
+    public static boolean isInternal(int code) {
+        if (!exists(code)) return false;
+        return fromInt(code).isInternal();
+    }
+
+    /**
      * Converts an int to the corresponding {@link ClosureCode}.
      *
      * @param code The int which should be converted.

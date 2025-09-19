@@ -118,6 +118,41 @@ public enum Opcode {
     }
 
     /**
+     * Checks if the given integer value corresponds to a valid opcode.
+     *
+     * @param code The integer value to check.
+     * @return {@code true} if the opcode exists, {@code false} otherwise.
+     * @since 3.5.3
+     */
+    public static boolean exists(int code) {
+        return LOOKUP.containsKey(code & 0x0F);
+    }
+
+    /**
+     * Checks if the given integer value corresponds to a data opcode.
+     *
+     * @param code The integer value to check.
+     * @return {@code true} if the opcode exists and is a data code, {@code false} otherwise.
+     * @since 3.5.3
+     */
+    public static boolean isDataCode(int code) {
+        if (!exists(code)) return false;
+        return fromInt(code).isDataCode();
+    }
+
+    /**
+     * Checks if the given integer value corresponds to a control opcode.
+     *
+     * @param code The integer value to check.
+     * @return {@code true} if the opcode exists and is a control code, {@code false} otherwise.
+     * @since 3.5.3
+     */
+    public static boolean isControlCode(int code) {
+        if (!exists(code)) return false;
+        return fromInt(code).isControlCode();
+    }
+
+    /**
      * Retrieves the opcode corresponding to the given integer value.
      *
      * @param controlByte The integer value of the opcode.
