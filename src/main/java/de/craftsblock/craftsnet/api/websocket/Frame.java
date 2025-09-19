@@ -364,6 +364,9 @@ public class Frame implements RequireAble {
                 bytesRead += chunkSize;
             }
 
+            // Mark the frame as end-masked
+            if (masked) frame[1] &= 0x7F;
+
             return new Frame(frame, payloadBuilder.toByteArray());
         } finally {
             Arrays.fill(chunk, (byte) 0);
