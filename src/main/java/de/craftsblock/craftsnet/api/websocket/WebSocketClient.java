@@ -399,10 +399,11 @@ public class WebSocketClient implements Runnable, RequireAble {
             try {
                 method.setAccessible(true);
                 Object result = method.invoke(handler, passingArgs);
-                if (result == null) return;
+                if (result == null || !isConnected() || !isActive()) return;
+
                 this.sendMessage(result);
             } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Could not call %s#%s(%s) with argument (%s)".formatted(
+                throw new RuntimeException("Could not call %s#%s(%s) with arguments (%s)".formatted(
                         method.getDeclaringClass().getSimpleName(),
                         method.getName(),
                         String.join(", ", Arrays.stream(method.getParameterTypes()).map(Class::getSimpleName).toList()),
@@ -493,7 +494,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             message.set("error.identifier", errorID);
         } else logger.error(t);
 
-        sendMessage(message);
+        if (isConnected() && isActive()) sendMessage(message);
     }
 
     /**
