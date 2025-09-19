@@ -52,12 +52,12 @@ public record AddonMeta(String name, String mainClass, String description, List<
         addMultiple(authors, json, "authors");
 
         return new AddonMeta(
-                json.getString("name"),
-                jsonSafelyGet(json, "main", json::getString, ""),
-                jsonSafelyGet(json, "description", json::getString, ""),
+                json.getString("name", null),
+                json.getString("main", ""),
+                json.getString("description", ""),
                 authors,
-                jsonSafelyGet(json, "website", json::getString, ""),
-                jsonSafelyGet(json, "version", json::getString, ""),
+                json.getString("website", ""),
+                json.getString("version", ""),
                 jsonSafelyGet(json, "depends", json::getStringList, new ArrayList<String>()).toArray(String[]::new),
                 jsonSafelyGet(json, "softDepends", json::getStringList, new ArrayList<String>()).toArray(String[]::new),
                 jsonSafelyGet(json, "repositories", json::getStringList, new ArrayList<String>()).toArray(String[]::new),
