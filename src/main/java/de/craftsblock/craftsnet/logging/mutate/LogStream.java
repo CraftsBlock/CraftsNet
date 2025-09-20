@@ -31,7 +31,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.3
+ * @version 1.2.5
  * @see MutatedPrintStream
  * @since 3.0.2-SNAPSHOT
  */
@@ -43,6 +43,7 @@ public class LogStream {
     private final long max;
 
     private final List<LogStreamMutator> logStreamMutators = new ArrayList<>();
+    private final List<LogStreamMutator> unmodifiableLogStreamMutatorsView = Collections.unmodifiableList(logStreamMutators);
 
     private OutputStream stream;
     private PrintStream oldOut;
@@ -111,7 +112,7 @@ public class LogStream {
      */
     public List<LogStreamMutator> getLogStreamMutators() {
         synchronized (logStreamMutators) {
-            return Collections.unmodifiableList(logStreamMutators);
+            return unmodifiableLogStreamMutatorsView;
         }
     }
 

@@ -17,9 +17,7 @@ import org.jetbrains.annotations.ApiStatus;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.regex.Pattern;
@@ -29,7 +27,7 @@ import java.util.regex.Pattern;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.4
+ * @version 1.0.5
  * @since 3.2.1-SNAPSHOT
  */
 public class RequirementRegistry {
@@ -37,7 +35,9 @@ public class RequirementRegistry {
     private final CraftsNet craftsNet;
     private final RouteRegistry routeRegistry;
 
-    private final ConcurrentHashMap<Class<? extends Server>, ConcurrentLinkedQueue<Requirement<? extends RequireAble, RouteRegistry.EndpointMapping>>> requirements = new ConcurrentHashMap<>();
+    private final Map<Class<? extends Server>, Queue<Requirement<? extends RequireAble>>> requirements = new ConcurrentHashMap<>();
+
+    private final Map<Class<? extends Server>, Queue<Requirement<? extends RequireAble>>> unmodifiableRequirementView = Collections.unmodifiableMap(requirements);
 
     /**
      * Constructs a new instance of the {@link RequirementRegistry}
@@ -213,8 +213,8 @@ public class RequirementRegistry {
      *
      * @return A map which contains all the requirement processors per server sorted.
      */
-    public ConcurrentHashMap<Class<? extends Server>, ConcurrentLinkedQueue<Requirement<? extends RequireAble, RouteRegistry.EndpointMapping>>> getRequirements() {
-        return new ConcurrentHashMap<>(Collections.unmodifiableMap(requirements));
+    public Map<Class<? extends Server>, Queue<Requirement<? extends RequireAble>>> getRequirements() {
+        return unmodifiableRequirementView;
     }
 
     /**
@@ -223,8 +223,9 @@ public class RequirementRegistry {
      * @param server The server system the requirement processors should be loaded from.
      * @return A list which contains all the requirement processors for the specific server system.
      */
-    public Collection<Requirement<? extends RequireAble, RouteRegistry.EndpointMapping>> getRequirements(Class<? extends Server> server) {
-        return requirements.containsKey(server) ? Collections.unmodifiableCollection(requirements.get(server)) : List.of();
+    public Collection<Requirement<? extends RequireAble>> getRequirements(Class<? extends Server> server) {
+        return requirements.containsKey(server) ? requirements.get(server) : Collections.emptyList();
+    }
     }
 
     /**
