@@ -15,6 +15,7 @@ import de.craftsblock.craftsnet.api.websocket.annotations.ApplyDecoder;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -508,12 +509,14 @@ public class RouteRegistry {
                 .map(Map.Entry::getValue)
                 .flatMap(Collection::stream)
                 .filter(mapping -> craftsNet.getRequirementRegistry().getRequirements(server).parallelStream()
-                        .filter(requirement ->
-                                Utils.checkForMethod(requirement.getClass(), "applies", target.getClass(), EndpointMapping.class))
                         .map(requirement -> {
-                            var method = Utils.getMethod(requirement.getClass(), "applies", target.getClass(), EndpointMapping.class);
+                            Class<? extends RequireAble> targetClass = target.getClass();
+
+                            var method = ReflectionUtils.findMethod(requirement.getClass(), "applies", targetClass, EndpointMapping.class);
+                            if (method == null || !TypeUtils.isAssignable(targetClass, method.getParameterTypes()[0])) return null;
+
                             return Map.entry(requirement, Objects.requireNonNull(method));
-                        })
+                        }).filter(Objects::nonNull)
                         .allMatch(requirementEntry -> {
                             var requirement = requirementEntry.getKey();
                             var method = requirementEntry.getValue();

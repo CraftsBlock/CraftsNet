@@ -1,13 +1,13 @@
 package de.craftsblock.craftsnet.api.transformers;
 
 import de.craftsblock.craftscore.cache.DoubleKeyedCache;
-import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Handler;
 import de.craftsblock.craftsnet.api.transformers.annotations.Transformer;
 import de.craftsblock.craftsnet.api.transformers.annotations.TransformerCollection;
 import de.craftsblock.craftsnet.api.transformers.exceptions.TransformerException;
 import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -30,7 +30,7 @@ import static de.craftsblock.craftsnet.utils.Utils.getGroupNames;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.1
+ * @version 1.2.2
  * @see Transformer
  * @see TransformerCollection
  * @see Transformable
@@ -130,7 +130,7 @@ public class TransformerPerformer {
 
                     // Gets and checks if a method for an alternative transformation is present.
                     // This allows for example the use of both Integer and int
-                    Method converter = Utils.getMethod(value.getClass(), name + "Value");
+                    Method converter = ReflectionUtils.findMethod(value.getClass(), name + "Value");
                     if (converter == null) continue;
 
                     // Set the value of the argument to the return of the method for alternativ transformation.
@@ -249,7 +249,7 @@ public class TransformerPerformer {
             return transformerCache.get(type, value);
 
         // Search for the transform method on the transformable
-        Method transformerMethod = Utils.getMethod(type, "transform", Object.class);
+        Method transformerMethod = ReflectionUtils.findMethod(type, "transform", Object.class);
         if (transformerMethod == null)
             throw new IllegalStateException("Transformer " + type.getName() + " does not have a transformer method!");
 

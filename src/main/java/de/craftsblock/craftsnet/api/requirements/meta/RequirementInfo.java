@@ -21,7 +21,7 @@ import java.util.stream.Stream;
  * @param values     A map of key-value pairs representing the annotation's values.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.2
  * @see RequirementMeta
  * @see RequirementStore
  * @since 3.1.0-SNAPSHOT
@@ -75,7 +75,7 @@ public record RequirementInfo(Class<? extends Annotation> annotation, Requiremen
         // Collect methods explicitly defined in the metadata
         List<Method> methods = new ArrayList<>();
         methods.addAll(Arrays.stream(meta.methods())
-                .map(name -> Utils.getMethod(type, name))
+                .map(name -> ReflectionUtils.findMethod(type, name))
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet()));
 
