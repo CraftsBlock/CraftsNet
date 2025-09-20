@@ -37,7 +37,7 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.0.6-SNAPSHOT
  */
 public class Frame implements RequireAble {
@@ -347,7 +347,9 @@ public class Frame implements RequireAble {
         long bytesRead = 0;
         byte[] chunk = new byte[4096];
 
-        try (ByteArrayOutputStream payloadBuilder = new ByteArrayOutputStream((int) payloadLength)) {
+        try {
+            java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate((int) payloadLength);
+
             while (bytesRead < payloadLength) {
                 int toRead = (int) Math.min(chunk.length, payloadLength - bytesRead);
                 int chunkSize = stream.read(chunk, 0, toRead);
@@ -360,20 +362,20 @@ public class Frame implements RequireAble {
                     for (int i = 0; i < chunkSize; i++)
                         chunk[i] ^= masks[(int) ((bytesRead + i) % 4)];
 
-                payloadBuilder.write(chunk, 0, chunkSize);
+                buffer.put(chunk, 0, chunkSize);
                 bytesRead += chunkSize;
             }
 
             // Mark the frame as end-masked
             if (masked) frame[1] &= 0x7F;
 
-            int actualLength = payloadBuilder.size();
+            int actualLength = buffer.position();
             if (payloadLength != actualLength)
                 throw new IllegalStateException("Incorrect payload length, while reading a frame. (Got: %s, Expected: %s)".formatted(
                         payloadLength, actualLength
                 ));
 
-            return new Frame(frame, payloadBuilder.toByteArray());
+            return new Frame(frame, buffer.array());
         } finally {
             Arrays.fill(chunk, (byte) 0);
         }
