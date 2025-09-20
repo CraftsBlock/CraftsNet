@@ -58,7 +58,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.8
+ * @version 3.6.9
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -96,6 +96,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
     private BufferedReader reader;
     private OutputStream writer;
+    private final Object writerLock = new Object();
 
     private final CraftsNet craftsNet;
     private final Logger logger;
@@ -992,15 +993,15 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @throws IOException If an IO error occurs while sending the frame.
      * @since 3.4.0-SNAPSHOT
      */
-    private synchronized void sendMessageFrames(Frame... frames) throws IOException {
-        for (Frame frame : frames)
-            try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-                for (WebSocketExtension extension : this.extensions)
-                    frame = extension.encode(frame);
+    private void sendMessageFrames(Frame... frames) throws IOException {
+        for (Frame frame : frames) {
+            for (WebSocketExtension extension : this.extensions)
+                frame = extension.encode(frame);
 
-                frame.write(outputStream);
-                this.sendMessageRaw(outputStream.toByteArray());
+            synchronized (this.writerLock) {
+                frame.write(this.writer);
             }
+        }
     }
 
     /**
@@ -1010,8 +1011,10 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @throws IOException If an IO error occurs while sending the bytes.
      * @since 3.4.0-SNAPSHOT
      */
-    private synchronized void sendMessageRaw(byte[] data) throws IOException {
-        this.writer.write(data);
+    private void sendMessageRaw(byte[] data) throws IOException {
+        synchronized (this.writerLock) {
+            this.writer.write(data);
+        }
     }
 
     /**
