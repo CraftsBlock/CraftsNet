@@ -1,6 +1,5 @@
 package de.craftsblock.craftsnet.api.requirements.web;
 
-import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
 
@@ -11,11 +10,11 @@ import java.lang.annotation.Annotation;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.1.0
  * @see Requirement
  * @since 3.0.5-SNAPSHOT
  */
-public abstract class WebRequirement extends Requirement<Request, RouteRegistry.EndpointMapping> {
+public abstract class WebRequirement extends Requirement<Request> {
 
     /**
      * Constructs a new web requirement with the specified annotation class. The annotation will

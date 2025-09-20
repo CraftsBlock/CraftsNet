@@ -112,13 +112,13 @@ public class RequirementRegistry {
      * @param requirement The requirement which should be registered.
      * @param process     Whether if all registered endpoints should receive the new requirement (true) or not (false).
      */
-    private void registerRaw(Class<? extends Server> target, Requirement<? extends RequireAble, RouteRegistry.EndpointMapping> requirement,
+    private void registerRaw(Class<? extends Server> target, Requirement<? extends RequireAble> requirement,
                              boolean process) {
         this.requirements.computeIfAbsent(target, c -> new ConcurrentLinkedQueue<>()).add(requirement);
         var serverMappings = routeRegistry.getServerMappings();
         if (!process || !serverMappings.containsKey(target)) return;
 
-        ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<RouteRegistry.EndpointMapping>> patternedMappings = serverMappings.get(target);
+        Map<Pattern, ConcurrentLinkedQueue<RouteRegistry.EndpointMapping>> patternedMappings = serverMappings.get(target);
         if (patternedMappings.isEmpty()) return;
 
         List<Class<? extends Annotation>> annotations = Collections.singletonList(requirement.getAnnotation());
@@ -150,7 +150,7 @@ public class RequirementRegistry {
      */
     @SuppressWarnings("unchecked")
     public boolean isRegistered(WebSocketRequirement<? extends RequireAble> handler) {
-        return isRegistered((Class<? extends Requirement<? extends RequireAble, RouteRegistry.EndpointMapping>>) handler.getClass());
+        return isRegistered((Class<? extends Requirement<? extends RequireAble>>) handler.getClass());
     }
 
     /**
@@ -159,7 +159,7 @@ public class RequirementRegistry {
      * @param type The class representation of the {@link Requirement} to check.
      * @return {@code true} when the {@link Requirement} was registered, {@code false} otherwise.
      */
-    public boolean isRegistered(Class<? extends Requirement<? extends RequireAble, RouteRegistry.EndpointMapping>> type) {
+    public boolean isRegistered(Class<? extends Requirement<? extends RequireAble>> type) {
         if (requirements.isEmpty()) return false;
 
         Class<? extends Server> server;
