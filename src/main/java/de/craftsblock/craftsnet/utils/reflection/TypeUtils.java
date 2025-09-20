@@ -3,7 +3,9 @@ package de.craftsblock.craftsnet.utils.reflection;
 import org.jetbrains.annotations.Contract;
 
 import java.lang.reflect.*;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 /**
@@ -17,31 +19,35 @@ import java.util.Map;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.2
  * @since 3.5.0
  */
 public class TypeUtils {
 
-    private static final Map<Class<?>, Class<?>> PRIMITIVE_TO_WRAPPER = Map.of(
-            boolean.class, Boolean.class,
-            byte.class, Byte.class,
-            char.class, Character.class,
-            short.class, Short.class,
-            int.class, Integer.class,
-            long.class, Long.class,
-            float.class, Float.class,
-            double.class, Double.class,
-            void.class, Void.class
-    );
+    private static final Map<Class<?>, Class<?>> PRIMITIVE_TO_WRAPPER = buildWrapperMap();
 
-    private static final Map<Class<?>, Class<?>> WRAPPER_TO_PRIMITIVE;
+    private static final Map<Class<?>, Class<?>> WRAPPER_TO_PRIMITIVE = invertWrapperMap();
 
-    static {
-        Map<Class<?>, Class<?>> primitives = new HashMap<>(PRIMITIVE_TO_WRAPPER.size());
+    private static Map<Class<?>, Class<?>> buildWrapperMap() {
+        Map<Class<?>, Class<?>> wrappers = new IdentityHashMap<>(9);
+        wrappers.put(Boolean.TYPE, Boolean.class);
+        wrappers.put(Byte.TYPE, Byte.class);
+        wrappers.put(Character.TYPE, Character.class);
+        wrappers.put(Short.TYPE, Short.class);
+        wrappers.put(Integer.TYPE, Integer.class);
+        wrappers.put(Long.TYPE, Long.class);
+        wrappers.put(Float.TYPE, Float.class);
+        wrappers.put(Double.TYPE, Double.class);
+        wrappers.put(Void.TYPE, Void.class);
+        return Collections.unmodifiableMap(wrappers);
+    }
+
+    private static Map<Class<?>, Class<?>> invertWrapperMap() {
+        Map<Class<?>, Class<?>> primitives = new IdentityHashMap<>(PRIMITIVE_TO_WRAPPER.size());
         for (Map.Entry<Class<?>, Class<?>> entry : PRIMITIVE_TO_WRAPPER.entrySet())
             primitives.put(entry.getValue(), entry.getKey());
 
-        WRAPPER_TO_PRIMITIVE = primitives;
+        return Collections.unmodifiableMap(primitives);
     }
 
     /**
