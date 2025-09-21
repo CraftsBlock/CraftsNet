@@ -52,13 +52,13 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.5.1
+ * @version 3.5.3
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
 
     // Global variables
-    public static final String version = "3.5.2";
+    public static final String version = "3.5.3";
 
     // Local instance
     private CraftsNetBuilder builder;
