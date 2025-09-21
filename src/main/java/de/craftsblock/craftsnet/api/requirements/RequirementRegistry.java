@@ -5,6 +5,7 @@ import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.api.http.WebServer;
 import de.craftsblock.craftsnet.api.requirements.meta.RequirementInfo;
+import de.craftsblock.craftsnet.api.requirements.meta.RequirementMethodLink;
 import de.craftsblock.craftsnet.api.requirements.meta.RequirementType;
 import de.craftsblock.craftsnet.api.requirements.web.*;
 import de.craftsblock.craftsnet.api.requirements.websocket.MessageTypeRequirement;
@@ -27,7 +28,7 @@ import java.util.regex.Pattern;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.5
+ * @version 1.0.6
  * @since 3.2.1-SNAPSHOT
  */
 public class RequirementRegistry {
@@ -38,6 +39,8 @@ public class RequirementRegistry {
     private final Map<Class<? extends Server>, Queue<Requirement<? extends RequireAble>>> requirements = new ConcurrentHashMap<>();
 
     private final Map<Class<? extends Server>, Queue<Requirement<? extends RequireAble>>> unmodifiableRequirementView = Collections.unmodifiableMap(requirements);
+
+    private final Map<Class<? extends Server>, Queue<RequirementMethodLink<?>>> requirementMethodLinks = new ConcurrentHashMap<>();
 
     /**
      * Constructs a new instance of the {@link RequirementRegistry}
@@ -112,8 +115,12 @@ public class RequirementRegistry {
      * @param requirement The requirement which should be registered.
      * @param process     Whether if all registered endpoints should receive the new requirement (true) or not (false).
      */
+    @SuppressWarnings("unchecked")
     private void registerRaw(Class<? extends Server> target, Requirement<? extends RequireAble> requirement,
                              boolean process) {
+        requirementMethodLinks.computeIfAbsent(target, s -> new ConcurrentLinkedQueue<>())
+                .add(RequirementMethodLink.create(requirement));
+
         this.requirements.computeIfAbsent(target, c -> new ConcurrentLinkedQueue<>()).add(requirement);
         var serverMappings = routeRegistry.getServerMappings();
         if (!process || !serverMappings.containsKey(target)) return;
@@ -226,6 +233,19 @@ public class RequirementRegistry {
     public Collection<Requirement<? extends RequireAble>> getRequirements(Class<? extends Server> server) {
         return requirements.containsKey(server) ? requirements.get(server) : Collections.emptyList();
     }
+
+    /**
+     * Retrieves all {@link RequirementMethodLink} instances associated with a specific
+     * server type.
+     *
+     * @param server The server type for which requirement method links should be retrieved.
+     * @return A collection of {@link RequirementMethodLink} instances, or an empty
+     * collection if no requirements are registered for the server.
+     * @since 3.5.3
+     */
+    @ApiStatus.Experimental
+    public Collection<RequirementMethodLink<?>> getRequirementMethodLinks(Class<? extends Server> server) {
+        return requirementMethodLinks.containsKey(server) ? requirementMethodLinks.get(server) : Collections.emptyList();
     }
 
     /**

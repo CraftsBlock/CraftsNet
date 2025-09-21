@@ -433,12 +433,14 @@ public class WebSocketClient implements Runnable, RequireAble {
     private boolean processRequirements(EndpointMapping mapping, Frame frame) {
         if (!craftsNet.getRequirementRegistry().getRequirements().containsKey(WebSocketServer.class)) return false;
 
-        for (var requirement : craftsNet.getRequirementRegistry().getRequirements().get(WebSocketServer.class))
+        for (var requirementLink : craftsNet.getRequirementRegistry().getRequirementMethodLinks(WebSocketServer.class))
             try {
-                Method m = Utils.getMethod(requirement.getClass(), "applies", Frame.class, EndpointMapping.class);
-                if (m == null) continue;
-                if (!((Boolean) m.invoke(requirement, frame, mapping))) return true;
-            } catch (NullPointerException | AssertionError | IllegalAccessException | InvocationTargetException ignored) {
+                Method method = requirementLink.method();
+                if (method == null || !TypeUtils.isAssignable(Frame.class, method.getParameterTypes()[0])) continue;
+
+                boolean applies = (Boolean) ReflectionUtils.invokeMethod(requirementLink.requirement(), method, frame, mapping);
+                if (!applies) return true;
+            } catch (NullPointerException | AssertionError ignored) {
             }
 
         return false;

@@ -42,7 +42,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.5.2
+ * @version 3.5.3
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -508,12 +508,13 @@ public class RouteRegistry {
                 .filter(entry -> entry.getKey().matcher(formatUrl(url)).matches())
                 .map(Map.Entry::getValue)
                 .flatMap(Collection::stream)
-                .filter(mapping -> craftsNet.getRequirementRegistry().getRequirements(server).parallelStream()
-                        .map(requirement -> {
-                            Class<? extends RequireAble> targetClass = target.getClass();
+                .filter(mapping -> craftsNet.getRequirementRegistry().getRequirementMethodLinks(server).parallelStream()
+                        .map(methodLink -> {
+                            Requirement<?> requirement = methodLink.requirement();
 
-                            var method = ReflectionUtils.findMethod(requirement.getClass(), "applies", targetClass, EndpointMapping.class);
-                            if (method == null || !TypeUtils.isAssignable(targetClass, method.getParameterTypes()[0])) return null;
+                            Method method = methodLink.method();
+                            if (method == null || !TypeUtils.isAssignable(target.getClass(), method.getParameterTypes()[0]))
+                                return null;
 
                             return Map.entry(requirement, Objects.requireNonNull(method));
                         }).filter(Objects::nonNull)
