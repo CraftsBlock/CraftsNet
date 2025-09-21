@@ -60,7 +60,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.9
+ * @version 3.6.10
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -788,10 +788,10 @@ public class WebSocketClient implements Runnable, RequireAble {
             var encoders = server.getTypeEncoderRegistry();
             Class<?> type = data.getClass();
             if (encoders.hasCodec(type)) {
-                var encoder = encoders.getCodec(type);
+                var codecLink = encoders.getLinkedCodecMethod(type);
 
-                if (encoder != null) {
-                    var result = ReflectionUtils.invokeMethod(encoder, "encode", data);
+                if (codecLink != null) {
+                    var result = ReflectionUtils.invokeMethod(codecLink.codec(), codecLink.method(), data);
                     this.sendMessage(result);
                     return;
                 }

@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.codec.registry;
 
 import de.craftsblock.craftsnet.api.codec.Codec;
+import de.craftsblock.craftsnet.api.codec.CodecMethodLink;
 import de.craftsblock.craftsnet.api.codec.CodecPair;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import org.jetbrains.annotations.NotNull;
@@ -11,6 +12,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -26,13 +28,14 @@ import java.util.concurrent.ConcurrentHashMap;
  * @param <P> the pair type that wraps the codec and its target class
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.5.0
  */
 public sealed abstract class TypeCodecRegistry<C extends Codec<?, ?>, P extends CodecPair<?, ?>>
         permits TypeDecoderRegistry, TypeEncoderRegistry {
 
-    final ConcurrentHashMap<Class<?>, CodecPair<?, C>> codecPairs = new ConcurrentHashMap<>();
+    final ConcurrentHashMap<Class<?>, CodecMethodLink<C, P>> codecMethodLinks = new ConcurrentHashMap<>();
+    final Map<Class<?>, CodecMethodLink<C, P>> unmodifiableCodecMethodLinksView = Collections.unmodifiableMap(codecMethodLinks);
     final Class<? extends CodecPair<?, C>> codecPairTyp;
 
     /**
@@ -58,15 +61,13 @@ public sealed abstract class TypeCodecRegistry<C extends Codec<?, ?>, P extends 
      * @param codec The codec instance to register.
      * @return The previously registered codec for the same type, or {@code null} if none existed.
      */
-    public @Nullable C register(@NotNull C codec) {
+    @SuppressWarnings("unchecked")
+    public CodecMethodLink<C, P> register(@NotNull C codec) {
         try {
             var type = this.retrieveCodecType(codec.getClass());
 
             var pair = getPairConstructor().newInstance(type, codec);
-            var old = codecPairs.put(type, pair);
-
-            if (old == null) return null;
-            return old.getCodec();
+            return codecMethodLinks.put(type, (CodecMethodLink<C, P>) CodecMethodLink.create(pair));
         } catch (IllegalAccessException | InvocationTargetException | InstantiationException e) {
             throw new RuntimeException("Could not generate %s!".formatted(this.codecPairTyp.getSimpleName()), e);
         }
@@ -79,7 +80,7 @@ public sealed abstract class TypeCodecRegistry<C extends Codec<?, ?>, P extends 
      */
     public void unregister(@NotNull C codec) {
         var type = this.retrieveCodecType(codec.getClass());
-        this.codecPairs.remove(type);
+        this.codecMethodLinks.remove(type);
     }
 
     /**
@@ -90,7 +91,7 @@ public sealed abstract class TypeCodecRegistry<C extends Codec<?, ?>, P extends 
      */
     public boolean isRegistered(@NotNull C codec) {
         var type = this.retrieveCodecType(codec.getClass());
-        return this.codecPairs.containsKey(type);
+        return this.codecMethodLinks.containsKey(type);
     }
 
     /**
@@ -100,24 +101,36 @@ public sealed abstract class TypeCodecRegistry<C extends Codec<?, ?>, P extends 
      * @return The associated codec, or {@code null} if none found.
      */
     public @Nullable C getCodec(@Nullable Class<?> type) {
+        return getLinkedCodecMethod(type).codec();
+    }
+
+    /**
+     * Attempts to resolve a {@link CodecMethodLink} for the given type.
+     * If no match is found, {@code null} is returned.
+     *
+     * @param type the class type to resolve a codec link for, may be {@code null}
+     * @return the matching {@link CodecMethodLink}, or {@code null} if none is found
+     * @since 3.5.3
+     */
+    public CodecMethodLink<C, P> getLinkedCodecMethod(@Nullable Class<?> type) {
         if (type == null) return null;
 
-        if (codecPairs.containsKey(type))
-            return codecPairs.get(type).getCodec();
+        if (codecMethodLinks.containsKey(type))
+            return codecMethodLinks.get(type);
 
         // Handle superclass
         Class<?> superclass = type.getSuperclass();
-        C superclassCodec = getCodec(superclass);
-        if (superclassCodec != null) return superclassCodec;
+        CodecMethodLink<C, P> superclassCodecLink = getLinkedCodecMethod(superclass);
+        if (superclassCodecLink != null) return superclassCodecLink;
 
         // Handle interfaces
         for (Class<?> iface : type.getInterfaces()) {
-            C codec = getCodec(iface);
-            if (codec == null) continue;
-            return codec;
+            CodecMethodLink<C, P> codecLink = getLinkedCodecMethod(iface);
+            if (codecLink == null) continue;
+            return codecLink;
         }
 
-        // Return null, as no codec could be found for the type
+        // Return null, as no linked codec could be found for the type
         return null;
     }
 
@@ -129,7 +142,7 @@ public sealed abstract class TypeCodecRegistry<C extends Codec<?, ?>, P extends 
      */
     public boolean hasCodec(@Nullable Class<?> type) {
         if (type == null) return false;
-        if (codecPairs.containsKey(type)) return true;
+        if (codecMethodLinks.containsKey(type)) return true;
 
         // Handle superclass
         Class<?> superclass = type.getSuperclass();
@@ -149,7 +162,7 @@ public sealed abstract class TypeCodecRegistry<C extends Codec<?, ?>, P extends 
      * @return An unmodifiable {@link Collection} of all {@link Codec codecs}.
      */
     public @NotNull @Unmodifiable Collection<C> getCodecs() {
-        return codecPairs.values().stream().map(CodecPair::getCodec).toList();
+        return codecMethodLinks.values().stream().map(CodecMethodLink::codec).toList();
     }
 
     /**
@@ -157,8 +170,8 @@ public sealed abstract class TypeCodecRegistry<C extends Codec<?, ?>, P extends 
      *
      * @return An unmodifiable {@link Collection} of all {@link CodecPair codec pairs}.
      */
-    public @NotNull @Unmodifiable Collection<CodecPair<?, C>> getCodecPairs() {
-        return Collections.unmodifiableCollection(codecPairs.values());
+    public @NotNull @Unmodifiable Collection<CodecMethodLink<C, P>> getCodecPairs() {
+        return unmodifiableCodecMethodLinksView.values();
     }
 
     /**
@@ -170,7 +183,7 @@ public sealed abstract class TypeCodecRegistry<C extends Codec<?, ?>, P extends 
      * @return An unmodifiable {@link Collection} of registered {@link Class} types.
      */
     public @NotNull @Unmodifiable Collection<Class<?>> getAllKnownTypes() {
-        return Collections.unmodifiableCollection(codecPairs.keySet());
+        return unmodifiableCodecMethodLinksView.keySet();
     }
 
     /**
