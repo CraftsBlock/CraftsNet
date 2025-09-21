@@ -50,33 +50,33 @@ dependencies {
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
     // https://mvnrepository.com/artifact/org.apache.tika/tika-core
-    implementation 'org.apache.tika:tika-core:3.2.2'
+    implementation 'org.apache.tika:tika-core:3.2.3'
 
     // https://mvnrepository.com/artifact/org.jetbrains/annotations
-    implementation 'org.jetbrains:annotations:26.0.2'
+    implementation 'org.jetbrains:annotations:26.0.2-1'
 
     // Artifact resolving dependencies ----------------------------------------------------------------------------------------
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-api
-    implementation 'org.apache.maven.resolver:maven-resolver-api:2.0.10'
+    implementation 'org.apache.maven.resolver:maven-resolver-api:2.0.11'
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-connector-basic
-    implementation 'org.apache.maven.resolver:maven-resolver-connector-basic:2.0.10'
+    implementation 'org.apache.maven.resolver:maven-resolver-connector-basic:2.0.11'
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-impl
-    implementation 'org.apache.maven.resolver:maven-resolver-impl:2.0.10'
+    implementation 'org.apache.maven.resolver:maven-resolver-impl:2.0.11'
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-supplier-mvn4
-    implementation 'org.apache.maven.resolver:maven-resolver-supplier-mvn4:2.0.10'
+    implementation 'org.apache.maven.resolver:maven-resolver-supplier-mvn4:2.0.11'
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-transport-file
-    implementation 'org.apache.maven.resolver:maven-resolver-transport-file:2.0.10'
+    implementation 'org.apache.maven.resolver:maven-resolver-transport-file:2.0.11'
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-transport-http
     implementation 'org.apache.maven.resolver:maven-resolver-transport-http:2.0.0-alpha-2'
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-util
-    implementation 'org.apache.maven.resolver:maven-resolver-util:2.0.10'
+    implementation 'org.apache.maven.resolver:maven-resolver-util:2.0.11'
 }
 
 tasks.withType(JavaCompile).configureEach {
