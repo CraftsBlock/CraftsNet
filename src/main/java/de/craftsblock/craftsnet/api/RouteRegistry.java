@@ -139,7 +139,7 @@ public class RouteRegistry {
                     ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements = new ConcurrentHashMap<>();
                     craftsNet.getRequirementRegistry().loadRequirements(requirements, requirementAnnotations, method, handler);
 
-                    Stack<Middleware> middlewares = craftsNet.getMiddlewareRegistry().resolveMiddlewares(handler, method);
+                    Deque<Middleware> middlewares = craftsNet.getMiddlewareRegistry().resolveMiddlewares(handler, method);
 
                     // Register the endpoint mapping
                     ConcurrentLinkedQueue<EndpointMapping> mappings = endpoints.computeIfAbsent(validator, pattern -> new ConcurrentLinkedQueue<>());
@@ -655,12 +655,13 @@ public class RouteRegistry {
      * @param handler      The {@link Handler} instance that owns the method.
      * @param validator    The {@link Pattern} used for validating input related to the endpoint.
      * @param requirements A concurrent map of requirements, indexed by their annotation class.
+     * @param middlewares  A {@link Deque} containing locally present middlewares
      * @version 2.0.0
      * @since 3.0.5-SNAPSHOT
      */
     public record EndpointMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull Handler handler,
                                   @NotNull Pattern validator, ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements,
-                                  Stack<Middleware> middlewares) implements Mapping {
+                                  Deque<Middleware> middlewares) implements Mapping {
 
         /**
          * Checks whether the given annotation is present in the requirements.

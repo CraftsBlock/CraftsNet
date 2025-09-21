@@ -8,7 +8,12 @@ import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
+import java.util.Deque;
+import java.util.Map;
 import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 /**
@@ -16,13 +21,17 @@ import java.util.stream.Collectors;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @see Middleware
  * @since 3.4.0-SNAPSHOT
  */
 public class MiddlewareRegistry {
 
-    private final Stack<Middleware> middlewares = new Stack<>();
+    private final Map<Class<? extends Server>, Deque<Middleware>> middlewares = new ConcurrentHashMap<>();
+
+    public MiddlewareRegistry() {
+        Server.SERVER_TYPES.forEach(type -> middlewares.put(type, new ConcurrentLinkedDeque<>()));
+    }
 
     /**
      * Registers a {@link Middleware middleware} that should be applied
@@ -32,7 +41,10 @@ public class MiddlewareRegistry {
      */
     public void register(Middleware middleware) {
         if (isRegistered(middleware)) return;
-        middlewares.add(middleware);
+        Server.SERVER_TYPES.forEach(type -> {
+            if (!middleware.isApplicable(type)) return;
+            middlewares.get(type).add(middleware);
+        });
     }
 
     /**
@@ -42,7 +54,10 @@ public class MiddlewareRegistry {
      * @param middleware The {@link Middleware middleware} to register.
      */
     public void unregister(Middleware middleware) {
-        middlewares.remove(middleware);
+        Server.SERVER_TYPES.forEach(type -> {
+            if (!middleware.isApplicable(type)) return;
+            middlewares.get(type).remove(middleware);
+        });
     }
 
     /**
@@ -53,17 +68,22 @@ public class MiddlewareRegistry {
      * @return {@code true} if it is register for global appliance, {@code false} otherwise.
      */
     public boolean isRegistered(Middleware middleware) {
-        return middlewares.stream()
-                .map(Object::getClass)
-                .anyMatch(type -> type.equals(middleware.getClass()));
+        AtomicBoolean registered = new AtomicBoolean(true);
+
+        Server.SERVER_TYPES.forEach(type -> {
+            if (!registered.get() || !middleware.isApplicable(type)) return;
+            registered.set(middlewares.get(type).contains(middleware));
+        });
+
+        return registered.get();
     }
 
     /**
      * Get all global applied {@link Middleware middlewares}.
      *
-     * @return A {@link Stack stack} of {@link Middleware middlewares}for global appliance.
+     * @return A {@link Deque deque} of {@link Middleware middlewares}for global appliance.
      */
-    public Stack<Middleware> getMiddlewares() {
+    public Map<Class<? extends Server>, Deque<Middleware>> getMiddlewares() {
         return middlewares;
     }
 
@@ -73,9 +93,9 @@ public class MiddlewareRegistry {
      *
      * @param exchange The exchange for which the {@link Middleware middlewares}
      *                 should be applicable.
-     * @return The {@link Stack stack} of {@link Middleware middlewares} for global appliance.
+     * @return The {@link Deque deque} of {@link Middleware middlewares} for global appliance.
      */
-    public Stack<Middleware> getMiddlewares(BaseExchange exchange) {
+    public Deque<Middleware> getMiddlewares(BaseExchange exchange) {
         return getMiddlewares(exchange.scheme().getServerRaw());
     }
 
@@ -85,46 +105,46 @@ public class MiddlewareRegistry {
      *
      * @param server The {@link Server server} type for which the
      *               {@link Middleware middlewares} should be applicable.
-     * @return The {@link Stack stack} of {@link Middleware middlewares} for global appliance.
+     * @return The {@link Deque deque} of {@link Middleware middlewares} for global appliance.
      */
-    public Stack<Middleware> getMiddlewares(Class<? extends Server> server) {
-        return middlewares.stream().filter(middleware -> middleware.isApplicable(server)).collect(Collectors.toCollection(Stack::new));
+    public Deque<Middleware> getMiddlewares(Class<? extends Server> server) {
+        return middlewares.get(server);
     }
 
     /**
-     * Retrieves a {@link Stack stack} of {@link Middleware middlewares}
+     * Retrieves a {@link Deque stack} of {@link Middleware middlewares}
      * from a specific {@link Handler endpoint handler} nd its child
      * {@link Method method}.
      *
      * @param root    The {@link Handler endpoint handler}.
      * @param handler The {@link Method method}.
-     * @return A {@link Stack stack} of {@link Middleware middlewares} that are present.
+     * @return A {@link Deque stack} of {@link Middleware middlewares} that are present.
      */
-    public Stack<Middleware> resolveMiddlewares(Handler root, Method handler) {
-        Stack<Middleware> middlewareStack = new Stack<>();
+    public Deque<Middleware> resolveMiddlewares(Handler root, Method handler) {
+        Deque<Middleware> middelwareDeque = new ConcurrentLinkedDeque<>();
 
         Class<? extends Handler> type = root.getClass();
-        this.resolveMiddlewares(type, middlewareStack);
-        this.resolveMiddlewares(handler, middlewareStack);
+        this.resolveMiddlewares(type, middelwareDeque);
+        this.resolveMiddlewares(handler, middelwareDeque);
 
-        return middlewareStack.stream().collect(Collectors.toCollection(Stack::new));
+        return middelwareDeque;
     }
 
     /**
-     * Retrieves a {@link Stack stack} of {@link Middleware middlewares}
-     * from a {@link AnnotatedElement} and push it into an existing stack.
+     * Retrieves a {@link Deque deque} of {@link Middleware middlewares}
+     * from a {@link AnnotatedElement} and push it into an existing deque.
      *
      * @param element The {@link AnnotatedElement} to search on.
-     * @param stack   The {@link Stack stack} where the result should be pushed to.
+     * @param deque   The {@link Stack deque} where the result should be pushed to.
      */
-    private void resolveMiddlewares(AnnotatedElement element, Stack<Middleware> stack) {
-        this.unpackMiddleware(ReflectionUtils.retrieveRawAnnotation(element, ApplyMiddleware.class), stack);
+    private void resolveMiddlewares(AnnotatedElement element, Deque<Middleware> deque) {
+        this.unpackMiddleware(ReflectionUtils.retrieveRawAnnotation(element, ApplyMiddleware.class), deque);
 
         if (ReflectionUtils.isAnnotationPresent(element, ApplyMiddleware.List.class)) {
             ApplyMiddleware.List list = ReflectionUtils.retrieveRawAnnotation(element, ApplyMiddleware.List.class);
 
             for (ApplyMiddleware middleware : list.value())
-                this.unpackMiddleware(middleware, stack);
+                this.unpackMiddleware(middleware, deque);
         }
     }
 
@@ -137,7 +157,7 @@ public class MiddlewareRegistry {
      * @param stack           The {@link Stack stack} where the unpacked
      *                        {@link Middleware middlewares} should go.
      */
-    private void unpackMiddleware(ApplyMiddleware applyMiddleware, Stack<Middleware> stack) {
+    private void unpackMiddleware(ApplyMiddleware applyMiddleware, Deque<Middleware> stack) {
         if (applyMiddleware == null) return;
 
         Class<? extends Middleware>[] middlewareTypes = applyMiddleware.value();

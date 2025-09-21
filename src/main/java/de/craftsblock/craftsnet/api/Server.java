@@ -1,17 +1,31 @@
 package de.craftsblock.craftsnet.api;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.api.http.WebServer;
+import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.logging.Logger;
+
+import java.util.Collection;
+import java.util.List;
 
 /**
  * Abstract class representing a server in the CraftsNet framework.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.0.3-SNAPSHOT
  */
 public abstract class Server {
+
+    /**
+     * All known server types.
+     *
+     * @since 3.5.3
+     */
+    public static final Collection<Class<? extends Server>> SERVER_TYPES = List.of(
+            WebServer.class, WebSocketServer.class
+    );
 
     protected final CraftsNet craftsNet;
     protected final Logger logger;

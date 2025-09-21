@@ -27,6 +27,7 @@ import de.craftsblock.craftsnet.events.sockets.message.ReceivedPongMessageEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.ByteBuffer;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -42,6 +43,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -212,8 +214,9 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
 
             // Handle middleware on connect
-            MiddlewareCallbackInfo callbackInfo = new MiddlewareCallbackInfo();
-            getWebsocketMiddlewares().forEach(middleware -> middleware.handleConnect(callbackInfo, exchange));
+            MiddlewareCallbackInfo callbackInfo = performForEachAvailableMiddleware(
+                    (info, middleware) -> middleware.handleConnect(info, exchange)
+            );
 
             if (callbackInfo.isCancelled()) {
                 if (callbackInfo.hasCancelReason())
@@ -293,8 +296,9 @@ public class WebSocketClient implements Runnable, RequireAble {
         if (incomingMessageEvent.isCancelled()) return false;
 
         // Handle middlewares
-        MiddlewareCallbackInfo callbackInfo = new MiddlewareCallbackInfo();
-        getWebsocketMiddlewares().forEach(middleware -> middleware.handleMessageReceived(callbackInfo, exchange, frame));
+        MiddlewareCallbackInfo callbackInfo = performForEachAvailableMiddleware(
+                (info, middleware) -> middleware.handleMessageReceived(info, exchange, frame)
+        );
         if (callbackInfo.isCancelled())
             return true;
 
@@ -963,8 +967,9 @@ public class WebSocketClient implements Runnable, RequireAble {
                     return;
 
                 // Handle middlewares
-                MiddlewareCallbackInfo callbackInfo = new MiddlewareCallbackInfo();
-                getWebsocketMiddlewares().forEach(middleware -> middleware.handleMessageSent(callbackInfo, exchange, frame));
+                MiddlewareCallbackInfo callbackInfo = performForEachAvailableMiddleware(
+                        (info, middleware) -> middleware.handleMessageSent(info, exchange, frame)
+                );
                 if (callbackInfo.isCancelled())
                     return;
             }
@@ -1062,8 +1067,9 @@ public class WebSocketClient implements Runnable, RequireAble {
             } else
                 logger.debug("%s disconnected", ip);
 
-            MiddlewareCallbackInfo callbackInfo = new MiddlewareCallbackInfo();
-            getWebsocketMiddlewares().forEach(middleware -> middleware.handleDisconnect(callbackInfo, exchange));
+            performForEachAvailableMiddleware(
+                    (info, middleware) -> middleware.handleDisconnect(info, exchange)
+            );
 
             matcher = null;
             headers = null;
@@ -1080,24 +1086,36 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
-     * Creates a new {@link Stream stream} of {@link WebsocketMiddleware middlewares}
-     * that contains the {@link EndpointMapping mappings} middlewares as specified by
-     * {@link EndpointMapping#middlewares()} and the global registered middlewares
-     * as specified by {@link MiddlewareRegistry#getMiddlewares(Class)}.
+     * Executes the given {@link BiConsumer} for all available
+     * {@link WebsocketMiddleware} instances, including:
+     * <ul>
+     *   <li>Globally registered middlewares from
+     *       {@link MiddlewareRegistry#getMiddlewares(Class)} for {@link WebSocketServer}.</li>
+     *   <li>Middlewares defined in {@link EndpointMapping EndpointMappings}
+     *       via {@link EndpointMapping#middlewares()}.</li>
+     * </ul>
      *
-     * @return The {@link Stream stream} of {@link WebsocketMiddleware middlewares}.
-     * @since 3.4.0-SNAPSHOT
+     * @param consumer The operation to be applied to each {@link WebsocketMiddleware}.
+     * @return A new {@link MiddlewareCallbackInfo} instance serving as callback context.
+     * @since 3.5.3
      */
-    private Stream<WebsocketMiddleware> getWebsocketMiddlewares() {
-        if (this.mappings == null) return Stream.empty();
+    private MiddlewareCallbackInfo performForEachAvailableMiddleware(BiConsumer<MiddlewareCallbackInfo, WebsocketMiddleware> consumer) {
+        MiddlewareCallbackInfo callbackInfo = new MiddlewareCallbackInfo();
 
-        return Stream.concat(
-                        craftsNet.getMiddlewareRegistry().getMiddlewares(WebSocketServer.class).stream(),
-                        this.mappings.values().stream().flatMap(Collection::stream)
-                                .map(EndpointMapping::middlewares)
-                                .flatMap(Stack::stream)
-                ).map(middleware -> ReflectionUtils.castTo(middleware, WebsocketMiddleware.class))
-                .filter(Objects::nonNull);
+        craftsNet.getMiddlewareRegistry().getMiddlewares(WebSocketServer.class).forEach(middleware -> {
+            if (middleware instanceof WebsocketMiddleware websocketMiddleware)
+                consumer.accept(callbackInfo, websocketMiddleware);
+        });
+
+        this.mappings.values().forEach(mappingList -> mappingList.forEach(
+                mapping -> mapping.middlewares().forEach(
+                        middleware -> {
+                            if (middleware instanceof WebsocketMiddleware websocketMiddleware)
+                                consumer.accept(callbackInfo, websocketMiddleware);
+                        })
+        ));
+
+        return callbackInfo;
     }
 
 }
