@@ -52,7 +52,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.5.3
+ * @version 3.5.4
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -135,7 +135,7 @@ public class CraftsNet {
                 jvmVersion.toString(), jvmVersion.feature() + 44, jvmVersion.interim());
 
         // Check if version is a release as the version check is disabled for experimental builds
-        if (version.matches("^\\d+(?:\\.\\d+)*$"))
+        if (version.matches("^\\d+(?:\\.\\d+)*$") && !builder.shouldSkipVersionCheck())
             Versions.verbalCheck(this);
 
         logger.debug("Preloading gson for faster processing");
