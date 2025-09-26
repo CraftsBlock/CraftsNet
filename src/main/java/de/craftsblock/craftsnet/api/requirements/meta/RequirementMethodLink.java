@@ -1,5 +1,7 @@
 package de.craftsblock.craftsnet.api.requirements.meta;
 
+import de.craftsblock.craftsnet.api.RouteRegistry;
+import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 
@@ -14,11 +16,11 @@ import java.lang.reflect.Method;
  * @param <T>         The requirement type.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @see Requirement
  * @since 3.5.3
  */
-public record RequirementMethodLink<T extends Requirement<?>>(T requirement, Method method) {
+public record RequirementMethodLink<R extends RequireAble, T extends Requirement<R>>(T requirement, Class<R> arg, Method method) {
 
     /**
      * Creates a new {@link RequirementMethodLink} for the given requirement by
@@ -31,12 +33,13 @@ public record RequirementMethodLink<T extends Requirement<?>>(T requirement, Met
      * {@code applies(...)} method.
      */
     @SuppressWarnings("unchecked")
-    public static <T extends Requirement<?>> RequirementMethodLink<T> create(T requirement) {
+    public static <R extends RequireAble, T extends Requirement<R>> RequirementMethodLink<R, T> create(T requirement) {
         Class<T> requirementClass = (Class<T>) requirement.getClass();
-        Class<?> args = ReflectionUtils.extractGeneric(requirementClass, Requirement.class, 0);
-        Method method = ReflectionUtils.findMethod(requirementClass, "applies", args);
 
-        return new RequirementMethodLink<>(requirement, method);
+        Class<R> arg = ReflectionUtils.extractGeneric(requirementClass, Requirement.class, 0);
+        Method method = ReflectionUtils.findMethod(requirementClass, "applies", arg, RouteRegistry.EndpointMapping.class);
+
+        return new RequirementMethodLink<>(requirement, arg, method);
     }
 
 }

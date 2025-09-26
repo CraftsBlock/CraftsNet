@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.6
+ * @version 1.0.7
  * @since 3.2.1-SNAPSHOT
  */
 public class RequirementRegistry {
@@ -40,7 +40,7 @@ public class RequirementRegistry {
 
     private final Map<Class<? extends Server>, Queue<Requirement<? extends RequireAble>>> unmodifiableRequirementView = Collections.unmodifiableMap(requirements);
 
-    private final Map<Class<? extends Server>, Queue<RequirementMethodLink<?>>> requirementMethodLinks = new ConcurrentHashMap<>();
+    private final Map<Class<? extends Server>, Queue<RequirementMethodLink<?, ?>>> requirementMethodLinks = new ConcurrentHashMap<>();
 
     /**
      * Constructs a new instance of the {@link RequirementRegistry}
@@ -125,7 +125,7 @@ public class RequirementRegistry {
         var serverMappings = routeRegistry.getServerMappings();
         if (!process || !serverMappings.containsKey(target)) return;
 
-        Map<Pattern, ConcurrentLinkedQueue<RouteRegistry.EndpointMapping>> patternedMappings = serverMappings.get(target);
+        Map<Pattern, Queue<RouteRegistry.EndpointMapping>> patternedMappings = serverMappings.get(target);
         if (patternedMappings.isEmpty()) return;
 
         List<Class<? extends Annotation>> annotations = Collections.singletonList(requirement.getAnnotation());
@@ -244,7 +244,7 @@ public class RequirementRegistry {
      * @since 3.5.3
      */
     @ApiStatus.Experimental
-    public Collection<RequirementMethodLink<?>> getRequirementMethodLinks(Class<? extends Server> server) {
+    public Collection<RequirementMethodLink<?, ?>> getRequirementMethodLinks(Class<? extends Server> server) {
         return requirementMethodLinks.containsKey(server) ? requirementMethodLinks.get(server) : Collections.emptyList();
     }
 

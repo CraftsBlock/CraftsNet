@@ -42,16 +42,16 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.5.3
+ * @version 3.5.4
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
 
     private final CraftsNet craftsNet;
 
-    private final ConcurrentHashMap<Class<? extends Server>, ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<EndpointMapping>>> serverMappings = new ConcurrentHashMap<>();
+    private final Map<Class<? extends Server>, Map<Pattern, Queue<EndpointMapping>>> serverMappings = new ConcurrentHashMap<>();
 
-    private final ConcurrentHashMap<Pattern, ShareMapping> shares = new ConcurrentHashMap<>();
+    private final Map<Pattern, ShareMapping> shares = new ConcurrentHashMap<>();
 
     /**
      * Constructs a new instance of the RouteRegistry
@@ -69,7 +69,7 @@ public class RouteRegistry {
      */
     public void register(Handler handler) {
         if (isRegistered(handler)) return;
-        ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = retrieveHandlerInfoMap(handler.getClass());
+        var annotations = retrieveHandlerInfoMap(handler.getClass());
 
         for (Class<? extends Annotation> annotation : annotations.keySet())
             try {
@@ -142,7 +142,7 @@ public class RouteRegistry {
                     Deque<Middleware> middlewares = craftsNet.getMiddlewareRegistry().resolveMiddlewares(handler, method);
 
                     // Register the endpoint mapping
-                    ConcurrentLinkedQueue<EndpointMapping> mappings = endpoints.computeIfAbsent(validator, pattern -> new ConcurrentLinkedQueue<>());
+                    Queue<EndpointMapping> mappings = endpoints.computeIfAbsent(validator, pattern -> new ConcurrentLinkedQueue<>());
                     mappings.add(new EndpointMapping(
                             priority != null ? priority.value() : ProcessPriority.Priority.NORMAL,
                             method, handler, validator, requirements, middlewares
@@ -270,7 +270,7 @@ public class RouteRegistry {
             try {
                 ServerMapping mapping = annotations.get(annotation);
 
-                ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<EndpointMapping>> endpoints = serverMappings.computeIfAbsent(mapping.rawServer(), c -> new ConcurrentHashMap<>());
+                Map<Pattern, Queue<EndpointMapping>> endpoints = serverMappings.computeIfAbsent(mapping.rawServer(), c -> new ConcurrentHashMap<>());
                 String parent = ReflectionUtils.retrieveValueOfAnnotation(handler.getClass(), annotation, String.class, true);
 
                 // Continue if no handlers exists for this server type
@@ -280,7 +280,9 @@ public class RouteRegistry {
                     String child = ReflectionUtils.retrieveValueOfAnnotation(method, annotation, String.class, true);
                     endpoints.entrySet().stream()
                             .filter(entry -> entry.getKey().matcher(mergeUrl(parent != null ? parent : "", child)).matches())
-                            .peek(entry -> entry.getValue().removeIf(endpointMapping -> endpointMapping.handler().equals(handler)))
+                            .peek(entry -> entry.getValue().removeIf(
+                                    endpointMapping -> endpointMapping.handler().equals(handler)
+                            ))
                             .forEach(entry -> {
                                 if (!endpoints.containsKey(entry.getKey()) || !entry.getValue().isEmpty()) return;
                                 endpoints.remove(entry.getKey());
@@ -378,7 +380,7 @@ public class RouteRegistry {
      * @return A ConcurrentHashMap containing the registered routes.
      */
     @NotNull
-    public Map<Pattern, ConcurrentLinkedQueue<EndpointMapping>> getRoutes() {
+    public Map<Pattern, Queue<EndpointMapping>> getRoutes() {
         return getEndpoints(WebServer.class);
     }
 
@@ -410,7 +412,7 @@ public class RouteRegistry {
      * @return A ConcurrentHashMap containing the registered socket handlers.
      */
     @NotNull
-    public Map<Pattern, ConcurrentLinkedQueue<EndpointMapping>> getSockets() {
+    public Map<Pattern, Queue<EndpointMapping>> getSockets() {
         return getEndpoints(WebSocketServer.class);
     }
 
@@ -457,12 +459,12 @@ public class RouteRegistry {
      * @return The existing pattern or a new one.
      */
     @NotNull
-    private Pattern createOrGetValidator(String url, ConcurrentHashMap<Pattern, ?> mappings) {
-        // @FixMe: Check if the group Names also match before returning the same pattern!
-        return createValidator(url);
-//        return mappings.keySet().parallelStream()
-//                .filter(pattern -> pattern.matcher(url).matches())
-//                .findFirst().orElse(createValidator(url));
+    private Pattern createOrGetValidator(String url, Map<Pattern, ?> mappings) {
+        Pattern fresh = createValidator(url);
+        return mappings.keySet().parallelStream()
+                .filter(pattern -> pattern.pattern().equals(fresh.pattern()))
+                .findFirst()
+                .orElse(fresh);
     }
 
     /**
@@ -513,7 +515,7 @@ public class RouteRegistry {
                             Requirement<?> requirement = methodLink.requirement();
 
                             Method method = methodLink.method();
-                            if (method == null || !TypeUtils.isAssignable(target.getClass(), method.getParameterTypes()[0]))
+                            if (method == null || !TypeUtils.isAssignable(target.getClass(), methodLink.arg()))
                                 return null;
 
                             return Map.entry(requirement, Objects.requireNonNull(method));
@@ -542,8 +544,8 @@ public class RouteRegistry {
      * @since 3.3.3-SNAPSHOT
      */
     @NotNull
-    public Map<Pattern, ConcurrentLinkedQueue<EndpointMapping>> getEndpoints(Class<? extends Server> server) {
-        return Map.copyOf(serverMappings.computeIfAbsent(server, c -> new ConcurrentHashMap<>()));
+    public Map<Pattern, Queue<EndpointMapping>> getEndpoints(Class<? extends Server> server) {
+        return serverMappings.containsKey(server) ? Collections.unmodifiableMap(serverMappings.get(server)) : Collections.emptyMap();
     }
 
     /**
@@ -620,7 +622,7 @@ public class RouteRegistry {
             annotations.computeIfAbsent(Socket.class, c -> new ServerMapping(WebSocketServer.class));
 
         if (annotations.isEmpty())
-            throw new IllegalStateException("Invalid handler type " + handler.getClass().getSimpleName() + " only RequestHandler and SocketHandler are allowed!");
+            throw new IllegalStateException("Invalid handler type " + handler.getSimpleName() + " only RequestHandler and SocketHandler are allowed!");
         return annotations;
     }
 
@@ -631,8 +633,8 @@ public class RouteRegistry {
      * @since 3.2.1-SNAPSHOT
      */
     @ApiStatus.Internal
-    public ConcurrentHashMap<Class<? extends Server>, ConcurrentHashMap<Pattern, ConcurrentLinkedQueue<EndpointMapping>>> getServerMappings() {
-        return new ConcurrentHashMap<>(Collections.unmodifiableMap(serverMappings));
+    public Map<Class<? extends Server>, Map<Pattern, Queue<EndpointMapping>>> getServerMappings() {
+        return Collections.unmodifiableMap(serverMappings);
     }
 
     /**
