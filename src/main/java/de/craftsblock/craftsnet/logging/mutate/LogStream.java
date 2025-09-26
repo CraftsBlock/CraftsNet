@@ -4,6 +4,8 @@ import de.craftsblock.craftscore.utils.FileUtils;
 import de.craftsblock.craftscore.utils.id.Snowflake;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.logging.mutate.builtin.BlurIPsMutator;
+import de.craftsblock.craftsnet.logging.mutate.stream.LogOutputStream;
+import de.craftsblock.craftsnet.logging.mutate.stream.MutatedPrintStream;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
@@ -31,7 +33,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.5
+ * @version 1.2.6
  * @see MutatedPrintStream
  * @since 3.0.2-SNAPSHOT
  */
@@ -128,8 +130,8 @@ public class LogStream {
             oldErr = System.err;
 
             this.stream = this.createFileLogStream();
-            System.setOut(new MutatedPrintStream(this, oldOut, stream));
-            System.setErr(new MutatedPrintStream(this, oldErr, stream));
+            System.setOut(new MutatedPrintStream(this, new LogOutputStream(oldOut, stream)));
+            System.setErr(new MutatedPrintStream(this, new LogOutputStream(oldErr, stream)));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -167,7 +169,7 @@ public class LogStream {
         if (stream == null || line == null) return;
 
         try {
-            stream.write((MutatedPrintStream.removeAsciiColors(line) + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+            stream.write((LogOutputStream.removeAsciiColors(line) + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
             stream.flush();
         } catch (IOException e) {
             throw new RuntimeException(e);
