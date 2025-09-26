@@ -27,8 +27,9 @@ public record RequirementMethodLink<R extends RequireAble, T extends Requirement
      * resolving its generic type argument and locating the {@code applies(...)} method
      * using reflection.
      *
-     * @param requirement the requirement instance.
-     * @param <T>         the requirement type.
+     * @param requirement The requirement instance.
+     * @param <T>         The requirement type.
+     * @param <R>         The require-able type of the requirement.
      * @return a new {@link RequirementMethodLink} pointing to the requirements
      * {@code applies(...)} method.
      */

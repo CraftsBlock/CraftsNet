@@ -29,6 +29,14 @@ public class MiddlewareRegistry {
 
     private final Map<Class<? extends Server>, Deque<Middleware>> middlewares = new ConcurrentHashMap<>();
 
+    /**
+     * Constructs a new {@link MiddlewareRegistry} and initializes the middleware storage
+     * for each server type defined in {@link Server#SERVER_TYPES}.
+     * <p>
+     * Each server type is associated with an empty {@link ConcurrentLinkedDeque}
+     * to hold its registered middlewares.
+     * </p>
+     */
     public MiddlewareRegistry() {
         Server.SERVER_TYPES.forEach(type -> middlewares.put(type, new ConcurrentLinkedDeque<>()));
     }
