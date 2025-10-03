@@ -97,6 +97,8 @@ public class WebSocketServer extends Server {
      */
     @Override
     public synchronized void start() {
+        if (running) return;
+
         try {
             logger.info("Starting websocket server on port %s", port);
             if (ssl) {
@@ -178,6 +180,8 @@ public class WebSocketServer extends Server {
      */
     @Override
     public synchronized void stop() {
+        if (!running) return;
+
         try {
             connected.values().stream().flatMap(ConcurrentLinkedQueue::stream)
                     .forEach(client -> {
