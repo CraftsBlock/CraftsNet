@@ -217,7 +217,12 @@ public class ReflectionUtils {
             method.setAccessible(true);
             return method.invoke(isStatic ? null : owner, args);
         } catch (InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException("Could not invoke " + method.toGenericString(), e);
+            throw new RuntimeException("Could not invoke %s".formatted(method.toGenericString()), e);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Could not invoke %s with arguments (%s)".formatted(
+                    method.toGenericString(),
+                    String.join(", ", Arrays.stream(args).map(Object::getClass).map(Class::getSimpleName).toList())
+            ));
         }
     }
 
