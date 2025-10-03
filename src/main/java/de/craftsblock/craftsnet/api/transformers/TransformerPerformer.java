@@ -134,7 +134,7 @@ public class TransformerPerformer {
                     if (converter == null) continue;
 
                     // Set the value of the argument to the return of the method for alternativ transformation.
-                    copiedArgs[i] = converter.invoke(value);
+                    copiedArgs[i] = ReflectionUtils.invokeMethod(value, converter);
                 }
             }
 
@@ -253,18 +253,13 @@ public class TransformerPerformer {
         if (transformerMethod == null)
             throw new IllegalStateException("Transformer " + type.getName() + " does not have a transformer method!");
 
-        try {
-            // Execute the transform method on the transformable
-            transformerMethod.setAccessible(true);
-            Object transformed = transformerMethod.invoke(transformable, value);
+        // Execute the transform method on the transformable
+        Object transformed = ReflectionUtils.invokeMethod(transformable, transformerMethod, value);
 
-            // Put the transformed value into the cache, if the transformer is cacheable
-            if (transformer.cacheable() && transformable.isCacheable()) transformerCache.put(type, value, transformed);
+        // Put the transformed value into the cache, if the transformer is cacheable
+        if (transformer.cacheable() && transformable.isCacheable()) transformerCache.put(type, value, transformed);
 
-            return transformed;
-        } finally {
-            transformerMethod.setAccessible(false);
-        }
+        return transformed;
     }
 
     /**

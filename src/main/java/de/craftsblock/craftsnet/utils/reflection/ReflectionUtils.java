@@ -414,7 +414,7 @@ public class ReflectionUtils {
                 return castTo(method.getDefaultValue(), type);
             } else return null;
 
-        Method method = annotation.getClass().getDeclaredMethod("value");
+        Method method = ReflectionUtils.findMethod(annotation.getClass(), "value");
         Object value = method.invoke(annotation);
         if (value == null)
             if (fallback) value = method.getDefaultValue();

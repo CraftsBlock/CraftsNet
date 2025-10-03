@@ -152,20 +152,16 @@ public class AutoRegisterRegistry {
             return false;
         }
 
-        for (AutoRegisterHandler<?> handler : handlers)
-            try {
-                Object obj = info.getInstantiated(craftsNet);
-                Method method = handler.getClass().getDeclaredMethod("handle",
-                        ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class, 0),
-                        AutoRegisterInfo.class, Object.class.arrayType());
+        for (AutoRegisterHandler<?> handler : handlers) {
+            Object obj = info.getInstantiated(craftsNet);
+            Method method = ReflectionUtils.findMethod(handler.getClass(), "handle",
+                    ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class, 0),
+                    AutoRegisterInfo.class, Object.class.arrayType());
 
-                method.setAccessible(true);
-                boolean result = (boolean) method.invoke(handler, obj, info, args);
-                if (result)
-                    craftsNet.getLogger().debug("Auto registered %s with %s", info.getClassName(), handler.getClass().getSimpleName());
-            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
+            boolean result = (boolean) ReflectionUtils.invokeMethod(handler, method, obj, info, args);
+            if (result)
+                craftsNet.getLogger().debug("Auto registered %s with %s", info.getClassName(), handler.getClass().getSimpleName());
+        }
 
         return true;
     }

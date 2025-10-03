@@ -23,6 +23,7 @@ import de.craftsblock.craftsnet.events.requests.routes.RouteRequestEvent;
 import de.craftsblock.craftsnet.events.requests.shares.ShareFileLoadedEvent;
 import de.craftsblock.craftsnet.events.requests.shares.ShareRequestEvent;
 import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -250,20 +251,8 @@ public class WebHandler implements HttpHandler {
                     continue;
 
                 // Call the method of the route handler
-                try {
-                    method.setAccessible(true);
-                    Object result = method.invoke(handler, passingArgs);
-                    if (result != null) exchange.response().print(result);
-                } catch (IllegalArgumentException e) {
-                    throw new RuntimeException("Could not call %s#%s(%s) with argument (%s)".formatted(
-                            method.getDeclaringClass().getSimpleName(),
-                            method.getName(),
-                            String.join(", ", Arrays.stream(method.getParameterTypes()).map(Class::getSimpleName).toList()),
-                            String.join(", ", Arrays.stream(passingArgs).map(Object::getClass).map(Class::getSimpleName).toList())
-                    ));
-                } finally {
-                    method.setAccessible(false);
-                }
+                Object result = ReflectionUtils.invokeMethod(handler, method, passingArgs);
+                if (result != null) exchange.response().print(result);
             }
 
         // Clean up to free up memory

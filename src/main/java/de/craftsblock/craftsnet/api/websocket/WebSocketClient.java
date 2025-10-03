@@ -11,6 +11,7 @@ import de.craftsblock.craftsnet.api.middlewares.MiddlewareCallbackInfo;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareRegistry;
 import de.craftsblock.craftsnet.api.middlewares.WebsocketMiddleware;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
+import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
@@ -34,6 +35,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
 import java.io.*;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.Socket;
@@ -46,7 +48,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Stream;
 
 /**
  * The WebSocketClient class represents a WebSocket client that connects to the WebSocketServer.
@@ -401,22 +402,10 @@ public class WebSocketClient implements Runnable, RequireAble {
             preprocessMethodParameters(method, frame, passingArgs);
 
             // Invoke the handler method
-            try {
-                method.setAccessible(true);
-                Object result = method.invoke(handler, passingArgs);
-                if (result == null || !isConnected() || !isActive()) return;
+            Object result = ReflectionUtils.invokeMethod(handler, method, passingArgs);
+            if (result == null || !isConnected() || !isActive()) return;
 
-                this.sendMessage(result);
-            } catch (IllegalArgumentException e) {
-                throw new RuntimeException("Could not call %s#%s(%s) with arguments (%s)".formatted(
-                        method.getDeclaringClass().getSimpleName(),
-                        method.getName(),
-                        String.join(", ", Arrays.stream(method.getParameterTypes()).map(Class::getSimpleName).toList()),
-                        String.join(", ", Arrays.stream(passingArgs).map(Object::getClass).map(Class::getSimpleName).toList())
-                ));
-            } finally {
-                method.setAccessible(false);
-            }
+            this.sendMessage(result);
         } catch (Throwable t) {
             throw new RuntimeException("Unexpected exception whilst handling websocket mappings", t);
         }
@@ -435,11 +424,12 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         for (var requirementLink : craftsNet.getRequirementRegistry().getRequirementMethodLinks(WebSocketServer.class))
             try {
-                Method method = requirementLink.method();
-                if (method == null || !TypeUtils.isAssignable(Frame.class, method.getParameterTypes()[0])) continue;
+                Class<? extends Annotation> requirementAnnotation = requirementLink.requirement().getAnnotation();
+                if (!mapping.isPresent(requirementAnnotation)) continue;
+                if (!TypeUtils.isAssignable(Frame.class, requirementLink.arg())) continue;
 
-                boolean applies = (Boolean) ReflectionUtils.invokeMethod(requirementLink.requirement(), method, frame, mapping);
-                if (!applies) return true;
+                Requirement<? super RequireAble> requirement = requirementLink.requirement();
+                return !requirement.applies(frame, mapping);
             } catch (NullPointerException | AssertionError ignored) {
             }
 
