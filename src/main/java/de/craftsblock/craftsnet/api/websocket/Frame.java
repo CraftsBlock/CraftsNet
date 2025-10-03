@@ -324,10 +324,13 @@ public class Frame implements RequireAble {
      * decodes the payload data using the provided masking key.
      *
      * @param stream The input stream to read the frame from.
+     * @param buffer The buffer to which the message should be read.
      * @return The constructed Frame object containing the frame header and payload data.
      * @throws IOException If an I/O error occurs while reading from the stream.
      */
-    protected static Frame read(InputStream stream) throws IOException {
+    protected static Frame read(InputStream stream, ByteArrayOutputStream buffer) throws IOException {
+        buffer.reset();
+
         byte[] frame = new byte[10];
         ensureRead(stream, frame, 0, 2);
 
@@ -348,8 +351,6 @@ public class Frame implements RequireAble {
         byte[] chunk = new byte[4096];
 
         try {
-            java.nio.ByteBuffer buffer = java.nio.ByteBuffer.allocate((int) payloadLength);
-
             while (bytesRead < payloadLength) {
                 int toRead = (int) Math.min(chunk.length, payloadLength - bytesRead);
                 int chunkSize = stream.read(chunk, 0, toRead);
@@ -362,20 +363,20 @@ public class Frame implements RequireAble {
                     for (int i = 0; i < chunkSize; i++)
                         chunk[i] ^= masks[(int) ((bytesRead + i) % 4)];
 
-                buffer.put(chunk, 0, chunkSize);
+                buffer.write(chunk, 0, chunkSize);
                 bytesRead += chunkSize;
             }
 
             // Mark the frame as end-masked
             if (masked) frame[1] &= 0x7F;
 
-            int actualLength = buffer.position();
+            int actualLength = buffer.size();
             if (payloadLength != actualLength)
                 throw new IllegalStateException("Incorrect payload length, while reading a frame. (Got: %s, Expected: %s)".formatted(
                         payloadLength, actualLength
                 ));
 
-            return new Frame(frame, buffer.array());
+            return new Frame(frame, buffer.toByteArray());
         } finally {
             Arrays.fill(chunk, (byte) 0);
         }

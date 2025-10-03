@@ -100,6 +100,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private BufferedReader reader;
     private OutputStream writer;
     private final Object writerLock = new Object();
+    private final ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();
 
     private final CraftsNet craftsNet;
     private final Logger logger;
@@ -572,7 +573,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         AtomicReference<Frame> frame = new AtomicReference<>();
 
         while (isConnected() && frame.get() == null || !frame.get().isFinalFrame()) {
-            Frame read = Frame.read(inputStream);
+            Frame read = Frame.read(inputStream, readBuffer);
 
             if (read.getOpcode().isUnknown()) {
                 closeInternally(ClosureCode.PROTOCOL_ERROR, "Unknown opcode!", true);
