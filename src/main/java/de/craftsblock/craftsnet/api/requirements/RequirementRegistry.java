@@ -40,7 +40,7 @@ public class RequirementRegistry {
 
     private final Map<Class<? extends Server>, Queue<Requirement<? extends RequireAble>>> unmodifiableRequirementView = Collections.unmodifiableMap(requirements);
 
-    private final Map<Class<? extends Server>, Queue<RequirementMethodLink<?, ?>>> requirementMethodLinks = new ConcurrentHashMap<>();
+    private final Map<Class<? extends Server>, Queue<RequirementMethodLink<? super RequireAble, ?>>> requirementMethodLinks = new ConcurrentHashMap<>();
 
     /**
      * Constructs a new instance of the {@link RequirementRegistry}
@@ -119,7 +119,7 @@ public class RequirementRegistry {
     private void registerRaw(Class<? extends Server> target, Requirement<? extends RequireAble> requirement,
                              boolean process) {
         requirementMethodLinks.computeIfAbsent(target, s -> new ConcurrentLinkedQueue<>())
-                .add(RequirementMethodLink.create(requirement));
+                .add((RequirementMethodLink<? super RequireAble, ?>) RequirementMethodLink.create(requirement));
 
         this.requirements.computeIfAbsent(target, c -> new ConcurrentLinkedQueue<>()).add(requirement);
         var serverMappings = routeRegistry.getServerMappings();
@@ -244,7 +244,7 @@ public class RequirementRegistry {
      * @since 3.5.3
      */
     @ApiStatus.Experimental
-    public Collection<RequirementMethodLink<?, ?>> getRequirementMethodLinks(Class<? extends Server> server) {
+    public Collection<RequirementMethodLink<? super RequireAble, ?>> getRequirementMethodLinks(Class<? extends Server> server) {
         return requirementMethodLinks.containsKey(server) ? requirementMethodLinks.get(server) : Collections.emptyList();
     }
 

@@ -511,28 +511,9 @@ public class RouteRegistry {
                 .map(Map.Entry::getValue)
                 .flatMap(Collection::stream)
                 .filter(mapping -> craftsNet.getRequirementRegistry().getRequirementMethodLinks(server).parallelStream()
-                        .map(methodLink -> {
-                            Requirement<?> requirement = methodLink.requirement();
-
-                            Method method = methodLink.method();
-                            if (method == null || !TypeUtils.isAssignable(target.getClass(), methodLink.arg()))
-                                return null;
-
-                            return Map.entry(requirement, Objects.requireNonNull(method));
-                        }).filter(Objects::nonNull)
-                        .allMatch(requirementEntry -> {
-                            var requirement = requirementEntry.getKey();
-                            var method = requirementEntry.getValue();
-
-                            try {
-                                return (boolean) method.invoke(requirement, target, mapping);
-                            } catch (IllegalAccessException | InvocationTargetException e) {
-                                throw new RuntimeException("Could not apply requirement %s to %s#%s(%s)!".formatted(
-                                        requirement.getClass().getSimpleName(), method.getDeclaringClass().getSimpleName(), method.getName(),
-                                        String.join(", ", Arrays.stream(method.getParameterTypes()).map(Class::getSimpleName).toList())
-                                ), e);
-                            }
-                        })
+                        .filter(methodLink -> mapping.isPresent(methodLink.requirement().getAnnotation()))
+                        .filter(methodLink -> TypeUtils.isAssignable(target.getClass(), methodLink.arg()))
+                        .allMatch(methodLink -> methodLink.requirement().applies(target, mapping))
                 );
     }
 
@@ -663,7 +644,7 @@ public class RouteRegistry {
      * @since 3.0.5-SNAPSHOT
      */
     public record EndpointMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull Handler handler,
-                                  @NotNull Pattern validator, ConcurrentHashMap<Class<? extends Annotation>, RequirementInfo> requirements,
+                                  @NotNull Pattern validator, Map<Class<? extends Annotation>, RequirementInfo> requirements,
                                   Deque<Middleware> middlewares) implements Mapping {
 
         /**
@@ -720,7 +701,7 @@ public class RouteRegistry {
      * @version 1.1.0
      * @since 3.0.3-SNAPSHOT
      */
-    private record ServerMapping(Class<? extends Server> rawServer) implements Mapping {
+    private record ServerMapping(Class<? extends Server> rawServer) {
 
         /**
          * Retrieves the server instance from {@link CraftsNet}.
