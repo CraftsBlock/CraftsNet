@@ -39,7 +39,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.3.2
+ * @version 2.3.3
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -465,9 +465,7 @@ public final class AddonLoader {
                     else
                         logger.debug("No service loader found for service %s", spi.getName());
                 } catch (ClassNotFoundException e) {
-                    throw new RuntimeException("Could not register service %s for %s!".formatted(
-                            provider, configuration.addon().get().getName()
-                    ), e);
+                    logger.warning("Service class %s not found for %s - skipping!", e.getMessage(), configuration.addon().get().getName());
                 }
         });
     }
