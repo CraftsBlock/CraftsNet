@@ -26,7 +26,9 @@ version = '3.5.4'
 
 repositories {
     mavenCentral()
-    maven { url "https://repo.craftsblock.de/releases" }
+    maven {
+        url = "https://repo.craftsblock.de/releases"
+    }
 }
 
 dependencies {
@@ -102,7 +104,7 @@ tasks.register("runnableJar", Jar) {
 publishing {
     publications {
         normal(MavenPublication) {
-            artifactId "craftsnet"
+            artifactId = "craftsnet"
 
             from components.java
 
@@ -137,7 +139,7 @@ publishing {
     }
     repositories {
         maven {
-            url('https://repo.craftsblock.de/releases')
+            url = 'https://repo.craftsblock.de/releases'
             authentication {
                 basic(BasicAuthentication)
             }
