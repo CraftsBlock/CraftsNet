@@ -23,7 +23,6 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -446,7 +445,7 @@ public class RouteRegistry {
      */
     @NotNull
     private Pattern createValidator(String url) {
-        Pattern pattern = Pattern.compile("\\{(.*?[^/]+)}", Pattern.DOTALL | Pattern.MULTILINE);
+        Pattern pattern = Pattern.compile("\\{(.*?[^/}]+)}", Pattern.DOTALL | Pattern.MULTILINE);
         Matcher matcher = pattern.matcher(formatUrl(url));
         return Pattern.compile("^(" + matcher.replaceAll("(?<$1>[^/]+)") + ")/?", Pattern.CASE_INSENSITIVE);
     }
