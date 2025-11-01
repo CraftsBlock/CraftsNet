@@ -5,7 +5,6 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
 import de.craftsblock.craftsnet.logging.Logger;
 
-import java.net.URLClassLoader;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -15,10 +14,10 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.2.1
- * @see CraftsNetClassLoader
+ * @see CraftsNetUrlClassLoader
  * @since 3.0.3-SNAPSHOT
  */
-public final class AddonClassLoader extends CraftsNetClassLoader {
+public final class AddonClassLoader extends CraftsNetUrlClassLoader {
 
     static {
         ClassLoader.registerAsParallelCapable();

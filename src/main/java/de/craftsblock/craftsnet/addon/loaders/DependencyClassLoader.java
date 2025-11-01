@@ -2,7 +2,9 @@ package de.craftsblock.craftsnet.addon.loaders;
 
 import de.craftsblock.craftsnet.CraftsNet;
 
-import java.net.*;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,10 +15,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @see CraftsNetClassLoader
+ * @see CraftsNetUrlClassLoader
  * @since 3.4.3
  */
-public final class DependencyClassLoader extends CraftsNetClassLoader {
+public final class DependencyClassLoader extends CraftsNetUrlClassLoader {
 
     static {
         ClassLoader.registerAsParallelCapable();
