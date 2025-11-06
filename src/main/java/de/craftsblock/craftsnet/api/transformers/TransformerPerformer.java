@@ -30,7 +30,7 @@ import static de.craftsblock.craftsnet.utils.Utils.getGroupNames;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.2
+ * @version 1.2.3
  * @see Transformer
  * @see TransformerCollection
  * @see Transformable
@@ -212,11 +212,21 @@ public class TransformerPerformer {
             // Load all important variables
             Class<? extends Transformable<?, ?>> transformable = transformer.transformer();
             args[groupIndex] = transform(value, transformer, transformable);
-        } catch (InvocationTargetException parent) {
-            // Check if the cause of the InvocationTargetException is an TransformerException
-            if (parent.getCause() instanceof TransformerException e)
-                // Parse up the TransformerException to the route handler
-                args[groupIndex] = e;
+        } catch (RuntimeException | InvocationTargetException parent) {
+            if (parent.getCause() == null)
+                return;
+
+            Throwable cause = parent.getCause();
+            TransformerException exception;
+            if (cause instanceof TransformerException e) exception = e;
+            else if (cause.getCause() != null && cause.getCause() instanceof TransformerException e)
+                exception = e;
+            else exception = null;
+
+            if (exception == null)
+                throw (parent instanceof RuntimeException re ? re : new RuntimeException(parent));
+
+            args[groupIndex] = exception;
         }
     }
 
