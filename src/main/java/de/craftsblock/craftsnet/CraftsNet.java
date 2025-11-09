@@ -410,7 +410,7 @@ public class CraftsNet {
 
                     listenerRegistry.call(new ConsoleMessageEvent(line));
                 }
-            } catch (IOException | InvocationTargetException | IllegalAccessException e) {
+            } catch (IOException e) {
                 throw new RuntimeException(e);
             }
         }, "CraftsNet Console Reader");

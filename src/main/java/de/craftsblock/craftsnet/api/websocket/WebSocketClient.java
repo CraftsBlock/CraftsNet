@@ -979,8 +979,6 @@ public class WebSocketClient implements Runnable, RequireAble {
         } catch (IOException e) {
             disconnect();
             throw new RuntimeException(e);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException(e);
         }
     }
 
@@ -1070,7 +1068,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             transformerPerformer.clearCache();
             session.clear();
             extensions.clear();
-        } catch (InvocationTargetException | IllegalAccessException | IOException e) {
+        } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
             server.remove(this);

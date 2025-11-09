@@ -35,13 +35,10 @@ dependencies {
     // CraftsBlock related dependencies ---------------------------------------------------------------------------------------
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/bom
-    implementation platform("de.craftsblock.craftscore:bom:3.8.11")
+    implementation platform("de.craftsblock.craftscore:bom:3.8.12")
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/cache
     implementation "de.craftsblock.craftscore:cache"
-
-    // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/buffer
-    implementation "de.craftsblock.craftscore:buffer"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/event
     implementation "de.craftsblock.craftscore:event"

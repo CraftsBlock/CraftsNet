@@ -125,12 +125,7 @@ public final class AddonManager {
             this.unregister(addon);
         });
 
-        try {
-            craftsNet.getListenerRegistry().call(new AllAddonsDisabledEvent());
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            craftsNet.getLogger().error("Error while performing the all addons disabled event!", e);
-        }
-
+        craftsNet.getListenerRegistry().call(new AllAddonsDisabledEvent());
         addons.clear();
     }
 
