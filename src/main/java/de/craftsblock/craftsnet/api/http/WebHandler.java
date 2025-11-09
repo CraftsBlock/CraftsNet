@@ -11,6 +11,7 @@ import de.craftsblock.craftsnet.api.http.encoding.AcceptEncodingHelper;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoder;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoderRegistry;
 import de.craftsblock.craftsnet.api.http.encoding.builtin.IdentityStreamEncoder;
+import de.craftsblock.craftsnet.api.middlewares.Middleware;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareCallbackInfo;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.session.SessionInfo;
@@ -159,8 +160,9 @@ public class WebHandler implements HttpHandler {
 
         // Handle global middlewares
         MiddlewareCallbackInfo callback = new MiddlewareCallbackInfo();
-        craftsNet.getMiddlewareRegistry().getMiddlewares(exchange).stream().filter(middleware -> middleware.isApplicable(exchange))
-                .forEach(middleware -> middleware.handle(callback, exchange));
+        for (Middleware middleware : craftsNet.getMiddlewareRegistry().getMiddlewares(exchange))
+            if (middleware.isApplicable(exchange))
+                middleware.handle(callback, exchange);
 
         // Cancel if the middleware callback is cancelled
         if (callback.isCancelled())
