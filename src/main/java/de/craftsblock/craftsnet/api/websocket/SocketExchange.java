@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import de.craftsblock.craftsnet.api.BaseExchange;
+import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 import org.jetbrains.annotations.NotNull;
@@ -49,6 +50,17 @@ public record SocketExchange(@NotNull ProtocolVersion protocolVersion,
     @Override
     public WebSocketClient client() {
         return client;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     * @since 3.5.6
+     */
+    @Override
+    public Session session() {
+        return client.getSession();
     }
 
     /**

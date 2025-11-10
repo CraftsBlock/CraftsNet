@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.api;
 
+import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 
@@ -8,10 +9,18 @@ import de.craftsblock.craftsnet.api.utils.Scheme;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.3.0
+ * @version 1.4.0
  * @since 1.0.0-SNAPSHOT
  */
 public interface BaseExchange extends AutoCloseable {
+
+    /**
+     * Gets the {@link ProtocolVersion} of the exchange.
+     *
+     * @return The {@link ProtocolVersion} of the exchange.
+     * @since 3.3.2-SNAPSHOT
+     */
+    ProtocolVersion protocolVersion();
 
     /**
      * Gets the {@link Scheme} of the exchange.
@@ -24,11 +33,10 @@ public interface BaseExchange extends AutoCloseable {
     }
 
     /**
-     * Gets the {@link ProtocolVersion} of the exchange.
+     * Gets the {@link Session} of the exchange.
      *
-     * @return The {@link ProtocolVersion} of the exchange.
-     * @since 3.3.2-SNAPSHOT
+     * @return The {@link Session} of the exchange.
+     * @since 3.5.6
      */
-    ProtocolVersion protocolVersion();
-
+    Session session();
 }
