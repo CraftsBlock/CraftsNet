@@ -193,10 +193,10 @@ public class CraftsNet {
         addonManager = new AddonManager(this);
 
         logger.info("Preparing the webserver");
-        webServer = new WebServer(this, builder.getWebServerPort(), builder.isSSL());
+        webServer = new WebServer(this, builder.getWebServerPort(), 25, builder.isSSL());
 
         logger.info("Preparing the websocket server");
-        webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), builder.isSSL());
+        webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), 25, builder.isSSL());
 
         logger.debug("Initialization of the auto register registry");
         autoRegisterRegistry = new AutoRegisterRegistry(this);
