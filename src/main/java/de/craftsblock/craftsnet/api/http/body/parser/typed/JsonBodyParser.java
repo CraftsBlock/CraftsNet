@@ -1,14 +1,11 @@
 package de.craftsblock.craftsnet.api.http.body.parser.typed;
 
 import de.craftsblock.craftscore.json.JsonParser;
-import de.craftsblock.craftscore.json.JsonValidator;
-import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftsnet.api.http.body.BodyParser;
 import de.craftsblock.craftsnet.api.http.body.ContentType;
 import de.craftsblock.craftsnet.api.http.body.bodies.JsonBody;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 /**
  * This class is a body parser specifically designed to parse json request bodies.
@@ -16,7 +13,7 @@ import java.nio.charset.StandardCharsets;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
+ * @version 1.2.0
  * @see BodyParser
  * @since 3.0.4-SNAPSHOT
  */
@@ -28,11 +25,7 @@ public class JsonBodyParser extends TypedBodyParser<JsonBody> {
     public JsonBodyParser() {
         super((request, body) -> {
             try (body) {
-                byte[] data = Utils.readAllBytes(body);
-                String json = new String(data, StandardCharsets.UTF_8);
-
-                if (!JsonValidator.isValid(json)) return null;
-                return new JsonBody(request, JsonParser.parse(json));
+                return new JsonBody(request, JsonParser.parse(body));
             } catch (IOException e) {
                 throw new RuntimeException("Could not parse body to an json object!", e);
             }
