@@ -28,7 +28,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.1
+ * @version 1.5.2
  * @see Exchange
  * @see RequestHandler
  * @see Route
@@ -42,14 +42,27 @@ public class WebServer extends Server {
     private HttpServer server;
 
     /**
-     * Constructs a WebServer with the specified port and SSL settings.
+     * Constructs a {@link WebServer} with the specified port and SSL settings.
      *
      * @param craftsNet The CraftsNet instance which instantiates this webserver.
      * @param port      The port number to listen on.
      * @param ssl       A boolean flag indicating whether SSL encryption should be used (true for HTTPS, false for HTTP).
      */
     public WebServer(CraftsNet craftsNet, int port, boolean ssl) {
-        super(craftsNet, port, ssl);
+        this(craftsNet, port, 0, ssl);
+    }
+
+    /**
+     * Constructs a {@link WebServer} instance with the specified port number and backlog size.
+     *
+     * @param craftsNet The CraftsNet instance which instantiates this webserver.
+     * @param port      The port number on which the server will listen for incoming connections.
+     * @param backlog   The size of the backlog for the webserver.
+     * @param ssl       A boolean flag indicating whether SSL encryption should be used.
+     */
+    public WebServer(CraftsNet craftsNet, int port, int backlog, boolean ssl) {
+        super(craftsNet, port, backlog, ssl);
+
         this.executor = (ThreadPoolExecutor) Executors.newCachedThreadPool(r -> {
             Thread thread = threadFactory.newThread(r);
             String oldName = thread.getName();
@@ -85,7 +98,7 @@ public class WebServer extends Server {
                 SSLContext sslContext = SSL.load(this.craftsNet);
                 if (sslContext != null) {
                     // Configure the HttpsServer with the SSL context.
-                    HttpsServer httpsServer = HttpsServer.create(new InetSocketAddress(port), 0);
+                    HttpsServer httpsServer = HttpsServer.create(new InetSocketAddress(port), backlog);
                     httpsServer.setHttpsConfigurator(new HttpsConfigurator(sslContext));
                     server = httpsServer;
                 }
@@ -99,7 +112,7 @@ public class WebServer extends Server {
                     logger.warning("SSl was not activated properly, using an http server as fallback!");
 
                 try {
-                    server = HttpServer.create(new InetSocketAddress(port), 0);
+                    server = HttpServer.create(new InetSocketAddress(port), backlog);
                 } catch (IOException e) {
                     logger.error("Error while creating the %s http server.", ssl ? "fallback" : "");
                     logger.error(e);
@@ -186,7 +199,7 @@ public class WebServer extends Server {
     }
 
     /**
-     * Checks if the websocket server has a certain activation status in the builder.
+     * Checks if the webserver has a certain activation status in the builder.
      *
      * @param type The activation which should be present.
      * @return true if the activation status is equals, false otherwise.
