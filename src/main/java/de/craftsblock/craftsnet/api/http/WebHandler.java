@@ -41,7 +41,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.6.4
+ * @version 1.7.0
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -218,24 +218,12 @@ public class WebHandler implements HttpHandler {
         }
         logger.info(MESSAGE_FORMAT_REQUEST, requestMethod, url, ip);
 
-        Pattern validator = routes.values().stream().flatMap(Collection::stream).findFirst().orElseThrow().validator();
-        Matcher matcher = validator.matcher(url);
-        if (!matcher.matches()) {
-            respondWithError(response, 500, "There was an unexpected error while matching!");
-            return true;
-        }
-
-        // Prepare the argument array to be passed to the API handler method.
-        Object[] args = new Object[matcher.groupCount()];
-
-        args[0] = exchange;
-        for (int i = 2; i <= matcher.groupCount(); i++)
-            args[i - 1] = matcher.group(i);
-
         // Create a transformer performer which handles all transformers
-        TransformerPerformer transformerPerformer = new TransformerPerformer(this.craftsNet, validator, 1, e -> {
+        TransformerPerformer transformerPerformer = new TransformerPerformer(this.craftsNet, 1, e -> {
             response.print(Json.empty().set("error", "Could not process transformer: " + e.getMessage()));
         });
+
+        Map<String, Matcher> matchers = new HashMap<>();
 
         // Loop through all priorities
         for (ProcessPriority.Priority priority : routes.keySet())
@@ -243,22 +231,41 @@ public class WebHandler implements HttpHandler {
                 if (!(mapping.handler() instanceof RequestHandler handler)) continue;
                 Method method = mapping.method();
 
+                Pattern validator = mapping.validator();
+                Matcher matcher = matchers.computeIfAbsent(mapping.validator().pattern(), pattern -> {
+                    Matcher fresh = validator.matcher(url);
+
+                    if (!fresh.matches()) {
+                        respondWithError(response, 500, "There was an unexpected error while matching!");
+                    }
+
+                    return fresh;
+                });
+                transformerPerformer.setValidator(validator);
+
+                // Prepare the argument array to be passed to the API handler method.
+                Object[] args = new Object[matcher.groupCount()];
+
+                args[0] = exchange;
+                for (int i = 2; i <= matcher.groupCount(); i++)
+                    args[i - 1] = matcher.group(i);
+
                 MiddlewareCallbackInfo callback = new MiddlewareCallbackInfo();
                 mapping.middlewares().forEach(middleware -> middleware.handle(callback, exchange));
                 if (callback.isCancelled()) continue;
 
-                // Perform all transformers and continue if passingArgs is null
-                Object[] passingArgs = transformerPerformer.perform(mapping.handler(), method, args);
-                if (passingArgs == null)
+                // Perform all transformers and continue if
+                if (!transformerPerformer.perform(mapping.handler(), method, args))
                     continue;
 
                 // Call the method of the route handler
-                Object result = ReflectionUtils.invokeMethod(handler, method, passingArgs);
+                Object result = ReflectionUtils.invokeMethod(handler, method, args);
                 if (result != null) exchange.response().print(result);
             }
 
         // Clean up to free up memory
         transformerPerformer.clearCache();
+        matchers.clear();
 
         return true;
     }
@@ -267,10 +274,8 @@ public class WebHandler implements HttpHandler {
      * Handles share-specific requests by delegating to the appropriate share handler.
      *
      * @param exchange The {@link Exchange} representing the request.
-     * @throws InvocationTargetException If an error occurs while invoking the share handler.
-     * @throws IllegalAccessException    If the share handler cannot be accessed.
      */
-    private void handleShare(Exchange exchange) throws InvocationTargetException, IllegalAccessException {
+    private void handleShare(Exchange exchange) {
         Request request = exchange.request();
         Response response = exchange.response();
 

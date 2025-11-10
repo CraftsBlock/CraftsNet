@@ -36,7 +36,6 @@ import org.jetbrains.annotations.Range;
 
 import java.io.*;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.Socket;
 import java.net.SocketException;
@@ -61,7 +60,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.10
+ * @version 3.7.0
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -87,6 +86,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final Scheme scheme;
     private final List<WebSocketExtension> extensions;
     private final TransformerPerformer transformerPerformer;
+    private final Map<String, Matcher> matchers;
 
     private SocketExchange exchange;
     private ProtocolVersion protocolVersion;
@@ -95,7 +95,6 @@ public class WebSocketClient implements Runnable, RequireAble {
     private String path;
     private String domain;
     private EnumMap<ProcessPriority.Priority, List<EndpointMapping>> mappings;
-    private Matcher matcher;
 
     private BufferedReader reader;
     private OutputStream writer;
@@ -136,10 +135,11 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.logger = this.craftsNet.getLogger();
 
         // Create a transformer performer which handles all transformers
-        this.transformerPerformer = new TransformerPerformer(this.craftsNet, null, 2, e -> {
+        this.transformerPerformer = new TransformerPerformer(this.craftsNet, 2, e -> {
             sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).toString());
             disconnect();
         });
+        this.matchers = new HashMap<>();
     }
 
     /**
@@ -236,20 +236,6 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
-            if (mappings != null && !mappings.isEmpty()) {
-                Pattern validator = mappings.get(mappings.keySet().stream().findFirst().orElseThrow()).get(0).validator();
-                matcher = validator.matcher(path);
-                if (!matcher.matches()) {
-                    sendMessage(Json.empty()
-                            .set("error", "There was an unexpected error while matching!")
-                            .toString());
-                    return;
-                }
-
-                // Change the validator of the transformer performer
-                this.transformerPerformer.setValidator(validator);
-            } else matcher = null;
-
             // Add this WebSocket client to the server's collection and mark it as connected
             server.add(path, this);
 
@@ -280,15 +266,13 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @return {@code true} if the read loop should be exited, {@code false} otherwise.
      * @since 3.4.0-SNAPSHOT
      */
-    private boolean handleIncomingMessage(Frame frame) throws InvocationTargetException, IllegalAccessException {
+    private boolean handleIncomingMessage(Frame frame) {
         if (frame == null || frame.getOpcode().isUnknown()) {
             logger.warning("Received invalid websocket packet!");
             return true;
         }
 
         if (!this.connected || !this.socket.isConnected()) return true;
-        // Process incoming messages from the client
-        byte @NotNull [] data = frame.getData();
         if (isCloseFrame(frame) || validateOrClose(frame))
             return true;
 
@@ -304,18 +288,16 @@ public class WebSocketClient implements Runnable, RequireAble {
         if (callbackInfo.isCancelled())
             return true;
 
-        if (mappings == null || mappings.isEmpty() || matcher == null) return false;
+        if (mappings == null || mappings.isEmpty()) return false;
 
-        // Extract and pass the message parameters to the endpoint handler
-        Object[] args = new Object[matcher.groupCount() + 1];
-        args[0] = exchange;
-        args[1] = data;
-        for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
-
-        handleMappings(frame, args);
+        mappings.keySet().stream()
+                .map(mappings::get)
+                .flatMap(Collection::stream)
+                .forEach(mapping -> this.handleMapping(mapping, frame));
 
         // Clear up transformer cache to free up memory
         transformerPerformer.clearCache();
+        matchers.clear();
         return false;
     }
 
@@ -326,7 +308,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @return {@code true} if the read loop should be ended, {@code false} otherwise.
      * @since 3.4.0-SNAPSHOT
      */
-    private boolean validateOrClose(Frame frame) throws InvocationTargetException, IllegalAccessException {
+    private boolean validateOrClose(Frame frame) {
         return switch (frame.getOpcode()) {
             case PING -> {
                 craftsNet.getListenerRegistry().call(new ReceivedPingMessageEvent(exchange, frame));
@@ -368,42 +350,47 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
-     * Passes a socket message frame down the endpoints.
-     *
-     * @param frame The {@link Frame} received.
-     * @param args  The args that should be passed down.
-     */
-    private void handleMappings(Frame frame, Object[] args) {
-        mappings.keySet().stream()
-                .map(mappings::get)
-                .flatMap(Collection::stream)
-                .forEach(mapping -> this.handleMapping(mapping, frame, args));
-    }
-
-    /**
      * Passes a socket message frame down to one specific endpoint.
      *
      * @param mapping The {@link EndpointMapping mapping} which should be handled.
      * @param frame   The {@link Frame} received.
-     * @param args    The args that should be passed down.
      * @since 3.4.0-SNAPSHOT
      */
-    private void handleMapping(EndpointMapping mapping, Frame frame, Object[] args) {
+    private void handleMapping(EndpointMapping mapping, Frame frame) {
         try {
             if (!(mapping.handler() instanceof SocketHandler handler)) return;
             Method method = mapping.method();
 
+            Pattern validator = mapping.validator();
+            Matcher matcher = matchers.computeIfAbsent(mapping.validator().pattern(), pattern -> {
+                Matcher fresh = validator.matcher(path);
+
+                if (!fresh.matches()) {
+                    sendMessage(Json.empty()
+                            .set("error", "There was an unexpected error while matching!")
+                            .toString());
+                }
+
+                return fresh;
+            });
+            transformerPerformer.setValidator(validator);
+
+            // Extract and pass the message parameters to the endpoint handler
+            Object[] args = new Object[matcher.groupCount() + 1];
+            args[0] = exchange;
+            args[1] = frame.getData();
+            for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
+
             if (processRequirements(mapping, frame)) return;
 
             // Perform all transformers and continue if passingArgs is null
-            Object[] passingArgs = transformerPerformer.perform(mapping.handler(), method, args);
-            if (passingArgs == null)
+            if (transformerPerformer.perform(mapping.handler(), method, args))
                 return;
 
-            preprocessMethodParameters(method, frame, passingArgs);
+            preprocessMethodParameters(method, frame, args);
 
             // Invoke the handler method
-            Object result = ReflectionUtils.invokeMethod(handler, method, passingArgs);
+            Object result = ReflectionUtils.invokeMethod(handler, method, args);
             if (result == null || !isConnected() || !isActive()) return;
 
             this.sendMessage(result);
@@ -1062,10 +1049,10 @@ public class WebSocketClient implements Runnable, RequireAble {
                     (info, middleware) -> middleware.handleDisconnect(info, exchange)
             );
 
-            matcher = null;
             headers = null;
             mappings = null;
             transformerPerformer.clearCache();
+            matchers.clear();
             session.clear();
             extensions.clear();
         } catch (IOException e) {

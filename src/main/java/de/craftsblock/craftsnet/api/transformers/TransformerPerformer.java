@@ -30,7 +30,7 @@ import static de.craftsblock.craftsnet.utils.Utils.getGroupNames;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.3
+ * @version 1.3.0
  * @see Transformer
  * @see TransformerCollection
  * @see Transformable
@@ -46,27 +46,16 @@ public class TransformerPerformer {
     private final int argsOffset;
     private final TransformerErrorCallback callback;
 
-    /**
-     * Constructor for TransformerPerformer.
-     *
-     * @param craftsNet  The CraftsNet instance which instantiates this
-     * @param validator  The pattern used for validation.
-     * @param argsOffset The offset for arguments.
-     */
-    public TransformerPerformer(@NotNull CraftsNet craftsNet, @Nullable Pattern validator, int argsOffset) {
-        this(craftsNet, validator, argsOffset, null);
-    }
+    private Pattern validator;
 
     /**
      * Constructor for TransformerPerformer.
      *
      * @param craftsNet  The CraftsNet instance which instantiates this
-     * @param validator  The pattern used for validation.
      * @param argsOffset The offset for arguments.
      * @param callback   The callback responsible for handling transformer exception.
      */
-    public TransformerPerformer(@NotNull CraftsNet craftsNet, @Nullable Pattern validator, int argsOffset, @Nullable TransformerErrorCallback callback) {
-        setValidator(validator);
+    public TransformerPerformer(@NotNull CraftsNet craftsNet, int argsOffset, @Nullable TransformerErrorCallback callback) {
         this.argsOffset = argsOffset;
         this.callback = callback;
         this.logger = craftsNet.getLogger();
@@ -79,6 +68,11 @@ public class TransformerPerformer {
      */
     public void setValidator(@Nullable Pattern validator) {
         if (validator == null) return;
+
+        if (this.validator != null && this.validator.pattern().equals(validator.pattern()))
+            return;
+        this.validator = validator;
+
         if (!this.groupNames.isEmpty()) this.groupNames.clear();
         this.groupNames.addAll(getGroupNames(validator.pattern()));
     }
@@ -97,31 +91,27 @@ public class TransformerPerformer {
      * @throws IOException               if an I/O error occurs.
      * @throws InvocationTargetException if the underlying method throws an exception.
      */
-    public Object[] perform(Handler handler, Method method, Object[] args) throws Exception {
+    public boolean perform(Handler handler, Method method, Object[] args) throws Exception {
         // Return when no transformer is applied
         if (!hasTransformers(handler) && !hasTransformers(method))
-            return args;
-
-        // Copy args into a new array
-        Object[] copiedArgs = new Object[args.length];
-        System.arraycopy(args, 0, copiedArgs, 0, args.length);
+            return true;
 
         // Apply all the transformers
-        applyTransformers(copiedArgs, handler);
-        applyTransformers(copiedArgs, method);
+        applyTransformers(args, handler);
+        applyTransformers(args, method);
 
         // Loop through all parameters of the method and checks the parameter type
         Class<?>[] parameterTypes = method.getParameterTypes();
-        if (parameterTypes.length == copiedArgs.length)
+        if (parameterTypes.length == args.length)
             for (int i = this.argsOffset; i < parameterTypes.length; i++) {
                 Class<?> type = parameterTypes[i];
-                Object value = copiedArgs[i];
+                Object value = args[i];
 
                 // Check if the value is an TransformerException and call the callback if present.
                 if (value instanceof TransformerException e) {
                     if (callback != null) callback.handleError(e);
                     // Continue to the next route
-                    return null;
+                    return false;
                 }
 
                 // Check if the parameter type is not the value type
@@ -134,11 +124,11 @@ public class TransformerPerformer {
                     if (converter == null) continue;
 
                     // Set the value of the argument to the return of the method for alternativ transformation.
-                    copiedArgs[i] = ReflectionUtils.invokeMethod(value, converter);
+                    args[i] = ReflectionUtils.invokeMethod(value, converter);
                 }
             }
 
-        return copiedArgs;
+        return true;
     }
 
     /**
