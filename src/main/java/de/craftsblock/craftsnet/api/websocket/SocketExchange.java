@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.api.websocket;
 
 import de.craftsblock.craftsnet.api.BaseExchange;
 import de.craftsblock.craftsnet.api.session.Session;
+import de.craftsblock.craftsnet.api.ssl.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 import org.jetbrains.annotations.NotNull;
@@ -13,16 +14,17 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.0
+ * @version 1.3.1
  * @see BaseExchange
  * @see Socket
  * @see SocketHandler
  * @since 2.1.1-SNAPSHOT
  */
-public record SocketExchange(@NotNull ProtocolVersion protocolVersion,
+public record SocketExchange(@NotNull Context context, @NotNull ProtocolVersion protocolVersion,
                              @NotNull WebSocketServer server, @NotNull WebSocketClient client) implements BaseExchange {
 
     /**
+     * @param context         The {@link Context} object containing temporary data for the exchange.
      * @param protocolVersion The {@link ProtocolVersion} object containing the protocol version used.
      * @param server          The {@link WebSocketServer} object that the client connected to.
      * @param client          The {@link WebSocketClient} object representing the websocket connection.
@@ -31,14 +33,15 @@ public record SocketExchange(@NotNull ProtocolVersion protocolVersion,
     }
 
     /**
-     * Gets the {@link WebSocketServer} object associated with this exchange
-     * the websocket client connected to.
+     * Broadcasts the given data to all WebSocket clients connected to the same path as the current client.
+     * If the current client does not have a WebSocket path associated, the broadcast is not performed.
      *
-     * @return The {@link WebSocketServer} object.
+     * @param data The data to be broadcasted to the WebSocket clients.
      */
-    @Override
-    public WebSocketServer server() {
-        return server;
+    public void broadcast(String data) {
+        if (client.getPath() == null)
+            return;
+        server.broadcast(client.getPath(), data);
     }
 
     /**
@@ -59,27 +62,30 @@ public record SocketExchange(@NotNull ProtocolVersion protocolVersion,
      * @since 3.5.6
      */
     @Override
-    public Session session() {
-        return client.getSession();
+    public @NotNull Context context() {
+        return context;
     }
 
     /**
-     * Broadcasts the given data to all WebSocket clients connected to the same path as the current client.
-     * If the current client does not have a WebSocket path associated, the broadcast is not performed.
+     * Gets the {@link WebSocketServer} object associated with this exchange
+     * the websocket client connected to.
      *
-     * @param data The data to be broadcasted to the WebSocket clients.
-     */
-    public void broadcast(String data) {
-        if (client.getPath() == null)
-            return;
-        server.broadcast(client.getPath(), data);
-    }
-
-    /**
-     * Performs last actions before the exchange is closed.
+     * @return The {@link WebSocketServer} object.
      */
     @Override
-    public void close() throws Exception {
+    public WebSocketServer server() {
+        return server;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     * @since 3.5.6
+     */
+    @Override
+    public Session session() {
+        return client.getSession();
     }
 
 }

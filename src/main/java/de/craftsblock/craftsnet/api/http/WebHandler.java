@@ -15,6 +15,7 @@ import de.craftsblock.craftsnet.api.middlewares.Middleware;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareCallbackInfo;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.session.SessionInfo;
+import de.craftsblock.craftsnet.api.ssl.Context;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
@@ -41,7 +42,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.7.0
+ * @version 1.7.1
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
@@ -111,7 +112,7 @@ public class WebHandler implements HttpHandler {
                 // Create a Request object to encapsulate the incoming request information.
                 try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod);
                      Session session = craftsNet.getSessionCache().getOrNew(SessionInfo.extractSession(request));
-                     Exchange exchange = new Exchange(protocolVersion, request, response, session)) {
+                     Exchange exchange = new Exchange(new Context(), protocolVersion, request, response, session)) {
                     exchange.session().setExchange(exchange);
 
                     PreRequestEvent event = new PreRequestEvent(exchange);

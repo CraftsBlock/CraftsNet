@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.api.http;
 
 import de.craftsblock.craftsnet.api.BaseExchange;
 import de.craftsblock.craftsnet.api.session.Session;
+import de.craftsblock.craftsnet.api.ssl.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import org.jetbrains.annotations.NotNull;
 
@@ -14,17 +15,18 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.1.0
+ * @version 3.1.1
  * @see BaseExchange
  * @see Request
  * @see Response
  * @see Session
  * @since 1.0.0-SNAPSHOT
  */
-public record Exchange(@NotNull ProtocolVersion protocolVersion,
+public record Exchange(@NotNull Context context, @NotNull ProtocolVersion protocolVersion,
                        @NotNull Request request, @NotNull Response response, @NotNull Session session) implements BaseExchange {
 
     /**
+     * @param context         The {@link Context} object containing temporary data for the exchange.
      * @param protocolVersion The {@link ProtocolVersion} object containing the protocol version used.
      * @param request         The {@link Request} object containing the incoming data from the client.
      * @param response        The {@link Response} object used to send data back to the client.
@@ -33,6 +35,17 @@ public record Exchange(@NotNull ProtocolVersion protocolVersion,
     public Exchange {
         request.setExchange(this);
         response.setExchange(this);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     * @since 3.5.6
+     */
+    @Override
+    public @NotNull Context context() {
+        return context;
     }
 
     /**
@@ -74,13 +87,6 @@ public record Exchange(@NotNull ProtocolVersion protocolVersion,
     @Override
     public Session session() {
         return session;
-    }
-
-    /**
-     * Performs last actions before the exchange is closed.
-     */
-    @Override
-    public void close() throws Exception {
     }
 
     /**
