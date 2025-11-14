@@ -2,7 +2,7 @@ package de.craftsblock.craftsnet.api.websocket;
 
 import de.craftsblock.craftsnet.api.BaseExchange;
 import de.craftsblock.craftsnet.api.session.Session;
-import de.craftsblock.craftsnet.api.ssl.Context;
+import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
 import org.jetbrains.annotations.NotNull;

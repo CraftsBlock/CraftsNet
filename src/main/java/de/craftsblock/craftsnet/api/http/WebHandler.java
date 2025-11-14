@@ -15,7 +15,7 @@ import de.craftsblock.craftsnet.api.middlewares.Middleware;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareCallbackInfo;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.session.SessionInfo;
-import de.craftsblock.craftsnet.api.ssl.Context;
+import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;

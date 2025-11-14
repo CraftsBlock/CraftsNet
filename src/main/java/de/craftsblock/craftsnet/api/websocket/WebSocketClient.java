@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.api.middlewares.WebsocketMiddleware;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.session.Session;
-import de.craftsblock.craftsnet.api.ssl.Context;
+import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
