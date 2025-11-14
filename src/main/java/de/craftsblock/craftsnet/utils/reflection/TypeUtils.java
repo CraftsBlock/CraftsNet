@@ -19,7 +19,7 @@ import java.util.Map;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
+ * @version 1.0.3
  * @since 3.5.0
  */
 public class TypeUtils {
@@ -54,6 +54,43 @@ public class TypeUtils {
      * Private constructor to prevent direct instantiation
      */
     private TypeUtils() {
+    }
+
+    /**
+     * Casts the given {@code value} to the specified {@code targetType}, supporting
+     * primitive-wrapper equivalence and respecting the assignability rules defined by
+     * {@link #isAssignable(Class, Class)}.
+     *
+     * @param targetType The class to cast to; may represent primitive or wrapper types.
+     * @param value      The value to cast; may be {@code null}.
+     * @param <T>        The target type.
+     * @return The cast value, or {@code null} if {@code value} is {@code null}.
+     * @throws IllegalArgumentException If {@code targetType} is {@code null}.
+     * @throws ClassCastException       If the value cannot be cast to {@code targetType}.
+     * @since 3.5.6
+     */
+    @Contract("_, null -> null")
+    @SuppressWarnings("unchecked")
+    public static <T> T cast(Class<T> targetType, Object value) {
+        if (targetType == null)
+            throw new IllegalArgumentException("targetType cannot be null");
+
+        if (value == null)
+            return null;
+
+        Class<?> sourceType = value.getClass();
+
+        if (!isAssignable(targetType, sourceType))
+            throw new ClassCastException(
+                    "Cannot cast " + sourceType.getName() + " to " + targetType.getName()
+            );
+
+        if (isPrimitive(targetType) && !toWrapper(targetType).isInstance(value))
+            throw new ClassCastException(
+                    "Cannot unbox " + sourceType.getName() + " to primitive " + targetType.getName()
+            );
+
+        return (T) value;
     }
 
     /**
