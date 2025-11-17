@@ -255,7 +255,7 @@ public class WebHandler implements HttpHandler {
                 mapping.middlewares().forEach(middleware -> middleware.handle(callback, exchange));
                 if (callback.isCancelled()) continue;
 
-                // Perform all transformers and continue if
+                // Perform all transformers and continue if the transformers exit with an exception
                 if (!transformerPerformer.perform(mapping.handler(), method, args))
                     continue;
 

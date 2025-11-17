@@ -384,8 +384,8 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             if (processRequirements(mapping, frame)) return;
 
-            // Perform all transformers and continue if passingArgs is null
-            if (transformerPerformer.perform(mapping.handler(), method, args))
+            // Perform all transformers and continue if the transformers exit with an exception
+            if (!transformerPerformer.perform(mapping.handler(), method, args))
                 return;
 
             preprocessMethodParameters(method, frame, args);
