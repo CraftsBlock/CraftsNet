@@ -274,8 +274,27 @@ public class WebSocketClient implements Runnable, RequireAble {
         }
 
         if (!this.connected || !this.socket.isConnected()) return true;
-        if (isCloseFrame(frame) || validateOrClose(frame))
+        if (isCloseFrame(frame))
             return true;
+
+        switch (frame.getOpcode()) {
+            case PING -> {
+                craftsNet.getListenerRegistry().call(new ReceivedPingMessageEvent(exchange, frame));
+                return false;
+            }
+
+            case PONG -> {
+                craftsNet.getListenerRegistry().call(new ReceivedPongMessageEvent(exchange, frame));
+                return false;
+            }
+
+            case TEXT -> {
+                if (Utils.isEncodingValid(frame.getData(), StandardCharsets.UTF_8))
+                    break;
+                closeInternally(ClosureCode.UNSUPPORTED_PAYLOAD, "Send byte values are not utf8 valid!", true);
+                return true;
+            }
+        }
 
         // Fire an incoming socket message event and continue if it was cancelled
         IncomingSocketMessageEvent incomingMessageEvent = new IncomingSocketMessageEvent(exchange, frame);
@@ -300,35 +319,6 @@ public class WebSocketClient implements Runnable, RequireAble {
         transformerPerformer.clearCache();
         matchers.clear();
         return false;
-    }
-
-    /**
-     * Process / Checks some things based on the {@link Opcode} of a frame.
-     *
-     * @param frame The frame to process / check.
-     * @return {@code true} if the read loop should be ended, {@code false} otherwise.
-     * @since 3.4.0-SNAPSHOT
-     */
-    private boolean validateOrClose(Frame frame) {
-        return switch (frame.getOpcode()) {
-            case PING -> {
-                craftsNet.getListenerRegistry().call(new ReceivedPingMessageEvent(exchange, frame));
-                yield false;
-            }
-
-            case PONG -> {
-                craftsNet.getListenerRegistry().call(new ReceivedPongMessageEvent(exchange, frame));
-                yield false;
-            }
-
-            case TEXT -> {
-                if (Utils.isEncodingValid(frame.getData(), StandardCharsets.UTF_8)) yield false;
-                closeInternally(ClosureCode.UNSUPPORTED_PAYLOAD, "Send byte values are not utf8 valid!", true);
-                yield true;
-            }
-
-            default -> false;
-        };
     }
 
     /**
