@@ -195,8 +195,7 @@ public class RouteRegistry {
                 .flatMap(map -> map.values().stream())
                 .filter(list -> !list.isEmpty())
                 .flatMap(Collection::stream)
-                .map(EndpointMapping::handler)
-                .anyMatch(type::isInstance);
+                .anyMatch(mapping -> type.isInstance(mapping.handler()));
     }
 
     /**
@@ -507,11 +506,10 @@ public class RouteRegistry {
     private Stream<EndpointMapping> getFilteredEndpointStream(Class<? extends Server> server, String url, RequireAble target) {
         return getEndpoints(server).entrySet().parallelStream()
                 .filter(entry -> entry.getKey().matcher(formatUrl(url)).matches())
-                .map(Map.Entry::getValue)
-                .flatMap(Collection::stream)
+                .flatMap(entry -> entry.getValue().stream())
                 .filter(mapping -> craftsNet.getRequirementRegistry().getRequirementMethodLinks(server).parallelStream()
-                        .filter(methodLink -> mapping.isPresent(methodLink.requirement().getAnnotation()))
-                        .filter(methodLink -> TypeUtils.isAssignable(target.getClass(), methodLink.arg()))
+                        .filter(methodLink -> mapping.isPresent(methodLink.requirement().getAnnotation())
+                                && TypeUtils.isAssignable(target.getClass(), methodLink.arg()))
                         .allMatch(methodLink -> methodLink.requirement().applies(target, mapping))
                 );
     }

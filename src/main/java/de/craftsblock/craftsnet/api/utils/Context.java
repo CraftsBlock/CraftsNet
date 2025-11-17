@@ -2,7 +2,9 @@ package de.craftsblock.craftsnet.api.utils;
 
 import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -154,8 +156,7 @@ public class Context extends ConcurrentHashMap<Class<?>, Object> {
     public <T> Collection<T> search(Class<T> type, Collection<T> orElse) {
         List<T> matches = this.entrySet().stream()
                 .filter((entry) -> TypeUtils.isAssignable(type, entry.getKey()))
-                .map(Entry::getValue)
-                .map((entry) -> TypeUtils.cast(type, entry))
+                .map(entry -> TypeUtils.cast(type, entry.getValue()))
                 .toList();
 
         if (!matches.isEmpty() || orElse.isEmpty()) return matches;
