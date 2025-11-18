@@ -4,7 +4,6 @@ import org.jetbrains.annotations.Contract;
 
 import java.lang.reflect.*;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
@@ -91,6 +90,25 @@ public class TypeUtils {
             );
 
         return (T) value;
+    }
+
+    /**
+     * Determines whether the given value is an instance of the specified type.
+     * <p>
+     * This method performs a null check on both parameters and then evaluates
+     * whether the runtime class of the provided value is assignable to the
+     * specified target type using {@link #isAssignable(Class, Class)}.
+     *
+     * @param type  The target type to check against.
+     * @param value The value whose compatibility with the target type is to be verified.
+     * @return {@code true} if the value is non-null and its class is assignable to the given type,
+     * {@code false} otherwise.
+     * @since 3.5.6
+     */
+    public static boolean isInstance(Class<?> type, Object value) {
+        if (type == null || value == null)
+            return false;
+        return isAssignable(type, value.getClass());
     }
 
     /**
