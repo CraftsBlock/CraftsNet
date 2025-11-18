@@ -8,6 +8,7 @@ import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -156,7 +157,10 @@ final class AddonLoadOrder implements Closeable {
      * @return The priority of the specified addon in the load order.
      */
     private int getPriority(String addon) {
-        return addonLoadOrder.getOrDefault(addon, new BootMapping(addon, 0, null, false)).priority();
+        if (addonLoadOrder.containsKey(addon))
+            return addonLoadOrder.get(addon).priority();
+
+        return 0;
     }
 
     /**
