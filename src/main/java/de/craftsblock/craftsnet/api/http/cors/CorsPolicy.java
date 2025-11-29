@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Unmodifiable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 
 /**
  * Represents a Cross-Origin Resource Sharing (CORS) policy, which defines how requests
@@ -25,7 +26,7 @@ import java.util.List;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.3
+ * @version 1.0.4
  * @since 3.1.0
  */
 public class CorsPolicy {
@@ -150,7 +151,7 @@ public class CorsPolicy {
      * @param origins The origins to be allowed.
      */
     public void addAllowedOrigin(String... origins) {
-        add(allowedOrigins, origins);
+        add(allowedOrigins, origin -> origin.replaceFirst(".*://", ""), origins);
     }
 
     /**
@@ -159,7 +160,7 @@ public class CorsPolicy {
      * @param origins The origins to be removed.
      */
     public void removeAllowedOrigin(String... origins) {
-        remove(allowedOrigins, origins);
+        remove(allowedOrigins, origin -> origin.replaceFirst(".*://", ""), origins);
     }
 
     /**
@@ -168,7 +169,7 @@ public class CorsPolicy {
      * @param methods The http methods to be allowed.
      */
     public void addAllowedMethod(HttpMethod... methods) {
-        add(allowedMethods, methods);
+        add(allowedMethods, Function.identity(), methods);
     }
 
     /**
@@ -177,7 +178,7 @@ public class CorsPolicy {
      * @param methods The http methods to be removed.
      */
     public void removeAllowedOrigin(HttpMethod... methods) {
-        remove(allowedMethods, methods);
+        remove(allowedMethods, Function.identity(), methods);
     }
 
     /**
@@ -186,7 +187,7 @@ public class CorsPolicy {
      * @param headers The http headers to be allowed.
      */
     public void addAllowedHeader(String... headers) {
-        add(allowedHeaders, headers);
+        add(allowedHeaders, Function.identity(), headers);
     }
 
     /**
@@ -195,7 +196,7 @@ public class CorsPolicy {
      * @param headers The http headers to be removed.
      */
     public void removeAllowedHeader(String... headers) {
-        remove(allowedHeaders, headers);
+        remove(allowedHeaders, Function.identity(), headers);
     }
 
     /**
@@ -205,7 +206,7 @@ public class CorsPolicy {
      * @param headers The http headers to be exposed.
      */
     public void addExposedHeader(String... headers) {
-        add(exposedHeaders, headers);
+        add(exposedHeaders, Function.identity(), headers);
     }
 
     /**
@@ -214,7 +215,7 @@ public class CorsPolicy {
      * @param headers The headers to be removed.
      */
     public void removeExposedHeader(String... headers) {
-        remove(exposedHeaders, headers);
+        remove(exposedHeaders, Function.identity(), headers);
     }
 
     /**
@@ -226,9 +227,12 @@ public class CorsPolicy {
      * @param <L>    The type of the list.
      */
     @SafeVarargs
-    private <T, L extends List<T>> void add(L list, T... values) {
-        for (T value : values)
-            if (!list.contains(value)) list.add(value);
+    private <T, L extends List<T>> void add(L list, Function<T, T> transformer, T... values) {
+        for (T value : values) {
+            T transformed = transformer.apply(value);
+            if (!list.contains(transformed))
+                list.add(transformed);
+        }
     }
 
     /**
@@ -240,9 +244,9 @@ public class CorsPolicy {
      * @param <L>    The type of the list.
      */
     @SafeVarargs
-    private <T, L extends List<T>> void remove(L list, T... values) {
+    private <T, L extends List<T>> void remove(L list, Function<T, T> transformer, T... values) {
         for (T value : values)
-            list.remove(value);
+            list.remove(transformer.apply(value));
     }
 
     /**
