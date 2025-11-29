@@ -41,7 +41,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.5.4
+ * @version 3.5.5
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -246,7 +246,7 @@ public class RouteRegistry {
         if (!Files.isDirectory(folder))
             throw new IllegalArgumentException("\"folder\" must be a folder!");
 
-        Pattern pattern = Pattern.compile(formatUrl(path) + "/" + "?(.*)");
+        Pattern pattern = Pattern.compile(formatUrl(path) + "/(.*)");
         shares.put(pattern, new ShareMapping(folder.toAbsolutePath().toString(), onlyGet));
 
         // Only continue if the web server was set
