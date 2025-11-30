@@ -61,7 +61,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.7.1
+ * @version 3.7.2
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -626,12 +626,53 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
-     * Returns the storage of this websocket client for storing specific data.
+     * Returns the {@link Session} of this websocket client for storing specific data.
      *
-     * @return The storage of this websocket client instance.
+     * @return The {@link Session} of this websocket client instance.
      */
     public Session getSession() {
         return session;
+    }
+
+    /**
+     * Returns the {@link Context} of this websocket client for storing class instances
+     * during the connection lifespan.
+     *
+     * @return The {@link Context} of this websocket client instance.
+     * @since 3.5.6
+     */
+    public Context getContext() {
+        return exchange.context();
+    }
+
+    /**
+     * Returns the {@link WebSocketServer} which connected this websocket client.
+     *
+     * @return The {@link WebSocketServer} of this websocket client instance.
+     * @since 3.5.6
+     */
+    public WebSocketServer getServer() {
+        return exchange.server();
+    }
+
+    /**
+     * Returns the {@link SocketExchange} of this websocket client.
+     *
+     * @return The {@link SocketExchange} of this websocket client instance.
+     * @since 3.5.6
+     */
+    public SocketExchange getExchange() {
+        return exchange;
+    }
+
+    /**
+     * Returns the instance of {@link CraftsNet} bound to the websocket client.
+     *
+     * @return The instance of {@link CraftsNet}.
+     * @since 3.5.6
+     */
+    public CraftsNet getCraftsNet() {
+        return craftsNet;
     }
 
     /**
@@ -1046,6 +1087,8 @@ public class WebSocketClient implements Runnable, RequireAble {
             matchers.clear();
             session.clear();
             extensions.clear();
+
+            exchange.close();
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
