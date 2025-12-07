@@ -125,7 +125,7 @@ public class CraftsNet {
                 jvmVersion.toString(), jvmVersion.feature() + 44, jvmVersion.interim());
 
         // Check if version is a release as the version check is disabled for experimental builds
-        if (version.matches("^\\d+(?:\\.\\d+)*$") && !builder.shouldSkipVersionCheck())
+        if (!builder.shouldSkipVersionCheck() && version.matches("^\\d+(?:\\.\\d+)*$"))
             Versions.verbalCheck(this);
 
         logger.debug("Preloading gson for faster processing");
