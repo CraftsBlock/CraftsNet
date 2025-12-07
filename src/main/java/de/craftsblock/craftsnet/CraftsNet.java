@@ -301,7 +301,10 @@ public class CraftsNet {
 
     /**
      * Restarts the CraftsNet framework.
+     *
+     * @deprecated This method can create a mass amount of threads. There will be no replacement.
      */
+    @Deprecated(since = "3.6.0", forRemoval = true)
     public void restart() {
         restart(null);
     }
@@ -310,7 +313,9 @@ public class CraftsNet {
      * Restarts the CraftsNet framework.
      *
      * @param executeBetween A {@link Runnable} which is before the new instance is started.
+     * @deprecated This method can create a mass amount of threads. There will be no replacement.
      */
+    @Deprecated(since = "3.6.0", forRemoval = true)
     public void restart(Runnable executeBetween) {
         CraftsNetBuilder builder = this.builder;
         this.builder = null;
