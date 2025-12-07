@@ -16,7 +16,6 @@ import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
 import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeEncoder;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterRegistry;
-import de.craftsblock.craftsnet.command.CommandRegistry;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.utils.FileHelper;
@@ -187,29 +186,6 @@ public abstract class Addon {
      */
     public final BodyRegistry getBodyRegistry() {
         return craftsNet.getBodyRegistry();
-    }
-
-    /**
-     * Get the {@link CommandRegistry} instance used by the addon.
-     * This method is marked as final to prevent subclasses from modifying the registry directly.
-     *
-     * @return The {@link CommandRegistry} instance used by the addon.
-     * @deprecated Use {@link #getCommandRegistry()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public final CommandRegistry commandRegistry() {
-        return this.getCommandRegistry();
-    }
-
-    /**
-     * Get the {@link CommandRegistry} instance used by the addon.
-     * This method is marked as final to prevent subclasses from modifying the registry directly.
-     *
-     * @return The {@link CommandRegistry} instance used by the addon.
-     */
-    public final CommandRegistry getCommandRegistry() {
-        return craftsNet.getCommandRegistry();
     }
 
     /**

@@ -23,21 +23,14 @@ import de.craftsblock.craftsnet.autoregister.loaders.AutoRegisterLoader;
 import de.craftsblock.craftsnet.builder.ActivateType;
 import de.craftsblock.craftsnet.builder.AddonContainingBuilder;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
-import de.craftsblock.craftsnet.command.CommandRegistry;
-import de.craftsblock.craftsnet.events.ConsoleMessageEvent;
-import de.craftsblock.craftsnet.listeners.ConsoleListener;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.utils.FileHelper;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import de.craftsblock.craftsnet.utils.versions.Versions;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.Nullable;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URISyntaxException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -65,8 +58,6 @@ public class CraftsNet {
     private Logger logger;
     private LogStream logStream;
     private FileHelper fileHelper;
-    private Thread consoleListener;
-    private BufferedReader consoleReader;
 
     // Threads
     private Thread shutdownThread;
@@ -76,7 +67,6 @@ public class CraftsNet {
     private AddonManager addonManager;
     private AutoRegisterRegistry autoRegisterRegistry;
     private BodyRegistry bodyRegistry;
-    private CommandRegistry commandRegistry;
     private ListenerRegistry listenerRegistry;
     private MiddlewareRegistry middlewareRegistry;
     private RequirementRegistry requirementRegistry;
@@ -177,9 +167,6 @@ public class CraftsNet {
         logger.debug("Initialization of the requirement registry");
         requirementRegistry = new RequirementRegistry(this);
 
-        logger.debug("Initialization of the command registry");
-        commandRegistry = new CommandRegistry(this);
-
         logger.debug("Initialization of the service manager");
         serviceManager = new ServiceManager(this);
 
@@ -235,17 +222,6 @@ public class CraftsNet {
         } else if (builder.isWebSocketServer(ActivateType.DISABLED) && routeRegistry.hasWebsockets())
             logger.warning("The websocket server is forcible disabled, but has registered endpoints!");
 
-        // Register build in commands / listeners
-        if (!builder.isCommandSystem(ActivateType.DISABLED)) {
-            logger.debug("Registering the console listener");
-            listenerRegistry.register(new ConsoleListener(this));
-
-            // Set up and start the console listener
-            this.consoleReader = createConsoleReader();
-            this.consoleListener = startConsoleListener();
-            if (this.consoleListener != null) logger.debug("Started the console reader");
-        }
-
         // Register a shutdown hook for calling the stop method
         this.shutdownThread = new Thread(this::stop, "CraftsNet Shutdown");
         Runtime.getRuntime().addShutdownHook(this.shutdownThread);
@@ -278,17 +254,6 @@ public class CraftsNet {
      */
     public void stop() {
         logger.info("Shutdown request has been received");
-        if (this.consoleListener != null && !this.consoleListener.isInterrupted()) {
-            logger.info("Closing the console input listener");
-
-            try {
-                if (this.consoleReader != null) consoleReader.close();
-            } catch (IOException ignored) {
-            }
-
-            this.consoleListener.interrupt();
-            this.consoleListener = null;
-        }
 
         if (this.webServer != null && this.webServer.isRunning()) {
             this.webServer.stop();
@@ -367,59 +332,6 @@ public class CraftsNet {
     }
 
     /**
-     * Creates a new {@link BufferedReader} that reads from the {@link System#in} input steam.
-     * The instance is modified in a way that it does not close the underlying input stream
-     * when it is closed.
-     *
-     * @return The new {@link BufferedReader} that reads from {@link System#in}.
-     */
-    private BufferedReader createConsoleReader() {
-        if (this.consoleReader != null) return this.consoleReader;
-
-        return new BufferedReader(new InputStreamReader(System.in)) {
-            @Override
-            public void close() {
-                consoleReader = null;
-            }
-        };
-    }
-
-    /**
-     * Creates a new thread that listens to the console and performs the according events.
-     *
-     * @return The console reader thread.
-     */
-    @Nullable
-    private Thread startConsoleListener() {
-        if (System.in == null) {
-            logger.error("Console input stream not available!");
-            return null;
-        }
-
-        Thread console = new Thread(() -> {
-            try {
-                while (!Thread.currentThread().isInterrupted()) {
-                    if (consoleReader == null) break;
-
-                    String line = consoleReader.readLine();
-                    if (line == null) {
-                        getLogger().error("Unexpected console input: null");
-                        getLogger().error("Console reader will be closed after this!");
-                        break;
-                    }
-
-                    listenerRegistry.call(new ConsoleMessageEvent(line));
-                }
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        }, "CraftsNet Console Reader");
-        console.setDaemon(true);
-        console.start();
-        return console;
-    }
-
-    /**
      * Retrieves the addon manager instance for managing addons.
      *
      * @return The addon manager instance.
@@ -484,27 +396,6 @@ public class CraftsNet {
      */
     public BodyRegistry getBodyRegistry() {
         return bodyRegistry;
-    }
-
-    /**
-     * Retrieves the command registry instance for managing commands.
-     *
-     * @return The command registry instance.
-     * @deprecated Use {@link #getCommandRegistry()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public CommandRegistry commandRegistry() {
-        return commandRegistry;
-    }
-
-    /**
-     * Retrieves the command registry instance for managing commands.
-     *
-     * @return The command registry instance.
-     */
-    public CommandRegistry getCommandRegistry() {
-        return commandRegistry;
     }
 
     /**
