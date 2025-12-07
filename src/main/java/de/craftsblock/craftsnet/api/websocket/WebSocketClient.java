@@ -13,8 +13,8 @@ import de.craftsblock.craftsnet.api.middlewares.WebsocketMiddleware;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.session.Session;
-import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
+import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.api.websocket.annotations.ApplyDecoder;
@@ -639,7 +639,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * during the connection lifespan.
      *
      * @return The {@link Context} of this websocket client instance.
-     * @since 3.5.6
+     * @since 3.6.0
      */
     public Context getContext() {
         return exchange.context();
@@ -649,7 +649,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * Returns the {@link WebSocketServer} which connected this websocket client.
      *
      * @return The {@link WebSocketServer} of this websocket client instance.
-     * @since 3.5.6
+     * @since 3.6.0
      */
     public WebSocketServer getServer() {
         return exchange.server();
@@ -659,7 +659,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * Returns the {@link SocketExchange} of this websocket client.
      *
      * @return The {@link SocketExchange} of this websocket client instance.
-     * @since 3.5.6
+     * @since 3.6.0
      */
     public SocketExchange getExchange() {
         return exchange;
@@ -669,7 +669,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * Returns the instance of {@link CraftsNet} bound to the websocket client.
      *
      * @return The instance of {@link CraftsNet}.
-     * @since 3.5.6
+     * @since 3.6.0
      */
     public CraftsNet getCraftsNet() {
         return craftsNet;

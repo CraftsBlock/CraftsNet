@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author CraftsBlock
  * @author Philipp Maywald
  * @version 1.0.0
- * @since 3.5.6
+ * @since 3.6.0
  */
 public class Context extends ConcurrentHashMap<Class<?>, Object> {
 

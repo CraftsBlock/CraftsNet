@@ -41,7 +41,7 @@ public record Exchange(@NotNull Context context, @NotNull ProtocolVersion protoc
      * {@inheritDoc}
      *
      * @return {@inheritDoc}
-     * @since 3.5.6
+     * @since 3.6.0
      */
     @Override
     public @NotNull Context context() {

@@ -28,7 +28,7 @@ public interface BaseExchange extends AutoCloseable {
      * Get the {@link Context} of the exchange.
      *
      * @return The {@link Context} of the exchange.
-     * @since 3.5.6
+     * @since 3.6.0
      */
     Context context();
 
@@ -54,7 +54,7 @@ public interface BaseExchange extends AutoCloseable {
      * Gets the {@link Session} of the exchange.
      *
      * @return The {@link Session} of the exchange.
-     * @since 3.5.6
+     * @since 3.6.0
      */
     Session session();
 }

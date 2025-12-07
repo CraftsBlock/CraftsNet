@@ -66,7 +66,7 @@ public class TypeUtils {
      * @return The cast value, or {@code null} if {@code value} is {@code null}.
      * @throws IllegalArgumentException If {@code targetType} is {@code null}.
      * @throws ClassCastException       If the value cannot be cast to {@code targetType}.
-     * @since 3.5.6
+     * @since 3.6.0
      */
     @Contract("_, null -> null")
     @SuppressWarnings("unchecked")
@@ -103,7 +103,7 @@ public class TypeUtils {
      * @param value The value whose compatibility with the target type is to be verified.
      * @return {@code true} if the value is non-null and its class is assignable to the given type,
      * {@code false} otherwise.
-     * @since 3.5.6
+     * @since 3.6.0
      */
     public static boolean isInstance(Class<?> type, Object value) {
         if (type == null || value == null)

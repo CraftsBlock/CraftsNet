@@ -59,7 +59,7 @@ public record SocketExchange(@NotNull Context context, @NotNull ProtocolVersion 
      * {@inheritDoc}
      *
      * @return {@inheritDoc}
-     * @since 3.5.6
+     * @since 3.6.0
      */
     @Override
     public @NotNull Context context() {
@@ -81,7 +81,7 @@ public record SocketExchange(@NotNull Context context, @NotNull ProtocolVersion 
      * {@inheritDoc}
      *
      * @return {@inheritDoc}
-     * @since 3.5.6
+     * @since 3.6.0
      */
     @Override
     public Session session() {
