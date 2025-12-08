@@ -55,6 +55,7 @@ public class Context extends ConcurrentHashMap<Class<?>, Object> {
     /**
      * Retrieves the value associated with the given type key.
      *
+     * @param <T>   The type of the value to retrieve.
      * @param key The class type key whose associated value is to be returned.
      * @return The value associated with the specified type, or {@code null} if none exists.
      */
@@ -66,6 +67,7 @@ public class Context extends ConcurrentHashMap<Class<?>, Object> {
      * Retrieves the value associated with the given type key, returning a default value
      * if no mapping exists for the given type.
      *
+     * @param <T>   The type of the value to retrieve.
      * @param key          The class type key whose associated value is to be returned.
      * @param defaultValue The default value to return if the key is not present.
      * @return The value associated with the specified type, or {@code defaultValue} if not found.
