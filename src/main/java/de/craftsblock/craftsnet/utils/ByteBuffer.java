@@ -1,5 +1,7 @@
 package de.craftsblock.craftsnet.utils;
 
+import org.jetbrains.annotations.ApiStatus;
+
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -20,7 +22,10 @@ import java.util.UUID;
  * @author CraftsBlock
  * @version 1.0.1
  * @since 3.1.0-SNAPSHOT
+ * @deprecated Deprecated in favor of {@link java.nio.ByteBuffer} and {@link de.craftsblock.craftscore.buffer.BufferUtil}
  */
+@Deprecated(since = "3.6.1", forRemoval = true)
+@ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
 public class ByteBuffer {
 
     private final boolean readOnly, fixedSize;
