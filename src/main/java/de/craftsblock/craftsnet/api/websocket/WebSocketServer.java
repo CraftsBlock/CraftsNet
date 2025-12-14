@@ -33,7 +33,7 @@ import java.util.concurrent.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.4
+ * @version 1.2.5
  * @see WebSocketClient
  * @since 2.1.1-SNAPSHOT
  */
@@ -141,8 +141,9 @@ public class WebSocketServer extends Server {
                 try {
                     Socket socket = serverSocket.accept();
 
-                    // Set timeout duration
                     socket.setSoTimeout(1000 * 60 * 5);
+                    socket.setKeepAlive(true);
+                    socket.setTcpNoDelay(true);
 
                     if (socket instanceof SSLSocket sslSocket) {
                         sslSocket.addHandshakeCompletedListener(event -> connectClient(event.getSocket()));
