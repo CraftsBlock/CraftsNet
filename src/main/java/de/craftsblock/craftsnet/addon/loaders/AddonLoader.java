@@ -39,7 +39,7 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.3.3
+ * @version 2.3.4
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -76,17 +76,20 @@ public final class AddonLoader {
      */
     public void update(Path path) {
         try {
-            if (path.getParent() != null && Files.notExists(path.getParent()))
+            if (path.getParent() != null && Files.notExists(path.getParent())) {
                 Files.createDirectories(path.getParent());
+            }
 
-            if (Files.notExists(path))
+            if (Files.notExists(path)) {
                 throw new NullPointerException("The path (%s) does not exist!".formatted(
                         path.toFile().getAbsolutePath()
                 ));
+            }
 
             synchronized (addons) {
-                if (!addons.contains(path))
+                if (!addons.contains(path)) {
                     addons.push(path);
+                }
             }
 
         } catch (IOException e) {
@@ -110,20 +113,22 @@ public final class AddonLoader {
     /**
      * Loads all the addons from the provided addon files.
      *
-     * @return A list of {@link AddonConfiguration} which where loaded from the addon files.
+     * @return A collection of {@link AddonConfiguration} which where loaded from the addon files.
      * @throws IOException if there is an I/O error while loading the addons.
      */
-    public List<AddonConfiguration> load() throws IOException {
+    public Collection<AddonConfiguration> load() throws IOException {
         Logger logger = craftsNet.getLogger();
 
         // Create a new artifact loader
         ArtifactLoader artifactLoader = new ArtifactLoader();
 
         // Load all the dependencies and repositories from the addons
-        List<AddonConfiguration> configurations = new ArrayList<>();
+        HashMap<String, AddonConfiguration> configurations = new HashMap<>();
         synchronized (addons) {
             for (Path path : addons) {
-                if (Files.isDirectory(path)) continue;
+                if (Files.isDirectory(path)) {
+                    continue;
+                }
 
                 try (JarFile jarFile = new JarFile(path.toFile(), true, ZipFile.OPEN_READ, Runtime.version())) {
                     logger.debug("Loading jar file %s", path.toFile().getAbsolutePath());
@@ -131,11 +136,18 @@ public final class AddonLoader {
                     // Load the configuration file from the jar
                     AddonConfiguration configuration = retrieveConfig(path, jarFile);
                     if (configuration == null) {
-                        logger.error(new FileNotFoundException("Could not locate the addon.json within " + path.toFile().getPath() + "!"));
+                        logger.error(new FileNotFoundException("Could not locate the addon.json within %s!".formatted(path.toFile().getPath())));
                         continue;
                     }
+
                     Json addon = configuration.json();
                     String name = addon.getString("name");
+
+                    if (configurations.containsKey(name)) {
+                        logger.error("Duplicate addon name %s used by %s and %s",
+                                name, configurations.get(name).path().toFile().getPath(), path.toFile().getPath());
+                        continue;
+                    }
 
                     // Check if the jar version is compatible
                     long checkStart = System.currentTimeMillis();
@@ -152,16 +164,20 @@ public final class AddonLoader {
 
                     // Inject all repositories
                     artifactLoader.cleanup();
-                    if (addon.contains("repositories"))
-                        for (String repo : addon.getStringList("repositories"))
+                    if (addon.contains("repositories")) {
+                        for (String repo : addon.getStringList("repositories")) {
                             artifactLoader.addRepository(repo);
+                        }
+                    }
 
                     // Load all required dependencies
                     URL[] dependencies;
-                    if (addon.contains("dependencies"))
+                    if (addon.contains("dependencies")) {
                         dependencies = artifactLoader.loadLibraries(this.craftsNet, this, configuration.services(),
                                 name, addon.getStringList("dependencies").toArray(String[]::new));
-                    else dependencies = new URL[0];
+                    } else {
+                        dependencies = new URL[0];
+                    }
 
                     DependencyClassLoader[] dependencyClassLoaders = Arrays.stream(dependencies)
                             .map(url -> DependencyClassLoader.safelyNew(craftsNet, url)).toArray(DependencyClassLoader[]::new);
@@ -170,7 +186,7 @@ public final class AddonLoader {
                     URL[] classpath = new URL[]{path.toUri().toURL()};
 
                     // Put the configuration in the configurations map
-                    configurations.add(new AddonConfiguration(path, configuration.json(), classpath, dependencyClassLoaders,
+                    configurations.put(name, new AddonConfiguration(path, configuration.json(), classpath, dependencyClassLoaders,
                             configuration.services(), configuration.addon(), configuration.meta(), configuration.classLoader()));
                 }
             }
@@ -179,7 +195,7 @@ public final class AddonLoader {
         }
 
         artifactLoader.stop();
-        return configurations;
+        return configurations.values();
     }
 
     /**
@@ -190,9 +206,11 @@ public final class AddonLoader {
     public void load(List<AddonConfiguration> rawConfigurations) {
         // Ensure that rawConfigurations is an array list
         List<AddonConfiguration> configurations;
-        if (rawConfigurations instanceof ArrayList<AddonConfiguration>)
+        if (rawConfigurations instanceof ArrayList<AddonConfiguration>) {
             configurations = rawConfigurations;
-        else configurations = new ArrayList<>(rawConfigurations);
+        } else {
+            configurations = new ArrayList<>(rawConfigurations);
+        }
 
         AddonLoadOrder loadOrder = new AddonLoadOrder();
         HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources = new HashMap<>();
@@ -210,7 +228,9 @@ public final class AddonLoader {
         // Initialize tasks
         configurations.forEach(configuration -> {
             Addon addon = instantiateAddon(configuration);
-            if (addon == null) return;
+            if (addon == null) {
+                return;
+            }
 
             craftsNet.getAddonManager().register(addon);
             configuration.addon().set(addon);
@@ -255,7 +275,10 @@ public final class AddonLoader {
             logger.info("Loading addon %s...", addon.getName());
             addon.onLoad();
 
-            if (!autoRegisterInfos.containsKey(addon)) return;
+            if (!autoRegisterInfos.containsKey(addon)) {
+                return;
+            }
+
             craftsNet.getAutoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.LOAD);
         });
 
@@ -264,7 +287,10 @@ public final class AddonLoader {
             logger.info("Enabling addon %s...", addon.getName());
             addon.onEnable();
 
-            if (!autoRegisterInfos.containsKey(addon)) return;
+            if (!autoRegisterInfos.containsKey(addon)) {
+                return;
+            }
+
             craftsNet.getAutoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.ENABLE);
         });
 
@@ -281,8 +307,9 @@ public final class AddonLoader {
     private void sortConfigurations(AddonLoadOrder loadOrder, List<AddonConfiguration> configurations) {
         var orderedConfigurationNames = loadOrder.getPreLoadOrder();
         Map<String, Integer> sortMap = new HashMap<>();
-        for (int i = 0; i < orderedConfigurationNames.size(); i++)
+        for (int i = 0; i < orderedConfigurationNames.size(); i++) {
             sortMap.put(orderedConfigurationNames.get(i), i);
+        }
 
         configurations.sort(Comparator.comparingInt(c -> sortMap.getOrDefault(c.meta().get().name(), Integer.MAX_VALUE)));
     }
@@ -297,8 +324,9 @@ public final class AddonLoader {
     private void preBuildLoadOrder(AddonLoadOrder loadOrder, AddonConfiguration configuration) {
         AddonMeta meta = configuration.meta().get();
         String name = meta.name();
-        if (loadOrder.contains(name))
+        if (loadOrder.contains(name)) {
             throw new IllegalStateException("There are two plugins with the same name: \"%s\"!".formatted(name));
+        }
 
         processDepends(name, meta.depends(), loadOrder::depends);
         processDepends(name, meta.softDepends(), loadOrder::softDepends);
@@ -313,7 +341,10 @@ public final class AddonLoader {
      * @since 3.4.3
      */
     private void processDepends(String name, String[] depends, BiConsumer<String, String> consumer) {
-        if (depends.length == 0) return;
+        if (depends.length == 0) {
+            return;
+        }
+
         Arrays.stream(depends).distinct().forEach(depended -> consumer.accept(name, depended));
     }
 
@@ -340,10 +371,12 @@ public final class AddonLoader {
                                HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources) {
         try {
             Path path;
-            if (configuration.path() != null) path = configuration.path();
-            else
+            if (configuration.path() != null) {
+                path = configuration.path();
+            } else {
                 // Use the code source of the addon when it is not located in the addons folder
                 path = Path.of(addon.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
+            }
 
             URI uri = path.toUri();
             JarFile jarFile = craftsNet.getFileHelper().getJarFileAt(path);
@@ -370,8 +403,9 @@ public final class AddonLoader {
 
             String name = meta.name();
             Pattern pattern = Pattern.compile("^[a-zA-Z0-9]*$");
-            if (!pattern.matcher(name).matches())
+            if (!pattern.matcher(name).matches()) {
                 throw new IllegalArgumentException("Plugin names must not contain special characters / spaces! Plugin name: \"" + name + "\"");
+            }
 
             logger.info("Found addon %s, add it to load order", name);
 
@@ -381,11 +415,14 @@ public final class AddonLoader {
             // Load the main class of the addon using the class loader
             String className = meta.mainClass();
             Class<?> clazz = className != null && !className.isBlank() ? classLoader.loadClass(className) : HollowAddon.class;
-            if (clazz == null)
+            if (clazz == null) {
                 throw new NullPointerException("The main class could not be found!");
-            if (!Addon.class.isAssignableFrom(clazz))
+            }
+
+            if (!Addon.class.isAssignableFrom(clazz)) {
                 throw new IllegalArgumentException("The loaded main class (" + className +
                         ") is not an instance of " + Addon.class.getSimpleName() + "!");
+            }
 
             // Create an instance of the main class and inject dependencies using reflection
             Class<? extends Addon> addonClass = clazz.asSubclass(Addon.class);
@@ -421,7 +458,9 @@ public final class AddonLoader {
             final ArrayList<Addon> bounding = info.getValue();
 
             // Skip if the jar file is null
-            if (file == null) return;
+            if (file == null) {
+                return;
+            }
 
             // Perform the actual load of the jar file if it is not null
             try (file) {
@@ -451,9 +490,17 @@ public final class AddonLoader {
     private void loadServices(AddonConfiguration configuration) {
         ServiceManager serviceManager = craftsNet.getServiceManager();
 
-        if (configuration.services() == null || configuration.services().isEmpty()) return;
-        if (configuration.addon().get() == null) return;
-        if (!(configuration.addon().get().getClassLoader() instanceof AddonClassLoader classLoader)) return;
+        if (configuration.services() == null || configuration.services().isEmpty()) {
+            return;
+        }
+
+        if (configuration.addon().get() == null) {
+            return;
+        }
+
+        if (!(configuration.addon().get().getClassLoader() instanceof AddonClassLoader classLoader)) {
+            return;
+        }
 
         configuration.services().forEach(service -> {
             for (String provider : service.provider().split(";"))
@@ -482,20 +529,24 @@ public final class AddonLoader {
 
         file.stream().filter(jarEntry -> jarEntry.getName().endsWith(".class") && !jarEntry.isDirectory())
                 .forEach(jarEntry -> {
-                    if (!jarEntry.getName().endsWith(".class")) return;
+                    if (!jarEntry.getName().endsWith(".class")) {
+                        return;
+                    }
 
                     try (DataInputStream dis = new DataInputStream(file.getInputStream(jarEntry))) {
-                        if (dis.readInt() != 0xCAFEBABE)
+                        if (dis.readInt() != 0xCAFEBABE) {
                             throw new RuntimeException(jarEntry.getName() + " is not an valid class file! There was an magic number mismatch with" +
                                     "the first 4 bytes!");
+                        }
 
                         int minor = dis.readUnsignedShort();
                         int major = dis.readUnsignedShort();
 
-                        if (major > maxMajor || (major == maxMajor && minor > maxMinor))
+                        if (major > maxMajor || (major == maxMajor && minor > maxMinor)) {
                             throw new RuntimeException(jarEntry.getName().replace(".class", "") + " " +
                                     "has been compiled by a more recent version of the Java Runtime (class file version " + major + "." + minor + "), " +
                                     "this version of the Java Runtime only recognizes class file versions up to " + maxMajor + "." + maxMinor);
+                        }
                     } catch (IOException e) {
                         throw new RuntimeException("Could not check the compatibility for %s".formatted(jarEntry.getName()), e);
                     }
@@ -513,7 +564,9 @@ public final class AddonLoader {
     private AddonConfiguration retrieveConfig(Path source, JarFile file) throws IOException {
         AddonConfiguration configuration;
         JarEntry entry = file.getJarEntry("addon.json");
-        if (entry == null) return null;
+        if (entry == null) {
+            return null;
+        }
 
         // Read the configuration data
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(entry)))) {
@@ -544,8 +597,9 @@ public final class AddonLoader {
             JarEntry entry = iterator.next();
 
             // Check whether the entry is in the "META-INF/services" directory and not a directory
-            if (!entry.getName().trim().toLowerCase().startsWith("meta-inf/services") || entry.isDirectory())
+            if (!entry.getName().trim().toLowerCase().startsWith("meta-inf/services") || entry.isDirectory()) {
                 continue;
+            }
 
             // Read the contents of the file in the jar entry
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(entry)))) {
@@ -554,10 +608,14 @@ public final class AddonLoader {
                 // Process each line in the file
                 reader.lines().forEach(line -> {
                     // Ignore comments and empty lines
-                    if (line.trim().startsWith("#") || line.trim().startsWith("//") || line.isBlank()) return;
+                    if (line.trim().startsWith("#") || line.trim().startsWith("//") || line.isBlank()) {
+                        return;
+                    }
 
                     // Add the provider to the list
-                    if (!provider.toString().trim().isBlank()) provider.append(";");
+                    if (!provider.toString().trim().isBlank()) {
+                        provider.append(";");
+                    }
                     provider.append(line);
                 });
 
