@@ -1,12 +1,7 @@
 plugins {
-    id 'java'
-    id 'application'
-    id 'maven-publish'
-}
-
-def env = new Properties()
-file(".env").withInputStream {
-    env.load(it)
+    id "java"
+    id "application"
+    id "de.craftsblock.gradle.publish" version "0.0.20"
 }
 
 java {
@@ -18,11 +13,11 @@ java {
 }
 
 application {
-    mainClass = 'de.craftsblock.craftsnet.CraftsNet'
+    mainClass = "de.craftsblock.craftsnet.CraftsNet"
 }
 
-group = 'de.craftsblock'
-version = '3.6.0'
+group = "de.craftsblock"
+version = "3.6.0"
 
 repositories {
     mavenCentral()
@@ -55,44 +50,44 @@ dependencies {
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
     // https://mvnrepository.com/artifact/org.apache.tika/tika-core
-    implementation 'org.apache.tika:tika-core:3.2.3'
+    implementation "org.apache.tika:tika-core:3.2.3"
 
     // https://mvnrepository.com/artifact/org.jetbrains/annotations
-    implementation 'org.jetbrains:annotations:26.0.2-1'
+    implementation "org.jetbrains:annotations:26.0.2-1"
 
     // Artifact resolving dependencies ----------------------------------------------------------------------------------------
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-api
-    implementation 'org.apache.maven.resolver:maven-resolver-api:2.0.13'
+    implementation "org.apache.maven.resolver:maven-resolver-api:2.0.13"
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-connector-basic
-    implementation 'org.apache.maven.resolver:maven-resolver-connector-basic:2.0.13'
+    implementation "org.apache.maven.resolver:maven-resolver-connector-basic:2.0.13"
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-impl
-    implementation 'org.apache.maven.resolver:maven-resolver-impl:2.0.13'
+    implementation "org.apache.maven.resolver:maven-resolver-impl:2.0.13"
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-supplier-mvn4
-    implementation 'org.apache.maven.resolver:maven-resolver-supplier-mvn4:2.0.13'
+    implementation "org.apache.maven.resolver:maven-resolver-supplier-mvn4:2.0.13"
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-transport-file
-    implementation 'org.apache.maven.resolver:maven-resolver-transport-file:2.0.13'
+    implementation "org.apache.maven.resolver:maven-resolver-transport-file:2.0.13"
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-transport-http
-    implementation 'org.apache.maven.resolver:maven-resolver-transport-http:2.0.0-alpha-2'
+    implementation "org.apache.maven.resolver:maven-resolver-transport-http:2.0.0-alpha-2"
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-util
-    implementation 'org.apache.maven.resolver:maven-resolver-util:2.0.13'
+    implementation "org.apache.maven.resolver:maven-resolver-util:2.0.13"
 }
 
 tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
+    options.encoding = "UTF-8"
 }
 
 tasks.register("runnableJar", Jar) {
     archiveClassifier.set("runnable")
 
     manifest {
-        attributes 'Main-Class': application.mainClass.get()
+        attributes "Main-Class": application.mainClass.get()
     }
 
     from sourceSets.main.output
@@ -104,53 +99,41 @@ tasks.register("runnableJar", Jar) {
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 }
 
-def repoToDeploy = version.toString().toLowerCase().contains("pre") ? "experimental" : "releases"
-publishing {
-    publications {
-        normal(MavenPublication) {
-            artifactId = "craftsnet"
+craftsPublish {
+    artifactId = "craftsnet"
+    name = "CraftsNet"
 
-            from components.java
+    component = project.components.java
 
-            artifact(tasks.named("runnableJar")) {
-                classifier = "runnable"
-                extension = "jar"
-            }
+    pom {
+        name = "CraftsNet"
+        description = "Easy creation of HTTP routes and WebSocket endpoints in Java."
 
-            pom {
-                name = 'CraftsNet'
-                description = 'Easy creation of HTTP routes and WebSocket endpoints in Java.'
+        scm {
+            url = "https://github.com/CraftsBlock/CraftsNet"
+            connection = "scm:git:git://github.com/CraftsBlock/CraftsNet.git"
+            developerConnection = "scm:git:git@github.com:CraftsBlock/CraftsNet.git"
+        }
 
-                scm {
-                    url = 'https://github.com/CraftsBlock/CraftsNet'
-                    connection = 'scm:git:git://github.com/CraftsBlock/CraftsNet.git'
-                    developerConnection = 'scm:git:git@github.com:CraftsBlock/CraftsNet.git'
-                }
+        issueManagement {
+            system = "github"
+            url = "https://github.com/CraftsBlock/CraftsNet/issues"
+        }
 
-                issueManagement {
-                    system = 'github'
-                    url = 'https://github.com/CraftsBlock/CraftsNet/issues'
-                }
-
-                licenses {
-                    license {
-                        name = 'Apache License 2.0'
-                        url = 'https://github.com/CraftsBlock/CraftsNet/blob/master/LICENSE'
-                    }
-                }
+        licenses {
+            license {
+                name = "Apache License 2.0"
+                url = "https://github.com/CraftsBlock/CraftsNet/blob/master/LICENSE"
             }
         }
     }
-    repositories {
-        maven {
-            url = 'https://repo.craftsblock.de/${repoToDeploy}'
-            authentication {
-                basic(BasicAuthentication)
-            }
-            credentials {
-                username = env["repo.${repoToDeploy}.username"]
-                password = env["repo.${repoToDeploy}.password"]
-            }
+
+    extraArtifacts {
+
+        runnable {
+            task = "runnableJar"
+            classifier = "runnable"
         }
+
     }
 }

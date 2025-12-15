@@ -1,2 +1,10 @@
-rootProject.name = 'CraftsNet'
+pluginManagement {
+    repositories {
+        maven {
+            url = uri("https://repo.craftsblock.de/releases")
+        }
+        gradlePluginPortal()
+    }
+}
 
+rootProject.name = 'CraftsNet'
