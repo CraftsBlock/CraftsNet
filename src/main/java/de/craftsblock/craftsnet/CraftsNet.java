@@ -28,7 +28,6 @@ import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.utils.FileHelper;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import de.craftsblock.craftsnet.utils.versions.Versions;
-import org.jetbrains.annotations.ApiStatus;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -45,7 +44,7 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.5.4
+ * @version 3.6.0
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -340,34 +339,9 @@ public class CraftsNet {
      * Retrieves the addon manager instance for managing addons.
      *
      * @return The addon manager instance.
-     * @deprecated Use {@link #getAddonManager()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public AddonManager addonManager() {
-        return this.getAddonManager();
-    }
-
-    /**
-     * Retrieves the addon manager instance for managing addons.
-     *
-     * @return The addon manager instance.
      */
     public AddonManager getAddonManager() {
         return addonManager;
-    }
-
-    /**
-     * Retrieves the auto register registry instance for auto registrable types.
-     *
-     * @return The auto register registry instance.
-     * @since 3.2.0-SNAPSHOT
-     * @deprecated Use {@link #getAutoRegisterRegistry()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public AutoRegisterRegistry autoRegisterRegistry() {
-        return this.getAutoRegisterRegistry();
     }
 
     /**
@@ -385,19 +359,6 @@ public class CraftsNet {
      *
      * @return The body registry instance.
      * @since 3.0.4-SNAPSHOT
-     * @deprecated Use {@link #getBodyRegistry()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public BodyRegistry bodyRegistry() {
-        return this.getBodyRegistry();
-    }
-
-    /**
-     * Retrieves the body registry instance for manging body types.
-     *
-     * @return The body registry instance.
-     * @since 3.0.4-SNAPSHOT
      */
     public BodyRegistry getBodyRegistry() {
         return bodyRegistry;
@@ -407,35 +368,9 @@ public class CraftsNet {
      * Retrieves the listener registry instance for managing event listeners.
      *
      * @return The listener registry instance.
-     * @deprecated Use {@link #getListenerRegistry()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public ListenerRegistry listenerRegistry() {
-        return this.getListenerRegistry();
-    }
-
-    /**
-     * Retrieves the listener registry instance for managing event listeners.
-     *
-     * @return The listener registry instance.
      */
     public ListenerRegistry getListenerRegistry() {
         return listenerRegistry;
-    }
-
-    /**
-     * Retrieves the middleware registry instance for manging
-     * {@link de.craftsblock.craftsnet.api.middlewares.Middleware middlewares}
-     *
-     * @return The {@link MiddlewareRegistry middleware registry} instance.
-     * @since 3.4.0-SNAPSHOT
-     * @deprecated Use {@link #getMiddlewareRegistry()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public MiddlewareRegistry middlewareRegistry() {
-        return middlewareRegistry;
     }
 
     /**
@@ -454,34 +389,9 @@ public class CraftsNet {
      *
      * @return The requirement registry instance.
      * @since 3.2.1-SNAPSHOT
-     * @deprecated Use {@link #getRequirementRegistry()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public RequirementRegistry requirementRegistry() {
-        return this.getRequirementRegistry();
-    }
-
-    /**
-     * Retrieves the route registry instance for managing web and web requirements.
-     *
-     * @return The requirement registry instance.
-     * @since 3.2.1-SNAPSHOT
      */
     public RequirementRegistry getRequirementRegistry() {
         return requirementRegistry;
-    }
-
-    /**
-     * Retrieves the route registry instance for managing web and web socket routes.
-     *
-     * @return The route registry instance.
-     * @deprecated Use {@link #getRouteRegistry()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public RouteRegistry routeRegistry() {
-        return this.getRouteRegistry();
     }
 
     /**
@@ -497,18 +407,6 @@ public class CraftsNet {
      * Retrieves the service manager instance for managing services.
      *
      * @return The service manager instance.
-     * @deprecated Use {@link #getServiceManager()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public ServiceManager serviceManager() {
-        return this.getServiceManager();
-    }
-
-    /**
-     * Retrieves the service manager instance for managing services.
-     *
-     * @return The service manager instance.
      */
     public ServiceManager getServiceManager() {
         return serviceManager;
@@ -518,33 +416,9 @@ public class CraftsNet {
      * Retrieves the session cache instance which is in charge of caching session.
      *
      * @return The session cache instance.
-     * @deprecated Use {@link #getSessionCache()} ()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public SessionCache sessionCache() {
-        return this.getSessionCache();
-    }
-
-    /**
-     * Retrieves the session cache instance which is in charge of caching session.
-     *
-     * @return The session cache instance.
      */
     public SessionCache getSessionCache() {
         return sessionCache;
-    }
-
-    /**
-     * Retrieves the stream encoder registry instance for managing stream encoders.
-     *
-     * @return The stream encoder registry instance.
-     * @deprecated Use {@link #getStreamEncoderRegistry()} ()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public StreamEncoderRegistry streamEncoderRegistry() {
-        return this.getStreamEncoderRegistry();
     }
 
     /**
@@ -570,33 +444,9 @@ public class CraftsNet {
      * Retrieves the extension registry for the websocket protocol.
      *
      * @return The websocket extension registry.
-     * @deprecated Use {@link #getFileHelper()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public WebSocketExtensionRegistry webSocketExtensionRegistry() {
-        return this.getWebSocketExtensionRegistry();
-    }
-
-    /**
-     * Retrieves the extension registry for the websocket protocol.
-     *
-     * @return The websocket extension registry.
      */
     public WebSocketExtensionRegistry getWebSocketExtensionRegistry() {
         return webSocketExtensionRegistry;
-    }
-
-    /**
-     * Retrieves the web server instance for handling HTTP requests.
-     *
-     * @return The web server instance.
-     * @deprecated Use {@link #getWebServer()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public WebServer webServer() {
-        return webServer;
     }
 
     /**
@@ -612,18 +462,6 @@ public class CraftsNet {
      * Retrieves the WebSocket server instance for handling WebSocket connections.
      *
      * @return The WebSocket server instance.
-     * @deprecated Use {@link #getWebSocketServer()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public WebSocketServer webSocketServer() {
-        return this.getWebSocketServer();
-    }
-
-    /**
-     * Retrieves the WebSocket server instance for handling WebSocket connections.
-     *
-     * @return The WebSocket server instance.
      */
     public WebSocketServer getWebSocketServer() {
         return webSocketServer;
@@ -633,33 +471,9 @@ public class CraftsNet {
      * Retrieves the logger instance for logging messages.
      *
      * @return The logger instance.
-     * @deprecated Use {@link #getLogger()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public Logger logger() {
-        return this.getLogger();
-    }
-
-    /**
-     * Retrieves the logger instance for logging messages.
-     *
-     * @return The logger instance.
      */
     public Logger getLogger() {
         return logger;
-    }
-
-    /**
-     * Retrieves the {@link LogStream} instance for advanced log creation.
-     *
-     * @return The {@link LogStream} instance.
-     * @deprecated Use {@link #getLogStream()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public LogStream logStream() {
-        return this.getLogStream();
     }
 
     /**
@@ -678,18 +492,6 @@ public class CraftsNet {
      */
     public CraftsNetBuilder getBuilder() {
         return builder;
-    }
-
-    /**
-     * Returns the {@link FileHelper} instance used for handling temporary files.
-     *
-     * @return the {@link FileHelper} instance.
-     * @deprecated Use {@link #getFileHelper()} instead. This will be removed in the future.
-     */
-    @Deprecated(since = "3.5.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public FileHelper fileHelper() {
-        return this.getFileHelper();
     }
 
     /**

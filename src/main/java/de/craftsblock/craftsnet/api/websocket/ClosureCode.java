@@ -1,8 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket;
 
-import org.jetbrains.annotations.ApiStatus;
-
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Enumeration representing WebSocket closure codes along with their integer values and internal status.
@@ -10,7 +9,7 @@ import java.util.*;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @version 1.2.0
  * @since 3.0.5-SNAPSHOT
  */
 public enum ClosureCode {
@@ -87,43 +86,10 @@ public enum ClosureCode {
 
     private static final Map<Integer, ClosureCode> LOOKUP = new HashMap<>();
 
-    /**
-     * List of all {@link ClosureCode closure codes} that are specified in RFC 6455.
-     *
-     * @since 3.4.0-SNAPSHOT
-     */
-    @Deprecated(since = "3.5.3", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public static final List<Integer> SPECIFIED_CODES = Arrays.stream(ClosureCode.values()).map(ClosureCode::intValue).toList();
-
-    /**
-     * List of ClosureCode values that are considered internal.
-     *
-     * @deprecated Use {@link ClosureCode#isInternal(int)} instead!
-     */
-    @Deprecated(since = "3.5.3", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public static final Set<ClosureCode> INTERNAL_CODES;
-
-    /**
-     * List of integer values corresponding to ClosureCode values that are considered internal.
-     *
-     * @deprecated Use {@link ClosureCode#isInternal(int)} instead!
-     */
-    @Deprecated(since = "3.5.3", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.6.0")
-    public static final List<Integer> RAW_INTERNAL_CODES;
-
     static {
-        EnumSet<ClosureCode> internal_codes = EnumSet.noneOf(ClosureCode.class);
-
         for (ClosureCode closureCode : ClosureCode.values()) {
             LOOKUP.put(closureCode.code, closureCode);
-            if (closureCode.isInternal()) internal_codes.add(closureCode);
         }
-
-        INTERNAL_CODES = Collections.unmodifiableSet(internal_codes);
-        RAW_INTERNAL_CODES = INTERNAL_CODES.parallelStream().map(ClosureCode::intValue).toList();
     }
 
     private final int code;
