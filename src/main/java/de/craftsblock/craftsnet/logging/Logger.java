@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.logging;
 
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -95,6 +96,7 @@ public interface Logger {
      * @deprecated Use {@link #error(String, Throwable)}
      */
     @Deprecated(since = "3.5.2", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
     default void error(@NotNull Throwable throwable, @Nullable String comment) {
         error(comment, throwable);
     }
