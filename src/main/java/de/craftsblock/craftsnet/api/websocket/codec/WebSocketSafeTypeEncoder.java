@@ -79,7 +79,7 @@ public sealed interface WebSocketSafeTypeEncoder<R, T> extends Encoder<R, T>
      * @author CraftsBlock
      * @version 1.0.0
      * @since 3.5.0
-     * @deprecated Deprecated in favor of {@link TypeToBufferUtilEncoder}
+     * @deprecated in favor of {@link TypeToBufferUtilEncoder}
      */
     @SuppressWarnings("removal")
     @Deprecated(since = "3.7.0", forRemoval = true)

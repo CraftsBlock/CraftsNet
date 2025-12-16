@@ -4,6 +4,7 @@ import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.websocket.Frame;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
 import de.craftsblock.craftsnet.events.sockets.GenericSocketEventBase;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -58,6 +59,7 @@ public class ReceivedPongMessageEvent extends Event implements GenericSocketMess
      * @return The message as a byte array if present, otherwise null.
      * @deprecated Use {@link #getData()} instead.
      */
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
     @Deprecated(forRemoval = true, since = "3.4.0-SNAPSHOT")
     public byte @Nullable [] getMessage() {
         return getData();

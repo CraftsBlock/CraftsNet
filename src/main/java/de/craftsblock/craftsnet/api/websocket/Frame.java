@@ -174,6 +174,7 @@ public class Frame implements RequireAble {
      * Gets the payload data of this frame a {@link de.craftsblock.craftsnet.utils.ByteBuffer}.
      *
      * @return The payload data as a {@link de.craftsblock.craftsnet.utils.ByteBuffer}
+     * @deprecated in favor of {@link #getBufferUtil()} and {@link #getByteBuffer()}.
      */
     @SuppressWarnings("removal")
     @Deprecated(since = "3.7.0", forRemoval = true)

@@ -33,7 +33,7 @@ public interface GenericSocketMessageEventBase extends GenericSocketEventBase {
      * Gets the incoming message as a {@link de.craftsblock.craftsnet.utils.ByteBuffer} object.
      *
      * @return The incoming message.
-     * @deprecated Deprecated in favor of {@link #getByteBuffer()} and {@link #getBufferUtil()}
+     * @deprecated in favor of {@link #getByteBuffer()} and {@link #getBufferUtil()}
      */
     @SuppressWarnings("removal")
     @Deprecated(since = "3.7.0", forRemoval = true)

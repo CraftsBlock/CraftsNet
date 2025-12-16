@@ -22,7 +22,7 @@ import java.util.UUID;
  * @author CraftsBlock
  * @version 1.0.1
  * @since 3.1.0-SNAPSHOT
- * @deprecated Deprecated in favor of {@link java.nio.ByteBuffer} and {@link de.craftsblock.craftscore.buffer.BufferUtil}
+ * @deprecated in favor of {@link java.nio.ByteBuffer} and {@link de.craftsblock.craftscore.buffer.BufferUtil}
  */
 @Deprecated(since = "3.7.0", forRemoval = true)
 @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")

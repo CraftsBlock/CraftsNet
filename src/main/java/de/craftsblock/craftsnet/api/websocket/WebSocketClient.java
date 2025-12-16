@@ -762,6 +762,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * Sends a message to the connected WebSocket client.
      *
      * @param data The message to be sent, as a bytebuffer.
+     * @deprecated in favor of {@link #sendMessage(BufferUtil)} and {@link #sendMessage(ByteBuffer)}
      */
     @SuppressWarnings("removal")
     @Deprecated(since = "3.7.0", forRemoval = true)

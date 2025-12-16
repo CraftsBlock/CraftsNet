@@ -28,6 +28,7 @@ import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.utils.FileHelper;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import de.craftsblock.craftsnet.utils.versions.Versions;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -304,6 +305,7 @@ public class CraftsNet {
      * @deprecated This method can create a mass amount of threads. There will be no replacement.
      */
     @Deprecated(since = "3.6.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
     public void restart() {
         restart(null);
     }
