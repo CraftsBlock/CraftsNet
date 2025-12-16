@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import com.sun.net.httpserver.Headers;
+import de.craftsblock.craftscore.buffer.BufferUtil;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftsnet.CraftsNet;
@@ -27,7 +28,6 @@ import de.craftsblock.craftsnet.events.sockets.message.OutgoingSocketMessageEven
 import de.craftsblock.craftsnet.events.sockets.message.ReceivedPingMessageEvent;
 import de.craftsblock.craftsnet.events.sockets.message.ReceivedPongMessageEvent;
 import de.craftsblock.craftsnet.logging.Logger;
-import de.craftsblock.craftsnet.utils.ByteBuffer;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
 import org.jetbrains.annotations.ApiStatus;
@@ -40,6 +40,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -61,7 +62,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.7.2
+ * @version 3.8.0
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -426,6 +427,8 @@ public class WebSocketClient implements Runnable, RequireAble {
      *     <li>{@link String} -> UTF-8 decoded string from frame data</li>
      *     <li>{@link Frame} -> Cloned {@link Frame} instance</li>
      *     <li>{@link ByteBuffer} -> Raw buffer from the frame</li>
+     *     <li>{@link BufferUtil} -> The raw buffer wrapped inside a {@link BufferUtil}</li>
+     *     <li><s>{@link de.craftsblock.craftsnet.utils.ByteBuffer} -> Raw buffer from the frame</s> - Depreacted and marked for removal</li>
      * </ul>
      *
      * @param method The handler method whose parameters are being prepared.
@@ -433,6 +436,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param args   The argument array to be passed to the method (modified in-place).
      * @since 3.5.0
      */
+    @SuppressWarnings("removal")
     private void preprocessMethodParameters(Method method, Frame frame, Object[] args) {
         if (method.getParameterCount() < 2) return;
 
@@ -450,6 +454,8 @@ public class WebSocketClient implements Runnable, RequireAble {
             case "java.lang.String" -> new String(frame.getData(), StandardCharsets.UTF_8);
             case "de.craftsblock.craftsnet.api.websocket.Frame" -> frame.clone();
             case "de.craftsblock.craftsnet.utils.ByteBuffer" -> frame.getBuffer();
+            case "de.craftsblock.craftscore.buffer" -> frame.getBufferUtil();
+            case "java.nio.ByteBuffer" -> frame.getBufferUtil().getRaw();
             default -> args[1];
         };
     }
@@ -757,8 +763,65 @@ public class WebSocketClient implements Runnable, RequireAble {
      *
      * @param data The message to be sent, as a bytebuffer.
      */
-    public void sendMessage(ByteBuffer data) {
+    @SuppressWarnings("removal")
+    @Deprecated(since = "3.7.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
+    public void sendMessage(de.craftsblock.craftsnet.utils.ByteBuffer data) {
         sendMessage(data.getSource(), Opcode.BINARY);
+    }
+
+    /**
+     * Sends a {@link ByteBuffer} to the connected WebSocket client.
+     *
+     * @param data The {@link ByteBuffer} to be sent.
+     * @throws IllegalArgumentException If the opcode is not one of: {@link Opcode#TEXT}, {@link Opcode#BINARY}
+     * @since 3.7.0
+     */
+    public void sendMessage(ByteBuffer data) {
+        this.sendMessage(data, Opcode.BINARY);
+    }
+
+    /**
+     * Sends a {@link ByteBuffer} and the corresponding {@link Opcode}
+     * to the connected WebSocket client.
+     *
+     * @param data   The {@link ByteBuffer} to be sent.
+     * @param opcode The {@link Opcode} to be sent.
+     * @throws IllegalArgumentException If the opcode is not one of: {@link Opcode#TEXT}, {@link Opcode#BINARY}
+     * @since 3.7.0
+     */
+    public void sendMessage(ByteBuffer data, Opcode opcode) {
+        this.sendMessage(BufferUtil.of(data), opcode);
+    }
+
+    /**
+     * Sends a {@link BufferUtil} to the connected WebSocket client.
+     *
+     * @param data The {@link BufferUtil} to be sent.
+     * @throws IllegalArgumentException If the opcode is not one of: {@link Opcode#TEXT}, {@link Opcode#BINARY}
+     * @since 3.7.0
+     */
+    public void sendMessage(BufferUtil data) {
+        this.sendMessage(data, Opcode.BINARY);
+    }
+
+    /**
+     * Sends a {@link BufferUtil} and the corresponding {@link Opcode}
+     * to the connected WebSocket client.
+     *
+     * @param data   The {@link BufferUtil} to be sent.
+     * @param opcode The {@link Opcode} to be sent.
+     * @throws IllegalArgumentException If the opcode is not one of: {@link Opcode#TEXT}, {@link Opcode#BINARY}
+     * @since 3.7.0
+     */
+    public void sendMessage(BufferUtil data, Opcode opcode) {
+        if (!opcode.equals(Opcode.TEXT) && !opcode.equals(Opcode.BINARY)) {
+            throw new IllegalArgumentException("Wrong opcode %s only allowed %s and %s".formatted(
+                    opcode, Opcode.TEXT, Opcode.BINARY
+            ));
+        }
+
+        this.sendMessage(data.toByteArray(), opcode);
     }
 
     /**
@@ -779,6 +842,8 @@ public class WebSocketClient implements Runnable, RequireAble {
      *     <li>{@code byte[]}</li>
      *     <li>{@link Json}</li>
      *     <li>{@link ByteBuffer}</li>
+     *     <li>{@link BufferUtil}</li>
+     *     <li><s>{@link de.craftsblock.craftsnet.utils.ByteBuffer}</s> - Deprecated and marked for removal</li>
      * </ol>
      * If none of these types can be applied, the object is converted
      * into a string with {@link Object#toString()} and then sent.
@@ -786,6 +851,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param data The message to be sent, as an object.
      * @since 3.4.3
      */
+    @SuppressWarnings("removal")
     public void sendMessage(Object data) {
         // @FixMe: Using switch when upgrading to java 21+
 
@@ -793,6 +859,8 @@ public class WebSocketClient implements Runnable, RequireAble {
         else if (data instanceof byte[] bytes) this.sendMessage(bytes);
         else if (data instanceof Json json) this.sendMessage(json);
         else if (data instanceof ByteBuffer buffer) this.sendMessage(buffer);
+        else if (data instanceof BufferUtil bufferUtil) this.sendMessage(bufferUtil);
+        else if (data instanceof de.craftsblock.craftsnet.utils.ByteBuffer buffer) this.sendMessage(buffer);
         else {
             // Check for encoders
             var encoders = server.getTypeEncoderRegistry();
@@ -866,7 +934,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * Disconnects the client gracefully without providing any information about the reason.
      */
     public void close() {
-        sendMessage(null, Opcode.CLOSE);
+        sendMessage((byte[]) null, Opcode.CLOSE);
     }
 
     /**

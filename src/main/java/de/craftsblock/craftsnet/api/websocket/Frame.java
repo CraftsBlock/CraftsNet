@@ -1,13 +1,15 @@
 package de.craftsblock.craftsnet.api.websocket;
 
+import de.craftsblock.craftscore.buffer.BufferUtil;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
-import de.craftsblock.craftsnet.utils.ByteBuffer;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -37,13 +39,14 @@ import java.util.List;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.3
+ * @version 1.1.0
  * @since 3.0.6-SNAPSHOT
  */
 public class Frame implements RequireAble {
 
     private Opcode opcode;
-    private ByteBuffer data;
+    private byte[] data;
+    private BufferUtil bufferUtil;
 
     private boolean fin;
     private final boolean rsv1, rsv2, rsv3;
@@ -67,8 +70,9 @@ public class Frame implements RequireAble {
         this.rsv2 = rsv2;
         this.rsv3 = rsv3;
         this.masked = masked;
+
         this.opcode = opcode;
-        this.data = new ByteBuffer(data);
+        this.setData(data);
     }
 
     /**
@@ -83,14 +87,15 @@ public class Frame implements RequireAble {
      * @throws IllegalArgumentException if the opcode derived from the frame header is invalid.
      */
     public Frame(byte @NotNull [] frame, byte @NotNull [] data) {
-        fin = (frame[0] & 0x80) != 0;
-        rsv1 = (frame[0] & 0x40) != 0;
-        rsv2 = (frame[0] & 0x20) != 0;
-        rsv3 = (frame[0] & 0x10) != 0;
-        masked = (frame[1] & 0x80) != 0;
-
-        this.opcode = Opcode.fromByte((byte) (frame[0] & 0x0F));
-        this.data = new ByteBuffer(data);
+        this(
+                (frame[0] & 0x80) != 0,
+                (frame[0] & 0x40) != 0,
+                (frame[0] & 0x20) != 0,
+                (frame[0] & 0x10) != 0,
+                (frame[1] & 0x80) != 0,
+                Opcode.fromByte((byte) (frame[0] & 0x0F)),
+                data
+        );
     }
 
     /**
@@ -166,12 +171,15 @@ public class Frame implements RequireAble {
     }
 
     /**
-     * Gets the payload data of this frame a {@link ByteBuffer}.
+     * Gets the payload data of this frame a {@link de.craftsblock.craftsnet.utils.ByteBuffer}.
      *
-     * @return The payload data as a {@link ByteBuffer}
+     * @return The payload data as a {@link de.craftsblock.craftsnet.utils.ByteBuffer}
      */
-    public ByteBuffer getBuffer() {
-        return data;
+    @SuppressWarnings("removal")
+    @Deprecated(since = "3.7.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
+    public de.craftsblock.craftsnet.utils.ByteBuffer getBuffer() {
+        return new de.craftsblock.craftsnet.utils.ByteBuffer(data, true);
     }
 
     /**
@@ -180,7 +188,27 @@ public class Frame implements RequireAble {
      * @return The raw payload data.
      */
     public byte @NotNull [] getData() {
-        return data.getSource();
+        return data;
+    }
+
+    /**
+     * Gets the payload data of this frame a {@link BufferUtil}.
+     *
+     * @return The payload data as a {@link BufferUtil}
+     * @since 3.7.0
+     */
+    public BufferUtil getBufferUtil() {
+        return bufferUtil;
+    }
+
+    /**
+     * Gets the payload data of this frame a {@link ByteBuffer}.
+     *
+     * @return The payload data as a {@link ByteBuffer}
+     * @since 3.7.0
+     */
+    public ByteBuffer getByteBuffer() {
+        return bufferUtil.getRaw();
     }
 
     /**
@@ -198,7 +226,8 @@ public class Frame implements RequireAble {
      * @param data The payload data to set.
      */
     public void setData(byte[] data) {
-        this.data = new ByteBuffer(data);
+        this.data = data;
+        this.bufferUtil = BufferUtil.of(ByteBuffer.wrap(data));
     }
 
     /**
@@ -437,7 +466,7 @@ public class Frame implements RequireAble {
      */
     @Override
     protected Object clone() {
-        return new Frame(fin, rsv1, rsv2, rsv3, masked, opcode, data.getSource().clone());
+        return new Frame(fin, rsv1, rsv2, rsv3, masked, opcode, data.clone());
     }
 
 }

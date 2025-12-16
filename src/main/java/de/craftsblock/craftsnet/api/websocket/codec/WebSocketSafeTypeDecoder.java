@@ -2,7 +2,6 @@ package de.craftsblock.craftsnet.api.websocket.codec;
 
 import de.craftsblock.craftsnet.api.codec.Decoder;
 import de.craftsblock.craftsnet.api.websocket.Frame;
-import org.jetbrains.annotations.ApiStatus;
 
 /**
  * A specialized {@link Decoder} for safely decoding {@link Frame} objects into a target type.
@@ -16,7 +15,6 @@ import org.jetbrains.annotations.ApiStatus;
  * @version 1.0.0
  * @since 3.5.0
  */
-@ApiStatus.Experimental
 public interface WebSocketSafeTypeDecoder<R> extends Decoder<R, Frame> {
 
 }

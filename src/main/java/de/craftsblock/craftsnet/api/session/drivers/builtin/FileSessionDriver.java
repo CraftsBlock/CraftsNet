@@ -1,14 +1,15 @@
 package de.craftsblock.craftsnet.api.session.drivers.builtin;
 
+import de.craftsblock.craftscore.buffer.BufferUtil;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.session.drivers.SessionDriver;
-import de.craftsblock.craftsnet.utils.ByteBuffer;
 
 import java.io.*;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -24,7 +25,7 @@ import java.util.Map;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.3
+ * @version 1.2.0
  * @see Session
  * @see SessionDriver
  * @since 3.3.5-SNAPSHOT
@@ -52,8 +53,9 @@ public class FileSessionDriver implements SessionDriver {
     public boolean exists(Session session, String sessionID) {
         Path path = Path.of(STORAGE_LOCATION, session.getSessionInfo().getSessionID() + STORAGE_EXTENSION);
         try {
-            if (path.getParent() != null && !Files.exists(path.getParent()))
+            if (path.getParent() != null && !Files.exists(path.getParent())) {
                 Files.createDirectories(path.getParent());
+            }
 
             return Files.exists(path) && Files.isRegularFile(path);
         } catch (IOException e) {
@@ -70,12 +72,16 @@ public class FileSessionDriver implements SessionDriver {
      */
     @Override
     public void load(Session session, String sessionID) {
-        if (!this.exists(session, sessionID)) return;
+        if (!this.exists(session, sessionID)) {
+            return;
+        }
 
         Path path = Path.of(STORAGE_LOCATION, session.getSessionInfo().getSessionID() + STORAGE_EXTENSION);
 
         try {
-            if (Files.size(path) <= 0) return;
+            if (Files.size(path) <= 0) {
+                return;
+            }
         } catch (IOException e) {
             throw new RuntimeException("Could not retrieve file size of session file!", e);
         }
@@ -84,11 +90,11 @@ public class FileSessionDriver implements SessionDriver {
              InputStream stream = Channels.newInputStream(channel);
              FileLock ignored = channel.lock(0, Long.MAX_VALUE, true)) {
 
-            ByteBuffer readBuffer = new ByteBuffer(stream.readAllBytes());
+            BufferUtil readBuffer = BufferUtil.wrap(stream.readAllBytes());
 
-            while (readBuffer.isReadable()) {
-                String key = readBuffer.readUTF();
-                byte[] obj = readBuffer.readNBytes(readBuffer.readVarInt());
+            while (readBuffer.hasRemainingBytes()) {
+                String key = readBuffer.getUtf();
+                byte[] obj = readBuffer.getNBytes(readBuffer.getVarInt());
 
                 try (ByteArrayInputStream in = new ByteArrayInputStream(obj);
                      ObjectInputStream reader = new ObjectInputStream(in)) {
@@ -113,39 +119,52 @@ public class FileSessionDriver implements SessionDriver {
      */
     @Override
     public void save(Session session, String sessionID) throws IOException {
-        ByteBuffer saveBuffer = new ByteBuffer(0, false);
-        for (Map.Entry<String, Object> entry : session.entrySet())
+        BufferUtil saveBuffer = BufferUtil.allocate(0);
+        for (Map.Entry<String, Object> entry : session.entrySet()) {
             try (ByteArrayOutputStream out = new ByteArrayOutputStream();
                  ObjectOutputStream writer = new ObjectOutputStream(out)) {
                 writer.writeObject(entry.getValue());
 
                 byte[] objBytes = out.toByteArray();
-                saveBuffer.writeUTF(entry.getKey());
-                saveBuffer.writeVarInt(objBytes.length);
-                saveBuffer.write(objBytes);
+                saveBuffer.ensure(entry.getKey().getBytes(StandardCharsets.UTF_8).length + 8
+                                + objBytes.length)
+                        .putUtf(entry.getKey())
+                        .putVarInt(objBytes.length)
+                        .with(raw -> raw.put(objBytes));
             } catch (NotSerializableException ignored) {
             }
+        }
 
         Path path = Path.of(STORAGE_LOCATION, session.getSessionInfo().getSessionID() + STORAGE_EXTENSION);
-        if (path.getParent() != null && !Files.exists(path.getParent()))
+        if (path.getParent() != null && !Files.exists(path.getParent())) {
             Files.createDirectories(path.getParent());
+        }
 
-        if (!Files.exists(path)) Files.createFile(path);
+        if (!Files.exists(path)) {
+            Files.createFile(path);
+        }
 
         try (FileChannel channel = FileChannel.open(path, StandardOpenOption.WRITE);
              OutputStream stream = Channels.newOutputStream(channel)) {
             FileLock lock;
-            if (!Thread.currentThread().isInterrupted()) lock = channel.lock();
-            else lock = null;
+            if (!Thread.currentThread().isInterrupted()) {
+                lock = channel.lock();
+            } else {
+                lock = null;
+            }
 
             try {
                 int bufferSize = 1024;
-                while (saveBuffer.isReadable(bufferSize))
-                    stream.write(saveBuffer.readNBytes(bufferSize));
+                saveBuffer.trim();
+                while (saveBuffer.hasRemainingBytes(bufferSize)) {
+                    stream.write(saveBuffer.getNBytes(bufferSize));
+                }
 
-                stream.write(saveBuffer.readRemaining());
+                stream.write(saveBuffer.getRemainingBytes());
             } finally {
-                if (lock != null) lock.release();
+                if (lock != null) {
+                    lock.release();
+                }
             }
         } catch (OverlappingFileLockException e) {
             throw new RuntimeException("Could not lock session file!", e);
@@ -162,7 +181,11 @@ public class FileSessionDriver implements SessionDriver {
     public void destroy(Session session, String sessionID) {
         try {
             Path data = Path.of(STORAGE_LOCATION, sessionID + STORAGE_EXTENSION);
-            if (Files.notExists(data)) return;
+
+            if (Files.notExists(data)) {
+                return;
+            }
+
             Files.delete(data);
         } catch (IOException e) {
             throw new RuntimeException("Could not delete session data!", e);
