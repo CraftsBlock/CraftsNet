@@ -1,6 +1,8 @@
 package de.craftsblock.craftsnet.api.codec.registry;
 
-import de.craftsblock.craftsnet.api.codec.*;
+import de.craftsblock.craftsnet.api.codec.CodecPair;
+import de.craftsblock.craftsnet.api.codec.Encoder;
+import de.craftsblock.craftsnet.api.codec.EncoderPair;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import org.jetbrains.annotations.NotNull;
 

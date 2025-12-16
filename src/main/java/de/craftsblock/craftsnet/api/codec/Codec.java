@@ -1,7 +1,5 @@
 package de.craftsblock.craftsnet.api.codec;
 
-import org.jetbrains.annotations.ApiStatus;
-
 /**
  * A generic base interface for codecs, combining encoding and decoding operations.
  * <p>
@@ -17,7 +15,6 @@ import org.jetbrains.annotations.ApiStatus;
  * @see Decoder
  * @since 3.5.0
  */
-@ApiStatus.Experimental
 @SuppressWarnings("unused")
 public sealed interface Codec<R, T> permits Decoder, Encoder {
 }

@@ -1,7 +1,6 @@
 package de.craftsblock.craftsnet.api.codec;
 
 import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
-import org.jetbrains.annotations.ApiStatus;
 
 /**
  * A sealed base class representing a binding between a target type and a corresponding codec.
@@ -18,7 +17,6 @@ import org.jetbrains.annotations.ApiStatus;
  * @see EncoderPair
  * @since 3.5.0
  */
-@ApiStatus.Experimental
 public sealed abstract class CodecPair<T, C extends Codec<?, ?>>
         permits DecoderPair, EncoderPair {
 

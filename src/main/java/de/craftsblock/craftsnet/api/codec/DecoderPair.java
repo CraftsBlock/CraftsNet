@@ -1,7 +1,5 @@
 package de.craftsblock.craftsnet.api.codec;
 
-import org.jetbrains.annotations.ApiStatus;
-
 /**
  * A pairing between a specific target type and its associated {@link Decoder}.
  * <p>
@@ -16,7 +14,6 @@ import org.jetbrains.annotations.ApiStatus;
  * @see CodecPair
  * @since 3.5.0
  */
-@ApiStatus.Experimental
 public final class DecoderPair<T> extends CodecPair<T, Decoder<T, ?>> {
 
     /**
