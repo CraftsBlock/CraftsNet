@@ -24,7 +24,7 @@ import java.util.UUID;
  * @since 3.1.0-SNAPSHOT
  * @deprecated Deprecated in favor of {@link java.nio.ByteBuffer} and {@link de.craftsblock.craftscore.buffer.BufferUtil}
  */
-@Deprecated(since = "3.6.1", forRemoval = true)
+@Deprecated(since = "3.7.0", forRemoval = true)
 @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
 public class ByteBuffer {
 

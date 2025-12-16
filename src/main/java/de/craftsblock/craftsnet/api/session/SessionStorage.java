@@ -2,7 +2,6 @@ package de.craftsblock.craftsnet.api.session;
 
 import de.craftsblock.craftsnet.api.session.drivers.SessionDriver;
 import de.craftsblock.craftsnet.api.session.drivers.builtin.FileSessionDriver;
-import de.craftsblock.craftsnet.utils.ByteBuffer;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.io.IOException;
@@ -24,7 +23,6 @@ import java.util.concurrent.LinkedBlockingQueue;
  * @author CraftsBlock
  * @version 3.4.3
  * @see Session
- * @see ByteBuffer
  * @since 3.3.0-SNAPSHOT
  */
 public class SessionStorage {

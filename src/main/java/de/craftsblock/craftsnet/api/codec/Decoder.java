@@ -1,7 +1,5 @@
 package de.craftsblock.craftsnet.api.codec;
 
-import org.jetbrains.annotations.ApiStatus;
-
 /**
  * A generic interface for decoding data from one type into another.
  * <p>
@@ -15,7 +13,6 @@ import org.jetbrains.annotations.ApiStatus;
  * @version 1.0.0
  * @since 3.5.0
  */
-@ApiStatus.Experimental
 public non-sealed interface Decoder<R, T> extends Codec<R, T> {
 
     /**

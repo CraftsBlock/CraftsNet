@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.api;
 
+import de.craftsblock.craftscore.buffer.BufferUtil;
 import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
@@ -13,7 +14,6 @@ import de.craftsblock.craftsnet.api.requirements.meta.RequirementInfo;
 import de.craftsblock.craftsnet.api.websocket.*;
 import de.craftsblock.craftsnet.api.websocket.annotations.ApplyDecoder;
 import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
-import de.craftsblock.craftsnet.utils.ByteBuffer;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
 import org.jetbrains.annotations.ApiStatus;
@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Unmodifiable;
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -41,7 +42,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.5.5
+ * @version 3.5.6
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -66,6 +67,7 @@ public class RouteRegistry {
      *
      * @param handler The Handler to be registered.
      */
+    @SuppressWarnings("removal")
     public void register(Handler handler) {
         if (isRegistered(handler)) return;
         var annotations = retrieveHandlerInfoMap(handler.getClass());
@@ -123,7 +125,9 @@ public class RouteRegistry {
                         } else if (!String.class.isAssignableFrom(secondParameter) &&
                                 !byte[].class.isAssignableFrom(secondParameter) &&
                                 !Frame.class.isAssignableFrom(secondParameter) &&
-                                !ByteBuffer.class.isAssignableFrom(secondParameter))
+                                !BufferUtil.class.isAssignableFrom(secondParameter) &&
+                                !ByteBuffer.class.isAssignableFrom(secondParameter) &&
+                                !de.craftsblock.craftsnet.utils.ByteBuffer.class.isAssignableFrom(secondParameter))
                             throw new IllegalStateException(("The method %s has the annotation %s but does not require a Frame," +
                                     "ByteBuffer, String or byte[] as the second parameter!").formatted(
                                     method.getName(), annotation.getName()

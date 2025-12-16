@@ -2,10 +2,7 @@ package de.craftsblock.craftsnet.events.sockets.message;
 
 import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftsnet.api.websocket.Frame;
-import de.craftsblock.craftsnet.api.websocket.Opcode;
 import de.craftsblock.craftsnet.api.websocket.SocketExchange;
-import de.craftsblock.craftsnet.events.sockets.GenericSocketEventBase;
-import de.craftsblock.craftsnet.utils.ByteBuffer;
 import org.jetbrains.annotations.NotNull;
 
 /**
