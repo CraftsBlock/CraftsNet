@@ -35,6 +35,7 @@ import java.net.URISyntaxException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.CodeSource;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.jar.JarFile;
@@ -45,13 +46,17 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.0
+ * @version 3.6.1
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
 
-    // Global variables
-    public static final String version = "3.7.0-pre1";
+    /**
+     * The current version of CraftsNet.
+     */
+    public static final String version = "3.7.0-pre2";
+
+    private static CraftsNet instance;
 
     // Local instance
     private CraftsNetBuilder builder;
@@ -102,36 +107,40 @@ public class CraftsNet {
      * @throws IOException If an I/O error occurs during the startup process.
      */
     public void start(CraftsNetBuilder builder) throws IOException {
-        // Check if the builder was set or CraftsNet is already running and throw an exception if needed.
-        if (started)
+        if (started) {
             throw new RuntimeException("The instance of CraftsNet has already been started!");
-        // Save the builder and the current instance
+        }
         this.builder = builder;
 
         // Start measuring the startup time
         long start = System.currentTimeMillis();
 
-        // Create and initialize the logger & file logger
         logger = builder.getCustomLogger();
 
-        // Starts the log stream mutator
         logStream = new LogStream(this, builder.isFileLogger(ActivateType.ENABLED), builder.getLogRotate());
         logStream.start();
 
-        // Log startup message
+        if (instance != null) {
+            Arrays.stream(new Logger[]{logger, instance.logger}).forEach(log -> {
+                log.warning("Detected another instance of CraftsNet in the jvm!");
+                log.warning("This may cause some errors.");
+            });
+        }
+
+        instance = this;
+
         logger.info("CraftsNet v%s boots up", version);
         Runtime.Version jvmVersion = Runtime.version();
         logger.debug("JVM Version: %s; Max recognizable class file version: %s.%s",
                 jvmVersion.toString(), jvmVersion.feature() + 44, jvmVersion.interim());
 
-        // Check if version is a release as the version check is disabled for experimental builds
-        if (!builder.shouldSkipVersionCheck() && version.matches("^\\d+(?:\\.\\d+)*$"))
+        if (!builder.shouldSkipVersionCheck() && version.matches("^\\d+(?:\\.\\d+)*$")) {
             Versions.verbalCheck(this);
+        }
 
         logger.debug("Preloading gson for faster processing");
         Json.empty();
 
-        // Setup default uncaught exception handler
         this.oldDefaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             if (logStream != null) {
@@ -144,10 +153,8 @@ public class CraftsNet {
         });
         logger.debug("Injected the default uncaught exception handler");
 
-        // Setup the file helper
         this.fileHelper = new FileHelper(this, builder.shouldPlaceTempFilesOnNormalFileSystem());
 
-        // Initialize listener and route registries, and addon manager
         logger.info("Initialization of system variables");
         logger.debug("Initialization of the session cache");
         this.sessionCache = new SessionCache(builder.getSessionCacheSize());
@@ -191,45 +198,43 @@ public class CraftsNet {
         if (!builder.isAddonSystem(ActivateType.DISABLED)) {
             addonManager.fromFiles();
 
-            if (builder instanceof AddonContainingBuilder addonBuilder)
+            if (builder instanceof AddonContainingBuilder addonBuilder) {
                 addonBuilder.loadAddons(this);
+            }
 
             addonManager.startup();
         }
 
-        // Check if http routes are registered and start the web server if needed
         if (builder.isWebServer(ActivateType.ENABLED) || builder.isWebServer(ActivateType.DYNAMIC)) {
-            // Register a default route if nothing has been registered.
             if (!builder.shouldSkipDefaultRoute() && !routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
                 logger.debug("No routes and sockets found, creating the default route");
                 getRouteRegistry().register(DefaultRoute.getInstance());
             }
 
-            // Start the webserver if needed
             if (routeRegistry.hasRoutes() || builder.isWebServer(ActivateType.ENABLED)) {
                 webServer.start();
             }
-        } else if (builder.isWebServer(ActivateType.DISABLED) && routeRegistry.hasRoutes())
+        } else if (builder.isWebServer(ActivateType.DISABLED) && routeRegistry.hasRoutes()) {
             logger.warning("The web server is forcible disabled, but has registered routes!");
+        }
 
-        // Check if webSocket routes are registered and start the websocket server if needed
         if (builder.isWebSocketServer(ActivateType.ENABLED) || builder.isWebSocketServer(ActivateType.DYNAMIC)) {
             logger.debug("Implementing the default ping responder");
             DefaultPingResponder.register(this);
 
-            if (routeRegistry.hasWebsockets() || builder.isWebSocketServer(ActivateType.ENABLED))
+            if (routeRegistry.hasWebsockets() || builder.isWebSocketServer(ActivateType.ENABLED)) {
                 webSocketServer.start();
-        } else if (builder.isWebSocketServer(ActivateType.DISABLED) && routeRegistry.hasWebsockets())
+            }
+        } else if (builder.isWebSocketServer(ActivateType.DISABLED) && routeRegistry.hasWebsockets()) {
             logger.warning("The websocket server is forcible disabled, but has registered endpoints!");
+        }
 
-        // Register a shutdown hook for calling the stop method
         this.shutdownThread = new Thread(this::stop, "CraftsNet Shutdown");
         Runtime.getRuntime().addShutdownHook(this.shutdownThread);
         logger.debug("JVM Shutdown Hook is implemented");
 
-        // Add all with @AutoRegister annotated classes from the current jar file to the list
         try (AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader()) {
-            for (CodeSource codeSource : builder.getCodeSources())
+            for (CodeSource codeSource : builder.getCodeSources()) {
                 try {
                     Path path = Path.of(codeSource.getLocation().toURI());
 
@@ -242,6 +247,7 @@ public class CraftsNet {
                 } catch (IOException | URISyntaxException e) {
                     throw new RuntimeException("Could not autoregister from code sources!", e);
                 }
+            }
         }
 
         // Log successful startup message with elapsed time
@@ -297,6 +303,7 @@ public class CraftsNet {
 
         logger.info("CraftsNet has been shutdown");
         started = false;
+        instance = null;
     }
 
     /**
@@ -322,7 +329,11 @@ public class CraftsNet {
         this.builder = null;
         Thread restart = new Thread(() -> {
             stop();
-            if (executeBetween != null) executeBetween.run();
+
+            if (executeBetween != null) {
+                executeBetween.run();
+            }
+
             try {
                 start(builder);
             } catch (IOException e) {
@@ -503,6 +514,16 @@ public class CraftsNet {
      */
     public FileHelper getFileHelper() {
         return fileHelper;
+    }
+
+    /**
+     * Get the current instance of {@link CraftsNet}.
+     *
+     * @return The instance of {@link CraftsNet}.
+     * @since 3.7.0
+     */
+    public static CraftsNet getInstance() {
+        return instance;
     }
 
     /**
