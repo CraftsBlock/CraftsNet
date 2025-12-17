@@ -18,7 +18,7 @@ import org.jetbrains.annotations.Nullable;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 2.0.0
+ * @version 2.0.1
  * @see CraftsNet
  * @see CraftsNetUrlClassLoader
  * @since 3.5.0
@@ -54,7 +54,9 @@ public sealed interface CraftsNetClassLoader permits CraftsNetUrlClassLoader {
      * @return The associated {@link CraftsNet} instance, or {@code null} if unavailable.
      */
     static @Nullable CraftsNet retrieveCraftsNet(Class<?> type) {
-        if (!isCraftsNetLoaded(type)) return null;
+        if (!isCraftsNetLoaded(type)) {
+            return CraftsNet.getInstance();
+        }
 
         ClassLoader classLoader = type.getClassLoader();
         return ((CraftsNetClassLoader) classLoader).getCraftsNet();
