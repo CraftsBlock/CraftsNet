@@ -3,9 +3,9 @@ package de.craftsblock.craftsnet.api.websocket;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.api.codec.registry.TypeEncoderRegistry;
+import de.craftsblock.craftsnet.api.ssl.SSL;
 import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeEncoder;
 import de.craftsblock.craftsnet.builder.ActivateType;
-import de.craftsblock.craftsnet.api.ssl.SSL;
 import org.jetbrains.annotations.ApiStatus;
 
 import javax.net.ssl.SSLContext;
@@ -115,8 +115,9 @@ public class WebSocketServer extends Server {
             logger.error(e);
         } finally {
             if (serverSocket == null) {
-                if (ssl)
+                if (ssl) {
                     logger.warning("SSl was not activated properly, using an socket server as fallback!");
+                }
 
                 try {
                     serverSocket = new ServerSocket(port, backlog);
@@ -127,7 +128,9 @@ public class WebSocketServer extends Server {
             }
         }
 
-        if (serverSocket == null) return;
+        if (serverSocket == null) {
+            return;
+        }
 
         try {
             serverSocket.setSoTimeout(0);
@@ -148,10 +151,15 @@ public class WebSocketServer extends Server {
                     if (socket instanceof SSLSocket sslSocket) {
                         sslSocket.addHandshakeCompletedListener(event -> connectClient(event.getSocket()));
                         sslSocket.startHandshake();
-                    } else connectClient(socket);
+                    } else {
+                        connectClient(socket);
+                    }
                 } catch (SocketException | SocketTimeoutException socketException) {
                     try {
-                        if (Thread.currentThread().isInterrupted()) return;
+                        if (Thread.currentThread().isInterrupted()) {
+                            return;
+                        }
+
                         Thread.sleep(15);
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
@@ -181,21 +189,28 @@ public class WebSocketServer extends Server {
      */
     @Override
     public synchronized void stop() {
-        if (!running) return;
+        if (!running) {
+            return;
+        }
 
         try {
             connected.values().stream().flatMap(ConcurrentLinkedQueue::stream)
                     .forEach(client -> {
                         try {
-                            if (client.isConnected()) client.close(ClosureCode.GOING_AWAY, "Server closed!");
+                            if (client.isConnected()) {
+                                client.close(ClosureCode.GOING_AWAY, "Server closed!");
+                            }
+
                             client.disconnect();
                         } catch (IllegalStateException ignored) {
                         }
                     });
             connected.clear();
+
             serverSocket.close();
-            if (connector != null)
+            if (connector != null) {
                 connector.interrupt();
+            }
 
             serverSocket = null;
         } catch (IOException e) {
@@ -210,12 +225,13 @@ public class WebSocketServer extends Server {
      */
     @Override
     public synchronized void awakeOrWarn() {
-        if (!isRunning() && isEnabled())
+        if (!isRunning() && isEnabled()) {
             // Start the web socket server as it is needed and currently not running
             this.craftsNet.getWebSocketServer().start();
-        else if (!isEnabled())
+        } else if (!isEnabled()) {
             // Print a warning if the web socket server is disabled and socket endpoints has been registered
             logger.warning("A socket endpoint has been registered, but the web socket server is disabled!");
+        }
     }
 
     /**
@@ -223,8 +239,9 @@ public class WebSocketServer extends Server {
      */
     @Override
     public synchronized void sleepIfNotNeeded() {
-        if (isRunning() && !craftsNet.getRouteRegistry().hasWebsockets() && isStatus(ActivateType.DYNAMIC))
+        if (isRunning() && !craftsNet.getRouteRegistry().hasWebsockets() && isStatus(ActivateType.DYNAMIC)) {
             stop();
+        }
     }
 
     /**
@@ -314,7 +331,10 @@ public class WebSocketServer extends Server {
      */
     @ApiStatus.Experimental
     public synchronized void setFragmentSize(int fragmentSize) {
-        if (fragmentSize <= 0) return;
+        if (fragmentSize <= 0) {
+            return;
+        }
+
         this.fragmentSize = fragmentSize;
     }
 
@@ -334,7 +354,9 @@ public class WebSocketServer extends Server {
      * @param data The message to be sent.
      */
     public synchronized void broadcast(String path, String data) {
-        if (connected.containsKey(path)) connected.get(path).forEach(client -> client.sendMessage(data));
+        if (connected.containsKey(path)) {
+            connected.get(path).forEach(client -> client.sendMessage(data));
+        }
     }
 
     /**
@@ -357,9 +379,14 @@ public class WebSocketServer extends Server {
                 .filter(entry -> entry.getValue().contains(client))
                 .forEach(entry -> {
                     entry.getValue().removeIf(client::equals);
-                    if (entry.getValue().isEmpty()) connected.remove(entry.getKey());
+                    if (entry.getValue().isEmpty()) {
+                        connected.remove(entry.getKey());
+                    }
 
-                    if (!client.isConnected()) return;
+                    if (!client.isConnected()) {
+                        return;
+                    }
+
                     client.disconnect();
                 });
     }
