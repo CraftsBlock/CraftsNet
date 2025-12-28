@@ -501,7 +501,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             case "java.lang.String" -> new String(frame.getData(), StandardCharsets.UTF_8);
             case "de.craftsblock.craftsnet.api.websocket.Frame" -> frame.clone();
             case "de.craftsblock.craftsnet.utils.ByteBuffer" -> frame.getBuffer();
-            case "de.craftsblock.craftscore.buffer" -> frame.getBufferUtil();
+            case "de.craftsblock.craftscore.buffer.BufferUtil" -> frame.getBufferUtil();
             case "java.nio.ByteBuffer" -> frame.getBufferUtil().getRaw();
             default -> args[1];
         };

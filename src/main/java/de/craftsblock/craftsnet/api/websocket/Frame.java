@@ -228,7 +228,7 @@ public class Frame implements RequireAble {
      */
     public void setData(byte[] data) {
         this.data = data;
-        this.bufferUtil = BufferUtil.of(ByteBuffer.wrap(data));
+        this.bufferUtil = BufferUtil.wrap(data);
     }
 
     /**
