@@ -25,6 +25,7 @@ import de.craftsblock.craftsnet.events.requests.routes.RouteRequestEvent;
 import de.craftsblock.craftsnet.events.requests.shares.ShareFileLoadedEvent;
 import de.craftsblock.craftsnet.events.requests.shares.ShareRequestEvent;
 import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.utils.Utils;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 
 import java.io.IOException;
@@ -101,13 +102,16 @@ public class WebHandler implements HttpHandler {
             ProtocolVersion protocolVersion = ProtocolVersion.parse(this.scheme, httpExchange.getProtocol().split("/")[1]);
             Response response = new Response(this.craftsNet, streamEncoder.get(), httpExchange, httpMethod);
             try {
+                String connectingIp = httpExchange.getRemoteAddress().getAddress().getHostAddress();
+
+                // FixMe: Below is just a hotfix. A more stable variant will be added!
                 String ip;
-                if (headers.containsKey("Cf-connecting-ip")) {
-                    ip = headers.getFirst("Cf-connecting-ip");
-                } else if (headers.containsKey("X-forwarded-for")) {
-                    ip = headers.getFirst("X-forwarded-for").split(", ")[0];
+                Collection<String> trustedProxyHeaders = this.craftsNet.getBuilder().getTrustedProxyHeaders();
+                String headerName = trustedProxyHeaders.stream().filter(headers::containsKey).findFirst().orElse(null);
+                if (headerName != null) {
+                    ip = headers.getFirst(headerName).split(",\\s+")[0];
                 } else {
-                    ip = httpExchange.getRemoteAddress().getAddress().getHostAddress();
+                    ip = connectingIp;
                 }
 
                 String domain;
@@ -118,7 +122,7 @@ public class WebHandler implements HttpHandler {
                 }
 
                 // Create a Request object to encapsulate the incoming request information.
-                try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod);
+                try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, connectingIp, domain, httpMethod);
                      Session session = craftsNet.getSessionCache().getOrNew(SessionInfo.extractSession(request));
                      Exchange exchange = new Exchange(new Context(), protocolVersion, request, response, session)) {
                     exchange.session().setExchange(exchange);

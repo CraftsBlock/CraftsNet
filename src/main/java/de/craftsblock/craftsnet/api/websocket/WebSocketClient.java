@@ -93,6 +93,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private SocketExchange exchange;
     private ProtocolVersion protocolVersion;
     private Headers headers;
+    private String connectingIp;
     private String ip;
     private String path;
     private String domain;
@@ -156,6 +157,8 @@ public class WebSocketClient implements Runnable, RequireAble {
             throw new IllegalStateException("This websocket client is already running!");
         }
 
+        connectingIp = socket.getInetAddress().getHostAddress();
+
         this.active = true;
         try {
             // Setup input and output streams for communication with the client
@@ -183,11 +186,12 @@ public class WebSocketClient implements Runnable, RequireAble {
             this.domain = host.get();
 
             // Determine the client's IP address from headers, taking into account any proxy headers
-            ip = socket.getInetAddress().getHostAddress();
-            if (getHeader("Cf-connecting-ip") != null) {
-                ip = getHeader("Cf-connecting-ip");
-            } else if (getHeader("X-forwarded-for") != null) {
-                ip = Objects.requireNonNull(getHeader("X-forwarded-for")).split(", ")[0];
+            Collection<String> trustedProxyHeaders = this.craftsNet.getBuilder().getTrustedProxyHeaders();
+            String headerName = trustedProxyHeaders.stream().filter(headers::containsKey).findFirst().orElse(null);
+            if (headerName != null) {
+                ip = headers.getFirst(headerName).split(",\\s+")[0];
+            } else {
+                ip = connectingIp;
             }
 
 
@@ -518,7 +522,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         );
 
         if (craftsNet.getLogStream() != null) {
-            long errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), path);
+            long errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), path == null ? "" : path);
             logger.error("Error: %s", t, errorID);
             message.set("error.identifier", errorID);
         } else {
@@ -667,12 +671,23 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
-     * Returns the IP address of the connected client.
+     * Returns the IP address associated with this request.
      *
-     * @return The IP address as a String.
+     * @return The IP address, possibly a proxied/forwarded IP
      */
     public String getIp() {
         return ip;
+    }
+
+    /**
+     * Returns the real IP address of the sender that directly established
+     * the connection.
+     *
+     * @return The real IP address of the connecting sender
+     * @since 3.7.0
+     */
+    public String getConnectingIp() {
+        return connectingIp;
     }
 
     /**
