@@ -139,6 +139,10 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         // Create a transformer performer which handles all transformers
         this.transformerPerformer = new TransformerPerformer(this.craftsNet, 2, e -> {
+            if (!isConnected()) {
+                return;
+            }
+
             sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).toString());
             disconnect();
         });
