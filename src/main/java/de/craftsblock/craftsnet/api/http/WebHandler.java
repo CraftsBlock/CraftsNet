@@ -248,6 +248,10 @@ public class WebHandler implements HttpHandler {
 
         // Create a transformer performer which handles all transformers
         TransformerPerformer transformerPerformer = new TransformerPerformer(this.craftsNet, 1, e -> {
+            if (response.sendingFile()) {
+                return;
+            }
+
             response.print(Json.empty().set("error", "Could not process transformer: " + e.getMessage()));
         });
 
