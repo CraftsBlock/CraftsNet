@@ -23,12 +23,12 @@ public class Utils {
     /**
      * A pattern to search for ipv4 addresses.
      */
-    public static final String IPv4_SEARCH = "\\b((25[0-5]|2[0-4]\\d|1\\d{2}|\\d{1,2})\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|\\d{1,2})\\b";
+    public static final String IPv4_SEARCH = "((25[0-5]|2[0-4]\\d|1\\d{2}|\\d{1,2})\\.){3}(25[0-5]|2[0-4]\\d|1\\d{2}|\\d{1,2})";
 
     /**
      * A pattern to search for ipv6 addresses.
      */
-    public static final String IPv6_SEARCH = "\\b([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\\b";
+    public static final String IPv6_SEARCH = "([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}";
 
     /**
      * A {@link Pattern} instance which searches for ip addresses.
