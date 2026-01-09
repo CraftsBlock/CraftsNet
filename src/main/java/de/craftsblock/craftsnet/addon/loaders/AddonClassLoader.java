@@ -2,6 +2,7 @@ package de.craftsblock.craftsnet.addon.loaders;
 
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
 import de.craftsblock.craftsnet.logging.Logger;
 
@@ -13,11 +14,11 @@ import java.util.concurrent.CopyOnWriteArraySet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.1
+ * @version 1.3.0
  * @see CraftsNetUrlClassLoader
  * @since 3.0.3-SNAPSHOT
  */
-public final class AddonClassLoader extends CraftsNetUrlClassLoader {
+public final class AddonClassLoader extends CraftsNetUrlClassLoader<AddonClassLoader> {
 
     static {
         ClassLoader.registerAsParallelCapable();
@@ -78,12 +79,14 @@ public final class AddonClassLoader extends CraftsNetUrlClassLoader {
     private Class<?> loadClass0(String name, boolean resolve, boolean lookup) throws ClassNotFoundException {
         try {
             Class<?> result = super.loadClass(name, resolve);
-            if (lookup || result.getClassLoader() == this) return result;
+            if (lookup || result.getClassLoader() == this) {
+                return result;
+            }
         } catch (ClassNotFoundException ignored) {
         }
 
         if (lookup) {
-            for (AddonClassLoader loader : addonLoaders)
+            for (AddonClassLoader loader : addonLoaders) {
                 try {
                     Class<?> result = loader.loadClass0(name, resolve, false);
 
@@ -100,16 +103,29 @@ public final class AddonClassLoader extends CraftsNetUrlClassLoader {
                     return result;
                 } catch (ClassNotFoundException ignored) {
                 }
+            }
 
             var dependencyLoaders = addon.dependencyLoaders();
-            if (dependencyLoaders != null && dependencyLoaders.length >= 1)
+            if (dependencyLoaders != null && dependencyLoaders.length >= 1) {
                 try {
                     return dependencyLoaders[0].loadClass(name, resolve);
                 } catch (ClassNotFoundException ignored) {
                 }
+            }
         }
 
         throw new ClassNotFoundException(name);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     * @since 3.7.0
+     */
+    @Override
+    Collection<AddonClassLoader> getSiblings() {
+        return addonLoaders;
     }
 
     /**

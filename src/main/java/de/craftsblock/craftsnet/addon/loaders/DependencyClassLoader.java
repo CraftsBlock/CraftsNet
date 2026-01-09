@@ -1,12 +1,14 @@
 package de.craftsblock.craftsnet.addon.loaders;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.addon.meta.annotations.Depends;
+import org.jetbrains.annotations.Nullable;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -14,11 +16,11 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @version 1.1.0
  * @see CraftsNetUrlClassLoader
  * @since 3.4.3
  */
-public final class DependencyClassLoader extends CraftsNetUrlClassLoader {
+public final class DependencyClassLoader extends CraftsNetUrlClassLoader<DependencyClassLoader> {
 
     static {
         ClassLoader.registerAsParallelCapable();
@@ -66,18 +68,33 @@ public final class DependencyClassLoader extends CraftsNetUrlClassLoader {
     private Class<?> loadClass0(String name, boolean resolve, boolean lookup) throws ClassNotFoundException {
         try {
             Class<?> result = super.loadClass(name, resolve);
-            if (lookup || result.getClassLoader() == this) return result;
+            if (lookup || result.getClassLoader() == this) {
+                return result;
+            }
         } catch (ClassNotFoundException ignored) {
         }
 
-        if (lookup)
-            for (DependencyClassLoader loader : dependenciesLoaders.values())
+        if (lookup) {
+            for (DependencyClassLoader loader : dependenciesLoaders.values()) {
                 try {
                     return loader.loadClass0(name, resolve, false);
                 } catch (ClassNotFoundException ignored) {
                 }
+            }
+        }
 
         throw new ClassNotFoundException(name);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     * @since 3.7.0
+     */
+    @Override
+    Collection<DependencyClassLoader> getSiblings() {
+        return dependenciesLoaders.values();
     }
 
     /**
