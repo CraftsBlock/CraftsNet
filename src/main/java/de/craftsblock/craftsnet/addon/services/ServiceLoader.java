@@ -1,7 +1,9 @@
 package de.craftsblock.craftsnet.addon.services;
 
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
+
+import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
 
 /**
  * A simple service loader interface for managing instances of a specified type. This interface defines methods
@@ -20,15 +22,21 @@ public interface ServiceLoader<T> {
      * convenient way to instantiate objects without requiring explicit knowledge of the constructor details.
      *
      * @param clazz The class for which a new instance should be created.
-     * @param args  The arguments for creating the new instance.
      * @return A new instance of the specified class.
-     * @throws NoSuchMethodException     If the default constructor is not found in the specified class.
      * @throws InvocationTargetException If the constructor invocation fails.
      * @throws InstantiationException    If an instance of the class cannot be created (e.g., if it is an interface or an abstract class).
      * @throws IllegalAccessException    If the default constructor is not accessible due to access restrictions.
      */
-    default T newInstance(Class<T> clazz, Object... args) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
-        return clazz.getDeclaredConstructor(Arrays.stream(args).map(Object::getClass).toArray(Class[]::new)).newInstance(args);
+    default T newInstance(Class<T> clazz) throws InvocationTargetException, InstantiationException, IllegalAccessException {
+        Constructor<T> constructor = ReflectionUtils.findConstructor(clazz);
+
+        if (constructor == null) {
+            throw new IllegalStateException("Could not find a non-args constructor for %s".formatted(
+                    clazz.getName()
+            ));
+        }
+
+        return constructor.newInstance();
     }
 
     /**

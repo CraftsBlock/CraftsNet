@@ -485,7 +485,7 @@ public final class AddonLoader {
         }
 
         configuration.services().forEach(service -> {
-            for (String provider : service.provider().split(";"))
+            for (String provider : service.provider().split(";")) {
                 try {
                     Class<?> spi = classLoader.loadClass(service.spi());
                     Class<?> providerClass = classLoader.loadClass(provider);
@@ -497,6 +497,7 @@ public final class AddonLoader {
                 } catch (ClassNotFoundException e) {
                     logger.warning("Service class %s not found for %s - skipping!", e.getMessage(), configuration.addon().get().getName());
                 }
+            }
         });
     }
 
@@ -574,35 +575,28 @@ public final class AddonLoader {
     public List<RegisteredService> retrieveServices(JarFile file) throws IOException {
         List<RegisteredService> services = new ArrayList<>();
 
-        // Iterate over all entries in the jar file
         Iterator<JarEntry> iterator = file.stream().iterator();
         while (iterator.hasNext()) {
             JarEntry entry = iterator.next();
 
-            // Check whether the entry is in the "META-INF/services" directory and not a directory
             if (!entry.getName().trim().toLowerCase().startsWith("meta-inf/services") || entry.isDirectory()) {
                 continue;
             }
 
-            // Read the contents of the file in the jar entry
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(entry)))) {
                 StringBuilder provider = new StringBuilder();
 
-                // Process each line in the file
                 reader.lines().forEach(line -> {
-                    // Ignore comments and empty lines
                     if (line.trim().startsWith("#") || line.trim().startsWith("//") || line.isBlank()) {
                         return;
                     }
 
-                    // Add the provider to the list
                     if (!provider.toString().trim().isBlank()) {
                         provider.append(";");
                     }
                     provider.append(line);
                 });
 
-                // Extract the name from the path and create a RegistrableService object
                 String[] splitName = entry.getName().split("/");
                 services.add(new RegisteredService(splitName[splitName.length - 1], provider.toString()));
             }
