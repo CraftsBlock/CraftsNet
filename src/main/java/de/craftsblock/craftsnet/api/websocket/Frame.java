@@ -247,11 +247,13 @@ public class Frame implements RequireAble {
      *                               is already marked as final.
      */
     protected synchronized void appendFrame(Frame frame) {
-        if (!frame.getOpcode().equals(Opcode.CONTINUATION))
+        if (!frame.getOpcode().equals(Opcode.CONTINUATION)) {
             throw new IllegalStateException("Tried to append a frame whose opcode is not continuation!");
+        }
 
-        if (this.isFinalFrame())
+        if (this.isFinalFrame()) {
             throw new IllegalStateException("Tried to append a frame to a final frame!");
+        }
 
         byte[] mergedData = new byte[this.getData().length + frame.getData().length];
         System.arraycopy(this.getData(), 0, mergedData, 0, this.getData().length);
@@ -315,9 +317,9 @@ public class Frame implements RequireAble {
         int length = data.length;
 
         byte maskBit = (byte) (isMasked() ? 0x80 : 0x00);
-        if (length <= 125)
+        if (length <= 125) {
             stream.write((byte) (maskBit | length));
-        else if (length <= 65535) {
+        } else if (length <= 65535) {
             stream.write((byte) (maskBit | 126));
             stream.write((byte) (length >> 8));
             stream.write((byte) length);
@@ -327,22 +329,22 @@ public class Frame implements RequireAble {
                 stream.write((byte) (length >> (8 * j)));
         }
 
-
-        if (isMasked())
+        if (isMasked()) {
             try {
                 byte[] mask = new byte[4];
                 SecureRandom.getInstanceStrong().nextBytes(mask);
 
-                // Mask the data
                 byte[] masked = new byte[data.length];
-                for (int i = 0; i < data.length; i++)
+                for (int i = 0; i < data.length; i++) {
                     masked[i] = (byte) (data[i] ^ mask[i % 4]);
+                }
 
                 stream.write(masked);
                 return;
             } catch (NoSuchAlgorithmException e) {
                 throw new RuntimeException(e);
             }
+        }
 
         stream.write(data);
     }
@@ -354,57 +356,54 @@ public class Frame implements RequireAble {
      * decodes the payload data using the provided masking key.
      *
      * @param stream The input stream to read the frame from.
-     * @param buffer The buffer to which the message should be read.
      * @return The constructed Frame object containing the frame header and payload data.
      * @throws IOException If an I/O error occurs while reading from the stream.
      */
-    protected static Frame read(InputStream stream, ByteArrayOutputStream buffer) throws IOException {
-        buffer.reset();
-
+    protected static Frame read(InputStream stream) throws IOException {
         byte[] frame = new byte[10];
         ensureRead(stream, frame, 0, 2);
 
         byte rawPayloadLength = (byte) (frame[1] & 0x7F);
-        if (rawPayloadLength >= 126)
+        if (rawPayloadLength >= 126) {
             ensureRead(stream, frame, 2, rawPayloadLength == 126 ? 2 : 8);
+        }
 
         long payloadLength = getPayloadLengthValue(frame, rawPayloadLength);
-        if (payloadLength > Integer.MAX_VALUE)
+        if (payloadLength > Integer.MAX_VALUE) {
             throw new IOException("Payload size too large to be processed (" + payloadLength + " > " + Integer.MAX_VALUE + ")");
+        }
 
         boolean masked = (frame[1] & 0x80) != 0;
         byte[] masks = new byte[4];
-        if (masked)
+        if (masked) {
             ensureRead(stream, masks, 0, masks.length);
+        }
 
-        long bytesRead = 0;
         byte[] chunk = new byte[4096];
 
         try {
-            while (bytesRead < payloadLength) {
+            BufferUtil buffer = BufferUtil.allocate((int) payloadLength);
+            while (buffer.map(ByteBuffer::position) < payloadLength) {
+                int bytesRead = buffer.map(ByteBuffer::position);
                 int toRead = (int) Math.min(chunk.length, payloadLength - bytesRead);
                 int chunkSize = stream.read(chunk, 0, toRead);
 
-                if (chunkSize < 0)
+                if (chunkSize < 0) {
                     throw new IOException("EOF: Failed to read the payload of the frame!");
+                }
 
-                // Unmask the data if it was masked
-                if (masked)
-                    for (int i = 0; i < chunkSize; i++)
-                        chunk[i] ^= masks[(int) ((bytesRead + i) % 4)];
+                if (masked) {
+                    for (int i = 0; i < chunkSize; i++) {
+                        chunk[i] ^= masks[(bytesRead + i) % 4];
+                    }
+                }
 
-                buffer.write(chunk, 0, chunkSize);
-                bytesRead += chunkSize;
+                buffer.with(raw -> raw.put(chunk));
             }
 
-            // Mark the frame as end-masked
-            if (masked) frame[1] &= 0x7F;
-
-            int actualLength = buffer.size();
-            if (payloadLength != actualLength)
-                throw new IllegalStateException("Incorrect payload length, while reading a frame. (Got: %s, Expected: %s)".formatted(
-                        payloadLength, actualLength
-                ));
+            if (masked) {
+                frame[1] &= 0x7F;
+            }
 
             return new Frame(frame, buffer.toByteArray());
         } finally {
@@ -428,8 +427,10 @@ public class Frame implements RequireAble {
         int read = 0;
         while (read < length) {
             int result = stream.read(buffer, offset + read, length - read);
-            if (result < 0)
+            if (result < 0) {
                 throw new IOException("EOF: Failed to read the expected amount of bytes (Expected: " + length + ", Actual: " + read + ")");
+            }
+
             read += result;
         }
     }
@@ -442,10 +443,10 @@ public class Frame implements RequireAble {
      * @return The actual payload length value.
      */
     private static long getPayloadLengthValue(byte[] frame, byte payloadLength) {
-        if (payloadLength == 126)
+        if (payloadLength == 126) {
             // If the payload length is 126, combine the 3rd and 4th bytes to get the actual length.
             return ((frame[2] & 0xFF) << 8) | (frame[3] & 0xFF);
-        else if (payloadLength == 127)
+        } else if (payloadLength == 127) {
             // If the payload length is 127, combine the 3rd to 10th bytes to get the actual length.
             return ((frame[2] & 0xFFL) << 56)
                     | ((frame[3] & 0xFFL) << 48)
@@ -455,9 +456,10 @@ public class Frame implements RequireAble {
                     | ((frame[7] & 0xFFL) << 16)
                     | ((frame[8] & 0xFFL) << 8)
                     | (frame[9] & 0xFFL);
-        else
+        } else {
             // For payload lengths less than 126, the payloadLength itself represents the actual length.
             return payloadLength;
+        }
     }
 
     /**
