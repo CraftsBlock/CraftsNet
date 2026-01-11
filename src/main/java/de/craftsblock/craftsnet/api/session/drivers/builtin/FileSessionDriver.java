@@ -5,6 +5,7 @@ import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.session.drivers.SessionDriver;
 
 import java.io.*;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -25,7 +26,7 @@ import java.util.Map;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.0
+ * @version 1.2.1
  * @see Session
  * @see SessionDriver
  * @since 3.3.5-SNAPSHOT
@@ -155,7 +156,7 @@ public class FileSessionDriver implements SessionDriver {
 
             try {
                 int bufferSize = 1024;
-                saveBuffer.trim();
+                saveBuffer.trim().with(ByteBuffer::flip);
                 while (saveBuffer.hasRemainingBytes(bufferSize)) {
                     stream.write(saveBuffer.getNBytes(bufferSize));
                 }
