@@ -1,18 +1,20 @@
 package de.craftsblock.craftsnet.api.session;
 
 import de.craftsblock.craftsnet.api.BaseExchange;
+import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Manages session data, allowing the storage and retrieval of serialized objects
- * within a json file. The session data is stored in the specified location and
+ * Manages session data, allowing the storage and retrieval of serialized objects.
+ * The session data is stored in the specified location and
  * automatically serialized and deserialized when starting or stopping a session.
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.3
+ * @version 1.1.0
  * @since 3.3.0-SNAPSHOT
  */
 public class Session extends ConcurrentHashMap<String, Object> implements AutoCloseable {
@@ -51,11 +53,12 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
      * @param type The expected type of the value.
      * @param <T>  The type parameter of the value.
      * @return The value associated with the key, or {@code null} if not found or cannot be cast.
+     * @deprecated Use {@link #getTyped(String, Class)} instead.
      */
-    @SuppressWarnings("unchecked")
+    @Deprecated(since = "3.7.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public <T> T getAsType(@NotNull String key, @NotNull Class<T> type) {
-        if (!containsKey(key)) return null;
-        return (T) get(key);
+        return this.getTyped(key, type);
     }
 
     /**
@@ -66,10 +69,42 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
      * @param type     The expected type of the value.
      * @param <T>      The type parameter of the value.
      * @return The value associated with the key, or {@code null} if not found or cannot be cast.
+     * @deprecated Use {@link #getTyped(String, Class, Object)} instead.
+     */
+    @Deprecated(since = "3.7.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
+    public <T> T getAsType(@NotNull String key, T fallback, @NotNull Class<T> type) {
+        return this.getTyped(key, type, fallback);
+    }
+
+    /**
+     * Retrieves the value associated with the specified key and attempts to cast it to the specified type.
+     *
+     * @param key  The key for the value to retrieve.
+     * @param type The expected type of the value.
+     * @param <T>  The type parameter of the value.
+     * @return The value associated with the key, or {@code null} if not found or cannot be cast.
+     * @since 3.7.0
+     */
+    public <T> T getTyped(@NotNull String key, @NotNull Class<T> type) {
+        return this.getTyped(key, type, null);
+    }
+
+    /**
+     * Retrieves the value associated with the specified key and attempts
+     * to cast it to the specified type.
+     *
+     * @param key    The key for the value to retrieve.
+     * @param orElse The fallback value returned when the key does not exist.
+     * @param type   The expected type of the value.
+     * @param <T>    The type parameter of the value.
+     * @return The value associated with the key, or the value of {@code orElse} if
+     * not found or cannot be cast.
+     * @since 3.7.0
      */
     @SuppressWarnings("unchecked")
-    public <T> T getAsType(@NotNull String key, T fallback, @NotNull Class<T> type) {
-        if (!containsKey(key)) return fallback;
+    public <T> T getTyped(@NotNull String key, @NotNull Class<T> type, T orElse) {
+        if (!containsKey(key)) return orElse;
         return (T) get(key);
     }
 
@@ -83,7 +118,7 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
      */
     public <T> boolean isType(@NotNull String key, @NotNull Class<T> type) {
         if (!containsKey(key)) return false;
-        return type.isAssignableFrom(get(key).getClass());
+        return TypeUtils.isAssignable(type, get(key).getClass());
     }
 
     /**
