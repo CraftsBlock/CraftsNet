@@ -102,7 +102,6 @@ public class WebSocketClient implements Runnable, RequireAble {
     private BufferedReader reader;
     private OutputStream writer;
     private final Object writerLock = new Object();
-    private final ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();
 
     private final CraftsNet craftsNet;
     private final Logger logger;
@@ -137,7 +136,6 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.getLogger();
 
-        // Create a transformer performer which handles all transformers
         this.transformerPerformer = new TransformerPerformer(this.craftsNet, 2, e -> {
             if (!isConnected()) {
                 return;
@@ -156,7 +154,6 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     @Override
     public void run() {
-        // Ensure that the client is not already active
         if (this.active) {
             throw new IllegalStateException("This websocket client is already running!");
         }
@@ -165,31 +162,26 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         this.active = true;
         try {
-            // Setup input and output streams for communication with the client
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             writer = socket.getOutputStream();
-            headers = readHeaders(); // Read and store the client's headers for later use
+            headers = readHeaders();
 
             int secWebsocketVersion = headers.containsKey("Sec-WebSocket-Version") ? Integer.parseInt(headers.getFirst("Sec-WebSocket-Version")) : 0;
             this.protocolVersion = new ProtocolVersion(this.scheme, secWebsocketVersion, 0);
 
-            // Create a SocketExchange object to handle communication with the server
             this.exchange = new SocketExchange(new Context(), this.protocolVersion, this.server, this);
 
-            // Abort if the path was not found on the request
             if (path == null) {
                 logger.warning("The path could not be loaded. (Maybe an unsupported request method?)");
                 disconnect();
                 return;
             }
 
-            // Determine the host domain from headers
             AtomicReference<String> host = new AtomicReference<>();
             if (headers.containsKey("X-Forwarded-Host")) host.set(headers.getFirst("X-forwarded-Host").split(":")[0]);
             else host.set(headers.getFirst("Host").split(":")[0]);
             this.domain = host.get();
 
-            // Determine the client's IP address from headers, taking into account any proxy headers
             Collection<String> trustedProxyHeaders = this.craftsNet.getBuilder().getTrustedProxyHeaders();
             String headerName = trustedProxyHeaders.stream().filter(headers::containsKey).findFirst().orElse(null);
             if (headerName != null) {
@@ -199,7 +191,6 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
 
 
-            // Loadup extensions
             if (getHeader("Sec-websocket-extensions") != null) {
                 for (String extension : getHeader("Sec-websocket-extensions").split(";\\s+")) {
                     if (craftsNet.getWebSocketExtensionRegistry().hasExtension(extension)) {
@@ -208,21 +199,16 @@ public class WebSocketClient implements Runnable, RequireAble {
                 }
             }
 
-            // Send a WebSocket handshake to establish the connection
             sendHandshake();
             this.connected = true;
 
-            // Reverse the extension list as it is required to process the more important one's at the end
             Collections.reverse(extensions);
 
-            // Load the endpoint mappings
             this.mappings = getEndpoint();
 
-            // Trigger the ClientConnectEvent to handle the client connection
             ClientConnectEvent event = new ClientConnectEvent(exchange);
             craftsNet.getListenerRegistry().call(event);
 
-            // If the event is cancelled, disconnect the client
             if (event.isCancelled()) {
                 if (event.hasCancelReason()) {
                     sendMessage(event.getCancelReason());
@@ -233,7 +219,6 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
-            // Handle middleware on connect
             MiddlewareCallbackInfo callbackInfo = performForEachAvailableMiddleware(
                     (info, middleware) -> middleware.handleConnect(info, exchange)
             );
@@ -248,24 +233,24 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
-            // Check if the requested path has a corresponding endpoint registered in the server
             if (!event.isAllowedWithoutMapping() && (mappings == null || mappings.isEmpty())) {
-                // If the requested path has no corresponding endpoint, send an error message
                 logger.debug("%s connected to %s \u001b[38;5;9m[NOT FOUND]", ip, path);
                 closeInternally(ClosureCode.BAD_GATEWAY, Json.empty().set("error", "Path do not match any API endpoint!").toString(), true);
                 return;
             }
 
-            // Add this WebSocket client to the server's collection and mark it as connected
             server.add(path, this);
 
-            // If the event is not cancelled, process incoming messages from the client
             logger.info("%s connected to %s", ip, path);
 
             while (!Thread.currentThread().isInterrupted() && isConnected()) {
                 Frame frame = readMessage();
                 if (handleIncomingMessage(frame)) {
                     break;
+                }
+
+                if (frame != null) {
+                    Arrays.fill(frame.getData(), (byte) 0);
                 }
             }
         } catch (SocketException ignored) {
@@ -322,14 +307,12 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
         }
 
-        // Fire an incoming socket message event and continue if it was cancelled
         IncomingSocketMessageEvent incomingMessageEvent = new IncomingSocketMessageEvent(exchange, frame);
         craftsNet.getListenerRegistry().call(incomingMessageEvent);
         if (incomingMessageEvent.isCancelled()) {
             return false;
         }
 
-        // Handle middlewares
         MiddlewareCallbackInfo callbackInfo = performForEachAvailableMiddleware(
                 (info, middleware) -> middleware.handleMessageReceived(info, exchange, frame)
         );
@@ -346,7 +329,6 @@ public class WebSocketClient implements Runnable, RequireAble {
                 .flatMap(Collection::stream)
                 .forEach(mapping -> this.handleMapping(mapping, frame));
 
-        // Clear up transformer cache to free up memory
         transformerPerformer.clearCache();
         matchers.clear();
         return false;
@@ -405,7 +387,6 @@ public class WebSocketClient implements Runnable, RequireAble {
             });
             transformerPerformer.setValidator(validator);
 
-            // Extract and pass the message parameters to the endpoint handler
             Object[] args = new Object[matcher.groupCount() + 1];
             args[0] = exchange;
             args[1] = frame.getData();
@@ -417,7 +398,6 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
-            // Perform all transformers and continue if the transformers exit with an exception
             if (!transformerPerformer.perform(mapping.handler(), method, args)) {
                 return;
             }
@@ -617,12 +597,11 @@ public class WebSocketClient implements Runnable, RequireAble {
             return null;
         }
 
-        // Read the input stream from the socket.
         InputStream inputStream = socket.getInputStream();
         AtomicReference<Frame> frame = new AtomicReference<>();
 
         while (isConnected() && frame.get() == null || !frame.get().isFinalFrame()) {
-            Frame read = Frame.read(inputStream, readBuffer);
+            Frame read = Frame.read(inputStream);
 
             if (read.getOpcode().isUnknown()) {
                 closeInternally(ClosureCode.PROTOCOL_ERROR, "Unknown opcode!", true);
@@ -638,7 +617,6 @@ public class WebSocketClient implements Runnable, RequireAble {
             frame.get().appendFrame(read);
         }
 
-        // Return, when the frame is null
         if (frame.get() == null) {
             return null;
         }
@@ -1082,14 +1060,10 @@ public class WebSocketClient implements Runnable, RequireAble {
         byte[] message = reason.getBytes(StandardCharsets.UTF_8);
         byte[] data = new byte[2 + message.length];
 
-        // Convert the code to an unsigned short and write it as the first two bytes
         data[0] = (byte) (code >> 8);
         data[1] = (byte) code;
-
-        // Copy the message into the data array
         System.arraycopy(message, 0, data, 2, message.length);
 
-        // Fire the message
         sendMessage(data, Opcode.CLOSE);
 
         this.closeCode = code;
@@ -1117,7 +1091,6 @@ public class WebSocketClient implements Runnable, RequireAble {
             if (data == null || data.length == 0) {
                 byte[] subject = new byte[2];
                 subject[0] = (byte) (0x80 | opcode.byteValue());
-                // subject[1] is already 0x00 so no further write is required
 
                 this.sendMessageRaw(subject);
                 return;
@@ -1133,7 +1106,6 @@ public class WebSocketClient implements Runnable, RequireAble {
                     return;
                 }
 
-                // Handle middlewares
                 MiddlewareCallbackInfo callbackInfo = performForEachAvailableMiddleware(
                         (info, middleware) -> middleware.handleMessageSent(info, exchange, frame)
                 );
