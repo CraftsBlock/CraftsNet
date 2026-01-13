@@ -1,5 +1,5 @@
 plugins {
-    id "java"
+    id "java-library"
     id "application"
     id "de.craftsblock.gradle.publish" version "0.0.20"
 }
@@ -32,19 +32,19 @@ dependencies {
     implementation platform("de.craftsblock.craftscore:bom:3.8.13-pre6")
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/buffer
-    implementation "de.craftsblock.craftscore:buffer"
+    api "de.craftsblock.craftscore:buffer"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/cache
-    implementation "de.craftsblock.craftscore:cache"
+    api "de.craftsblock.craftscore:cache"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/event
-    implementation "de.craftsblock.craftscore:event"
+    api "de.craftsblock.craftscore:event"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/json
-    implementation "de.craftsblock.craftscore:json"
+    api "de.craftsblock.craftscore:json"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/utils
-    implementation "de.craftsblock.craftscore:utils"
+    api "de.craftsblock.craftscore:utils"
 
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
