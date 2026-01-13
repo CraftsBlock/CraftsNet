@@ -75,7 +75,6 @@ public class WebSocketClient implements Runnable, RequireAble {
 
     static {
         try {
-            // Set the digest algorithm for building the handshakes
             handshakeDigest = MessageDigest.getInstance("SHA-1");
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
@@ -210,12 +209,11 @@ public class WebSocketClient implements Runnable, RequireAble {
             craftsNet.getListenerRegistry().call(event);
 
             if (event.isCancelled()) {
-                if (event.hasCancelReason()) {
-                    sendMessage(event.getCancelReason());
-                }
+                String rawCancelReason = event.getCancelReason();
+                String cancelReason = rawCancelReason == null || rawCancelReason.isBlank() ? "Aborted" : rawCancelReason;
 
-                disconnect();
-                logger.debug(MESSAGE_TRIED_CONNECTING_ERROR, ip, path, event.getCancelReason());
+                logger.debug(MESSAGE_TRIED_CONNECTING_ERROR, ip, path, cancelReason.toUpperCase());
+                closeInternally(ClosureCode.NORMAL, cancelReason, true);
                 return;
             }
 
@@ -224,12 +222,11 @@ public class WebSocketClient implements Runnable, RequireAble {
             );
 
             if (callbackInfo.isCancelled()) {
-                if (callbackInfo.hasCancelReason()) {
-                    sendMessage(callbackInfo.getCancelReason());
-                }
+                String rawCancelReason = callbackInfo.getCancelReason();
+                String cancelReason = rawCancelReason == null || rawCancelReason.isBlank() ? "Aborted" : rawCancelReason;
 
-                disconnect();
-                logger.debug(MESSAGE_TRIED_CONNECTING_ERROR, ip, path, callbackInfo.getCancelReason());
+                logger.debug(MESSAGE_TRIED_CONNECTING_ERROR, ip, path, cancelReason.toUpperCase());
+                closeInternally(ClosureCode.NORMAL, cancelReason, true);
                 return;
             }
 
@@ -404,7 +401,6 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             preprocessMethodParameters(method, frame, args);
 
-            // Invoke the handler method
             Object result = ReflectionUtils.invokeMethod(handler, method, args);
             if (result == null || !isConnected() || !isActive()) {
                 return;
@@ -922,7 +918,6 @@ public class WebSocketClient implements Runnable, RequireAble {
         else if (data instanceof BufferUtil bufferUtil) this.sendMessage(bufferUtil);
         else if (data instanceof de.craftsblock.craftsnet.utils.ByteBuffer buffer) this.sendMessage(buffer);
         else {
-            // Check for encoders
             var encoders = server.getTypeEncoderRegistry();
             Class<?> type = data.getClass();
             if (encoders.hasCodec(type)) {
@@ -935,7 +930,6 @@ public class WebSocketClient implements Runnable, RequireAble {
                 }
             }
 
-            // Convert the object to string when no encoder is present
             this.sendMessage(data.toString());
         }
     }
