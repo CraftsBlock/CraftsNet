@@ -1,10 +1,13 @@
 package de.craftsblock.craftsnet.api.session.drivers.builtin;
 
 import de.craftsblock.craftscore.buffer.BufferUtil;
+import de.craftsblock.craftscore.buffer.ObjectSerializer;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.session.drivers.SessionDriver;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
@@ -14,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.Map;
 
 /**
  * A file based implementation of {@link SessionDriver} that persists session data to disk.
@@ -26,7 +28,7 @@ import java.util.Map;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.1
+ * @version 1.2.2
  * @see Session
  * @see SessionDriver
  * @since 3.3.5-SNAPSHOT
@@ -95,14 +97,8 @@ public class FileSessionDriver implements SessionDriver {
 
             while (readBuffer.hasRemainingBytes()) {
                 String key = readBuffer.getUtf();
-                byte[] obj = readBuffer.getNBytes(readBuffer.getVarInt());
-
-                try (ByteArrayInputStream in = new ByteArrayInputStream(obj);
-                     ObjectInputStream reader = new ObjectInputStream(in)) {
-                    session.put(key, reader.readObject());
-                } catch (IOException | ClassNotFoundException e) {
-                    throw new RuntimeException(e);
-                }
+                byte[] value = readBuffer.getNBytes(readBuffer.getVarInt());
+                session.put(key, ObjectSerializer.deserialize(value));
             }
         } catch (OverlappingFileLockException e) {
             throw new RuntimeException("Could not lock session file!", e);
@@ -121,20 +117,14 @@ public class FileSessionDriver implements SessionDriver {
     @Override
     public void save(Session session, String sessionID) throws IOException {
         BufferUtil saveBuffer = BufferUtil.allocate(0);
-        for (Map.Entry<String, Object> entry : session.entrySet()) {
-            try (ByteArrayOutputStream out = new ByteArrayOutputStream();
-                 ObjectOutputStream writer = new ObjectOutputStream(out)) {
-                writer.writeObject(entry.getValue());
-
-                byte[] objBytes = out.toByteArray();
-                saveBuffer.ensure(entry.getKey().getBytes(StandardCharsets.UTF_8).length + 8
-                                + objBytes.length)
-                        .putUtf(entry.getKey())
-                        .putVarInt(objBytes.length)
-                        .with(raw -> raw.put(objBytes));
-            } catch (NotSerializableException ignored) {
-            }
-        }
+        session.forEach((key, value) -> {
+            byte[] valueBytes = ObjectSerializer.serialize(value);
+            int needed = 8 + key.getBytes(StandardCharsets.UTF_8).length + valueBytes.length;
+            saveBuffer.ensure(needed)
+                    .putUtf(key)
+                    .putVarInt(valueBytes.length)
+                    .with(raw -> raw.put(valueBytes));
+        });
 
         Path path = Path.of(STORAGE_LOCATION, session.getSessionInfo().getSessionID() + STORAGE_EXTENSION);
         if (path.getParent() != null && !Files.exists(path.getParent())) {
