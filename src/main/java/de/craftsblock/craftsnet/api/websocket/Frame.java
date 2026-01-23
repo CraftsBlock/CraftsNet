@@ -398,7 +398,7 @@ public class Frame implements RequireAble {
                     }
                 }
 
-                buffer.with(raw -> raw.put(chunk));
+                buffer.with(raw -> raw.put(chunk, 0, toRead));
             }
 
             if (masked) {
