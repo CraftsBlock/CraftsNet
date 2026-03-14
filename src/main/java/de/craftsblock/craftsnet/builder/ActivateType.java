@@ -7,6 +7,7 @@ package de.craftsblock.craftsnet.builder;
  * @author CraftsBlock
  * @since 3.0.3
  */
+@Deprecated(since = "3.7.0", forRemoval = true)
 public enum ActivateType {
 
     /**
