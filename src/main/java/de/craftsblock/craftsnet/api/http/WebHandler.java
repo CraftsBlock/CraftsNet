@@ -141,7 +141,7 @@ public class WebHandler implements HttpHandler {
                     long errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), url);
                     logger.error("Error: %s", t, errorID);
                     if (!response.headersSent()) {
-                        response.setCode(500);
+                        response.setStatus(500);
                     }
 
                     if (!response.sendingFile() && !httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN)) {
@@ -356,12 +356,12 @@ public class WebHandler implements HttpHandler {
         Path share = fileLoadedEvent.getPath().toAbsolutePath();
 
         if (!share.startsWith(folder) || Files.isDirectory(share)) {
-            response.setCode(403);
+            response.setStatus(403);
             response.setContentType("text/html; charset=utf-8");
             response.print(DefaultPages.notallowed(domain, request.unsafe().getLocalAddress().getPort()));
             return;
         } else if (Files.notExists(share)) {
-            response.setCode(404);
+            response.setStatus(404);
             response.setContentType("text/html; charset=utf-8");
             response.print(DefaultPages.notfound(domain, request.unsafe().getLocalAddress().getPort()));
             return;
@@ -379,7 +379,7 @@ public class WebHandler implements HttpHandler {
      */
     private static void respondWithError(Response response, int code, String message) {
         if (!response.headersSent()) {
-            response.setCode(code);
+            response.setStatus(code);
         }
 
         if (!response.isBodyAble()) {
