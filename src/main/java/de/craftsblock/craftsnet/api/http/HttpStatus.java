@@ -23,27 +23,12 @@ import java.util.stream.Stream;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
+ * @version 1.0.1
  * @since 3.7.0
  */
 public sealed interface HttpStatus
         permits HttpStatus.Info, HttpStatus.Success, HttpStatus.Redirection,
         HttpStatus.ClientError, HttpStatus.ServerError {
-
-    /**
-     * Immutable lookup map for retrieving HttpStatus instances by their numeric code.
-     */
-    Map<Integer, HttpStatus> LOOKUP = Stream.of(
-                    Info.values(),
-                    Success.values(),
-                    Redirection.values(),
-                    ClientError.values(),
-                    ServerError.values()
-            ).flatMap(Arrays::stream)
-            .collect(Collectors.toUnmodifiableMap(
-                    HttpStatus::getCode,
-                    Function.identity()
-            ));
 
     /**
      * Returns the HTTP reason phrase for this status.
@@ -75,7 +60,7 @@ public sealed interface HttpStatus
      * @return The category corresponding to the status code class.
      */
     default @Range(from = 1, to = 5) int getCategory() {
-        return getCode() / 100;
+        return getCategory(getCode());
     }
 
     /**
@@ -144,13 +129,30 @@ public sealed interface HttpStatus
     }
 
     /**
+     * Returns the category of this status code as the first digit.
+     *
+     * @param code The code from which the category should be returned.
+     * @return The category corresponding to the status code class.
+     */
+    static @Range(from = 1, to = 5) int getCategory(@Range(from = 100, to = 599) int code) {
+        return code / 100;
+    }
+
+    /**
      * Retrieves the {@link HttpStatus} instance corresponding to the given code.
      *
      * @param code The numeric HTTP status code
      * @return The {@link HttpStatus} instance, or {@code null} if the code is not defined
      */
-    static HttpStatus fromCode(int code) {
-        return LOOKUP.get(code);
+    static HttpStatus fromCode(@Range(from = 100, to = 599) int code) {
+        return switch (getCategory(code)) {
+            case 1 -> Info.LOOKUP.get(code);
+            case 2 -> Success.LOOKUP.get(code);
+            case 3 -> Redirection.LOOKUP.get(code);
+            case 4 -> ServerError.LOOKUP.get(code);
+            case 5 -> ClientError.LOOKUP.get(code);
+            default -> throw new IllegalStateException("Unexpected value: " + getCategory(code));
+        };
     }
 
     /**
@@ -178,6 +180,12 @@ public sealed interface HttpStatus
          */
         EARLY_HINTS(103, "Early Hints"),
         ;
+
+        /**
+         * Immutable lookup map for retrieving {@link Info} instances by their numeric code.
+         */
+        public static final Map<Integer, Info> LOOKUP = Arrays.stream(values())
+                .collect(Collectors.toUnmodifiableMap(HttpStatus::getCode, Function.identity()));
 
         private final int code;
         private final String reason;
@@ -271,6 +279,12 @@ public sealed interface HttpStatus
         IM_USED(226, "IM Used"),
         ;
 
+        /**
+         * Immutable lookup map for retrieving {@link Success} instances by their numeric code.
+         */
+        public static final Map<Integer, Success> LOOKUP = Arrays.stream(values())
+                .collect(Collectors.toUnmodifiableMap(HttpStatus::getCode, Function.identity()));
+
         private final int code;
         private final String reason;
 
@@ -352,6 +366,12 @@ public sealed interface HttpStatus
          */
         PERMANENT_REDIRECT(308, "Permanent Redirect"),
         ;
+
+        /**
+         * Immutable lookup map for retrieving {@link Redirection} instances by their numeric code.
+         */
+        public static final Map<Integer, Redirection> LOOKUP = Arrays.stream(values())
+                .collect(Collectors.toUnmodifiableMap(HttpStatus::getCode, Function.identity()));
 
         private final int code;
         private final String reason;
@@ -535,6 +555,12 @@ public sealed interface HttpStatus
         UNAVAILABLE_FOR_LEGAL_REASONS(451, "Unavailable For Legal Reasons"),
         ;
 
+        /**
+         * Immutable lookup map for retrieving {@link ClientError} instances by their numeric code.
+         */
+        public static final Map<Integer, ClientError> LOOKUP = Arrays.stream(values())
+                .collect(Collectors.toUnmodifiableMap(HttpStatus::getCode, Function.identity()));
+
         private final int code;
         private final String reason;
 
@@ -629,7 +655,14 @@ public sealed interface HttpStatus
         /**
          * 511 Network Authentication Required
          */
-        NETWORK_AUTHENTICATION_REQUIRED(511, "Network Authentication Required");
+        NETWORK_AUTHENTICATION_REQUIRED(511, "Network Authentication Required"),
+        ;
+
+        /**
+         * Immutable lookup map for retrieving {@link ServerError} instances by their numeric code.
+         */
+        public static final Map<Integer, ServerError> LOOKUP = Arrays.stream(values())
+                .collect(Collectors.toUnmodifiableMap(HttpStatus::getCode, Function.identity()));
 
         private final int code;
         private final String reason;
