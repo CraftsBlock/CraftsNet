@@ -262,6 +262,51 @@ public class Response implements AutoCloseable {
     }
 
     /**
+     * Sends an HTTP redirect response to the specified URL using the default
+     * redirection status {@link HttpStatus.Redirection#FOUND} (302).
+     *
+     * <p>This method sets the {@code Location} header to the provided URL and
+     * updates the response status accordingly. Once the redirect is prepared,
+     * the response headers are immediately sent to the client.</p>
+     *
+     * <p>The client will typically perform a new request to the provided location.</p>
+     *
+     * @param url The target URL to which the client should be redirected.
+     *            Must not be {@code null}.
+     * @throws IllegalStateException if the response headers have already been sent
+     *                               and the redirect can no longer be applied
+     * @since 3.7.0
+     */
+    public void redirect(@NotNull String url) {
+        this.redirect(url, HttpStatus.Redirection.FOUND);
+    }
+
+    /**
+     * Sends an HTTP redirect response to the specified URL using the provided
+     * redirection status code.
+     *
+     * <p>The {@code Location} header instructs the client to perform a new request
+     * to the specified resource.</p>
+     *
+     * <p>This method is {@code synchronized} to ensure thread-safe modification
+     * of the response state.</p>
+     *
+     * @param url The target URL to which the client should be redirected.
+     *            Must not be {@code null}.
+     * @param redirection the redirection status to use. Must be one of the
+     *                    {@link HttpStatus.Redirection} values.
+     *
+     * @throws IllegalStateException if the response headers have already been sent
+     *                               and the redirect can no longer be applied
+     */
+    public synchronized void redirect(@NotNull String url, @NotNull HttpStatus.Redirection redirection) {
+        ensureHeadersNotSent();
+        setStatus(redirection);
+        setHeader("Location", url);
+        ensureHeadersSend(0);
+    }
+
+    /**
      * Checks if the output stream is still valid and can therefore be written to.
      * This method also enforces some other output blocking logic.
      *
