@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Represents an HTTP status code according to the HTTP specification (RFC 9110).
@@ -149,8 +148,8 @@ public sealed interface HttpStatus
             case 1 -> Info.LOOKUP.get(code);
             case 2 -> Success.LOOKUP.get(code);
             case 3 -> Redirection.LOOKUP.get(code);
-            case 4 -> ServerError.LOOKUP.get(code);
-            case 5 -> ClientError.LOOKUP.get(code);
+            case 4 -> ClientError.LOOKUP.get(code);
+            case 5 -> ServerError.LOOKUP.get(code);
             default -> throw new IllegalStateException("Unexpected value: " + getCategory(code));
         };
     }
