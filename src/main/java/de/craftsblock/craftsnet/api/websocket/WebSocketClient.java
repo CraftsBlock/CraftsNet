@@ -8,6 +8,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry.EndpointMapping;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
+import de.craftsblock.craftsnet.api.http.HttpStatus;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareCallbackInfo;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareRegistry;
 import de.craftsblock.craftsnet.api.middlewares.WebsocketMiddleware;
@@ -569,7 +570,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             byte[] hash = handshakeDigest.digest(concatenated.getBytes(StandardCharsets.UTF_8));
 
             String extensions = String.join(",", this.extensions.parallelStream().map(WebSocketExtension::getProtocolName).toList());
-            String response = "HTTP/1.1 101 Switching Protocols\r\n"
+            String response = HttpStatus.Info.SWITCHING_PROTOCOLS.getStatusLine("HTTP/1.1")
                     + "Upgrade: websocket\r\n"
                     + "Connection: Upgrade\r\n"
                     + "Sec-WebSocket-Accept: " + Base64.getEncoder().encodeToString(hash) + "\r\n"
