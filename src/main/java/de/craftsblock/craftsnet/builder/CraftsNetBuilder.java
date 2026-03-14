@@ -2,10 +2,13 @@ package de.craftsblock.craftsnet.builder;
 
 import de.craftsblock.craftscore.utils.ArgumentParser;
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.builder.server.ServerBuilder;
+import de.craftsblock.craftsnet.builder.server.ServerState;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.impl.LoggerImpl;
 import de.craftsblock.craftsnet.logging.impl.PlainLogger;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Range;
 
 import java.io.IOException;
@@ -23,15 +26,13 @@ import java.util.*;
  */
 public class CraftsNetBuilder {
 
+
     private final List<CodeSource> codeSources = new ArrayList<>();
 
-    private int webServerPort;
-    private int webSocketServerPort;
+    private final ServerBuilder webServerBuilder;
+    private final ServerBuilder webSocketServerBuilder;
 
-    private ActivateType webServer;
-    private ActivateType webSocketServer;
     private ActivateType addonSystem;
-    private ActivateType commandSystem;
 
     private int sessionCacheSize;
 
@@ -55,10 +56,10 @@ public class CraftsNetBuilder {
      * Constructs a new {@link CraftsNetBuilder} instance with default configuration settings.
      */
     public CraftsNetBuilder() {
-        webServerPort = 5000;
-        webSocketServerPort = 5001;
-        webServer = webSocketServer = ActivateType.DYNAMIC;
-        addonSystem = commandSystem = fileLogger = ActivateType.ENABLED;
+        this.webServerBuilder = new ServerBuilder(this, ServerState.DYNAMIC, 5000);
+        this.webSocketServerBuilder = new ServerBuilder(this, ServerState.DYNAMIC, 5001);
+
+        addonSystem = fileLogger = ActivateType.ENABLED;
         withSessionCache(5);
         withDebug(false);
         withIpsInLog(true);
@@ -71,6 +72,14 @@ public class CraftsNetBuilder {
         withTrustedProxyHeaders(new ArrayList<>());
 
         addCodeSource(this.getClass().getProtectionDomain().getCodeSource());
+    }
+
+    public ServerBuilder webServerBuilder() {
+        return webServerBuilder;
+    }
+
+    public ServerBuilder webSocketServerBuilder() {
+        return webSocketServerBuilder;
     }
 
     /**
@@ -127,7 +136,6 @@ public class CraftsNetBuilder {
             case "ssl" -> withSSL(true);
 
             case "disableaddonsystem" -> withAddonSystem(ActivateType.DISABLED);
-            case "disablecommandsystem" -> withCommandSystem(ActivateType.DISABLED);
             case "disablefilelogger" -> withFileLogger(ActivateType.DISABLED);
             case "disablelogger" -> withLogger(ActivateType.DISABLED);
             case "disablelogrotate" -> withoutLogRotate();
@@ -169,6 +177,7 @@ public class CraftsNetBuilder {
      * @param codeSource The {@link CodeSource} that should be removed.
      * @return The {@link CraftsNetBuilder} instance.
      */
+
     public CraftsNetBuilder removeCodeSource(CodeSource codeSource) {
         this.codeSources.remove(codeSource);
         return this;
@@ -180,6 +189,8 @@ public class CraftsNetBuilder {
      * @param port The port number for the web server.
      * @return The {@link CraftsNetBuilder} instance.
      */
+    @Deprecated(since = "3.7.0")
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public CraftsNetBuilder withWebServer(int port) {
         return withWebServer(ActivateType.DYNAMIC, port);
     }
@@ -191,8 +202,10 @@ public class CraftsNetBuilder {
      * @return The {@link CraftsNetBuilder} instance.
      * @since 3.0.5-SNAPSHOT
      */
+    @Deprecated(since = "3.7.0")
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public CraftsNetBuilder withWebServer(ActivateType type) {
-        return withWebServer(type, this.webServerPort);
+        return withWebServer(type, this.webServerBuilder.port());
     }
 
     /**
@@ -202,9 +215,15 @@ public class CraftsNetBuilder {
      * @param port The port number for the web server.
      * @return The {@link CraftsNetBuilder} instance.
      */
+    @Deprecated(since = "3.7.0")
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public CraftsNetBuilder withWebServer(ActivateType type, int port) {
-        this.webServer = type;
-        this.webServerPort = port;
+        this.webServerBuilder.port(port)
+                .state(switch (type) {
+                    case ENABLED -> ServerState.FORCE;
+                    case DYNAMIC -> ServerState.DYNAMIC;
+                    case DISABLED -> ServerState.DISABLED;
+                });
         return this;
     }
 
@@ -214,6 +233,8 @@ public class CraftsNetBuilder {
      * @param port The port number for the WebSocket server.
      * @return The {@link CraftsNetBuilder} instance.
      */
+    @Deprecated(since = "3.7.0")
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public CraftsNetBuilder withWebSocketServer(int port) {
         return withWebSocketServer(ActivateType.DYNAMIC, port);
     }
@@ -225,8 +246,10 @@ public class CraftsNetBuilder {
      * @return The {@link CraftsNetBuilder} instance.
      * @since 3.0.5-SNAPSHOT
      */
+    @Deprecated(since = "3.7.0")
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public CraftsNetBuilder withWebSocketServer(ActivateType type) {
-        return withWebSocketServer(type, this.webSocketServerPort);
+        return withWebSocketServer(type, this.webSocketServerBuilder.port());
     }
 
     /**
@@ -236,9 +259,15 @@ public class CraftsNetBuilder {
      * @param port The port number for the WebSocket server.
      * @return The {@link CraftsNetBuilder} instance.
      */
+    @Deprecated(since = "3.7.0")
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public CraftsNetBuilder withWebSocketServer(ActivateType type, int port) {
-        this.webSocketServer = type;
-        this.webSocketServerPort = port;
+        this.webSocketServerBuilder.port(port)
+                .state(switch (type) {
+                    case ENABLED -> ServerState.FORCE;
+                    case DYNAMIC -> ServerState.DYNAMIC;
+                    case DISABLED -> ServerState.DISABLED;
+                });
         return this;
     }
 
@@ -250,17 +279,6 @@ public class CraftsNetBuilder {
      */
     public CraftsNetBuilder withAddonSystem(ActivateType type) {
         this.addonSystem = type;
-        return this;
-    }
-
-    /**
-     * Specifies the activation type for the command system.
-     *
-     * @param type The activation type for the command system.
-     * @return The {@link CraftsNetBuilder} instance.
-     */
-    public CraftsNetBuilder withCommandSystem(ActivateType type) {
-        this.commandSystem = type;
         return this;
     }
 
@@ -454,8 +472,10 @@ public class CraftsNetBuilder {
      *
      * @return The port number for the web server.
      */
+    @Deprecated(since = "3.7.0")
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public int getWebServerPort() {
-        return webServerPort;
+        return this.webServerBuilder.port();
     }
 
     /**
@@ -463,8 +483,14 @@ public class CraftsNetBuilder {
      *
      * @return The activation type for the web server.
      */
+    @Deprecated(since = "3.7.0")
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public ActivateType getWebServer() {
-        return webServer;
+        return switch (this.webServerBuilder.state()) {
+            case FORCE -> ActivateType.ENABLED;
+            case DYNAMIC -> ActivateType.DYNAMIC;
+            case DISABLED -> ActivateType.DISABLED;
+        };
     }
 
     /**
@@ -473,8 +499,14 @@ public class CraftsNetBuilder {
      * @param type The activation type to check.
      * @return true if the web server is configured with the specified activation type, false otherwise.
      */
+    @Deprecated(since = "3.7.0")
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public boolean isWebServer(ActivateType type) {
-        return webServer == type;
+        return this.webServerBuilder.state() == switch (type) {
+            case ENABLED -> ServerState.FORCE;
+            case DYNAMIC -> ServerState.DYNAMIC;
+            case DISABLED -> ServerState.DISABLED;
+        };
     }
 
     /**
@@ -482,8 +514,10 @@ public class CraftsNetBuilder {
      *
      * @return The port number for the WebSocket server.
      */
+    @Deprecated(since = "3.7.0")
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public int getWebSocketServerPort() {
-        return webSocketServerPort;
+        return this.webSocketServerBuilder.port();
     }
 
     /**
@@ -491,8 +525,14 @@ public class CraftsNetBuilder {
      *
      * @return The activation type for the WebSocket server.
      */
+    @Deprecated(since = "3.7.0")
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public ActivateType getWebSocketServer() {
-        return webSocketServer;
+        return switch (this.webSocketServerBuilder.state()) {
+            case FORCE -> ActivateType.ENABLED;
+            case DYNAMIC -> ActivateType.DYNAMIC;
+            case DISABLED -> ActivateType.DISABLED;
+        };
     }
 
     /**
@@ -501,8 +541,14 @@ public class CraftsNetBuilder {
      * @param type The activation type to check.
      * @return true if the WebSocket server is configured with the specified activation type, false otherwise.
      */
+    @Deprecated(since = "3.7.0")
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public boolean isWebSocketServer(ActivateType type) {
-        return webSocketServer == type;
+        return this.webSocketServerBuilder.state() == switch (type) {
+            case ENABLED -> ServerState.FORCE;
+            case DYNAMIC -> ServerState.DYNAMIC;
+            case DISABLED -> ServerState.DISABLED;
+        };
     }
 
     /**
@@ -522,25 +568,6 @@ public class CraftsNetBuilder {
      */
     public boolean isAddonSystem(ActivateType type) {
         return addonSystem == type;
-    }
-
-    /**
-     * Retrieves the activation type configured for the command system.
-     *
-     * @return The activation type for the command system.
-     */
-    public ActivateType getCommandSystem() {
-        return commandSystem;
-    }
-
-    /**
-     * Checks if the command system is configured with the specified activation type.
-     *
-     * @param type The activation type to check.
-     * @return true if the command system is configured with the specified activation type, false otherwise.
-     */
-    public boolean isCommandSystem(ActivateType type) {
-        return commandSystem == type;
     }
 
     /**

@@ -168,17 +168,6 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
     /**
      * {@inheritDoc}
      *
-     * @param type {@inheritDoc}
-     * @return {@inheritDoc}
-     */
-    public AddonContainingBuilder withCommandSystem(ActivateType type) {
-        super.withCommandSystem(type);
-        return this;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
      * @param size {@inheritDoc}
      * @return {@inheritDoc}
      */
