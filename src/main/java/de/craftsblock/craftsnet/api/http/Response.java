@@ -288,9 +288,6 @@ public class Response implements AutoCloseable {
      * <p>The {@code Location} header instructs the client to perform a new request
      * to the specified resource.</p>
      *
-     * <p>This method is {@code synchronized} to ensure thread-safe modification
-     * of the response state.</p>
-     *
      * @param url The target URL to which the client should be redirected.
      *            Must not be {@code null}.
      * @param redirection the redirection status to use. Must be one of the

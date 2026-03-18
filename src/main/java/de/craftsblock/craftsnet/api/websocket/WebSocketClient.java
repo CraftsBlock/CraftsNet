@@ -1210,7 +1210,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 logger.warning("%s disconnected abnormal (Code: %s)%s",
                         ip, code != null ? code : closeCode, closeReason != null && !closeReason.isEmpty() ? ": " + closeReason : "");
             } else {
-                logger.debug("%s disconnected", ip);
+                logger.info("%s disconnected", ip);
             }
 
             performForEachAvailableMiddleware(

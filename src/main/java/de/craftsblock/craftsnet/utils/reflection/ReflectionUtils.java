@@ -5,6 +5,8 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
 import java.lang.annotation.Annotation;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.*;
 import java.util.Arrays;
 
@@ -17,6 +19,8 @@ import java.util.Arrays;
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
+
+    private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
 
     /**
      * Private constructor to prevent direct instantiation
@@ -74,8 +78,11 @@ public class ReflectionUtils {
         Class<?> caller = ReflectionUtils.getCallerClass();
         Class<?> callersCaller = ReflectionUtils.getCallerClass(4);
 
-        for (Class<?> allow : allowed)
-            if (allow.isAssignableFrom(callersCaller)) return;
+        for (Class<?> allow : allowed) {
+            if (allow.isAssignableFrom(callersCaller)) {
+                return;
+            }
+        }
 
         throw new IllegalStateException(callersCaller.getName() + " is not permitted to call a " + caller.getSimpleName());
     }
@@ -102,10 +109,15 @@ public class ReflectionUtils {
      */
     @SuppressWarnings("unchecked")
     public static <T> Constructor<T> findConstructor(Class<T> clazz, Class<?>... args) {
-        if (clazz == null) return null;
+        if (clazz == null) {
+            return null;
+        }
 
-        for (Constructor<?> constructor : clazz.getDeclaredConstructors())
-            if (areArgsCompatible(constructor, args)) return (Constructor<T>) constructor;
+        for (Constructor<?> constructor : clazz.getDeclaredConstructors()) {
+            if (areArgsCompatible(constructor, args)) {
+                return (Constructor<T>) constructor;
+            }
+        }
 
         return null;
     }
@@ -121,19 +133,21 @@ public class ReflectionUtils {
      * @throws RuntimeException      if the instantiation failed.
      * @since 3.4.0-SNAPSHOT
      */
+    @SuppressWarnings("unchecked")
     public static <T> @NotNull T getNewInstance(@NotNull Class<T> type, @NotNull Object... args) {
         Class<?>[] argTypes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
 
-        if (!isConstructorPresent(type, argTypes))
-            throw new IllegalStateException("No constructor found for " + type.getSimpleName() + "(" +
-                    String.join(", ", Arrays.stream(argTypes).map(Class::getSimpleName).toList()) + ")!");
-
         Constructor<T> constructor = findConstructor(type, argTypes);
+        if (constructor == null) {
+            throw new IllegalStateException("No constructor found for " + type.getSimpleName());
+        }
+
         try {
-            constructor.setAccessible(true);
-            return constructor.newInstance(args);
-        } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
-            throw new RuntimeException("Could not create a new instance of " + type.getSimpleName() + "!", e);
+            return (T) MethodHandles.privateLookupIn(type, LOOKUP)
+                    .unreflectConstructor(constructor)
+                    .invokeWithArguments(args);
+        } catch (Throwable e) {
+            throw new RuntimeException("Could not create instance of " + type.getSimpleName(), e);
         }
     }
 
@@ -145,14 +159,17 @@ public class ReflectionUtils {
      * @param value  The value to set the field to.
      */
     public static void setField(String name, Object target, Object value) {
-        Field field = findField(target.getClass(), name);
         try {
-            field.setAccessible(true);
-            field.set(target, value);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException("Can not set field %s of class %s!".formatted(
-                    name, target.getClass().getSimpleName()
-            ), e);
+            Field field = findField(target.getClass(), name);
+            MethodHandles.privateLookupIn(field.getDeclaringClass(), LOOKUP)
+                    .unreflectVarHandle(field)
+                    .set(target, value);
+        } catch (Throwable e) {
+            throw new RuntimeException(
+                    "Can not set field %s of class %s!".formatted(
+                            name, target.getClass().getSimpleName()
+                    ), e
+            );
         }
     }
 
@@ -192,11 +209,12 @@ public class ReflectionUtils {
         Class<?>[] argTypes = Arrays.stream(args).map(Object::getClass).toArray(Class[]::new);
 
         Method method = findMethod(type, name, argTypes);
-        if (method == null)
+        if (method == null) {
             throw new IllegalStateException("No method %s(%s) found in %s!".formatted(
                     name, String.join(", ", Arrays.stream(argTypes).map(Class::getSimpleName).toList()),
                     type.getSimpleName()
             ));
+        }
 
         return invokeMethod(owner, method, args);
     }
@@ -212,17 +230,18 @@ public class ReflectionUtils {
      */
     public static Object invokeMethod(Object owner, Method method, Object... args) {
         try {
-            boolean isStatic = Modifier.isStatic(method.getModifiers());
+            Class<?> type = method.getDeclaringClass();
 
-            method.setAccessible(true);
-            return method.invoke(isStatic ? null : owner, args);
-        } catch (InvocationTargetException | IllegalAccessException e) {
-            throw new RuntimeException("Could not invoke %s".formatted(method.toGenericString()), e);
-        } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Could not invoke %s with arguments (%s)".formatted(
-                    method.toGenericString(),
-                    String.join(", ", Arrays.stream(args).map(Object::getClass).map(Class::getSimpleName).toList())
-            ));
+            MethodHandle handle = MethodHandles.privateLookupIn(type, LOOKUP)
+                    .unreflect(method);
+
+            return (!Modifier.isStatic(method.getModifiers())
+                    ? handle.bindTo(owner)
+                    : handle).invokeWithArguments(args);
+        } catch (Throwable e) {
+            throw new RuntimeException(
+                    "Could not invoke " + method.toGenericString(), e
+            );
         }
     }
 
@@ -239,26 +258,35 @@ public class ReflectionUtils {
      * @since 3.5.0
      */
     public static Method findMethod(Class<?> type, String name, Class<?>... args) {
-        if (type == null) return null;
+        if (type == null) {
+            return null;
+        }
 
         for (Method method : type.getDeclaredMethods()) {
-            if (method.isBridge() || method.isSynthetic()) continue;
-            if (!method.getName().equals(name)) continue;
-            if (!areArgsCompatible(method, args)) continue;
+            if (method.isBridge() || method.isSynthetic() ||
+                    !method.getName().equals(name) ||
+                    !areArgsCompatible(method, args)) {
+                continue;
+            }
 
             return method;
         }
 
-        if (Object.class.equals(type)) return null;
+        if (Object.class.equals(type)) {
+            return null;
+        }
 
-        // Search the superclass
         var fromSuperclass = findMethod(type.getSuperclass(), name, args);
-        if (fromSuperclass != null) return fromSuperclass;
+        if (fromSuperclass != null) {
+            return fromSuperclass;
+        }
 
-        // Search the interfaces
         for (Class<?> iface : type.getInterfaces()) {
             var method = findMethod(iface, name, args);
-            if (method == null) continue;
+            if (method == null) {
+                continue;
+            }
+
             return method;
         }
 
@@ -280,23 +308,32 @@ public class ReflectionUtils {
         boolean isVarArgs = executable.isVarArgs();
         int fixedParamCount = paramTypes.length - (isVarArgs ? 1 : 0);
 
-        if (args.length < fixedParamCount || (!isVarArgs && args.length != paramTypes.length))
+        if (args.length < fixedParamCount || (!isVarArgs && args.length != paramTypes.length)) {
             return false;
+        }
 
-        for (int i = 0; i < fixedParamCount; i++)
-            if (!TypeUtils.isAssignable(paramTypes[i], args[i])) return false;
+        for (int i = 0; i < fixedParamCount; i++) {
+            if (!TypeUtils.isAssignable(paramTypes[i], args[i])) {
+                return false;
+            }
+        }
 
-        if (!isVarArgs || args.length == paramTypes.length - 1) return true;
+        if (!isVarArgs || args.length == paramTypes.length - 1) {
+            return true;
+        }
 
-        // If the last arg is an array check the vararg as array
         int lastIndexOfArg = args.length - 1;
-        if (args.length == paramTypes.length && args[lastIndexOfArg].isArray())
+        if (args.length == paramTypes.length && args[lastIndexOfArg].isArray()) {
             return TypeUtils.isAssignable(paramTypes[lastIndexOfArg], args[lastIndexOfArg]);
+        }
 
         // Check all remaining args if it matches with the vararg
         Class<?> varArgType = paramTypes[paramTypes.length - 1].getComponentType();
-        for (int i = fixedParamCount; i < args.length; i++)
-            if (!TypeUtils.isAssignable(varArgType, args[i])) return false;
+        for (int i = fixedParamCount; i < args.length; i++) {
+            if (!TypeUtils.isAssignable(varArgType, args[i])) {
+                return false;
+            }
+        }
 
         return true;
     }
@@ -324,20 +361,22 @@ public class ReflectionUtils {
      * @return The class type corresponding to the handler's generic type.
      */
     @SuppressWarnings("unchecked")
-    public static <T> Class<T> extractGeneric(Class<?> clazz, Class<?> base, @Range(from = 0, to = Integer.MAX_VALUE) int index) {
+    public static <T> Class<T> extractGeneric(Class<?> clazz, Class<?> base,
+                                              @Range(from = 0, to = Integer.MAX_VALUE) int index) {
         try {
             Type superclass = clazz.getGenericSuperclass();
-            if (superclass instanceof ParameterizedType type)
-                // Subtract the length by one to make Integer.MAX_VALUE possible as index
+            if (superclass instanceof ParameterizedType type) {
                 if ((type.getActualTypeArguments().length - 1) >= index) {
                     Type t = type.getActualTypeArguments()[index];
                     return (Class<T>) TypeUtils.convertTypeToClass(t);
                 }
+            }
         } catch (ClassCastException ignored) {
         }
 
-        if (!Object.class.equals(clazz.getSuperclass()) && TypeUtils.isAssignable(base, clazz.getSuperclass()))
+        if (!Object.class.equals(clazz.getSuperclass()) && TypeUtils.isAssignable(base, clazz.getSuperclass())) {
             return extractGeneric(clazz.getSuperclass(), base, index);
+        }
 
         return null;
     }
@@ -379,8 +418,14 @@ public class ReflectionUtils {
      * @since 3.4.0-SNAPSHOT
      */
     public static <A extends Annotation> boolean isAnnotationPresent(Object obj, Class<A> annotation) {
-        if (obj instanceof Method method) return method.isAnnotationPresent(annotation);
-        if (obj instanceof Class<?> clazz) return clazz.isAnnotationPresent(annotation);
+        if (obj instanceof Method method) {
+            return method.isAnnotationPresent(annotation);
+        }
+
+        if (obj instanceof Class<?> clazz) {
+            return clazz.isAnnotationPresent(annotation);
+        }
+
         return obj.getClass().isAnnotationPresent(annotation);
     }
 
@@ -412,18 +457,28 @@ public class ReflectionUtils {
      */
     public static <A extends Annotation, T> T retrieveValueOfAnnotation(AnnotatedElement element, Class<A> annotationClass, Class<T> type, boolean fallback) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
         A annotation = retrieveRawAnnotation(element, annotationClass);
-        if (annotation == null)
+        if (annotation == null) {
             if (fallback) {
                 Method method = annotationClass.getDeclaredMethod("value");
-                if (method.getDefaultValue() == null) return null;
+                if (method.getDefaultValue() == null) {
+                    return null;
+                }
+
                 return castTo(method.getDefaultValue(), type);
-            } else return null;
+            } else {
+                return null;
+            }
+        }
 
         Method method = ReflectionUtils.findMethod(annotation.getClass(), "value");
         Object value = method.invoke(annotation);
-        if (value == null)
-            if (fallback) value = method.getDefaultValue();
-            else return null;
+        if (value == null) {
+            if (fallback) {
+                return castTo(method.getDefaultValue(), type);
+            }
+
+            return null;
+        }
 
         return castTo(value, type);
     }

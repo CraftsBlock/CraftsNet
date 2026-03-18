@@ -30,7 +30,7 @@ import static de.craftsblock.craftsnet.utils.Utils.getGroupNames;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.0
+ * @version 1.4.0
  * @see Transformer
  * @see TransformerCollection
  * @see Transformable
@@ -67,13 +67,19 @@ public class TransformerPerformer {
      * @param validator The new validator.
      */
     public void setValidator(@Nullable Pattern validator) {
-        if (validator == null) return;
-
-        if (this.validator != null && this.validator.pattern().equals(validator.pattern()))
+        if (validator == null) {
             return;
-        this.validator = validator;
+        }
 
-        if (!this.groupNames.isEmpty()) this.groupNames.clear();
+        if (this.validator != null && this.validator.pattern().equals(validator.pattern())) {
+            return;
+        }
+
+        this.validator = validator;
+        if (!this.groupNames.isEmpty()) {
+            this.groupNames.clear();
+        }
+
         this.groupNames.addAll(getGroupNames(validator.pattern()));
     }
 
@@ -92,41 +98,40 @@ public class TransformerPerformer {
      * @throws InvocationTargetException if the underlying method throws an exception.
      */
     public boolean perform(Handler handler, Method method, Object[] args) throws Exception {
-        // Return when no transformer is applied
-        if (!hasTransformers(handler) && !hasTransformers(method))
+        if (hasNoTransformers(handler) && hasNoTransformers(method))
             return true;
 
-        // Apply all the transformers
         applyTransformers(args, handler);
         applyTransformers(args, method);
 
-        // Loop through all parameters of the method and checks the parameter type
         Class<?>[] parameterTypes = method.getParameterTypes();
-        if (parameterTypes.length == args.length)
-            for (int i = this.argsOffset; i < parameterTypes.length; i++) {
-                Class<?> type = parameterTypes[i];
-                Object value = args[i];
+        if (parameterTypes.length != args.length) {
+            return true;
+        }
 
-                // Check if the value is an TransformerException and call the callback if present.
-                if (value instanceof TransformerException e) {
-                    if (callback != null) callback.handleError(e);
-                    // Continue to the next route
-                    return false;
+        for (int i = this.argsOffset; i < parameterTypes.length; i++) {
+            Class<?> type = parameterTypes[i];
+            Object value = args[i];
+
+            if (value instanceof TransformerException e) {
+                if (callback != null) {
+                    callback.handleError(e);
                 }
 
-                // Check if the parameter type is not the value type
-                if (!type.isAssignableFrom(value.getClass())) {
-                    String name = type.getSimpleName();
-
-                    // Gets and checks if a method for an alternative transformation is present.
-                    // This allows for example the use of both Integer and int
-                    Method converter = ReflectionUtils.findMethod(value.getClass(), name + "Value");
-                    if (converter == null) continue;
-
-                    // Set the value of the argument to the return of the method for alternativ transformation.
-                    args[i] = ReflectionUtils.invokeMethod(value, converter);
-                }
+                return false;
             }
+
+            if (!type.isAssignableFrom(value.getClass())) {
+                String name = type.getSimpleName();
+
+                Method converter = ReflectionUtils.findMethod(value.getClass(), name + "Value");
+                if (converter == null) {
+                    continue;
+                }
+
+                args[i] = ReflectionUtils.invokeMethod(value, converter);
+            }
+        }
 
         return true;
     }
@@ -137,9 +142,9 @@ public class TransformerPerformer {
      * @param obj The method or the handler which contains the information about the transformers.
      * @return {@code true} if there are transformers present, {@code false} otherwise
      */
-    public boolean hasTransformers(Object obj) {
-        return (obj instanceof Method method ? method : obj.getClass()).getAnnotation(TransformerCollection.class) != null ||
-                (obj instanceof Method method ? method : obj.getClass()).getAnnotation(Transformer.class) != null;
+    public boolean hasNoTransformers(Object obj) {
+        return (obj instanceof Method method ? method : obj.getClass()).getAnnotation(TransformerCollection.class) == null &&
+                (obj instanceof Method method ? method : obj.getClass()).getAnnotation(Transformer.class) == null;
     }
 
     /**
@@ -147,27 +152,26 @@ public class TransformerPerformer {
      *
      * @param args The args which should be transformed.
      * @param obj  The method or the handler which contains the information about the transformers.
-     * @return {@code true} if a transformer was applied, {@code false} otherwise.
      * @throws NoSuchMethodException  if the transformer method could not be found.
      * @throws InstantiationException if no new instance of the Transformable can be created.
      * @throws IllegalAccessException if access to the constructor of Transformable or
      *                                access to the method Transformable.transform(String) is restricted.
      */
-    private boolean applyTransformers(Object[] args, Object obj) throws NoSuchMethodException, InstantiationException, IllegalAccessException {
+    private void applyTransformers(Object[] args, Object obj) throws NoSuchMethodException, InstantiationException, IllegalAccessException {
         TransformerCollection transformers = (obj instanceof Method method ? method : obj.getClass()).getAnnotation(TransformerCollection.class);
         if (transformers != null) {
-            for (Transformer transformer : transformers.value())
+            for (Transformer transformer : transformers.value()) {
                 transform(groupNames, args, transformer);
-            return true;
+            }
+
+            return;
         }
 
         Transformer standaloneTransformer = (obj instanceof Method method ? method : obj.getClass()).getAnnotation(Transformer.class);
         if (standaloneTransformer != null) {
             transform(groupNames, args, standaloneTransformer);
-            return true;
         }
 
-        return false;
     }
 
     /**
@@ -190,7 +194,6 @@ public class TransformerPerformer {
      */
     private void transform(List<String> groupNames, Object[] args, Transformer transformer) throws NoSuchMethodException, InstantiationException, IllegalAccessException {
         String parameter = transformer.parameter();
-        // Abort if the dynamic parameter is not present in the named groups
         if (!groupNames.contains(parameter)) {
             logger.warning("Parameter %s has a transformer but is not used!", parameter);
             return;
@@ -199,25 +202,38 @@ public class TransformerPerformer {
         int groupIndex = groupNames.indexOf(parameter) + this.argsOffset;
         String value = (String) args[groupIndex];
         try {
-            // Load all important variables
             Class<? extends Transformable<?, ?>> transformable = transformer.transformer();
             args[groupIndex] = transform(value, transformer, transformable);
         } catch (RuntimeException | InvocationTargetException parent) {
-            if (parent.getCause() == null)
+            if (parent.getCause() == null) {
                 return;
+            }
 
-            Throwable cause = parent.getCause();
-            TransformerException exception;
-            if (cause instanceof TransformerException e) exception = e;
-            else if (cause.getCause() != null && cause.getCause() instanceof TransformerException e)
-                exception = e;
-            else exception = null;
-
-            if (exception == null)
-                throw (parent instanceof RuntimeException re ? re : new RuntimeException(parent));
-
-            args[groupIndex] = exception;
+            args[groupIndex] = getTransformerException(parent);
         }
+    }
+
+    /**
+     * Wraps a given exception into a {@link TransformerException}.
+     *
+     * @param parent The exception that should be wrapped.
+     * @return The wrapped exception.
+     */
+    private static @NotNull TransformerException getTransformerException(Exception parent) {
+        Throwable cause = parent.getCause();
+        TransformerException exception;
+        if (cause instanceof TransformerException e) {
+            exception = e;
+        } else if (cause.getCause() != null && cause.getCause() instanceof TransformerException e) {
+            exception = e;
+        } else {
+            exception = null;
+        }
+
+        if (exception == null) {
+            throw (parent instanceof RuntimeException re ? re : new RuntimeException(parent));
+        }
+        return exception;
     }
 
     /**
@@ -237,38 +253,28 @@ public class TransformerPerformer {
     private Object transform(String parameter, Transformer transformer, Class<? extends Transformable<?, ?>> type) throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         Transformable<?, ?> transformable = type.cast(type.getDeclaredConstructor().newInstance());
 
-        // Check if the transformable has a parent and invoke it if one is present
         Object value;
-        if (transformable.getParent() != null)
+        if (transformable.getParent() != null) {
             value = transform(parameter, transformer, transformable.getParent());
-        else value = parameter;
+        } else {
+            value = parameter;
+        }
 
-        // Check if the transformer is cacheable and the transformer cache contains this specific transformer
-        if (transformer.cacheable() && transformable.isCacheable() && transformerCache.containsKeyPair(type, value))
-            // Override the args with the cache value from the transformer cache
+        if (transformer.cacheable() && transformable.isCacheable() && transformerCache.containsKeyPair(type, value)) {
             return transformerCache.get(type, value);
+        }
 
-        // Search for the transform method on the transformable
         Method transformerMethod = ReflectionUtils.findMethod(type, "transform", Object.class);
-        if (transformerMethod == null)
+        if (transformerMethod == null) {
             throw new IllegalStateException("Transformer " + type.getName() + " does not have a transformer method!");
+        }
 
-        // Execute the transform method on the transformable
         Object transformed = ReflectionUtils.invokeMethod(transformable, transformerMethod, value);
-
-        // Put the transformed value into the cache, if the transformer is cacheable
-        if (transformer.cacheable() && transformable.isCacheable()) transformerCache.put(type, value, transformed);
+        if (transformer.cacheable() && transformable.isCacheable()) {
+            transformerCache.put(type, value, transformed);
+        }
 
         return transformed;
-    }
-
-    /**
-     * Gets the arguments offset.
-     *
-     * @return The arguments offset.
-     */
-    public int getArgsOffset() {
-        return argsOffset;
     }
 
 }
