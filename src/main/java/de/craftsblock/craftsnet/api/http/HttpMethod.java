@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.http;
 
 import de.craftsblock.craftsnet.api.http.annotations.Route;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -222,6 +223,7 @@ public enum HttpMethod {
      * @return The array of strings representing the request methods.
      * @deprecated in favor of {@link #normalize(HttpMethod...)}.
      */
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
     @Deprecated(since = "3.4.3-SNAPSHOT", forRemoval = true)
     public static String[] convert(HttpMethod... methods) {
         return Arrays.stream(normalize(methods)).map(HttpMethod::name).toArray(String[]::new);
@@ -235,6 +237,7 @@ public enum HttpMethod {
      * @return The string representation of request methods separated by "|".
      * @deprecated in favor of {@link #join(HttpMethod...)}.
      */
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
     @Deprecated(since = "3.4.3-SNAPSHOT", forRemoval = true)
     public static String asString(HttpMethod... methods) {
         return HttpMethod.join(methods);

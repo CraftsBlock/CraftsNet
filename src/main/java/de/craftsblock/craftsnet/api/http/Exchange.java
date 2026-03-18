@@ -4,6 +4,7 @@ import de.craftsblock.craftsnet.api.BaseExchange;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -97,6 +98,7 @@ public record Exchange(@NotNull Context context, @NotNull ProtocolVersion protoc
      * @since 3.3.2-SNAPSHOT
      * @deprecated in favor of {@link Request#getRawUrl()}.
      */
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
     @Deprecated(since = "3.3.2-SNAPSHOT", forRemoval = true)
     public String path() {
         return request().getRawUrl();

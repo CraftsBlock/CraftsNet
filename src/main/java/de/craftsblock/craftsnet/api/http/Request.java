@@ -44,6 +44,7 @@ public class Request implements AutoCloseable, RequireAble {
     private final ConcurrentHashMap<String, String> queryParams = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Cookie> cookies = new ConcurrentHashMap<>();
     private final String ip;
+    private final String connectingIp;
 
     private Exchange exchange;
 
@@ -63,12 +64,13 @@ public class Request implements AutoCloseable, RequireAble {
      * @param httpMethod   The {@link HttpMethod} used to access the route.
      */
     public Request(CraftsNet craftsNet, HttpExchange httpExchange,
-                   Headers headers, String url, String ip, String domain, HttpMethod httpMethod) {
+                   Headers headers, String url, String ip, String connectingIp, String domain, HttpMethod httpMethod) {
         this.craftsNet = craftsNet;
         this.httpExchange = httpExchange;
         this.headers = headers;
         this.rawUrl = url;
         this.ip = ip;
+        this.connectingIp = connectingIp;
         this.domain = domain;
         this.httpMethod = httpMethod;
 
@@ -385,12 +387,23 @@ public class Request implements AutoCloseable, RequireAble {
     }
 
     /**
-     * Retrieves the IP address of the client sending the request.
+     * Returns the IP address associated with this request.
      *
-     * @return The IP address of the client.
+     * @return The IP address, possibly a proxied/forwarded IP
      */
     public String getIp() {
         return ip;
+    }
+
+    /**
+     * Returns the real IP address of the sender that directly established
+     * the connection.
+     *
+     * @return The real IP address of the connecting sender
+     * @since 3.7.0
+     */
+    public String getConnectingIp() {
+        return connectingIp;
     }
 
     /**

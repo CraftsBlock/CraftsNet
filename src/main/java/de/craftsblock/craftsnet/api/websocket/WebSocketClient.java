@@ -8,6 +8,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry.EndpointMapping;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
+import de.craftsblock.craftsnet.api.http.HttpStatus;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareCallbackInfo;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareRegistry;
 import de.craftsblock.craftsnet.api.middlewares.WebsocketMiddleware;
@@ -62,7 +63,7 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.8.0
+ * @version 3.8.1
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */
@@ -75,7 +76,6 @@ public class WebSocketClient implements Runnable, RequireAble {
 
     static {
         try {
-            // Set the digest algorithm for building the handshakes
             handshakeDigest = MessageDigest.getInstance("SHA-1");
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
@@ -93,6 +93,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private SocketExchange exchange;
     private ProtocolVersion protocolVersion;
     private Headers headers;
+    private String connectingIp;
     private String ip;
     private String path;
     private String domain;
@@ -101,7 +102,6 @@ public class WebSocketClient implements Runnable, RequireAble {
     private BufferedReader reader;
     private OutputStream writer;
     private final Object writerLock = new Object();
-    private final ByteArrayOutputStream readBuffer = new ByteArrayOutputStream();
 
     private final CraftsNet craftsNet;
     private final Logger logger;
@@ -136,8 +136,11 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.getLogger();
 
-        // Create a transformer performer which handles all transformers
         this.transformerPerformer = new TransformerPerformer(this.craftsNet, 2, e -> {
+            if (!isConnected()) {
+                return;
+            }
+
             sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).toString());
             disconnect();
         });
@@ -151,103 +154,102 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     @Override
     public void run() {
-        // Ensure that the client is not already active
-        if (this.active)
+        if (this.active) {
             throw new IllegalStateException("This websocket client is already running!");
+        }
+
+        connectingIp = socket.getInetAddress().getHostAddress();
 
         this.active = true;
         try {
-            // Setup input and output streams for communication with the client
             reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             writer = socket.getOutputStream();
-            headers = readHeaders(); // Read and store the client's headers for later use
+            headers = readHeaders();
 
             int secWebsocketVersion = headers.containsKey("Sec-WebSocket-Version") ? Integer.parseInt(headers.getFirst("Sec-WebSocket-Version")) : 0;
             this.protocolVersion = new ProtocolVersion(this.scheme, secWebsocketVersion, 0);
 
-            // Create a SocketExchange object to handle communication with the server
             this.exchange = new SocketExchange(new Context(), this.protocolVersion, this.server, this);
 
-            // Abort if the path was not found on the request
             if (path == null) {
                 logger.warning("The path could not be loaded. (Maybe an unsupported request method?)");
                 disconnect();
                 return;
             }
 
-            // Determine the host domain from headers
             AtomicReference<String> host = new AtomicReference<>();
             if (headers.containsKey("X-Forwarded-Host")) host.set(headers.getFirst("X-forwarded-Host").split(":")[0]);
             else host.set(headers.getFirst("Host").split(":")[0]);
             this.domain = host.get();
 
-            // Determine the client's IP address from headers, taking into account any proxy headers
-            ip = socket.getInetAddress().getHostAddress();
-            if (getHeader("X-forwarded-for") != null)
-                ip = Objects.requireNonNull(getHeader("X-forwarded-for")).split(", ")[0];
-            if (getHeader("Cf-connecting-ip") != null)
-                ip = getHeader("Cf-connecting-ip");
+            Collection<String> trustedProxyHeaders = this.craftsNet.getBuilder().getTrustedProxyHeaders();
+            String headerName = trustedProxyHeaders.stream().filter(headers::containsKey).findFirst().orElse(null);
+            if (headerName != null) {
+                ip = headers.getFirst(headerName).split(",\\s+")[0];
+            } else {
+                ip = connectingIp;
+            }
 
-            // Loadup extensions
-            if (getHeader("Sec-websocket-extensions") != null)
-                for (String extension : getHeader("Sec-websocket-extensions").split(";\\s+"))
-                    if (craftsNet.getWebSocketExtensionRegistry().hasExtension(extension))
+
+            if (getHeader("Sec-websocket-extensions") != null) {
+                for (String extension : getHeader("Sec-websocket-extensions").split(";\\s+")) {
+                    if (craftsNet.getWebSocketExtensionRegistry().hasExtension(extension)) {
                         this.extensions.add(craftsNet.getWebSocketExtensionRegistry().getExtensionByName(extension));
+                    }
+                }
+            }
 
-            // Send a WebSocket handshake to establish the connection
             sendHandshake();
             this.connected = true;
 
-            // Reverse the extension list as it is required to process the more important one's at the end
             Collections.reverse(extensions);
 
-            // Load the endpoint mappings
             this.mappings = getEndpoint();
 
-            // Trigger the ClientConnectEvent to handle the client connection
             ClientConnectEvent event = new ClientConnectEvent(exchange);
             craftsNet.getListenerRegistry().call(event);
 
-            // If the event is cancelled, disconnect the client
             if (event.isCancelled()) {
-                if (event.hasCancelReason())
-                    sendMessage(event.getCancelReason());
-                disconnect();
-                logger.debug(MESSAGE_TRIED_CONNECTING_ERROR, ip, path, event.getCancelReason());
+                String rawCancelReason = event.getCancelReason();
+                String cancelReason = rawCancelReason == null || rawCancelReason.isBlank() ? "Aborted" : rawCancelReason;
+
+                logger.debug(MESSAGE_TRIED_CONNECTING_ERROR, ip, path, cancelReason.toUpperCase());
+                closeInternally(ClosureCode.NORMAL, cancelReason, true);
                 return;
             }
 
-            // Handle middleware on connect
             MiddlewareCallbackInfo callbackInfo = performForEachAvailableMiddleware(
                     (info, middleware) -> middleware.handleConnect(info, exchange)
             );
 
             if (callbackInfo.isCancelled()) {
-                if (callbackInfo.hasCancelReason())
-                    sendMessage(callbackInfo.getCancelReason());
-                disconnect();
-                logger.debug(MESSAGE_TRIED_CONNECTING_ERROR, ip, path, callbackInfo.getCancelReason());
+                String rawCancelReason = callbackInfo.getCancelReason();
+                String cancelReason = rawCancelReason == null || rawCancelReason.isBlank() ? "Aborted" : rawCancelReason;
+
+                logger.debug(MESSAGE_TRIED_CONNECTING_ERROR, ip, path, cancelReason.toUpperCase());
+                closeInternally(ClosureCode.NORMAL, cancelReason, true);
                 return;
             }
 
-            // Check if the requested path has a corresponding endpoint registered in the server
             if (!event.isAllowedWithoutMapping() && (mappings == null || mappings.isEmpty())) {
-                // If the requested path has no corresponding endpoint, send an error message
                 logger.debug("%s connected to %s \u001b[38;5;9m[NOT FOUND]", ip, path);
                 closeInternally(ClosureCode.BAD_GATEWAY, Json.empty().set("error", "Path do not match any API endpoint!").toString(), true);
                 return;
             }
 
-            // Add this WebSocket client to the server's collection and mark it as connected
             server.add(path, this);
 
-            // If the event is not cancelled, process incoming messages from the client
             logger.info("%s connected to %s", ip, path);
 
             while (!Thread.currentThread().isInterrupted() && isConnected()) {
                 Frame frame = readMessage();
-                if (handleIncomingMessage(frame))
+                if (handleIncomingMessage(frame)) {
                     break;
+                }
+
+                if (frame != null) {
+                    Arrays.fill(frame.getData(), (byte) 0);
+                }
             }
         } catch (SocketException ignored) {
         } catch (Throwable t) {
@@ -274,9 +276,13 @@ public class WebSocketClient implements Runnable, RequireAble {
             return true;
         }
 
-        if (!this.connected || !this.socket.isConnected()) return true;
-        if (isCloseFrame(frame))
+        if (!this.connected || !this.socket.isConnected()) {
             return true;
+        }
+
+        if (isCloseFrame(frame)) {
+            return true;
+        }
 
         switch (frame.getOpcode()) {
             case PING -> {
@@ -290,33 +296,37 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
 
             case TEXT -> {
-                if (Utils.isEncodingValid(frame.getData(), StandardCharsets.UTF_8))
+                if (Utils.isEncodingValid(frame.getData(), StandardCharsets.UTF_8)) {
                     break;
+                }
+
                 closeInternally(ClosureCode.UNSUPPORTED_PAYLOAD, "Send byte values are not utf8 valid!", true);
                 return true;
             }
         }
 
-        // Fire an incoming socket message event and continue if it was cancelled
         IncomingSocketMessageEvent incomingMessageEvent = new IncomingSocketMessageEvent(exchange, frame);
         craftsNet.getListenerRegistry().call(incomingMessageEvent);
-        if (incomingMessageEvent.isCancelled()) return false;
+        if (incomingMessageEvent.isCancelled()) {
+            return false;
+        }
 
-        // Handle middlewares
         MiddlewareCallbackInfo callbackInfo = performForEachAvailableMiddleware(
                 (info, middleware) -> middleware.handleMessageReceived(info, exchange, frame)
         );
-        if (callbackInfo.isCancelled())
-            return true;
+        if (callbackInfo.isCancelled()) {
+            return false;
+        }
 
-        if (mappings == null || mappings.isEmpty()) return false;
+        if (mappings == null || mappings.isEmpty()) {
+            return false;
+        }
 
         mappings.keySet().stream()
                 .map(mappings::get)
                 .flatMap(Collection::stream)
                 .forEach(mapping -> this.handleMapping(mapping, frame));
 
-        // Clear up transformer cache to free up memory
         transformerPerformer.clearCache();
         matchers.clear();
         return false;
@@ -332,8 +342,13 @@ public class WebSocketClient implements Runnable, RequireAble {
     private boolean isCloseFrame(Frame frame) {
         byte @NotNull [] data = frame.getData();
 
-        if (!frame.getOpcode().equals(Opcode.CLOSE)) return false;
-        if (data.length <= 2) return true;
+        if (!frame.getOpcode().equals(Opcode.CLOSE)) {
+            return false;
+        }
+
+        if (data.length <= 2) {
+            return true;
+        }
 
         closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
         closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
@@ -350,7 +365,10 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     private void handleMapping(EndpointMapping mapping, Frame frame) {
         try {
-            if (!(mapping.handler() instanceof SocketHandler handler)) return;
+            if (!(mapping.handler() instanceof SocketHandler handler)) {
+                return;
+            }
+
             Method method = mapping.method();
 
             Pattern validator = mapping.validator();
@@ -367,23 +385,27 @@ public class WebSocketClient implements Runnable, RequireAble {
             });
             transformerPerformer.setValidator(validator);
 
-            // Extract and pass the message parameters to the endpoint handler
             Object[] args = new Object[matcher.groupCount() + 1];
             args[0] = exchange;
             args[1] = frame.getData();
-            for (int i = 2; i <= matcher.groupCount(); i++) args[i] = matcher.group(i);
+            for (int i = 2; i <= matcher.groupCount(); i++) {
+                args[i] = matcher.group(i);
+            }
 
-            if (processRequirements(mapping, frame)) return;
-
-            // Perform all transformers and continue if the transformers exit with an exception
-            if (!transformerPerformer.perform(mapping.handler(), method, args))
+            if (processRequirements(mapping, frame)) {
                 return;
+            }
+
+            if (!transformerPerformer.perform(mapping.handler(), method, args)) {
+                return;
+            }
 
             preprocessMethodParameters(method, frame, args);
 
-            // Invoke the handler method
             Object result = ReflectionUtils.invokeMethod(handler, method, args);
-            if (result == null || !isConnected() || !isActive()) return;
+            if (result == null || !isConnected() || !isActive()) {
+                return;
+            }
 
             this.sendMessage(result);
         } catch (Throwable t) {
@@ -400,18 +422,26 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @since 3.5.0
      */
     private boolean processRequirements(EndpointMapping mapping, Frame frame) {
-        if (!craftsNet.getRequirementRegistry().getRequirements().containsKey(WebSocketServer.class)) return false;
+        if (!craftsNet.getRequirementRegistry().getRequirements().containsKey(WebSocketServer.class)) {
+            return false;
+        }
 
-        for (var requirementLink : craftsNet.getRequirementRegistry().getRequirementMethodLinks(WebSocketServer.class))
+        for (var requirementLink : craftsNet.getRequirementRegistry().getRequirementMethodLinks(WebSocketServer.class)) {
             try {
                 Class<? extends Annotation> requirementAnnotation = requirementLink.requirement().getAnnotation();
-                if (!mapping.isPresent(requirementAnnotation)) continue;
-                if (!TypeUtils.isAssignable(Frame.class, requirementLink.arg())) continue;
+                if (!mapping.isPresent(requirementAnnotation)) {
+                    continue;
+                }
+
+                if (!TypeUtils.isAssignable(Frame.class, requirementLink.arg())) {
+                    continue;
+                }
 
                 Requirement<? super RequireAble> requirement = requirementLink.requirement();
                 return !requirement.applies(frame, mapping);
             } catch (NullPointerException | AssertionError ignored) {
             }
+        }
 
         return false;
     }
@@ -438,7 +468,9 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     @SuppressWarnings("removal")
     private void preprocessMethodParameters(Method method, Frame frame, Object[] args) {
-        if (method.getParameterCount() < 2) return;
+        if (method.getParameterCount() < 2) {
+            return;
+        }
 
         ApplyDecoder applyDecoder = method.getAnnotation(ApplyDecoder.class);
         if (applyDecoder != null) {
@@ -454,7 +486,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             case "java.lang.String" -> new String(frame.getData(), StandardCharsets.UTF_8);
             case "de.craftsblock.craftsnet.api.websocket.Frame" -> frame.clone();
             case "de.craftsblock.craftsnet.utils.ByteBuffer" -> frame.getBuffer();
-            case "de.craftsblock.craftscore.buffer" -> frame.getBufferUtil();
+            case "de.craftsblock.craftscore.buffer.BufferUtil" -> frame.getBufferUtil();
             case "java.nio.ByteBuffer" -> frame.getBufferUtil().getRaw();
             default -> args[1];
         };
@@ -471,12 +503,16 @@ public class WebSocketClient implements Runnable, RequireAble {
         );
 
         if (craftsNet.getLogStream() != null) {
-            long errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), path);
+            long errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), path == null ? "" : path);
             logger.error("Error: %s", t, errorID);
             message.set("error.identifier", errorID);
-        } else logger.error(t);
+        } else {
+            logger.error(t);
+        }
 
-        if (isConnected() && isActive()) sendMessage(message);
+        if (isConnected() && isActive()) {
+            sendMessage(message);
+        }
     }
 
     /**
@@ -491,15 +527,19 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         headerReader:
         while ((line = reader.readLine()) != null && !line.isEmpty()) {
-            if (path == null)
-                for (HttpMethod method : HttpMethod.ALL.getMethods())
+            if (path == null) {
+                for (HttpMethod method : HttpMethod.ALL.getMethods()) {
                     if (line.startsWith(method.name())) {
                         path = line.split(" ")[1].replaceAll("//+", "/");
                         continue headerReader;
                     }
+                }
+            }
 
             int colonIndex = line.indexOf(':');
-            if (colonIndex <= 0) continue;
+            if (colonIndex <= 0) {
+                continue;
+            }
 
             String key = line.substring(0, colonIndex);
             String value = line.substring(colonIndex + 1).trim();
@@ -530,7 +570,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             byte[] hash = handshakeDigest.digest(concatenated.getBytes(StandardCharsets.UTF_8));
 
             String extensions = String.join(",", this.extensions.parallelStream().map(WebSocketExtension::getProtocolName).toList());
-            String response = "HTTP/1.1 101 Switching Protocols\r\n"
+            String response = HttpStatus.Info.SWITCHING_PROTOCOLS.getStatusLine("HTTP/1.1")
                     + "Upgrade: websocket\r\n"
                     + "Connection: Upgrade\r\n"
                     + "Sec-WebSocket-Accept: " + Base64.getEncoder().encodeToString(hash) + "\r\n"
@@ -550,14 +590,15 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @throws IOException If an I/O error occurs while reading the message.
      */
     private Frame readMessage() throws IOException {
-        if (!isConnected()) return null;
+        if (!isConnected()) {
+            return null;
+        }
 
-        // Read the input stream from the socket.
         InputStream inputStream = socket.getInputStream();
         AtomicReference<Frame> frame = new AtomicReference<>();
 
         while (isConnected() && frame.get() == null || !frame.get().isFinalFrame()) {
-            Frame read = Frame.read(inputStream, readBuffer);
+            Frame read = Frame.read(inputStream);
 
             if (read.getOpcode().isUnknown()) {
                 closeInternally(ClosureCode.PROTOCOL_ERROR, "Unknown opcode!", true);
@@ -573,14 +614,18 @@ public class WebSocketClient implements Runnable, RequireAble {
             frame.get().appendFrame(read);
         }
 
-        // Return, when the frame is null
-        if (frame.get() == null) return null;
+        if (frame.get() == null) {
+            return null;
+        }
 
-        if (this.extensions.isEmpty()) return frame.get();
+        if (this.extensions.isEmpty()) {
+            return frame.get();
+        }
 
         Frame read = frame.get();
-        for (WebSocketExtension extension : this.extensions)
+        for (WebSocketExtension extension : this.extensions) {
             read = extension.decode(read);
+        }
 
         return read;
     }
@@ -605,12 +650,23 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
-     * Returns the IP address of the connected client.
+     * Returns the IP address associated with this request.
      *
-     * @return The IP address as a String.
+     * @return The IP address, possibly a proxied/forwarded IP
      */
     public String getIp() {
         return ip;
+    }
+
+    /**
+     * Returns the real IP address of the sender that directly established
+     * the connection.
+     *
+     * @return The real IP address of the connecting sender
+     * @since 3.7.0
+     */
+    public String getConnectingIp() {
+        return connectingIp;
     }
 
     /**
@@ -762,6 +818,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * Sends a message to the connected WebSocket client.
      *
      * @param data The message to be sent, as a bytebuffer.
+     * @deprecated in favor of {@link #sendMessage(BufferUtil)} and {@link #sendMessage(ByteBuffer)}
      */
     @SuppressWarnings("removal")
     @Deprecated(since = "3.7.0", forRemoval = true)
@@ -862,7 +919,6 @@ public class WebSocketClient implements Runnable, RequireAble {
         else if (data instanceof BufferUtil bufferUtil) this.sendMessage(bufferUtil);
         else if (data instanceof de.craftsblock.craftsnet.utils.ByteBuffer buffer) this.sendMessage(buffer);
         else {
-            // Check for encoders
             var encoders = server.getTypeEncoderRegistry();
             Class<?> type = data.getClass();
             if (encoders.hasCodec(type)) {
@@ -875,7 +931,6 @@ public class WebSocketClient implements Runnable, RequireAble {
                 }
             }
 
-            // Convert the object to string when no encoder is present
             this.sendMessage(data.toString());
         }
     }
@@ -966,10 +1021,11 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @throws IllegalStateException If the code used to close the connection is only for internal use.
      */
     public void close(@Range(from = 1000, to = 4999) int code, String reason) {
-        if (ClosureCode.isInternal(code))
+        if (ClosureCode.isInternal(code)) {
             throw new IllegalArgumentException("Invalid close code %s: not allowed to use internal close codes!".formatted(
                     code
             ));
+        }
 
         if (code < 1000 || code > 4999) {
             closeInternally(ClosureCode.SERVER_ERROR, "Used close code " + code, true);
@@ -999,14 +1055,10 @@ public class WebSocketClient implements Runnable, RequireAble {
         byte[] message = reason.getBytes(StandardCharsets.UTF_8);
         byte[] data = new byte[2 + message.length];
 
-        // Convert the code to an unsigned short and write it as the first two bytes
         data[0] = (byte) (code >> 8);
         data[1] = (byte) code;
-
-        // Copy the message into the data array
         System.arraycopy(message, 0, data, 2, message.length);
 
-        // Fire the message
         sendMessage(data, Opcode.CLOSE);
 
         this.closeCode = code;
@@ -1022,16 +1074,18 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param opcode The byte used to control the message flow.
      */
     private void sendMessage(byte[] data, Opcode opcode) {
-        if (!isConnected())
+        if (!isConnected()) {
             throw new IllegalStateException("The websocket connection has already been closed!");
-        if (writer == null)
+        }
+
+        if (writer == null) {
             throw new IllegalStateException("The websocket writer has already been closed!");
+        }
 
         try {
             if (data == null || data.length == 0) {
                 byte[] subject = new byte[2];
                 subject[0] = (byte) (0x80 | opcode.byteValue());
-                // subject[1] is already 0x00 so no further write is required
 
                 this.sendMessageRaw(subject);
                 return;
@@ -1043,15 +1097,16 @@ public class WebSocketClient implements Runnable, RequireAble {
             OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(exchange, frame);
             if (!opcode.equals(Opcode.CLOSE) && !opcode.equals(Opcode.CONTINUATION)) {
                 craftsNet.getListenerRegistry().call(event);
-                if (event.isCancelled())
+                if (event.isCancelled()) {
                     return;
+                }
 
-                // Handle middlewares
                 MiddlewareCallbackInfo callbackInfo = performForEachAvailableMiddleware(
                         (info, middleware) -> middleware.handleMessageSent(info, exchange, frame)
                 );
-                if (callbackInfo.isCancelled())
+                if (callbackInfo.isCancelled()) {
                     return;
+                }
             }
 
             Frame subject = event.getFrame();
@@ -1078,8 +1133,9 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     private void sendMessageFrames(Frame... frames) throws IOException {
         for (Frame frame : frames) {
-            for (WebSocketExtension extension : this.extensions)
+            for (WebSocketExtension extension : this.extensions) {
                 frame = extension.encode(frame);
+            }
 
             synchronized (this.writerLock) {
                 frame.write(this.writer);
@@ -1115,7 +1171,10 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @return True if the websocket is connected, false otherwise or if the connection failed
      */
     public boolean isConnected() {
-        if (this.socket == null || this.writer == null || this.reader == null) return false;
+        if (this.socket == null || this.writer == null || this.reader == null) {
+            return false;
+        }
+
         return this.connected && this.socket.isConnected();
     }
 
@@ -1124,8 +1183,13 @@ public class WebSocketClient implements Runnable, RequireAble {
      * This method triggers the ClientDisconnectEvent before closing the socket and removing the client from the server.
      */
     protected synchronized void disconnect() {
-        if (!this.connected && !socket.isConnected()) return;
-        if (reader == null || writer == null) return;
+        if (!this.connected && !socket.isConnected()) {
+            return;
+        }
+
+        if (reader == null || writer == null) {
+            return;
+        }
 
         try {
             reader.close();
@@ -1133,17 +1197,21 @@ public class WebSocketClient implements Runnable, RequireAble {
             writer.close();
             writer = null;
 
-            if (socket != null) socket.close();
+            if (socket != null) {
+                socket.close();
+            }
 
             craftsNet.getListenerRegistry().call(new ClientDisconnectEvent(exchange, closeCode, closeReason, closeByServer));
 
-            if (!closeByServer && this.connected) logger.warning("%s disconnected abnormal: The underlying tcp connection has been killed!", ip);
-            else if (!closeByServer && closeCode != -1 && closeCode != ClosureCode.NORMAL.intValue()) {
+            if (!closeByServer && this.connected) {
+                logger.warning("%s disconnected abnormal: The underlying tcp connection has been killed!", ip);
+            } else if (!closeByServer && closeCode != -1 && closeCode != ClosureCode.NORMAL.intValue()) {
                 ClosureCode code = ClosureCode.fromInt(closeCode);
                 logger.warning("%s disconnected abnormal (Code: %s)%s",
                         ip, code != null ? code : closeCode, closeReason != null && !closeReason.isEmpty() ? ": " + closeReason : "");
-            } else
-                logger.debug("%s disconnected", ip);
+            } else {
+                logger.info("%s disconnected", ip);
+            }
 
             performForEachAvailableMiddleware(
                     (info, middleware) -> middleware.handleDisconnect(info, exchange)
@@ -1183,15 +1251,17 @@ public class WebSocketClient implements Runnable, RequireAble {
         MiddlewareCallbackInfo callbackInfo = new MiddlewareCallbackInfo();
 
         craftsNet.getMiddlewareRegistry().getMiddlewares(WebSocketServer.class).forEach(middleware -> {
-            if (middleware instanceof WebsocketMiddleware websocketMiddleware)
+            if (middleware instanceof WebsocketMiddleware websocketMiddleware) {
                 consumer.accept(callbackInfo, websocketMiddleware);
+            }
         });
 
         this.mappings.values().forEach(mappingList -> mappingList.forEach(
                 mapping -> mapping.middlewares().forEach(
                         middleware -> {
-                            if (middleware instanceof WebsocketMiddleware websocketMiddleware)
+                            if (middleware instanceof WebsocketMiddleware websocketMiddleware) {
                                 consumer.accept(callbackInfo, websocketMiddleware);
+                            }
                         })
         ));
 

@@ -70,7 +70,9 @@ public record RequirementInfo(Class<? extends Annotation> annotation, Requiremen
         Class<? extends Annotation> type = annotation.annotationType();
 
         RequirementMeta meta = loadMeta(type);
-        if (meta.type().equals(RequirementType.FLAG)) return Map.of();
+        if (meta.type().equals(RequirementType.FLAG)) {
+            return Map.of();
+        }
 
         // Collect methods explicitly defined in the metadata
         List<Method> methods = new ArrayList<>();
@@ -88,9 +90,8 @@ public record RequirementInfo(Class<? extends Annotation> annotation, Requiremen
                 .filter(method -> !method.getReturnType().equals(Void.TYPE))
                 .map(method -> {
                     Object value = ReflectionUtils.invokeMethod(annotation, method);
-                    if (value == null) return null; // Skip null values
+                    if (value == null) return null;
 
-                    // Convert arrays to lists for better compatibility
                     return Map.entry(method.getName(), value.getClass().isArray() ? List.of((Object[]) value) : value);
                 }).filter(Objects::nonNull)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (o, o2) -> o));

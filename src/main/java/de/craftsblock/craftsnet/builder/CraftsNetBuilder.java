@@ -39,6 +39,9 @@ public class CraftsNetBuilder {
     private ActivateType fileLogger;
     private Logger logger;
 
+    private List<String> trustedProxyHeaders;
+    private Collection<String> trustedProxyHeadersView;
+
     private boolean allowResponseEncoding;
     private boolean debug;
     private boolean hideIpsInLog;
@@ -66,6 +69,7 @@ public class CraftsNetBuilder {
         withSkipVersionCheck(false);
         withSSL(false);
         withoutLogRotate();
+        withTrustedProxyHeaders(new ArrayList<>());
 
         addCodeSource(this.getClass().getProtectionDomain().getCodeSource());
     }
@@ -353,10 +357,32 @@ public class CraftsNetBuilder {
      * @since 3.0.5-SNAPSHOT
      */
     public CraftsNetBuilder withLogger(ActivateType type) {
-        if (type.equals(ActivateType.DISABLED))
+        if (type.equals(ActivateType.DISABLED)) {
             this.logger = this.logger instanceof PlainLogger ? this.logger : new PlainLogger(this.logger);
-        else if (this.logger instanceof PlainLogger logger)
+        } else if (this.logger instanceof PlainLogger logger) {
             this.logger = logger.previous();
+        }
+
+        return this;
+    }
+
+    public CraftsNetBuilder withoutTrustedProxyHeaders() {
+        if (this.trustedProxyHeaders == null) {
+            return this;
+        }
+
+        this.trustedProxyHeaders.clear();
+        return this;
+    }
+
+    public CraftsNetBuilder withTrustedProxyHeaders(String... trustedProxyHeaders) {
+        this.withTrustedProxyHeaders(List.of(trustedProxyHeaders));
+        return this;
+    }
+
+    public CraftsNetBuilder withTrustedProxyHeaders(List<String> trustedProxyHeaders) {
+        this.trustedProxyHeaders = new ArrayList<>(trustedProxyHeaders);
+        this.trustedProxyHeadersView = Collections.unmodifiableList(this.trustedProxyHeaders);
         return this;
     }
 
@@ -585,6 +611,10 @@ public class CraftsNetBuilder {
      */
     public Logger getCustomLogger() {
         return logger;
+    }
+
+    public Collection<String> getTrustedProxyHeaders() {
+        return trustedProxyHeadersView;
     }
 
     /**

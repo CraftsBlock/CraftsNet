@@ -9,6 +9,7 @@ import de.craftsblock.craftsnet.addon.services.builtin.handlers.RequestHandlerLo
 import de.craftsblock.craftsnet.addon.services.builtin.handlers.SocketHandlerLoader;
 import de.craftsblock.craftsnet.addon.services.builtin.listeners.ListenerAdapterLoader;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
@@ -62,9 +63,15 @@ public class ServiceManager {
      */
     public <T> void register(ServiceLoader<T> loader) {
         Class<T> generic = ReflectionUtils.extractGenericInterface(loader.getClass(), 0);
-        if (generic == null) return;
+        if (generic == null) {
+            return;
+        }
+
         ConcurrentLinkedQueue<ServiceLoader<?>> loaders = providers.computeIfAbsent(generic, c -> new ConcurrentLinkedQueue<>());
-        if (loaders.contains(loader)) return;
+        if (loaders.contains(loader)) {
+            return;
+        }
+
         loaders.add(loader);
     }
 
@@ -76,7 +83,10 @@ public class ServiceManager {
      */
     public <T> void unregister(ServiceLoader<T> loader) {
         Class<T> generic = ReflectionUtils.extractGenericInterface(loader.getClass(), 0);
-        if (generic == null) return;
+        if (generic == null) {
+            return;
+        }
+
         providers.computeIfAbsent(generic, c -> new ConcurrentLinkedQueue<>()).remove(loader);
     }
 
@@ -101,7 +111,9 @@ public class ServiceManager {
      * @since 3.2.1-SNAPSHOT
      */
     public boolean isRegistered(Class<? extends ServiceLoader<?>> type) {
-        if (providers.isEmpty()) return false;
+        if (providers.isEmpty()) {
+            return false;
+        }
 
         return providers.values().stream()
                 .flatMap(Queue::stream)
@@ -128,29 +140,39 @@ public class ServiceManager {
     @SuppressWarnings("unchecked")
     public <T> boolean load(Class<T> spi, Class<?> provider) {
         if (!providers.containsKey(spi)) {
-            if (spi.getSuperclass() == null) return false;
+            if (spi.getSuperclass() == null) {
+                return false;
+            }
+
             AtomicBoolean success = new AtomicBoolean(load(spi.getSuperclass(), provider));
-            for (Class<?> iface : spi.getInterfaces())
+            for (Class<?> iface : spi.getInterfaces()) {
                 if (load(iface, provider)) success.set(true);
+            }
+
             return success.get();
         }
 
         List<ServiceLoader<T>> loaders = providers.get(spi).stream()
                 .filter(loader -> {
                     Class<T> loaderClass = ReflectionUtils.extractGenericInterface(loader.getClass(), 0);
-                    return loaderClass != null && loaderClass.isAssignableFrom(provider);
+                    return loaderClass != null && TypeUtils.isAssignable(loaderClass, provider);
                 })
                 .map(loader -> (ServiceLoader<T>) loader)
                 .toList();
-        if (loaders.isEmpty()) return false;
+
+        if (loaders.isEmpty()) {
+            return false;
+        }
 
         AtomicBoolean success = new AtomicBoolean(false);
         loaders.forEach(loader -> {
             try {
                 T instance = loader.newInstance((Class<T>) provider);
-                if (loader.load(instance)) success.set(true);
-            } catch (NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
-                throw new RuntimeException(e);
+                if (loader.load(instance)) {
+                    success.set(true);
+                }
+            } catch (InvocationTargetException | InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException("Failed to perform service loader for %s".formatted(provider.getName()), e);
             }
         });
         return success.get();

@@ -4,6 +4,7 @@ import de.craftsblock.craftscore.event.ListenerRegistry;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.loaders.AddonClassLoader;
 import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
+import de.craftsblock.craftsnet.addon.loaders.CraftsNetClassLoader;
 import de.craftsblock.craftsnet.addon.meta.AddonMeta;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.api.RouteRegistry;
@@ -18,6 +19,7 @@ import de.craftsblock.craftsnet.autoregister.AutoRegisterRegistry;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.utils.FileHelper;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,7 +45,7 @@ import java.nio.file.Path;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.4.0
+ * @version 1.4.1
  * @see AddonLoader
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -297,11 +299,15 @@ public abstract class Addon {
         try {
             Path path = Path.of("addons", getName());
 
-            if (!Files.exists(path)) Files.createDirectories(path);
-            if (!Files.isDirectory(path))
+            if (!Files.exists(path)) {
+                Files.createDirectories(path);
+            }
+
+            if (!Files.isDirectory(path)) {
                 throw new IllegalStateException("The path %s must be an directory!".formatted(
                         path.toAbsolutePath()
                 ));
+            }
 
             return path;
         } catch (IOException e) {
@@ -316,7 +322,12 @@ public abstract class Addon {
      * @param addon The class object representing the type of the addon to be retrieved.
      * @return An instance of the specified addon type if found, or {@code null} if not present.
      */
-    public <T extends Addon> T getAddon(Class<T> addon) {
+    public static <T extends Addon> T getAddon(Class<T> addon) {
+        CraftsNet craftsNet = CraftsNetClassLoader.retrieveCraftsNet(addon);
+        if (craftsNet == null) {
+            throw new IllegalStateException("No instance of CraftsNet found for class " + addon.getName());
+        }
+
         return craftsNet.getAddonManager().getAddon(addon);
     }
 
@@ -328,7 +339,13 @@ public abstract class Addon {
      * @return An instance of the specified addon type if found, or {@code null} if not present.
      * @since 3.3.5-SNAPSHOT
      */
-    public <T extends Addon> T getAddon(String name) {
+    public static <T extends Addon> T getAddon(String name) {
+        Class<?> caller = ReflectionUtils.getCallerClass();
+        CraftsNet craftsNet = CraftsNetClassLoader.retrieveCraftsNet(caller);
+        if (craftsNet == null) {
+            throw new IllegalStateException("No instance of CraftsNet found for class " + caller.getName());
+        }
+
         return craftsNet.getAddonManager().getAddon(name);
     }
 

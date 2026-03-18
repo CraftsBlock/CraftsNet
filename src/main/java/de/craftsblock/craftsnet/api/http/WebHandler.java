@@ -25,6 +25,7 @@ import de.craftsblock.craftsnet.events.requests.routes.RouteRequestEvent;
 import de.craftsblock.craftsnet.events.requests.shares.ShareFileLoadedEvent;
 import de.craftsblock.craftsnet.events.requests.shares.ShareRequestEvent;
 import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.utils.Utils;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 
 import java.io.IOException;
@@ -90,34 +91,47 @@ public class WebHandler implements HttpHandler {
             if (craftsNet.getBuilder().responseEncodingAllowed() && headers.containsKey("Accept-Encoding")) {
                 var requestedEncodings = AcceptEncodingHelper.parseHeader(headers.getFirst("Accept-Encoding"));
 
-                for (String requested : requestedEncodings)
+                for (String requested : requestedEncodings) {
                     if (streamEncoderRegistry.isAvailable(requested)) {
                         streamEncoder.set(streamEncoderRegistry.retrieveEncoder(requested));
                         break;
                     }
+                }
             }
 
             ProtocolVersion protocolVersion = ProtocolVersion.parse(this.scheme, httpExchange.getProtocol().split("/")[1]);
             Response response = new Response(this.craftsNet, streamEncoder.get(), httpExchange, httpMethod);
             try {
+                String connectingIp = httpExchange.getRemoteAddress().getAddress().getHostAddress();
+
+                // FixMe: Below is just a hotfix. A more stable variant will be added!
                 String ip;
-                if (headers.containsKey("Cf-connecting-ip")) ip = headers.getFirst("Cf-connecting-ip");
-                else if (headers.containsKey("X-forwarded-for")) ip = headers.getFirst("X-forwarded-for").split(", ")[0];
-                else ip = httpExchange.getRemoteAddress().getAddress().getHostAddress();
+                Collection<String> trustedProxyHeaders = this.craftsNet.getBuilder().getTrustedProxyHeaders();
+                String headerName = trustedProxyHeaders.stream().filter(headers::containsKey).findFirst().orElse(null);
+                if (headerName != null) {
+                    ip = headers.getFirst(headerName).split(",\\s+")[0];
+                } else {
+                    ip = connectingIp;
+                }
 
                 String domain;
-                if (headers.containsKey("X-Forwarded-Host")) domain = headers.getFirst("X-forwarded-Host").split(":")[0];
-                else domain = headers.getFirst("Host").split(":")[0];
+                if (headers.containsKey("X-Forwarded-Host")) {
+                    domain = headers.getFirst("X-forwarded-Host").split(":")[0];
+                } else {
+                    domain = headers.getFirst("Host").split(":")[0];
+                }
 
                 // Create a Request object to encapsulate the incoming request information.
-                try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, domain, httpMethod);
+                try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, connectingIp, domain, httpMethod);
                      Session session = craftsNet.getSessionCache().getOrNew(SessionInfo.extractSession(request));
                      Exchange exchange = new Exchange(new Context(), protocolVersion, request, response, session)) {
                     exchange.session().setExchange(exchange);
 
                     PreRequestEvent event = new PreRequestEvent(exchange);
                     craftsNet.getListenerRegistry().call(event);
-                    if (event.isCancelled()) return;
+                    if (event.isCancelled()) {
+                        return;
+                    }
 
                     Map.Entry<Boolean, Boolean> result = handle(exchange);
                     craftsNet.getListenerRegistry().call(new PostRequestEvent(exchange, result.getKey(), result.getValue()));
@@ -126,13 +140,19 @@ public class WebHandler implements HttpHandler {
                 if (craftsNet.getLogStream() != null) {
                     long errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), url);
                     logger.error("Error: %s", t, errorID);
-                    if (!response.headersSent()) response.setCode(500);
-                    if (!httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN))
+                    if (!response.headersSent()) {
+                        response.setStatus(500);
+                    }
+
+                    if (!response.sendingFile() && !httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN)) {
                         response.print(Json.empty()
                                 .set("status", "500")
                                 .set("message", "An unexpected exception happened whilst processing your request!")
                                 .set("incident", errorID));
-                } else logger.error(t);
+                    }
+                } else {
+                    logger.error(t);
+                }
             } finally {
                 response.close();
             }
@@ -161,16 +181,21 @@ public class WebHandler implements HttpHandler {
 
         // Handle global middlewares
         MiddlewareCallbackInfo callback = new MiddlewareCallbackInfo();
-        for (Middleware middleware : craftsNet.getMiddlewareRegistry().getMiddlewares(exchange))
-            if (middleware.isApplicable(exchange))
+        for (Middleware middleware : craftsNet.getMiddlewareRegistry().getMiddlewares(exchange)) {
+            if (middleware.isApplicable(exchange)) {
                 middleware.handle(callback, exchange);
+            }
+        }
 
         // Cancel if the middleware callback is cancelled
-        if (callback.isCancelled())
+        if (callback.isCancelled()) {
             return Map.entry(false, false);
+        }
 
         // Check if the route is registered and process it if so
-        if (handleRoute(exchange)) return Map.entry(true, false);
+        if (handleRoute(exchange)) {
+            return Map.entry(true, false);
+        }
 
         // Check if the URL can be handled as a shared resource and if it accepts the current http method
         if (registry.isShare(url) && registry.canShareAccept(url, httpMethod)) {
@@ -204,7 +229,9 @@ public class WebHandler implements HttpHandler {
         EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> routes = registry.getRoute(request);
 
         // If no matching route is found abort with return false
-        if (routes == null || routes.isEmpty()) return false;
+        if (routes == null || routes.isEmpty()) {
+            return false;
+        }
 
         // Associate the matched route with the Request object.
         request.setRoutes(routes.values().stream().flatMap(Collection::stream).toList());
@@ -221,52 +248,70 @@ public class WebHandler implements HttpHandler {
 
         // Create a transformer performer which handles all transformers
         TransformerPerformer transformerPerformer = new TransformerPerformer(this.craftsNet, 1, e -> {
+            if (response.sendingFile()) {
+                return;
+            }
+
             response.print(Json.empty().set("error", "Could not process transformer: " + e.getMessage()));
         });
 
         Map<String, Matcher> matchers = new HashMap<>();
 
         // Loop through all priorities
-        for (ProcessPriority.Priority priority : routes.keySet())
-            for (RouteRegistry.EndpointMapping mapping : routes.get(priority)) {
-                if (!(mapping.handler() instanceof RequestHandler handler)) continue;
-                Method method = mapping.method();
-
-                Pattern validator = mapping.validator();
-                Matcher matcher = matchers.computeIfAbsent(mapping.validator().pattern(), pattern -> {
-                    Matcher fresh = validator.matcher(url);
-
-                    if (!fresh.matches()) {
-                        respondWithError(response, 500, "There was an unexpected error while matching!");
+        try {
+            for (ProcessPriority.Priority priority : routes.keySet()) {
+                for (RouteRegistry.EndpointMapping mapping : routes.get(priority)) {
+                    if (!(mapping.handler() instanceof RequestHandler handler)) {
+                        continue;
                     }
 
-                    return fresh;
-                });
-                transformerPerformer.setValidator(validator);
+                    Method method = mapping.method();
 
-                // Prepare the argument array to be passed to the API handler method.
-                Object[] args = new Object[matcher.groupCount()];
+                    Pattern validator = mapping.validator();
+                    Matcher matcher = matchers.computeIfAbsent(mapping.validator().pattern(), pattern -> {
+                        Matcher fresh = validator.matcher(url);
 
-                args[0] = exchange;
-                for (int i = 2; i <= matcher.groupCount(); i++)
-                    args[i - 1] = matcher.group(i);
+                        if (!fresh.matches()) {
+                            respondWithError(response, 500, "There was an unexpected error while matching!");
+                        }
 
-                MiddlewareCallbackInfo callback = new MiddlewareCallbackInfo();
-                mapping.middlewares().forEach(middleware -> middleware.handle(callback, exchange));
-                if (callback.isCancelled()) continue;
+                        return fresh;
+                    });
+                    transformerPerformer.setValidator(validator);
 
-                // Perform all transformers and continue if the transformers exit with an exception
-                if (!transformerPerformer.perform(mapping.handler(), method, args))
-                    continue;
+                    // Prepare the argument array to be passed to the API handler method.
+                    Object[] args = new Object[matcher.groupCount()];
 
-                // Call the method of the route handler
-                Object result = ReflectionUtils.invokeMethod(handler, method, args);
-                if (result != null) exchange.response().print(result);
+                    args[0] = exchange;
+                    for (int i = 2; i <= matcher.groupCount(); i++) {
+                        args[i - 1] = matcher.group(i);
+                    }
+
+                    MiddlewareCallbackInfo callback = new MiddlewareCallbackInfo();
+                    mapping.middlewares().forEach(middleware -> middleware.handle(callback, exchange));
+                    if (callback.isCancelled()) {
+                        continue;
+                    }
+
+                    // Perform all transformers and continue if the transformers exit with an exception
+                    if (!transformerPerformer.perform(mapping.handler(), method, args)) {
+                        continue;
+                    }
+
+                    // Fixme: When byte arrays are returned parse into the right print method
+
+                    // Call the method of the route handler
+                    Object result = ReflectionUtils.invokeMethod(handler, method, args);
+                    if (result != null) {
+                        exchange.response().print(result);
+                    }
+                }
             }
-
-        // Clean up to free up memory
-        transformerPerformer.clearCache();
-        matchers.clear();
+        } finally {
+            // Clean up to free up memory
+            transformerPerformer.clearCache();
+            matchers.clear();
+        }
 
         return true;
     }
@@ -305,16 +350,18 @@ public class WebHandler implements HttpHandler {
 
         ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(exchange, folder.resolve((path.isBlank() ? "index.html" : path)));
         craftsNet.getListenerRegistry().call(fileLoadedEvent);
-        if (fileLoadedEvent.isCancelled()) return;
+        if (fileLoadedEvent.isCancelled()) {
+            return;
+        }
         Path share = fileLoadedEvent.getPath().toAbsolutePath();
 
         if (!share.startsWith(folder) || Files.isDirectory(share)) {
-            response.setCode(403);
+            response.setStatus(403);
             response.setContentType("text/html; charset=utf-8");
             response.print(DefaultPages.notallowed(domain, request.unsafe().getLocalAddress().getPort()));
             return;
         } else if (Files.notExists(share)) {
-            response.setCode(404);
+            response.setStatus(404);
             response.setContentType("text/html; charset=utf-8");
             response.print(DefaultPages.notfound(domain, request.unsafe().getLocalAddress().getPort()));
             return;
@@ -331,8 +378,14 @@ public class WebHandler implements HttpHandler {
      * @param message  The error message to be included in the response.
      */
     private static void respondWithError(Response response, int code, String message) {
-        if (!response.headersSent()) response.setCode(code);
-        if (!response.isBodyAble()) return;
+        if (!response.headersSent()) {
+            response.setStatus(code);
+        }
+
+        if (!response.isBodyAble()) {
+            return;
+        }
+
         response.print(Json.empty().set("status", "" + code).set("message", message));
     }
 

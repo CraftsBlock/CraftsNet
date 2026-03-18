@@ -118,12 +118,9 @@ public final class AddonLoader {
      */
     public Collection<AddonConfiguration> load() throws IOException {
         Logger logger = craftsNet.getLogger();
-
-        // Create a new artifact loader
         ArtifactLoader artifactLoader = new ArtifactLoader();
-
-        // Load all the dependencies and repositories from the addons
         HashMap<String, AddonConfiguration> configurations = new HashMap<>();
+
         synchronized (addons) {
             for (Path path : addons) {
                 if (Files.isDirectory(path)) {
@@ -133,7 +130,6 @@ public final class AddonLoader {
                 try (JarFile jarFile = new JarFile(path.toFile(), true, ZipFile.OPEN_READ, Runtime.version())) {
                     logger.debug("Loading jar file %s", path.toFile().getAbsolutePath());
 
-                    // Load the configuration file from the jar
                     AddonConfiguration configuration = retrieveConfig(path, jarFile);
                     if (configuration == null) {
                         logger.error(new FileNotFoundException("Could not locate the addon.json within %s!".formatted(path.toFile().getPath())));
@@ -149,7 +145,6 @@ public final class AddonLoader {
                         continue;
                     }
 
-                    // Check if the jar version is compatible
                     long checkStart = System.currentTimeMillis();
 
                     try {
@@ -162,7 +157,6 @@ public final class AddonLoader {
                         continue;
                     }
 
-                    // Inject all repositories
                     artifactLoader.cleanup();
                     if (addon.contains("repositories")) {
                         for (String repo : addon.getStringList("repositories")) {
@@ -170,7 +164,6 @@ public final class AddonLoader {
                         }
                     }
 
-                    // Load all required dependencies
                     URL[] dependencies;
                     if (addon.contains("dependencies")) {
                         dependencies = artifactLoader.loadLibraries(this.craftsNet, this, configuration.services(),
@@ -181,11 +174,8 @@ public final class AddonLoader {
 
                     DependencyClassLoader[] dependencyClassLoaders = Arrays.stream(dependencies)
                             .map(url -> DependencyClassLoader.safelyNew(craftsNet, url)).toArray(DependencyClassLoader[]::new);
-
-                    // Generate classpath
                     URL[] classpath = new URL[]{path.toUri().toURL()};
 
-                    // Put the configuration in the configurations map
                     configurations.put(name, new AddonConfiguration(path, configuration.json(), classpath, dependencyClassLoaders,
                             configuration.services(), configuration.addon(), configuration.meta(), configuration.classLoader()));
                 }
@@ -204,7 +194,6 @@ public final class AddonLoader {
      * @param rawConfigurations The list of {@link AddonConfiguration}.
      */
     public void load(List<AddonConfiguration> rawConfigurations) {
-        // Ensure that rawConfigurations is an array list
         List<AddonConfiguration> configurations;
         if (rawConfigurations instanceof ArrayList<AddonConfiguration>) {
             configurations = rawConfigurations;
@@ -215,7 +204,6 @@ public final class AddonLoader {
         AddonLoadOrder loadOrder = new AddonLoadOrder();
         HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources = new HashMap<>();
 
-        // Pre setup tasks
         configurations.forEach(configuration -> {
             configuration.meta().set(AddonMeta.of(configuration));
 
@@ -374,7 +362,6 @@ public final class AddonLoader {
             if (configuration.path() != null) {
                 path = configuration.path();
             } else {
-                // Use the code source of the addon when it is not located in the addons folder
                 path = Path.of(addon.getClass().getProtectionDomain().getCodeSource().getLocation().toURI());
             }
 
@@ -409,10 +396,7 @@ public final class AddonLoader {
 
             logger.info("Found addon %s, add it to load order", name);
 
-            // Create addon class loader
             AddonClassLoader classLoader = configuration.classLoader().get();
-
-            // Load the main class of the addon using the class loader
             String className = meta.mainClass();
             Class<?> clazz = className != null && !className.isBlank() ? classLoader.loadClass(className) : HollowAddon.class;
             if (clazz == null) {
@@ -457,12 +441,10 @@ public final class AddonLoader {
             final JarFile file = info.getKey();
             final ArrayList<Addon> bounding = info.getValue();
 
-            // Skip if the jar file is null
             if (file == null) {
                 return;
             }
 
-            // Perform the actual load of the jar file if it is not null
             try (file) {
                 bounding.forEach(addon -> {
                     try {
@@ -503,17 +485,19 @@ public final class AddonLoader {
         }
 
         configuration.services().forEach(service -> {
-            for (String provider : service.provider().split(";"))
+            for (String provider : service.provider().split(";")) {
                 try {
                     Class<?> spi = classLoader.loadClass(service.spi());
                     Class<?> providerClass = classLoader.loadClass(provider);
-                    if (serviceManager.load(spi, providerClass))
+                    if (serviceManager.load(spi, providerClass)) {
                         logger.debug("Registered service %s for %s", provider, spi.getName());
-                    else
+                    } else {
                         logger.debug("No service loader found for service %s", spi.getName());
+                    }
                 } catch (ClassNotFoundException e) {
                     logger.warning("Service class %s not found for %s - skipping!", e.getMessage(), configuration.addon().get().getName());
                 }
+            }
         });
     }
 
@@ -591,35 +575,28 @@ public final class AddonLoader {
     public List<RegisteredService> retrieveServices(JarFile file) throws IOException {
         List<RegisteredService> services = new ArrayList<>();
 
-        // Iterate over all entries in the jar file
         Iterator<JarEntry> iterator = file.stream().iterator();
         while (iterator.hasNext()) {
             JarEntry entry = iterator.next();
 
-            // Check whether the entry is in the "META-INF/services" directory and not a directory
             if (!entry.getName().trim().toLowerCase().startsWith("meta-inf/services") || entry.isDirectory()) {
                 continue;
             }
 
-            // Read the contents of the file in the jar entry
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(entry)))) {
                 StringBuilder provider = new StringBuilder();
 
-                // Process each line in the file
                 reader.lines().forEach(line -> {
-                    // Ignore comments and empty lines
                     if (line.trim().startsWith("#") || line.trim().startsWith("//") || line.isBlank()) {
                         return;
                     }
 
-                    // Add the provider to the list
                     if (!provider.toString().trim().isBlank()) {
                         provider.append(";");
                     }
                     provider.append(line);
                 });
 
-                // Extract the name from the path and create a RegistrableService object
                 String[] splitName = entry.getName().split("/");
                 services.add(new RegisteredService(splitName[splitName.length - 1], provider.toString()));
             }

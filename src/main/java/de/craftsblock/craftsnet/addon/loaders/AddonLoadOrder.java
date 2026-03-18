@@ -104,14 +104,19 @@ final class AddonLoadOrder implements Closeable {
      * @since 3.3.4-SNAPSHOT
      */
     private void dryDepends(String addon, String dependsOn, boolean required) {
-        if (addon.equalsIgnoreCase(dependsOn))
+        if (addon.equalsIgnoreCase(dependsOn)) {
             throw new IllegalStateException("Can not add " + addon + " as depends to itself!");
+        }
 
         final int addonPriority = getPriority(addon);
         addonLoadOrder.merge(dependsOn, new BootMapping(dependsOn, addonPriority + 1, null, required),
                 (existingMapping, newMapping) -> {
                     int dependsOnPriority = getPriority(dependsOn);
-                    if (required) existingMapping.require();
+
+                    if (required) {
+                        existingMapping.require();
+                    }
+
                     return (addonPriority <= dependsOnPriority) ?
                             existingMapping.priority(addonPriority + 1) :
                             existingMapping;
@@ -157,8 +162,9 @@ final class AddonLoadOrder implements Closeable {
      * @return The priority of the specified addon in the load order.
      */
     private int getPriority(String addon) {
-        if (addonLoadOrder.containsKey(addon))
+        if (addonLoadOrder.containsKey(addon)) {
             return addonLoadOrder.get(addon).priority();
+        }
 
         return 0;
     }
@@ -246,8 +252,13 @@ final class AddonLoadOrder implements Closeable {
          * @since 3.3.4-SNAPSHOT
          */
         public boolean presenceFilter() {
-            if (!required) return true;
-            if (addon != null) return true;
+            if (!required) {
+                return true;
+            }
+
+            if (addon != null) {
+                return true;
+            }
 
             throw new IllegalStateException("The addon \"" + this.name + "\" is required but not found!");
         }

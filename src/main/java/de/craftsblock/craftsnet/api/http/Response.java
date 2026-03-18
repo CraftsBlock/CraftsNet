@@ -11,13 +11,12 @@ import de.craftsblock.craftsnet.api.http.cors.CorsPolicy;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoder;
 import de.craftsblock.craftsnet.logging.Logger;
 import org.apache.commons.io.IOUtils;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.Range;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -37,7 +36,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.3
+ * @version 1.3.0
  * @see Exchange
  * @see WebServer
  * @since 1.0.0-SNAPSHOT
@@ -45,7 +44,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class Response implements AutoCloseable {
 
     private final CraftsNet craftsNet;
-    private final Logger logger;
 
     private final HttpExchange httpExchange;
     private final Headers headers;
@@ -59,7 +57,7 @@ public class Response implements AutoCloseable {
 
     private Exchange exchange;
 
-    private int code = 200;
+    private HttpStatus status = HttpStatus.Success.OK;
     private boolean headersSent = false;
     private boolean sendingFile = false;
 
@@ -74,7 +72,6 @@ public class Response implements AutoCloseable {
     protected Response(CraftsNet craftsNet, StreamEncoder streamEncoder, HttpExchange httpExchange,
                        HttpMethod httpMethod) {
         this.craftsNet = craftsNet;
-        this.logger = this.craftsNet.getLogger();
 
         this.httpExchange = httpExchange;
         this.streamEncoder = streamEncoder;
@@ -97,6 +94,7 @@ public class Response implements AutoCloseable {
         if (exchange != null) {
             Request r = exchange.request();
 
+            // Todo: Build pretty format system for object prints
             if ("pretty".equalsIgnoreCase(r.retrieveParam("format"))) {
                 if (object instanceof Json json) {
                     print(json, true);
@@ -168,11 +166,11 @@ public class Response implements AutoCloseable {
      */
     public synchronized void print(Path path) {
         checkOutput();
-        if (this.headersSent)
-            throw new IllegalStateException("A file was attempted to be sent while the body has already begun to be written!");
+        ensureHeadersNotSent();
 
-        if (Files.notExists(path))
+        if (Files.notExists(path)) {
             throw new IllegalArgumentException("The file behind the path must exist!");
+        }
 
         try (InputStream fileInput = Files.newInputStream(path)) {
             if (this.streamEncoder == null || this.streamEncoder.getEncodingName().equalsIgnoreCase("identity")) {
@@ -226,8 +224,9 @@ public class Response implements AutoCloseable {
         byte[] buffer = new byte[2048];
         try {
             int read;
-            while ((read = stream.read(buffer)) != -1)
+            while ((read = stream.read(buffer)) != -1) {
                 this.printRaw(buffer, 0, read);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
@@ -242,20 +241,66 @@ public class Response implements AutoCloseable {
      * @throws RuntimeException if an I/O error occurs
      */
     private synchronized void printRaw(byte[] bytes, int offset, int length) {
-        if (!bodyAble)
+        if (!bodyAble) {
             throw new IllegalStateException("Body is not printable as the request method cannot have a response body!");
+        }
 
         try {
             ensureHeadersSend(0);
 
-            if (this.encodedStream == null)
-                this.encodedStream = this.streamEncoder != null ? this.streamEncoder.encodeOutputStream(this.rawStream) : this.rawStream;
+            if (this.encodedStream == null) {
+                this.encodedStream = this.streamEncoder != null
+                        ? this.streamEncoder.encodeOutputStream(this.rawStream)
+                        : this.rawStream;
+            }
 
             this.encodedStream.write(bytes, offset, length);
             this.encodedStream.flush();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to print: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * Sends an HTTP redirect response to the specified URL using the default
+     * redirection status {@link HttpStatus.Redirection#FOUND} (302).
+     *
+     * <p>This method sets the {@code Location} header to the provided URL and
+     * updates the response status accordingly. Once the redirect is prepared,
+     * the response headers are immediately sent to the client.</p>
+     *
+     * <p>The client will typically perform a new request to the provided location.</p>
+     *
+     * @param url The target URL to which the client should be redirected.
+     *            Must not be {@code null}.
+     * @throws IllegalStateException if the response headers have already been sent
+     *                               and the redirect can no longer be applied
+     * @since 3.7.0
+     */
+    public void redirect(@NotNull String url) {
+        this.redirect(url, HttpStatus.Redirection.FOUND);
+    }
+
+    /**
+     * Sends an HTTP redirect response to the specified URL using the provided
+     * redirection status code.
+     *
+     * <p>The {@code Location} header instructs the client to perform a new request
+     * to the specified resource.</p>
+     *
+     * @param url The target URL to which the client should be redirected.
+     *            Must not be {@code null}.
+     * @param redirection the redirection status to use. Must be one of the
+     *                    {@link HttpStatus.Redirection} values.
+     *
+     * @throws IllegalStateException if the response headers have already been sent
+     *                               and the redirect can no longer be applied
+     */
+    public synchronized void redirect(@NotNull String url, @NotNull HttpStatus.Redirection redirection) {
+        ensureHeadersNotSent();
+        setStatus(redirection);
+        setHeader("Location", url);
+        ensureHeadersSend(0);
     }
 
     /**
@@ -265,76 +310,57 @@ public class Response implements AutoCloseable {
      * @since 3.3.3-SNAPSHOT
      */
     private void checkOutput() {
-        if (this.sendingFile)
+        if (this.sendingFile) {
             throw new IllegalStateException("A file has been written to the response, no further output can be written!");
+        }
     }
 
     /**
      * Ensures that the headers were send
-     *
-     * @throws IOException if an I/O error occurs.
      */
-    private void ensureHeadersSend(long length) throws IOException {
-        if (headersSent) return;
-        sendResponseHeaders(code, length);
+    private void ensureHeadersSend(long length) {
+        if (headersSent) {
+            return;
+        }
+
+        sendResponseHeaders(status, length);
     }
 
     /**
      * Sends the response headers to the client, including any cookies that have been set.
      *
-     * @param code   The HTTP status code
+     * @param status The HTTP status
      * @param length The length of the response body
-     * @throws IOException if an I/O error occurs
      */
-    private void sendResponseHeaders(int code, long length) throws IOException {
-        if (headersSent) return;
-
-        for (Cookie cookie : getCookies())
+    private void sendResponseHeaders(HttpStatus status, long length) {
+        for (Cookie cookie : getCookies()) {
             addHeader("Set-Cookie", cookie.toString());
-
-        if (exchange != null) this.corsPolicy.apply(exchange);
-        if (this.streamEncoder != null)
-            this.setHeader("Content-Encoding", this.streamEncoder.getEncodingName());
-        if (length == 0) this.setHeader("Transfer-Encoding", "chunked");
-
-        httpExchange.sendResponseHeaders(code, length);
-        this.headersSent = true;
-
-        if (length == -1) return;
-        this.rawStream = httpExchange.getResponseBody();
-    }
-
-    /**
-     * Closes the response
-     *
-     * @throws IOException if an I/O error occurs.
-     */
-    @Override
-    public void close() throws IOException {
-        ensureHeadersSend(-1);
-
-        if (this.encodedStream != null && !sendingFile) {
-            this.encodedStream.flush();
-            this.encodedStream.close();
         }
-    }
 
-    /**
-     * Sets the {@link Exchange} managing this response.
-     *
-     * @param exchange The {@link Exchange} managing the response
-     */
-    protected void setExchange(Exchange exchange) {
-        this.exchange = exchange;
-    }
+        if (exchange != null) {
+            this.corsPolicy.apply(exchange);
+        }
 
-    /**
-     * Gets the {@link Exchange} managing this response.
-     *
-     * @return The {@link Exchange} managing this response.
-     */
-    public Exchange getExchange() {
-        return exchange;
+        if (this.streamEncoder != null) {
+            this.setHeader("Content-Encoding", this.streamEncoder.getEncodingName());
+        }
+
+        if (length == 0) {
+            this.setHeader("Transfer-Encoding", "chunked");
+        }
+
+        try {
+            httpExchange.sendResponseHeaders(status.getCode(), length);
+            this.headersSent = true;
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to send response headers: " + e.getMessage(), e);
+        }
+
+        if (length == -1) {
+            return;
+        }
+
+        this.rawStream = httpExchange.getResponseBody();
     }
 
     /**
@@ -344,9 +370,10 @@ public class Response implements AutoCloseable {
      * @throws IllegalStateException If the response headers have already been sent.
      * @since 3.3.5-SNAPSHOT
      */
-    public void setStreamEncoder(String encodingName) {
-        if (!this.craftsNet.getStreamEncoderRegistry().isAvailable(encodingName))
+    public void setStreamEncoder(@NotNull String encodingName) {
+        if (!this.craftsNet.getStreamEncoderRegistry().isAvailable(encodingName)) {
             throw new IllegalStateException("No available stream encoder found for name " + encodingName + "!");
+        }
 
         this.setStreamEncoder(Objects.requireNonNull(this.craftsNet.getStreamEncoderRegistry().retrieveEncoder(encodingName)));
     }
@@ -359,9 +386,7 @@ public class Response implements AutoCloseable {
      * @since 3.3.5-SNAPSHOT
      */
     public void setStreamEncoder(@NotNull StreamEncoder streamEncoder) {
-        if (headersSent())
-            throw new IllegalStateException("Response headers have already been sent!");
-
+        ensureHeadersNotSent();
         this.streamEncoder = streamEncoder;
     }
 
@@ -392,8 +417,17 @@ public class Response implements AutoCloseable {
      * @param fallback    The fallback content type to be set in the response header if the content type was null.
      */
     public void setContentType(@Nullable String contentType, @Nullable String fallback) {
-        if (contentType != null) setHeader("content-type", contentType);
-        else if (fallback != null) setHeader("content-type", fallback);
+        if (contentType != null) {
+            setHeader("content-type", contentType);
+            return;
+        }
+
+        if (fallback != null) {
+            setHeader("content-type", fallback);
+            return;
+        }
+
+        throw new IllegalArgumentException("Could not set content type: null!");
     }
 
     /**
@@ -401,11 +435,52 @@ public class Response implements AutoCloseable {
      *
      * @param code The HTTP status code to be set in the response.
      * @throws IllegalStateException if the response headers have already been sent.
+     * @deprecated Use {{@link #setStatus(int)}} instead
      */
+    @Deprecated(since = "3.7.0", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public void setCode(int code) {
-        if (headersSent)
-            throw new IllegalStateException("Response headers have already been sent!");
-        this.code = code;
+        setStatus(code);
+    }
+
+    /**
+     * Sets the HTTP status code for the response.
+     *
+     * @param code The HTTP status code to be set in the response.
+     * @throws IllegalArgumentException if the {@code code} is not a valid and known {@link HttpStatus} code.
+     * @throws IllegalStateException    if the response headers have already been sent.
+     * @since 3.7.0
+     */
+    public void setStatus(@Range(from = 100, to = 599) int code) {
+        this.status = HttpStatus.fromCode(code);
+
+        if (status == null) {
+            throw new IllegalArgumentException(code + " is not a valid response code!");
+        }
+
+        setStatus(status);
+    }
+
+    /**
+     * Sets the HTTP status for the response.
+     *
+     * @param status The HTTP status to be set in the response.
+     * @throws IllegalStateException if the response headers have already been sent.
+     * @since 3.7.0
+     */
+    public void setStatus(@NotNull HttpStatus status) {
+        ensureHeadersNotSent();
+        this.status = status;
+    }
+
+    /**
+     * Gets the HTTP status that is set in the response.
+     *
+     * @return The set {@link HttpStatus}.
+     * @since 3.7.0
+     */
+    public HttpStatus getStatus() {
+        return status;
     }
 
     /**
@@ -435,10 +510,8 @@ public class Response implements AutoCloseable {
      * @param value The value of the header to be added.
      * @throws IllegalStateException if the response headers have already been sent.
      */
-    public void addHeader(String key, String value) {
-        if (headersSent)
-            throw new IllegalStateException("Response headers have already been sent!");
-        if (key == null || value == null) return;
+    public void addHeader(@NotNull String key, @NotNull String value) {
+        ensureHeadersNotSent();
         headers.add(key, value);
     }
 
@@ -449,10 +522,8 @@ public class Response implements AutoCloseable {
      * @param value The value of the header to be set.
      * @throws IllegalStateException if the response headers have already been sent.
      */
-    public void setHeader(String key, String value) {
-        if (headersSent)
-            throw new IllegalStateException("Response headers have already been sent!");
-        if (key == null || value == null) return;
+    public void setHeader(@NotNull String key, @NotNull String value) {
+        ensureHeadersNotSent();
         headers.set(key, value);
     }
 
@@ -483,6 +554,7 @@ public class Response implements AutoCloseable {
      * @param corsPolicy The cors policy which should be sent.
      */
     public void setCorsPolicy(CorsPolicy corsPolicy) {
+        ensureHeadersNotSent();
         this.corsPolicy.update(corsPolicy);
     }
 
@@ -524,8 +596,12 @@ public class Response implements AutoCloseable {
      */
     public Cookie setCookie(Cookie cookie) {
         String name = cookie.getName();
-        if (cookies.containsKey(name)) cookies.get(name).override(cookie);
-        else cookies.put(name, cookie);
+        if (cookies.containsKey(name)) {
+            cookies.get(name).override(cookie);
+        } else {
+            cookies.put(name, cookie);
+        }
+
         return cookie;
     }
 
@@ -546,6 +622,50 @@ public class Response implements AutoCloseable {
      */
     public ConcurrentLinkedQueue<Cookie> getCookies() {
         return new ConcurrentLinkedQueue<>(cookies.values());
+    }
+
+    /**
+     * Ensures that the headers have not already been sent to the client.
+     *
+     * @since 3.7.0
+     */
+    public void ensureHeadersNotSent() {
+        if (headersSent) {
+            throw new IllegalStateException("Response headers have already been sent!");
+        }
+    }
+
+    /**
+     * Closes the response
+     *
+     * @throws IOException if an I/O error occurs.
+     */
+    @Override
+    public void close() throws IOException {
+        ensureHeadersSend(-1);
+
+        if (this.encodedStream != null && !sendingFile) {
+            this.encodedStream.flush();
+            this.encodedStream.close();
+        }
+    }
+
+    /**
+     * Sets the {@link Exchange} managing this response.
+     *
+     * @param exchange The {@link Exchange} managing the response
+     */
+    protected void setExchange(Exchange exchange) {
+        this.exchange = exchange;
+    }
+
+    /**
+     * Gets the {@link Exchange} managing this response.
+     *
+     * @return The {@link Exchange} managing this response.
+     */
+    public Exchange getExchange() {
+        return exchange;
     }
 
     /**

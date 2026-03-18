@@ -6,6 +6,7 @@ import de.craftsblock.craftsnet.api.http.Exchange;
 import de.craftsblock.craftsnet.api.http.Response;
 import de.craftsblock.craftsnet.events.EventWithCancelReason;
 import de.craftsblock.craftsnet.events.requests.GenericRequestEventBase;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
@@ -98,6 +99,7 @@ public class ShareRequestEvent extends EventWithCancelReason implements GenericR
      * @return Returns the header object
      * @deprecated Use {@link Response#getHeaders()} instead.
      */
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
     @Deprecated(forRemoval = true, since = "3.4.0-SNAPSHOT")
     public Headers getHeaders() {
         return getResponse().getHeaders();
@@ -110,6 +112,7 @@ public class ShareRequestEvent extends EventWithCancelReason implements GenericR
      * @param value The value of the header
      * @deprecated Use {@link Response#addHeader(String, String)} instead.
      */
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
     @Deprecated(forRemoval = true, since = "3.4.0-SNAPSHOT")
     public void addHeader(String key, String value) {
         getResponse().addHeader(key, value);
@@ -122,6 +125,7 @@ public class ShareRequestEvent extends EventWithCancelReason implements GenericR
      * @param value The value which should override the value of the header if it exists already, otherwise just adds the value to the header.
      * @deprecated Use {@link Response#setHeader(String, String)} instead.
      */
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
     @Deprecated(forRemoval = true, since = "3.4.0-SNAPSHOT")
     public void setHeader(String key, String value) {
         getResponse().setHeader(key, value);
@@ -134,6 +138,7 @@ public class ShareRequestEvent extends EventWithCancelReason implements GenericR
      * @return A list of alle the values
      * @deprecated Use {@link Response#getHeaders(String)} instead.
      */
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
     @Deprecated(forRemoval = true, since = "3.4.0-SNAPSHOT")
     public List<String> getHeader(String key) {
         return getResponse().getHeaders(key);
@@ -146,6 +151,7 @@ public class ShareRequestEvent extends EventWithCancelReason implements GenericR
      * @return true if the header is set, false otherwise
      * @deprecated Use {@link Response#hasHeader(String)} instead.
      */
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
     @Deprecated(forRemoval = true, since = "3.4.0-SNAPSHOT")
     public boolean hasHeader(String key) {
         return getResponse().hasHeader(key);

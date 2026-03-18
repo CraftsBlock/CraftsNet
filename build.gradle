@@ -1,5 +1,5 @@
 plugins {
-    id "java"
+    id "java-library"
     id "application"
     id "de.craftsblock.gradle.publish" version "0.0.20"
 }
@@ -17,7 +17,7 @@ application {
 }
 
 group = "de.craftsblock"
-version = "3.6.0"
+version = "3.7.0-pre9"
 
 repositories {
     mavenCentral()
@@ -29,22 +29,22 @@ dependencies {
     // CraftsBlock related dependencies ---------------------------------------------------------------------------------------
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/bom
-    implementation platform("de.craftsblock.craftscore:bom:3.8.13-pre5")
+    implementation platform("de.craftsblock.craftscore:bom:3.8.13-pre8")
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/buffer
-    implementation "de.craftsblock.craftscore:buffer"
+    api "de.craftsblock.craftscore:buffer"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/cache
-    implementation "de.craftsblock.craftscore:cache"
+    api "de.craftsblock.craftscore:cache"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/event
-    implementation "de.craftsblock.craftscore:event"
+    api "de.craftsblock.craftscore:event"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/json
-    implementation "de.craftsblock.craftscore:json"
+    api "de.craftsblock.craftscore:json"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/utils
-    implementation "de.craftsblock.craftscore:utils"
+    api "de.craftsblock.craftscore:utils"
 
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
@@ -52,30 +52,30 @@ dependencies {
     implementation "org.apache.tika:tika-core:3.2.3"
 
     // https://mvnrepository.com/artifact/org.jetbrains/annotations
-    implementation "org.jetbrains:annotations:26.0.2-1"
+    implementation "org.jetbrains:annotations:26.1.0"
 
     // Artifact resolving dependencies ----------------------------------------------------------------------------------------
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-api
-    implementation "org.apache.maven.resolver:maven-resolver-api:2.0.13"
+    implementation "org.apache.maven.resolver:maven-resolver-api:2.0.16"
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-connector-basic
-    implementation "org.apache.maven.resolver:maven-resolver-connector-basic:2.0.13"
+    implementation "org.apache.maven.resolver:maven-resolver-connector-basic:2.0.16"
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-impl
-    implementation "org.apache.maven.resolver:maven-resolver-impl:2.0.13"
+    implementation "org.apache.maven.resolver:maven-resolver-impl:2.0.16"
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-supplier-mvn4
-    implementation "org.apache.maven.resolver:maven-resolver-supplier-mvn4:2.0.13"
+    implementation "org.apache.maven.resolver:maven-resolver-supplier-mvn4:2.0.16"
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-transport-file
-    implementation "org.apache.maven.resolver:maven-resolver-transport-file:2.0.13"
+    implementation "org.apache.maven.resolver:maven-resolver-transport-file:2.0.16"
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-transport-http
     implementation "org.apache.maven.resolver:maven-resolver-transport-http:2.0.0-alpha-2"
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-util
-    implementation "org.apache.maven.resolver:maven-resolver-util:2.0.13"
+    implementation "org.apache.maven.resolver:maven-resolver-util:2.0.16"
 }
 
 tasks.withType(JavaCompile).configureEach {
