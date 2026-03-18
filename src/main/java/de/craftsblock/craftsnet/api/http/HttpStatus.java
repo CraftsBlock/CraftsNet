@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.api.http;
 
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
 import java.util.Arrays;
@@ -22,12 +23,12 @@ import java.util.stream.Collectors;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
+ * @version 1.0.0
  * @since 3.7.0
  */
 public sealed interface HttpStatus
-        permits HttpStatus.Info, HttpStatus.Success, HttpStatus.Redirection,
-        HttpStatus.ClientError, HttpStatus.ServerError {
+        permits HttpStatus.ClientError, HttpStatus.CustomHttpStatus,
+        HttpStatus.Info, HttpStatus.Redirection, HttpStatus.ServerError, HttpStatus.Success {
 
     /**
      * Returns the HTTP reason phrase for this status.
@@ -47,7 +48,7 @@ public sealed interface HttpStatus
      * Generates a full HTTP status line for this status.
      *
      * @param protocol The HTTP protocol version.
-     * @return A string in the format "HTTP/1.1 CODE REASON\r\n"
+     * @return A string in the format "HTTP/1.1 CODE REASON\r\n".
      */
     default String getStatusLine(String protocol) {
         return protocol + " " + getCode() + " " + getReason() + "\r\n";
@@ -118,13 +119,34 @@ public sealed interface HttpStatus
     }
 
     /**
+     * Checks whether this HTTP status is a custom status.
+     *
+     * @return {@code true} if this HTTP status is not defined in one of
+     * {@link Info}, {@link Success}, {@link Redirection}, {@link ClientError} and {@link ServerError}.
+     */
+    default boolean isCustom() {
+        return this instanceof CustomHttpStatus;
+    }
+
+    /**
      * Checks if a numeric code is a valid HTTP status code.
      *
-     * @param code The numeric code
-     * @return {@code true} if the code is between 100 and 599 (inclusive)
+     * @param code The numeric code.
+     * @return {@code true} if the code is between 100 and 599 (inclusive).
      */
     static boolean isValid(int code) {
         return code >= 100 && code < 600;
+    }
+
+    /**
+     * Checks if a numeric code is a custom HTTP status code.
+     *
+     * @param code The numeric code.
+     * @return {@code true} if the code is {@link #isValid(int)} and is not defined in one of
+     * {@link Info}, {@link Success}, {@link Redirection}, {@link ClientError} and {@link ServerError}.
+     */
+    static boolean isCustom(int code) {
+        return isValid(code) && fromCode(code) instanceof CustomHttpStatus;
     }
 
     /**
@@ -134,24 +156,97 @@ public sealed interface HttpStatus
      * @return The category corresponding to the status code class.
      */
     static @Range(from = 1, to = 5) int getCategory(@Range(from = 100, to = 599) int code) {
+        if (!isValid(code)) {
+            throw new IllegalArgumentException("Invalid HTTP status code: " + code);
+        }
+
         return code / 100;
     }
 
     /**
      * Retrieves the {@link HttpStatus} instance corresponding to the given code.
      *
-     * @param code The numeric HTTP status code
-     * @return The {@link HttpStatus} instance, or {@code null} if the code is not defined
+     * @param code The numeric HTTP status code.
+     * @return The {@link HttpStatus} instance, or {@code null} if the code is not defined.
      */
     static HttpStatus fromCode(@Range(from = 100, to = 599) int code) {
-        return switch (getCategory(code)) {
+        return fromCode(code, null);
+    }
+
+    /**
+     * Retrieves the {@link HttpStatus} instance corresponding to the given code and expected reason phrase.
+     *
+     * @param code           The numeric HTTP status code.
+     * @param expectedReason The expected HTTP status reason phrase.
+     * @return The {@link HttpStatus} instance, or {@code null} if the code is not defined.
+     */
+    static HttpStatus fromCode(@Range(from = 100, to = 599) int code, @Nullable String expectedReason) {
+        HttpStatus status = switch (getCategory(code)) {
             case 1 -> Info.LOOKUP.get(code);
             case 2 -> Success.LOOKUP.get(code);
             case 3 -> Redirection.LOOKUP.get(code);
             case 4 -> ClientError.LOOKUP.get(code);
             case 5 -> ServerError.LOOKUP.get(code);
-            default -> throw new IllegalStateException("Unexpected value: " + getCategory(code));
+            default -> throw new IllegalArgumentException("Invalid HTTP status code: " + code);
         };
+
+        if (status == null) {
+            return new CustomHttpStatus(code, expectedReason);
+        }
+
+        if (expectedReason != null && !expectedReason.trim().equalsIgnoreCase(status.getReason())) {
+            return new CustomHttpStatus(code, expectedReason);
+        }
+
+        return status;
+    }
+
+    /**
+     * Custom HTTP response code.
+     *
+     * @param code   The numeric http status code.
+     * @param reason The reason phrase.
+     */
+    record CustomHttpStatus(@Range(from = 100, to = 599) int code, @Nullable String reason) implements HttpStatus {
+
+        /**
+         * Constructs an {@link CustomHttpStatus} with the specified code and reason.
+         *
+         * @param code   The HTTP status code.
+         * @param reason The HTTP status reason phrase.
+         */
+        public CustomHttpStatus {
+        }
+
+        /**
+         * Constructs an {@link CustomHttpStatus} with the specified code.
+         *
+         * @param code The HTTP status code.
+         */
+        public CustomHttpStatus(int code) {
+            this(code, null);
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @return {@inheritDoc}
+         */
+        @Override
+        public @Nullable String getReason() {
+            return reason();
+        }
+
+        /**
+         * {@inheritDoc}
+         *
+         * @return {@inheritDoc}
+         */
+        @Override
+        public int getCode() {
+            return code();
+        }
+
     }
 
     /**
