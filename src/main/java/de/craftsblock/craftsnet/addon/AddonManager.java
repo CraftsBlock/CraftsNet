@@ -8,10 +8,9 @@ import de.craftsblock.craftsnet.logging.Logger;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.Unmodifiable;
+import org.jetbrains.annotations.UnmodifiableView;
 
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -25,7 +24,7 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.3
+ * @version 1.3.4
  * @see Addon
  * @see AddonLoader
  * @since 1.0.0-SNAPSHOT
@@ -37,7 +36,8 @@ public final class AddonManager {
 
     private final CraftsNet craftsNet;
     private final Logger logger;
-    private final ConcurrentHashMap<String, Addon> addons = new ConcurrentHashMap<>();
+    private final Map<String, Addon> addons = new ConcurrentHashMap<>();
+    private final Map<String, Addon> addonsView = Collections.unmodifiableMap(addons);
 
     private final AddonLoader addonLoader;
 
@@ -120,10 +120,14 @@ public final class AddonManager {
      * Method to stop the AddonManager. It is called during application shutdown.
      */
     public void stop() {
-        addons.values().forEach(addon -> {
-            logger.info("Disabling addon %s", addon.getName());
-            this.unregister(addon);
-        });
+        synchronized (addons) {
+            addons.values().forEach(addon -> {
+                logger.info("Disabling addon %s", addon.getName());
+                addon.onDisable();
+            });
+
+            addons.values().forEach(addon -> addons.remove(addon.getName()));
+        }
 
         craftsNet.getListenerRegistry().call(new AllAddonsDisabledEvent());
         addons.clear();
@@ -135,7 +139,9 @@ public final class AddonManager {
      * @param addon The addon to be registered.
      */
     public void register(@NotNull Addon addon) {
-        addons.put(addon.getName(), addon);
+        synchronized (addons) {
+            addons.put(addon.getName(), addon);
+        }
     }
 
     /**
@@ -144,8 +150,10 @@ public final class AddonManager {
      * @param addon The addon to be unregistered.
      */
     public void unregister(@NotNull Addon addon) {
-        addons.remove(addon.getName());
-        addon.onDisable();
+        synchronized (addons) {
+            addon.onDisable();
+            addons.remove(addon.getName());
+        }
     }
 
     /**
@@ -153,8 +161,8 @@ public final class AddonManager {
      *
      * @return A read-only ConcurrentHashMap containing the registered addons.
      */
-    public @Unmodifiable @NotNull Map<String, Addon> getAddons() {
-        return Collections.unmodifiableMap(addons);
+    public @NotNull @UnmodifiableView Map<String, Addon> getAddons() {
+        return addonsView;
     }
 
     /**
@@ -165,14 +173,17 @@ public final class AddonManager {
      * @return An instance of the specified addon type if found, or {@code null} if not present.
      */
     public <T extends Addon> @Nullable T getAddon(@NotNull Class<T> addon) {
-        if (HollowAddon.class.isAssignableFrom(addon))
+        if (HollowAddon.class.isAssignableFrom(addon)) {
             throw new IllegalArgumentException(addon.getSimpleName() + "s cannot be retrieved by class, use the name instead!");
+        }
 
-        return addons.values().stream()
-                .filter(addon::isInstance)
-                .map(addon::cast)
-                .findFirst()
-                .orElse(null);
+        synchronized (addons) {
+            return addons.values().stream()
+                    .filter(addon::isInstance)
+                    .map(addon::cast)
+                    .findFirst()
+                    .orElse(null);
+        }
     }
 
     /**
@@ -185,10 +196,12 @@ public final class AddonManager {
      */
     @SuppressWarnings("unchecked")
     public <T extends Addon> @Nullable T getAddon(String name) {
-        return (T) addons.values().stream()
-                .filter(addon -> addon.getName().equalsIgnoreCase(name))
-                .findFirst()
-                .orElse(null);
+        synchronized (addons) {
+            return (T) addons.values().stream()
+                    .filter(addon -> addon.getName().equalsIgnoreCase(name))
+                    .findFirst()
+                    .orElse(null);
+        }
     }
 
     /**
@@ -199,8 +212,13 @@ public final class AddonManager {
      * @since 3.3.5-SNAPSHOT
      */
     public boolean isRegistered(@NotNull Class<? extends Addon> addon) {
-        if (HollowAddon.class.isAssignableFrom(addon)) return false;
-        return addons.values().stream().anyMatch(addon::isInstance);
+        if (HollowAddon.class.isAssignableFrom(addon)) {
+            return false;
+        }
+
+        synchronized (addons) {
+            return addons.values().stream().anyMatch(addon::isInstance);
+        }
     }
 
     /**
@@ -211,7 +229,10 @@ public final class AddonManager {
      * @since 3.3.5-SNAPSHOT
      */
     public boolean isRegistered(@NotNull String name) {
-        return addons.values().stream().anyMatch(addon -> addon.getName().equalsIgnoreCase(name));
+        synchronized (addons) {
+            return addons.values().stream()
+                    .anyMatch(addon -> addon.getName().equalsIgnoreCase(name));
+        }
     }
 
     /**
