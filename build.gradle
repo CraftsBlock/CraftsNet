@@ -17,7 +17,7 @@ application {
 }
 
 group = "de.craftsblock"
-version = "3.7.1"
+version = "3.7.0"
 
 repositories {
     mavenCentral()
@@ -29,7 +29,7 @@ dependencies {
     // CraftsBlock related dependencies ---------------------------------------------------------------------------------------
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/bom
-    implementation platform("de.craftsblock.craftscore:bom:3.8.13-pre9")
+    implementation platform("de.craftsblock.craftscore:bom:3.8.13-pre8")
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/buffer
     api "de.craftsblock.craftscore:buffer"
