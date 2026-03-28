@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.utils.reflection;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
@@ -21,6 +22,7 @@ import java.util.Arrays;
 public class ReflectionUtils {
 
     private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+    private static final StackWalker STACK_WALKER = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
 
     /**
      * Private constructor to prevent direct instantiation
@@ -54,12 +56,11 @@ public class ReflectionUtils {
      * @since 3.3.1-SNAPSHOT
      */
     public static Class<?> getCallerClass(@Range(from = 1, to = Integer.MAX_VALUE) int level) {
-        return StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-                .walk(frames -> frames.skip(level)
-                        .findFirst()
-                        .map(StackWalker.StackFrame::getDeclaringClass)
-                        .orElseThrow()
-                );
+        return STACK_WALKER.walk(frames -> frames.skip(level)
+                .findFirst()
+                .map(StackWalker.StackFrame::getDeclaringClass)
+                .orElseThrow(() -> new IllegalStateException("No stack frame found for caller level " + level))
+        );
     }
 
     /**
@@ -85,6 +86,45 @@ public class ReflectionUtils {
         }
 
         throw new IllegalStateException(callersCaller.getName() + " is not permitted to call a " + caller.getSimpleName());
+    }
+
+    /**
+     * Rethrows a throwable while unpacking {@link InvocationTargetException}.
+     *
+     * @param throwable The {@link InvocationTargetException} that was caught.
+     * @param <T>       The excepted return type used for automatically adjusting to caller method.
+     * @return Nothing, just for returning in case the calling method needs it.
+     * @since 3.7.1
+     */
+    @Contract("_ -> fail")
+    public static <T> T rethrowReflectionThrowable(Throwable throwable) {
+        return rethrowReflectionThrowable(throwable, null);
+    }
+
+    /**
+     * Rethrows a throwable while unpacking {@link InvocationTargetException}.
+     *
+     * @param throwable          The {@link InvocationTargetException} that was caught.
+     * @param alternativeMessage An alternative message for the fallback exception.
+     * @param <T>                The excepted return type used for automatically adjusting to caller method.
+     * @return Nothing, just for returning in case the calling method needs it.
+     * @since 3.7.1
+     */
+    @Contract("_, _ -> fail")
+    public static <T> T rethrowReflectionThrowable(Throwable throwable, String alternativeMessage) {
+        if (throwable instanceof InvocationTargetException invocationTargetException) {
+            return rethrowReflectionThrowable(invocationTargetException, alternativeMessage);
+        }
+
+        if (throwable instanceof UndeclaredThrowableException undeclaredThrowableException) {
+            throw undeclaredThrowableException;
+        }
+
+        if (throwable instanceof RuntimeException runtimeException) {
+            throw runtimeException;
+        }
+
+        throw new UndeclaredThrowableException(throwable, alternativeMessage);
     }
 
     /**
@@ -147,7 +187,7 @@ public class ReflectionUtils {
                     .unreflectConstructor(constructor)
                     .invokeWithArguments(args);
         } catch (Throwable e) {
-            throw new RuntimeException("Could not create instance of " + type.getSimpleName(), e);
+            return rethrowReflectionThrowable(e, "Could not create instance of " + type.getSimpleName());
         }
     }
 
@@ -165,11 +205,9 @@ public class ReflectionUtils {
                     .unreflectVarHandle(field)
                     .set(target, value);
         } catch (Throwable e) {
-            throw new RuntimeException(
-                    "Can not set field %s of class %s!".formatted(
-                            name, target.getClass().getSimpleName()
-                    ), e
-            );
+            rethrowReflectionThrowable(e, "Can not set field %s of class %s!".formatted(
+                    name, target.getClass().getSimpleName()
+            ));
         }
     }
 
@@ -239,9 +277,7 @@ public class ReflectionUtils {
                     ? handle.bindTo(owner)
                     : handle).invokeWithArguments(args);
         } catch (Throwable e) {
-            throw new RuntimeException(
-                    "Could not invoke " + method.toGenericString(), e
-            );
+            return rethrowReflectionThrowable(e, "Could not invoke " + method.toGenericString());
         }
     }
 
