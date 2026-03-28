@@ -13,9 +13,8 @@ import java.lang.annotation.*;
  * of input parameters into desired output types. This can be particularly useful in scenarios where
  * data needs to be converted between different formats or representations.</p>
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @author CraftsBlock
  * @see Transformable
  * @see TransformerCollection
  * @since 3.0.2-SNAPSHOT

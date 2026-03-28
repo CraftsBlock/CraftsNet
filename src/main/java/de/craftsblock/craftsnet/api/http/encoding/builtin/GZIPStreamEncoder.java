@@ -15,7 +15,6 @@ import java.util.zip.GZIPOutputStream;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @since 3.3.3-SNAPSHOT
  */
 public final class GZIPStreamEncoder extends StreamEncoder {

@@ -9,7 +9,6 @@ import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
  * @see Addon
  * @since 3.3.5-SNAPSHOT
  */

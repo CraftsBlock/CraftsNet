@@ -12,9 +12,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * A subclass of {@link PrintStream} used for logging.
  * This class intercepts the output written to the stream and writes it to the provided output stream while removing any ASCII colors.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.0
+ * @author CraftsBlock
  * @since 3.0.2-SNAPSHOT
  */
 public class MutatedPrintStream extends PrintStream {

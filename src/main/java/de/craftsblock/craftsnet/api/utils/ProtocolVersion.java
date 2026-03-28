@@ -14,7 +14,6 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @since 3.3.2-SNAPSHOT
  */
 public record ProtocolVersion(@NotNull Scheme scheme, @Range(from = 0, to = Integer.MAX_VALUE) int major,

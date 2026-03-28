@@ -36,7 +36,6 @@ import java.util.stream.Collectors;
  * @param meta              Reference to the {@link AddonMeta} metadata of the addon.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.4.0
  * @since 3.1.0-SNAPSHOT
  */
 public record AddonConfiguration(Path path, Json json, URL[] classpath, DependencyClassLoader[] dependencyLoaders,

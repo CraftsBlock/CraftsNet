@@ -9,9 +9,8 @@ import org.jetbrains.annotations.Nullable;
  *
  * @param <R> The type to which the parameter is transformed.
  * @param <T> The type from which the transformer transforms the param.
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @since 3.0.2-SNAPSHOT
  */
 public interface Transformable<R, T> {

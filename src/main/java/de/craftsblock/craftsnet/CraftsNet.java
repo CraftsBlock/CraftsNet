@@ -46,7 +46,6 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.1
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {

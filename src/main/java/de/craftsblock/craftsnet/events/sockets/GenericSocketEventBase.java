@@ -10,7 +10,6 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see SocketExchange
  * @see WebSocketClient
  * @see WebSocketServer

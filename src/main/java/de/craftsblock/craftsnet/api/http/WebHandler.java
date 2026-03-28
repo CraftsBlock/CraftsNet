@@ -43,9 +43,8 @@ import java.util.regex.Pattern;
 /**
  * Handles HTTP requests and routes them to the appropriate handlers based on the registered routes.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.7.1
+ * @author CraftsBlock
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */

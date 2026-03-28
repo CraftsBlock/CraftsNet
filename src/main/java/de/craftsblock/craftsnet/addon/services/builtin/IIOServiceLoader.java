@@ -10,9 +10,8 @@ import javax.imageio.spi.IIOServiceProvider;
  * This class specifically focuses on loading instances of {@link IIOServiceProvider} into the default
  * {@link IIORegistry}.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @since 3.0.0-SNAPSHOT
  */
 public class IIOServiceLoader implements ServiceLoader<IIOServiceProvider> {

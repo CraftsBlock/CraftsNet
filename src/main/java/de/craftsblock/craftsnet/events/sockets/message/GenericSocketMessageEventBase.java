@@ -14,7 +14,6 @@ import java.nio.ByteBuffer;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.0
  * @see Frame
  * @see ByteBuffer
  * @see Opcode

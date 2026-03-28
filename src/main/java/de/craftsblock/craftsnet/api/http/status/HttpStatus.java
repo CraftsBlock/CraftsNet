@@ -23,7 +23,6 @@ import java.util.stream.Collectors;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @since 3.7.0
  */
 public sealed interface HttpStatus

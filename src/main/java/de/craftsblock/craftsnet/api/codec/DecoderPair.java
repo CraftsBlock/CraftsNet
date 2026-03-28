@@ -9,7 +9,6 @@ package de.craftsblock.craftsnet.api.codec;
  * @param <T> The target type to be decoded.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see Decoder
  * @see CodecPair
  * @since 3.5.0

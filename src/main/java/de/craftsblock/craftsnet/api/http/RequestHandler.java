@@ -14,9 +14,8 @@ import de.craftsblock.craftsnet.api.Handler;
  * Developers can implement this interface in classes that are designed to handle incoming requests and use it to easily
  * identify request handling components within a system or framework.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @author CraftsBlock
  * @since 1.0.0-SNAPSHOT
  */
 public interface RequestHandler extends Handler {

@@ -21,7 +21,6 @@ import java.util.concurrent.LinkedBlockingQueue;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.4.3
  * @see Session
  * @since 3.3.0-SNAPSHOT
  */
@@ -233,7 +232,6 @@ public class SessionStorage {
      * @param args Additional arguments.
      * @author Philipp Maywald
      * @author CraftsBlock
-     * @version 1.0.0
      * @since 3.4.0-SNAPSHOT
      */
     private record QueuedJob(JobType type, Object... args) {
@@ -245,7 +243,6 @@ public class SessionStorage {
      *
      * @author Philipp Maywald
      * @author CraftsBlock
-     * @version 1.0.1
      * @since 3.3.5-SNAPSHOT
      */
     public enum JobType {

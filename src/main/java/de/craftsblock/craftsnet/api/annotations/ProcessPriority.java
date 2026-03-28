@@ -11,9 +11,8 @@ import java.lang.annotation.*;
  * Methods annotated with this annotation can specify a priority level
  * to influence their execution order in a prioritized processing system.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @since 3.0.1-SNAPSHOT
  */
 @Documented

@@ -9,9 +9,8 @@ import de.craftsblock.craftscore.event.Event;
  * <p>By listening for this event, developers can perform additional actions or initialization steps
  * that depend on the availability of addons within the application environment.</p>
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @since 3.0.3-SNAPSHOT
  */
 public class AllAddonsLoadedEvent extends Event {

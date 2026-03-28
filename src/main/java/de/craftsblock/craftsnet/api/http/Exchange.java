@@ -14,9 +14,8 @@ import org.jetbrains.annotations.NotNull;
  * The Exchange object encapsulates the incoming request data (headers, parameters, cookies, body) as a {@link Request} object,
  * and the outgoing response data (headers, status code, body) as a {@link Response} object.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.1.1
+ * @author CraftsBlock
  * @see BaseExchange
  * @see Request
  * @see Response

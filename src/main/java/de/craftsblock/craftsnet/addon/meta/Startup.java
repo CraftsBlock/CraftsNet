@@ -5,7 +5,6 @@ package de.craftsblock.craftsnet.addon.meta;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @since 3.2.0-SNAPSHOT
  */
 public enum Startup {

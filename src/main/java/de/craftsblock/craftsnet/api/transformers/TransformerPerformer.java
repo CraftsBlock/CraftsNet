@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.transformers;
 
 import de.craftsblock.craftscore.cache.DoubleKeyedCache;
+import de.craftsblock.craftscore.cache.DoubleKeyedLruCache;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Handler;
 import de.craftsblock.craftsnet.api.transformers.annotations.Transformer;
@@ -30,7 +31,6 @@ import static de.craftsblock.craftsnet.utils.Utils.getGroupNames;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.4.0
  * @see Transformer
  * @see TransformerCollection
  * @see Transformable
@@ -40,7 +40,7 @@ public class TransformerPerformer {
 
     private final Logger logger;
 
-    private final DoubleKeyedCache<Class<? extends Transformable<?, ?>>, Object, Object> transformerCache = new DoubleKeyedCache<>(10);
+    private final DoubleKeyedLruCache<Class<? extends Transformable<?, ?>>, Object, Object> transformerCache = new DoubleKeyedLruCache<>(10);
     private final List<String> groupNames = new ArrayList<>();
 
     private final int argsOffset;

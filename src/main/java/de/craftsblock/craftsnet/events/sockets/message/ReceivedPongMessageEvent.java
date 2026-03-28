@@ -11,9 +11,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * An event indicating that a Pong message has been received.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @see GenericSocketMessageEventBase
  * @since 3.0.5-SNAPSHOT
  */

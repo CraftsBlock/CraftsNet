@@ -11,7 +11,6 @@ import java.lang.annotation.*;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @since 3.4.0-SNAPSHOT
  */
 @Documented
@@ -34,7 +33,6 @@ public @interface ApplyMiddleware {
      *
      * @author Philipp Maywald
      * @author CraftsBlock
-     * @version 1.0.0
      * @since 3.4.0-SNAPSHOT
      */
     @Documented

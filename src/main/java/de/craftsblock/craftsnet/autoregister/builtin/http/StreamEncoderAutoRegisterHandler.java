@@ -13,7 +13,6 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.4
  * @since 3.3.3-SNAPSHOT
  */
 public class StreamEncoderAutoRegisterHandler extends AutoRegisterHandler<StreamEncoder> {

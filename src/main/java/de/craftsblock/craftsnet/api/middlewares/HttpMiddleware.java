@@ -11,7 +11,6 @@ import de.craftsblock.craftsnet.api.http.WebServer;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see Middleware
  * @since 3.4.0-SNAPSHOT
  */

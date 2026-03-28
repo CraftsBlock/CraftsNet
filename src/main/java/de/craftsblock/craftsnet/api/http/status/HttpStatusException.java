@@ -16,7 +16,6 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see HttpStatus
  * @since 3.7.1
  */

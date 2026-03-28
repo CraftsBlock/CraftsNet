@@ -10,9 +10,8 @@ import java.lang.reflect.InvocationTargetException;
  * to create a new instance of a class and to load a service provider for further processing.
  *
  * @param <T> The type of service to be loaded.
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @author CraftsBlock
  * @since 3.0.0-SNAPSHOT
  */
 public interface ServiceLoader<T> {

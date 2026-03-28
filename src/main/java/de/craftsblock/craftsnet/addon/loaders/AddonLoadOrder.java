@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
  * @since 3.0.2-SNAPSHOT
  */
 final class AddonLoadOrder implements Closeable {

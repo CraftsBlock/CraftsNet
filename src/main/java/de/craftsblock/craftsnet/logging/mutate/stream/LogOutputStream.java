@@ -16,7 +16,6 @@ import java.util.regex.Pattern;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @since 3.5.4
  */
 public class LogOutputStream extends FilterOutputStream {

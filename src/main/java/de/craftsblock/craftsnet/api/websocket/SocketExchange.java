@@ -12,9 +12,8 @@ import org.jetbrains.annotations.NotNull;
  * with the WebSocket server and client within the context of a WebSocket connection.
  * It allows sending broadcast messages to all clients connected to the same WebSocket path.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.1
+ * @author CraftsBlock
  * @see BaseExchange
  * @see Socket
  * @see SocketHandler

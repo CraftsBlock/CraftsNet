@@ -21,9 +21,8 @@ import java.util.regex.Pattern;
  * multipart/form-data format. This format is often used to upload files and form fields in HTTP
  * requests.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.1
+ * @author CraftsBlock
  * @see FormBody
  * @since 2.2.0-SNAPSHOT
  */

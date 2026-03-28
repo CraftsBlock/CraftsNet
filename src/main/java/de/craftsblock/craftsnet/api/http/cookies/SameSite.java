@@ -6,9 +6,8 @@ package de.craftsblock.craftsnet.api.http.cookies;
  * The SameSite attribute allows you to declare if your cookie should be restricted to a first-party or same-site context.
  * This attribute helps to protect against Cross-Site Request Forgery (CSRF) attacks.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @since 3.0.6
  */
 public enum SameSite {

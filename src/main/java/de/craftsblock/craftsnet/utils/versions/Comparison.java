@@ -13,7 +13,6 @@ import java.util.Map;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0
  * @since 3.1.0-SNAPSHOT
  */
 enum Comparison {

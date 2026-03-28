@@ -20,7 +20,6 @@ import java.lang.reflect.Constructor;
  * @param <E> the type of encoder being managed
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see Encoder
  * @see EncoderPair
  * @see TypeCodecRegistry

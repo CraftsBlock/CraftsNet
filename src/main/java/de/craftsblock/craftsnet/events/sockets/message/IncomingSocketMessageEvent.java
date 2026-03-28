@@ -9,9 +9,8 @@ import org.jetbrains.annotations.NotNull;
  * The IncomingSocketMessageEvent class represents an event related to an incoming message on a websocket connection.
  * It extends the base {@link CancellableEvent} to support event cancellation.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @author CraftsBlock
  * @see GenericSocketMessageEventBase
  * @since 2.1.1-SNAPSHOT
  */

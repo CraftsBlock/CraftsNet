@@ -9,9 +9,8 @@ import de.craftsblock.craftsnet.addon.services.ServiceLoader;
  * A concrete implementation of the {@link ServiceLoader} interface for managing instances of {@link ListenerAdapter}.
  * This class specifically focuses on loading instances of {@link ListenerAdapter} into the {@link ListenerRegistry}.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @author CraftsBlock
  * @since 3.1.0-SNAPSHOT
  */
 public class ListenerAdapterLoader implements ServiceLoader<ListenerAdapter> {

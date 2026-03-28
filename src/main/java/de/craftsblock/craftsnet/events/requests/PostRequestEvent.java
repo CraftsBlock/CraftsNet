@@ -11,7 +11,6 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.1
  * @see GenericRequestEventBase
  * @since 3.1.0-SNAPSHOT
  */

@@ -16,9 +16,8 @@ import java.util.zip.Inflater;
  * <a href="https://tools.ietf.org/html/rfc7692">RFC 7692</a>. This extension allows for
  * compressing and decompressing WebSocket frames.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @since 3.0.6-SNAPSHOT
  */
 public class PerMessageDeflateExtension extends WebSocketExtension {

@@ -3,9 +3,8 @@ package de.craftsblock.craftsnet.builder;
 /**
  * Enum representing activation types for various components in the CraftsNet framework.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @since 3.0.3
  */
 public enum ActivateType {

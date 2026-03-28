@@ -13,7 +13,6 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
  * @since 3.4.0-SNAPSHOT
  */
 public class MiddlewareAutoRegisterHandler extends AutoRegisterHandler<Middleware> {

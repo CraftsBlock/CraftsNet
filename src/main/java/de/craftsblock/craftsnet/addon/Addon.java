@@ -45,7 +45,6 @@ import java.nio.file.Path;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.4.1
  * @see AddonLoader
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT

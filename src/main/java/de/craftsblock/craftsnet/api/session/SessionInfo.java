@@ -24,7 +24,6 @@ import java.util.Objects;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 3.1.7
  * @see Session
  * @see BaseExchange
  * @since 3.0.6-SNAPSHOT

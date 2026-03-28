@@ -10,7 +10,6 @@ package de.craftsblock.craftsnet.autoregister.meta;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
  * @since 3.3.2-SNAPSHOT
  */
 public enum Instantiate {

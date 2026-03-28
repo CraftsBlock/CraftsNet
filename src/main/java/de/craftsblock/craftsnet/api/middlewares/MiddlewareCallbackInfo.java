@@ -7,7 +7,6 @@ package de.craftsblock.craftsnet.api.middlewares;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @since 3.4.0-SNAPSHOT
  */
 public class MiddlewareCallbackInfo {

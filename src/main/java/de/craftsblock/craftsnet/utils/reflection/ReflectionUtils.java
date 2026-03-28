@@ -16,7 +16,6 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.4.4
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {

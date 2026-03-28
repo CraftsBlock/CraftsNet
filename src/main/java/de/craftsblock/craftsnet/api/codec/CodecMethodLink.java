@@ -15,7 +15,6 @@ import java.lang.reflect.Method;
  * @param <T>       The codec pair type.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see Codec
  * @see CodecPair
  * @since 3.5.3

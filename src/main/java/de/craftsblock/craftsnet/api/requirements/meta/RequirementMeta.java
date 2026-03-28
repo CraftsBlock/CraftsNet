@@ -20,7 +20,6 @@ import java.lang.annotation.*;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see RequirementType
  * @since 3.1.0-SNAPSHOT
  */

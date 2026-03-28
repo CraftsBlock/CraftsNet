@@ -11,9 +11,8 @@ import java.io.IOException;
  * This class is a body parser specifically designed to parse json request bodies.
  * It extends the {@link BodyParser} class and provides an implementation to parse json data from an input stream.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @author CraftsBlock
  * @see BodyParser
  * @since 3.0.4-SNAPSHOT
  */

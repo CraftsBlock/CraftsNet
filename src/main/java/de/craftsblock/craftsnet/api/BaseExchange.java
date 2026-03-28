@@ -10,7 +10,6 @@ import de.craftsblock.craftsnet.api.utils.Scheme;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.5.0
  * @since 1.0.0-SNAPSHOT
  */
 public interface BaseExchange extends AutoCloseable {

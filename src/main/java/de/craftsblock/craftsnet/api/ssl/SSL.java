@@ -27,9 +27,8 @@ import java.util.List;
  * SSL-related operations, including the loading of SSL contexts using either default or custom
  * certificate chain and private key files.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.6
+ * @author CraftsBlock
  * @since 2.1.1-SNAPSHOT
  */
 public class SSL {

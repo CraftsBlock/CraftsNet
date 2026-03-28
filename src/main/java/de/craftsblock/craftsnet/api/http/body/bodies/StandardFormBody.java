@@ -16,9 +16,8 @@ import java.nio.charset.StandardCharsets;
  * This class extends the {@link FormBody} class and provides methods to deserialize the form data
  * from an input stream and access individual form fields.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.0
+ * @author CraftsBlock
  * @see FormBody
  * @since 2.2.0-SNAPSHOT
  */

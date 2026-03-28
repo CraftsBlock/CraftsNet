@@ -28,7 +28,6 @@ import java.util.regex.Pattern;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.7
  * @since 3.2.1-SNAPSHOT
  */
 public class RequirementRegistry {

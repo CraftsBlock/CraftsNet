@@ -14,7 +14,6 @@ import java.util.List;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 2.1.0
  * @since 3.3.5-SNAPSHOT
  */
 public class PassphraseUtils {

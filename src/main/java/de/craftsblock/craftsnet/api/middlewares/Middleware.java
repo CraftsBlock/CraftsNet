@@ -10,7 +10,6 @@ import de.craftsblock.craftsnet.api.Server;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see MiddlewareCallbackInfo
  * @since 3.4.0-SNAPSHOT
  */

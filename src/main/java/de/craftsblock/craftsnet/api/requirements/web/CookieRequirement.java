@@ -11,9 +11,8 @@ import java.util.Set;
 /**
  * A specific web requirement that checks if the cookie list of an HTTP request matches certain criteria.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
+ * @author CraftsBlock
  * @see WebRequirement
  * @since 3.0.6-SNAPSHOT
  */
