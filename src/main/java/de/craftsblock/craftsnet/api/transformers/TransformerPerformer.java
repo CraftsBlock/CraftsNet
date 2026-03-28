@@ -260,7 +260,7 @@ public class TransformerPerformer {
             value = parameter;
         }
 
-        if (transformer.cacheable() && transformable.isCacheable() && transformerCache.containsKeyPair(type, value)) {
+        if (transformer.cacheable() && transformable.isCacheable() && transformerCache.containsPair(type, value)) {
             return transformerCache.get(type, value);
         }
 

@@ -21,6 +21,7 @@ import java.util.Arrays;
 public class ReflectionUtils {
 
     private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+    private static final StackWalker STACK_WALKER = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
 
     /**
      * Private constructor to prevent direct instantiation
@@ -54,12 +55,11 @@ public class ReflectionUtils {
      * @since 3.3.1-SNAPSHOT
      */
     public static Class<?> getCallerClass(@Range(from = 1, to = Integer.MAX_VALUE) int level) {
-        return StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE)
-                .walk(frames -> frames.skip(level)
-                        .findFirst()
-                        .map(StackWalker.StackFrame::getDeclaringClass)
-                        .orElseThrow()
-                );
+        return STACK_WALKER.walk(frames -> frames.skip(level)
+                .findFirst()
+                .map(StackWalker.StackFrame::getDeclaringClass)
+                .orElseThrow(() -> new IllegalStateException("No stack frame found for caller level " + level))
+        );
     }
 
     /**
