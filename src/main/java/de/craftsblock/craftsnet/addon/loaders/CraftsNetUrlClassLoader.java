@@ -13,8 +13,8 @@ import java.util.*;
  * An abstract base implementation of a {@link URLClassLoader} that is tied to a specific
  * {@link CraftsNet} instance.
  *
+ * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.0
  * @see CraftsNetClassLoader
  * @see AddonClassLoader
  * @see DependencyClassLoader

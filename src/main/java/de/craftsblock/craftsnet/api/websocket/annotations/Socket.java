@@ -10,9 +10,8 @@ import java.lang.annotation.*;
 /**
  * Custom annotation used to mark classes as WebSocket handlers.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @see SocketHandler
  * @since 2.1.1-SNAPSHOT
  */

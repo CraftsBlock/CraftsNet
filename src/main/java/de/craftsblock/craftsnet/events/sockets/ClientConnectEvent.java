@@ -13,9 +13,8 @@ import java.util.List;
  * The ClientConnectEvent class represents an event related to a client connection to a socket.
  * It extends the base {@link EventWithCancelReason} to support event cancellation.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @author CraftsBlock
  * @see EventWithCancelReason
  * @see GenericSocketEventBase
  * @since 2.1.1-SNAPSHOT

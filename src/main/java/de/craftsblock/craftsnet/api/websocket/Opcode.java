@@ -8,9 +8,8 @@ import java.util.Map;
  * Enumeration representing WebSocket opcodes along with their integer values.
  * These opcodes are defined in the WebSocket protocol.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @since 3.0.5-SNAPSHOT
  */
 public enum Opcode {

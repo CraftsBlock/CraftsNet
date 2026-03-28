@@ -11,9 +11,8 @@ import java.lang.annotation.*;
  * Specifies the domain associated with an HTTP request handler or service.
  * This annotation can be applied to methods or classes.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @see WebServer
  * @since 2.3.0-SNAPSHOT
  */

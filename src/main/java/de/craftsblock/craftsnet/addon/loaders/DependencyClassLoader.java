@@ -14,9 +14,8 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Class responsible for loading dependencies dynamically into the CraftsNet framework.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @see CraftsNetUrlClassLoader
  * @since 3.4.3
  */

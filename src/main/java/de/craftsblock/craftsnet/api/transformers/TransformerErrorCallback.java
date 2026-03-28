@@ -13,9 +13,8 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.TransformerException
  * which receives a TransformerException object representing the error that occurred during transformation.
  * Within this method, developers can implement custom error-handling logic, such as logging, error reporting, or recovery actions.</p>
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @see TransformerException
  * @since 3.0.3-SNAPSHOT
  */

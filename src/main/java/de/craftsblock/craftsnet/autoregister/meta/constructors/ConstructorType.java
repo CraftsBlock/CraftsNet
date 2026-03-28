@@ -13,7 +13,6 @@ import java.util.List;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see FallbackConstructor
  * @see IgnoreConstructor
  * @see PreferConstructor

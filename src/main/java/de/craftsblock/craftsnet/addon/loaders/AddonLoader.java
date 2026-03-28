@@ -39,7 +39,6 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.3.4
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT

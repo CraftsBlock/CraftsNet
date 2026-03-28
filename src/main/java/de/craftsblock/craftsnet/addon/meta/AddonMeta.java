@@ -26,7 +26,6 @@ import java.util.function.Function;
  * @param dependencies The maven dependencies this addon needs.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.2
  * @since 3.1.0-SNAPSHOT
  */
 public record AddonMeta(String name, String mainClass, String description, List<String> authors,

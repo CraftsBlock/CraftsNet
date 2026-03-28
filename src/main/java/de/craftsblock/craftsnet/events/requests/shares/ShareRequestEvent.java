@@ -15,9 +15,8 @@ import java.util.List;
  * Represents an event that is triggered when a share request is made.
  * This event can be canceled to prevent the share request from being processed.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
+ * @author CraftsBlock
  * @see EventWithCancelReason
  * @see GenericRequestEventBase
  * @since 2.3.2-SNAPSHOT

@@ -7,7 +7,6 @@ import de.craftsblock.craftsnet.api.utils.Scheme;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @since 3.3.2-SNAPSHOT
  */
 public class UnknownSchemeException extends RuntimeException {

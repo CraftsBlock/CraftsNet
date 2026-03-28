@@ -14,7 +14,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.0
  * @see CraftsNetUrlClassLoader
  * @since 3.0.3-SNAPSHOT
  */

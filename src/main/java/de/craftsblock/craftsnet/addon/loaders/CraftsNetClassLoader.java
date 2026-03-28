@@ -18,7 +18,6 @@ import org.jetbrains.annotations.Nullable;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 2.0.1
  * @see CraftsNet
  * @see CraftsNetUrlClassLoader
  * @since 3.5.0

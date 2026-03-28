@@ -37,9 +37,8 @@ import java.util.List;
  * and decoding the payload data. It also provides methods to access frame attributes
  * and manipulate the payload data.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @since 3.0.6-SNAPSHOT
  */
 public class Frame implements RequireAble {

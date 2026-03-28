@@ -12,7 +12,6 @@ import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
  * @param <C> The codec type, which must implement {@link Codec}.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see DecoderPair
  * @see EncoderPair
  * @since 3.5.0

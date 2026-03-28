@@ -14,9 +14,8 @@ import java.io.IOException;
  * Represents a default route handler implementation.
  * This class provides a default route for handling GET requests.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @since 3.0.3-SNAPSHOT
  */
 public class DefaultRoute implements RequestHandler {

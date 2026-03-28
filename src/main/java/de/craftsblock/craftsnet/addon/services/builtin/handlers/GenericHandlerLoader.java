@@ -9,9 +9,8 @@ import de.craftsblock.craftsnet.api.RouteRegistry;
  * A concrete implementation of the {@link ServiceLoader} interface for managing instances of {@link Handler}.
  * This class specifically focuses on loading instances of {@link Handler} into the {@link RouteRegistry}.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @author CraftsBlock
  * @since 3.1.0-SNAPSHOT
  */
 public class GenericHandlerLoader implements ServiceLoader<Handler> {

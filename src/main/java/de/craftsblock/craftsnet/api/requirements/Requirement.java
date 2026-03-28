@@ -8,9 +8,8 @@ import java.lang.annotation.Annotation;
  * Represents an abstract requirement that can be used in the requirement system.
  *
  * @param <T> The type of the storage class that this requirement gets its data from.
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @since 3.0.5-SNAPSHOT
  */
 public abstract class Requirement<T extends RequireAble> {

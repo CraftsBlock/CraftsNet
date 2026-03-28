@@ -17,7 +17,6 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
  * @since 3.3.2-SNAPSHOT
  */
 public enum Scheme {

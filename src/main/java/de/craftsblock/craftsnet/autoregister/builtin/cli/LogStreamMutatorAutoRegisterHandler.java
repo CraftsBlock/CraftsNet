@@ -13,7 +13,6 @@ import de.craftsblock.craftsnet.logging.mutate.LogStreamMutator;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @since 3.5.2
  */
 public class LogStreamMutatorAutoRegisterHandler extends AutoRegisterHandler<LogStreamMutator> {

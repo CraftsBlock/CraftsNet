@@ -20,7 +20,6 @@ import java.util.UUID;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
  * @since 3.1.0-SNAPSHOT
  * @deprecated in favor of {@link java.nio.ByteBuffer} and {@link de.craftsblock.craftscore.buffer.BufferUtil}
  */

@@ -16,7 +16,6 @@ import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
  * @param <T>         The requirement type.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.0
  * @see Requirement
  * @since 3.5.3
  */

@@ -17,7 +17,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.3
  * @since 3.3.3-SNAPSHOT
  */
 public final class StreamEncoderRegistry {

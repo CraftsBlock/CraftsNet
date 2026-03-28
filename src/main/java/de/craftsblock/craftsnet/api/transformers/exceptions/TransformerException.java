@@ -4,9 +4,8 @@ package de.craftsblock.craftsnet.api.transformers.exceptions;
  * This class represents an exception that occurs during data transformation operations.
  * It extends the RuntimeException class, making it an unchecked exception.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @since 3.0.2-SNAPSHOT
  */
 public class TransformerException extends RuntimeException {

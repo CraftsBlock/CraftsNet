@@ -18,7 +18,6 @@ import java.nio.charset.CoderResult;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.1
  * @since 3.4.1-SNAPSHOT
  */
 public class SecureEncodingUtils {

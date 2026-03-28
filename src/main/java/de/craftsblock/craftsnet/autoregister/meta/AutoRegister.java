@@ -12,9 +12,8 @@ import java.lang.annotation.*;
  * <p>The default value of the annotation is {@link Startup#ENABLE}, meaning auto registration
  * is performed after the addon has been enabled.</p>
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.2
+ * @author CraftsBlock
  * @since 3.2.0-SNAPSHOT
  */
 @Documented

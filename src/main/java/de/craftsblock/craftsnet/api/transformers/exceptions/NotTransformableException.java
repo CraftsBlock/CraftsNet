@@ -4,9 +4,8 @@ package de.craftsblock.craftsnet.api.transformers.exceptions;
  * This exception is thrown when a parameter cannot be transformed to a specified target type.
  * It extends the TransformerException class, indicating a specific type of transformation failure.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @see TransformerException
  * @since 3.0.2-SNAPSHOT
  */

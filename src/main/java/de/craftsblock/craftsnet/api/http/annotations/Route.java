@@ -12,9 +12,8 @@ import java.lang.annotation.*;
  * Specifies the path associated with a service method or defines the parent path.
  * This annotation can be applied to methods or classes.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @see WebServer
  * @see HttpMethod
  * @since 1.0.0-SNAPSHOT

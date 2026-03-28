@@ -7,9 +7,8 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  * A transformer class for converting a string representation of a long value to a Long object.
  * Implements the {@link Transformable} interface.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @author CraftsBlock
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */

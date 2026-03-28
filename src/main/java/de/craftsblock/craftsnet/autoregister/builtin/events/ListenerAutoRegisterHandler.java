@@ -13,7 +13,6 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.4
  * @since 3.2.0-SNAPSHOT
  */
 public class ListenerAutoRegisterHandler extends AutoRegisterHandler<ListenerAdapter> {

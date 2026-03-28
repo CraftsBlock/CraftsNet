@@ -9,9 +9,8 @@ import de.craftsblock.craftsnet.api.http.RequestHandler;
  * A concrete implementation of the {@link ServiceLoader} interface for managing instances of {@link RequestHandler}.
  * This class specifically focuses on loading instances of {@link RequestHandler} into the {@link RouteRegistry}.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @author CraftsBlock
  * @since 3.1.0-SNAPSHOT
  */
 public class RequestHandlerLoader implements ServiceLoader<RequestHandler> {

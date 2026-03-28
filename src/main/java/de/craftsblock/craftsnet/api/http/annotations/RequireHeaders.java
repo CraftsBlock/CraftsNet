@@ -11,9 +11,8 @@ import java.lang.annotation.*;
  * This annotation can be applied to methods or types to indicate that
  * certain HTTP headers are required for processing the request.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @since 3.0.2-SNAPSHOT
  */
 @Documented

@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.api.session;
 
-import de.craftsblock.craftscore.cache.Cache;
+import de.craftsblock.craftscore.cache.LruCache;
 
 /**
  * A specialized cache for managing {@link Session} objects, allowing efficient storage
@@ -9,11 +9,10 @@ import de.craftsblock.craftscore.cache.Cache;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
  * @see Session
  * @since 3.3.0-SNAPSHOT
  */
-public class SessionCache extends Cache<String, Session> {
+public class SessionCache extends LruCache<String, Session> {
 
     /**
      * Constructs a new {@link SessionCache} with a specified maximum capacity.

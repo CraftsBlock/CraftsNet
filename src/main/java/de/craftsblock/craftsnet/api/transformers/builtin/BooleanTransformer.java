@@ -2,7 +2,6 @@ package de.craftsblock.craftsnet.api.transformers.builtin;
 
 import de.craftsblock.craftsnet.api.transformers.Transformable;
 import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableException;
-import org.jetbrains.annotations.Nullable;
 
 /**
  * A transformer class for converting a string representation of a boolean value to a Boolean object.
@@ -10,7 +9,6 @@ import org.jetbrains.annotations.Nullable;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */

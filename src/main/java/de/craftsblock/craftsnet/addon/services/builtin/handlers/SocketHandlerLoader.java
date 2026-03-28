@@ -9,9 +9,8 @@ import de.craftsblock.craftsnet.api.websocket.SocketHandler;
  * A concrete implementation of the {@link ServiceLoader} interface for managing instances of {@link SocketHandler}.
  * This class specifically focuses on loading instances of {@link SocketHandler} into the {@link RouteRegistry}.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @author CraftsBlock
  * @since 3.1.0-SNAPSHOT
  */
 public class SocketHandlerLoader implements ServiceLoader<SocketHandler> {

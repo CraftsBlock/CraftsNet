@@ -11,7 +11,6 @@ import java.io.IOException;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see BodyParser
  * @since 3.5.0
  */

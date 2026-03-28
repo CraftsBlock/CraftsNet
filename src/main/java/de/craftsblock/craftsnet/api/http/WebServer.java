@@ -26,9 +26,8 @@ import java.util.concurrent.ThreadPoolExecutor;
  * The WebServer class represents a simple HTTP or HTTPS server that listens for incoming requests and handles
  * them based on registered API endpoints using the provided RouteRegistry.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.5.2
+ * @author CraftsBlock
  * @see Exchange
  * @see RequestHandler
  * @see Route

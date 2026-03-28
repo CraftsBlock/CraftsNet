@@ -19,9 +19,8 @@ import java.util.TreeSet;
 /**
  * Builder class for configuring the CraftsNet with a set of addons.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.2
+ * @author CraftsBlock
  * @see CraftsNetBuilder
  * @since 3.1.0-SNAPSHOT
  */

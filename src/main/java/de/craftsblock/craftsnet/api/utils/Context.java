@@ -12,9 +12,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * A specialized {@link ConcurrentHashMap} implementation that serves as a type-safe context
  * for storing and retrieving objects associated with their respective {@link Class} types.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @since 3.6.0
  */
 public class Context extends ConcurrentHashMap<Class<?>, Object> {

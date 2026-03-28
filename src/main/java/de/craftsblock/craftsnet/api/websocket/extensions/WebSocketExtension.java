@@ -12,9 +12,8 @@ import org.jetbrains.annotations.NotNull;
  * the {@link #encode(Frame)} and {@link #decode(Frame)} methods to define how frames
  * are transformed by the extension.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @since 3.0.6-SNAPSHOT
  */
 public abstract class WebSocketExtension {

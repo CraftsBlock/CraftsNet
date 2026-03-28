@@ -17,7 +17,6 @@ import java.lang.reflect.Constructor;
  * @param <D> the type of decoder being managed
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see Decoder
  * @see DecoderPair
  * @see TypeCodecRegistry

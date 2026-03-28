@@ -25,7 +25,6 @@ import java.util.stream.StreamSupport;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.2
  * @see AutoRegisterInfo
  * @since 3.2.0-SNAPSHOT
  */

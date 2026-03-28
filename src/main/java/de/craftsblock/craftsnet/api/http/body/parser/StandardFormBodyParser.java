@@ -13,9 +13,8 @@ import java.io.InputStream;
  * This class is a body parser specifically designed to parse standard form request bodies.
  * It extends the {@link BodyParser} class and provides an implementation to parse standard form from an input stream.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @see BodyParser
  * @since 3.0.4-SNAPSHOT
  */

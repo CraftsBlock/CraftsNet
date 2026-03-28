@@ -11,7 +11,6 @@ import org.jetbrains.annotations.Nullable;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
  * @see LogStream
  * @since 3.5.0
  */

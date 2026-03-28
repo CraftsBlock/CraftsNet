@@ -9,7 +9,6 @@ import java.io.IOException;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.0
  * @see Session
  * @since 3.3.5-SNAPSHOT
  */

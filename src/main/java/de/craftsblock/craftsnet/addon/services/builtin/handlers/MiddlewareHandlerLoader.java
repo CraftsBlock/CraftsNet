@@ -9,9 +9,8 @@ import de.craftsblock.craftsnet.api.middlewares.MiddlewareRegistry;
  * A concrete implementation of the {@link ServiceLoader} interface for managing instances of {@link Middleware}.
  * This class specifically focuses on loading instances of {@link Middleware} into the {@link MiddlewareRegistry}.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @author CraftsBlock
  * @since 3.4.0-SNAPSHOT
  */
 public class MiddlewareHandlerLoader implements ServiceLoader<Middleware> {

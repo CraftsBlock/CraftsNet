@@ -10,9 +10,8 @@ import org.jetbrains.annotations.NotNull;
  * The OutgoingSocketMessageEvent class represents an event related to an outgoing message on a websocket connection.
  * It extends the base {@link CancellableEvent} to support event cancellation.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @see GenericSocketMessageEventBase
  * @since 2.1.1-SNAPSHOT
  */

@@ -12,7 +12,6 @@ import de.craftsblock.craftsnet.api.websocket.Frame;
  * @param <R> The result type produced after decoding the WebSocket {@link Frame}.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @since 3.5.0
  */
 public interface WebSocketSafeTypeDecoder<R> extends Decoder<R, Frame> {

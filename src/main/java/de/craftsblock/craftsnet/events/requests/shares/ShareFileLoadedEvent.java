@@ -16,9 +16,8 @@ import java.nio.file.Path;
  * Represents an event that is triggered when a share file has been loaded.
  * This event provides information about the loaded file.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.1
+ * @author CraftsBlock
  * @see CancellableEvent
  * @see GenericRequestEventBase
  * @since 2.3.2-SNAPSHOT

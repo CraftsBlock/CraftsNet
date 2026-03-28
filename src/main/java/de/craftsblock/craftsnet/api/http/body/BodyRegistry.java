@@ -15,9 +15,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * It allows registering parsers for different types of request bodies,
  * and provides methods to retrieve and check the presence of a parser for a given body type.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.4
+ * @author CraftsBlock
  * @see BodyParser
  * @since 3.0.4-SNAPSHOT
  */

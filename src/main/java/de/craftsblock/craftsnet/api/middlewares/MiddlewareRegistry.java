@@ -20,7 +20,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
  * @see Middleware
  * @since 3.4.0-SNAPSHOT
  */

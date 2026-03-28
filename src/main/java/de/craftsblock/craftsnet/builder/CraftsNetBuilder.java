@@ -16,9 +16,8 @@ import java.util.*;
 /**
  * Builder class for configuring the CraftsNet.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.3
+ * @author CraftsBlock
  * @see ActivateType
  * @since 3.0.3-SNAPSHOT
  */

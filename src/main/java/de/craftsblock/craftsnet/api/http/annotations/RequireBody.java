@@ -11,9 +11,8 @@ import java.lang.annotation.*;
  * Annotation used to indicate that a request handler method requires specific types of request bodies.
  * This annotation can be applied to methods or classes to specify the required body types.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @since 3.0.4-SNAPSHOT
  */
 @Documented
