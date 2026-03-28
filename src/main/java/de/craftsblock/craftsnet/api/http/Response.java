@@ -9,7 +9,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.http.cookies.Cookie;
 import de.craftsblock.craftsnet.api.http.cors.CorsPolicy;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoder;
-import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.api.http.status.HttpStatus;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -288,11 +288,10 @@ public class Response implements AutoCloseable {
      * <p>The {@code Location} header instructs the client to perform a new request
      * to the specified resource.</p>
      *
-     * @param url The target URL to which the client should be redirected.
-     *            Must not be {@code null}.
+     * @param url         The target URL to which the client should be redirected.
+     *                    Must not be {@code null}.
      * @param redirection the redirection status to use. Must be one of the
      *                    {@link HttpStatus.Redirection} values.
-     *
      * @throws IllegalStateException if the response headers have already been sent
      *                               and the redirect can no longer be applied
      */
