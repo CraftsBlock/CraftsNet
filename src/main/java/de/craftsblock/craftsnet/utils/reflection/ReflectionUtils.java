@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.utils.reflection;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
@@ -88,6 +89,45 @@ public class ReflectionUtils {
     }
 
     /**
+     * Rethrows a throwable while unpacking {@link InvocationTargetException}.
+     *
+     * @param throwable The {@link InvocationTargetException} that was caught.
+     * @param <T>       The excepted return type used for automatically adjusting to caller method.
+     * @return Nothing, just for returning in case the calling method needs it.
+     * @since 3.7.1
+     */
+    @Contract("_ -> fail")
+    public static <T> T rethrowReflectionThrowable(Throwable throwable) {
+        return rethrowReflectionThrowable(throwable, null);
+    }
+
+    /**
+     * Rethrows a throwable while unpacking {@link InvocationTargetException}.
+     *
+     * @param throwable          The {@link InvocationTargetException} that was caught.
+     * @param alternativeMessage An alternative message for the fallback exception.
+     * @param <T>                The excepted return type used for automatically adjusting to caller method.
+     * @return Nothing, just for returning in case the calling method needs it.
+     * @since 3.7.1
+     */
+    @Contract("_, _ -> fail")
+    public static <T> T rethrowReflectionThrowable(Throwable throwable, String alternativeMessage) {
+        if (throwable instanceof InvocationTargetException invocationTargetException) {
+            return rethrowReflectionThrowable(invocationTargetException, alternativeMessage);
+        }
+
+        if (throwable instanceof UndeclaredThrowableException undeclaredThrowableException) {
+            throw undeclaredThrowableException;
+        }
+
+        if (throwable instanceof RuntimeException runtimeException) {
+            throw runtimeException;
+        }
+
+        throw new UndeclaredThrowableException(throwable, alternativeMessage);
+    }
+
+    /**
      * Checks if a constructor is present in the specified class with the provided argument types.
      *
      * @param clazz The class to check for the constructor.
@@ -147,7 +187,7 @@ public class ReflectionUtils {
                     .unreflectConstructor(constructor)
                     .invokeWithArguments(args);
         } catch (Throwable e) {
-            throw new RuntimeException("Could not create instance of " + type.getSimpleName(), e);
+            return rethrowReflectionThrowable(e, "Could not create instance of " + type.getSimpleName());
         }
     }
 
@@ -165,11 +205,9 @@ public class ReflectionUtils {
                     .unreflectVarHandle(field)
                     .set(target, value);
         } catch (Throwable e) {
-            throw new RuntimeException(
-                    "Can not set field %s of class %s!".formatted(
-                            name, target.getClass().getSimpleName()
-                    ), e
-            );
+            rethrowReflectionThrowable(e, "Can not set field %s of class %s!".formatted(
+                    name, target.getClass().getSimpleName()
+            ));
         }
     }
 
@@ -239,9 +277,7 @@ public class ReflectionUtils {
                     ? handle.bindTo(owner)
                     : handle).invokeWithArguments(args);
         } catch (Throwable e) {
-            throw new RuntimeException(
-                    "Could not invoke " + method.toGenericString(), e
-            );
+            return rethrowReflectionThrowable(e, "Could not invoke " + method.toGenericString());
         }
     }
 
