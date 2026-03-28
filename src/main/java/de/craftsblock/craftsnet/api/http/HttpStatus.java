@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.api.http.status;
+package de.craftsblock.craftsnet.api.http;
 
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
@@ -116,16 +116,6 @@ public sealed interface HttpStatus
      */
     default boolean isServerError() {
         return isCategory(5);
-    }
-
-    /**
-     * Checks whether this status indicates an error.
-     *
-     * @return {@code true} if the status code indicates an error.
-     * @since 3.7.1
-     */
-    default boolean isError() {
-        return isClientError() || isServerError();
     }
 
     /**

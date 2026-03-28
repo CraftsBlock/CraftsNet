@@ -11,14 +11,12 @@ import de.craftsblock.craftsnet.api.http.encoding.AcceptEncodingHelper;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoder;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoderRegistry;
 import de.craftsblock.craftsnet.api.http.encoding.builtin.IdentityStreamEncoder;
-import de.craftsblock.craftsnet.api.http.status.HttpStatus;
-import de.craftsblock.craftsnet.api.http.status.HttpStatusException;
 import de.craftsblock.craftsnet.api.middlewares.Middleware;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareCallbackInfo;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.session.SessionInfo;
-import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.Context;
+import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.events.requests.PostRequestEvent;
@@ -27,6 +25,7 @@ import de.craftsblock.craftsnet.events.requests.routes.RouteRequestEvent;
 import de.craftsblock.craftsnet.events.requests.shares.ShareFileLoadedEvent;
 import de.craftsblock.craftsnet.events.requests.shares.ShareRequestEvent;
 import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.utils.Utils;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 
 import java.io.IOException;
@@ -36,7 +35,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -139,77 +137,28 @@ public class WebHandler implements HttpHandler {
                     craftsNet.getListenerRegistry().call(new PostRequestEvent(exchange, result.getKey(), result.getValue()));
                 }
             } catch (Throwable t) {
-                handleThrowable(response, url, httpMethod, t);
+                if (craftsNet.getLogStream() != null) {
+                    long errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), url);
+                    logger.error("Error: %s", t, errorID);
+                    if (!response.headersSent()) {
+                        response.setStatus(500);
+                    }
+
+                    if (!response.sendingFile() && !httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN)) {
+                        response.print(Json.empty()
+                                .set("status", "500")
+                                .set("message", "An unexpected exception happened whilst processing your request!")
+                                .set("incident", errorID));
+                    }
+                } else {
+                    logger.error(t);
+                }
             } finally {
                 response.close();
             }
         } catch (Throwable t) {
             logger.error(t);
         }
-    }
-
-    /**
-     * Handles a {@link Throwable}.
-     *
-     * @param response   The {@link Response} in which context the throwable was thrown.
-     * @param url        The url of the request.
-     * @param httpMethod The {@link HttpMethod} of the request.
-     * @param t          The {@link Throwable} that has been caught.
-     * @since 3.7.1
-     */
-    private void handleThrowable(Response response, String url, HttpMethod httpMethod, Throwable t) {
-        BiConsumer<Json, Integer> responder = (json, code) -> {
-            if (!response.headersSent()) {
-                response.setStatus(code);
-            }
-
-            if (!response.sendingFile() && !httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN)) {
-                response.print(json);
-            }
-        };
-
-        if (t instanceof HttpStatusException httpStatusException) {
-            handleHttpStatusException(responder, httpStatusException);
-            return;
-        }
-
-        if (t.getCause() instanceof HttpStatusException httpStatusException) {
-            handleHttpStatusException(responder, httpStatusException);
-            return;
-        }
-
-        Long errorID;
-        if (craftsNet.getLogStream() != null) {
-            errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), url);
-            logger.error("Error: %s", t, errorID);
-        } else {
-            errorID = null;
-            logger.error(t);
-        }
-
-        responder.accept(
-                Json.empty()
-                        .set("code", HttpStatus.ServerError.INTERNAL_SERVER_ERROR.getCode())
-                        .set("message", "An unexpected exception happened whilst processing your request!")
-                        .setIf("incident", errorID, () -> errorID != null),
-                HttpStatus.ServerError.INTERNAL_SERVER_ERROR.getCode()
-        );
-    }
-
-    /**
-     * Handles caught {@link HttpStatusException}'s.
-     *
-     * @param responder       Responds to the {@link Response}.
-     * @param statusException The caught {@link HttpStatusException}.
-     * @since 3.7.1
-     */
-    private void handleHttpStatusException(BiConsumer<Json, Integer> responder, HttpStatusException statusException) {
-        responder.accept(
-                Json.empty()
-                        .set("code", statusException.getCode())
-                        .set("message", statusException.getMessage()),
-                statusException.getCode()
-        );
     }
 
     /**
