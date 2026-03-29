@@ -45,6 +45,8 @@ import java.util.zip.ZipFile;
  */
 public final class AddonLoader {
 
+    public static final Pattern PLUGIN_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9\\-_.]{1,128}$");
+
     private final Stack<Path> addons = new Stack<>();
     private final CraftsNet craftsNet;
     private final Logger logger;
@@ -388,9 +390,10 @@ public final class AddonLoader {
             AddonMeta meta = configuration.meta().get();
 
             String name = meta.name();
-            Pattern pattern = Pattern.compile("^[a-zA-Z0-9]*$");
-            if (!pattern.matcher(name).matches()) {
-                throw new IllegalArgumentException("Plugin names must not contain special characters / spaces! Plugin name: \"" + name + "\"");
+            if (!PLUGIN_NAME_PATTERN.matcher(name).matches()) {
+                throw new IllegalArgumentException("Invalid plugin name: " + name.substring(0, 128) + ". " +
+                        "Only letters, numbers, hyphens, underscores and dots are allowed, " +
+                        "up to 128 characters.");
             }
 
             logger.info("Found addon %s, add it to load order", name);
@@ -407,7 +410,6 @@ public final class AddonLoader {
                         ") is not an instance of " + Addon.class.getSimpleName() + "!");
             }
 
-            // Create an instance of the main class and inject dependencies using reflection
             Class<? extends Addon> addonClass = clazz.asSubclass(Addon.class);
             Addon addon = ReflectionUtils.getNewInstance(addonClass);
             ReflectionUtils.setField("craftsNet", addon, craftsNet);
