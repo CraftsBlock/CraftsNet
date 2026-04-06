@@ -1,6 +1,5 @@
 package de.craftsblock.craftsnet.logging;
 
-import org.intellij.lang.annotations.PrintFormat;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +32,7 @@ public interface Logger {
      * @param args   Arguments referenced by the format specifiers in the format string.
      * @since 3.5.2
      */
-    default void info(@NotNull @PrintFormat String format, Object @Nullable ... args) {
+    default void info(@NotNull String format, Object... args) {
         info(format(format, args));
     }
 
@@ -54,7 +53,7 @@ public interface Logger {
      * @param args   Arguments referenced by the format specifiers in the format string.
      * @since 3.5.2
      */
-    default void warning(@NotNull @PrintFormat String format, Object @Nullable ... args) {
+    default void warning(@NotNull String format, Object... args) {
         warning(format(format, args));
     }
 
@@ -75,7 +74,7 @@ public interface Logger {
      * @param args   Arguments referenced by the format specifiers in the format string.
      * @since 3.5.2
      */
-    default void error(@NotNull @PrintFormat String format, Object @Nullable ... args) {
+    default void error(@NotNull String format, Object... args) {
         error(format(format, args));
     }
 
@@ -122,8 +121,7 @@ public interface Logger {
      * @param args      Arguments referenced by the format specifiers in the format string.
      * @since 3.5.2
      */
-    default void error(@NotNull @PrintFormat String format, @NotNull Throwable throwable,
-                       Object @Nullable ... args) {
+    default void error(@NotNull String format, @NotNull Throwable throwable, Object... args) {
         error(format(format, args), throwable);
     }
 
@@ -144,7 +142,7 @@ public interface Logger {
      * @param args   Arguments referenced by the format specifiers in the format string.
      * @since 3.5.2
      */
-    default void debug(@NotNull @PrintFormat String format, Object @Nullable ... args) {
+    default void debug(@NotNull String format, Object... args) {
         debug(format(format, args));
     }
 
@@ -154,7 +152,7 @@ public interface Logger {
      * @param name The name for the cloned logger.
      * @return A new {@code Logger} instance cloned from this logger with the given name.
      */
-    Logger cloneWithName(@Nullable String name);
+    Logger cloneWithName(String name);
 
     /**
      * Creates a clone of this {@link Logger} with a formatted name.
@@ -168,7 +166,7 @@ public interface Logger {
      * @return A new {@code Logger} instance cloned from this logger with the formatted name.
      * @since 3.5.2
      */
-    default Logger cloneWithName(@NotNull @PrintFormat String format, Object @Nullable ... args) {
+    default Logger cloneWithName(String format, Object... args) {
         return cloneWithName(format(format, args));
     }
 
@@ -182,7 +180,7 @@ public interface Logger {
      * @return A formatted string.
      * @since 3.5.2
      */
-    default String format(@NotNull @PrintFormat String format, Object @Nullable ... args) {
+    default String format(@NotNull String format, Object... args) {
         return String.format(format, args);
     }
 
