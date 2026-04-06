@@ -54,5 +54,8 @@ test/
 ### Mac OS ###
 .DS_Store
 
+### JFR ###
+*.jfr
+
 .env
 .env.repo
