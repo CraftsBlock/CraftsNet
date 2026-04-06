@@ -78,12 +78,18 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
      * @throws IllegalStateException If the provided addon class is not annotated with {@link Meta}.
      */
     public static List<AddonConfiguration> of(CraftsNet craftsNet, AddonLoader loader, Class<? extends Addon> addon) {
+        String name;
         Meta meta = addon.getDeclaredAnnotation(Meta.class);
-        if (meta == null && !MAPPED_NAMES.containsKey(addon)) {
-            throw new IllegalStateException("The addon class " + addon.getName() + " is not annotated with @" + Meta.class.getSimpleName() + "!");
+        if (meta != null) {
+            name = meta.name();
+        } else if (MAPPED_NAMES.containsKey(addon)) {
+            name = MAPPED_NAMES.get(addon);
+            craftsNet.getLogger().warning("Deprecated: " + addon.getName() + " still uses a mapped addon name!");
+        } else {
+            name = addon.getSimpleName();
         }
 
-        String name = MAPPED_NAMES.getOrDefault(addon, meta != null ? meta.name() : null);
+        ensureValidAddonName(name);
         Depends depends = addon.getDeclaredAnnotation(Depends.class);
 
         List<RegisteredService> services = new ArrayList<>();
@@ -198,8 +204,13 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
      *
      * @param addon The addon class.
      * @param name  The name to associate with the addon class.
+     * @deprecated Addon classes will use the class name as it's mapped name
+     * if no {@link de.craftsblock.craftsnet.addon.meta.annotations.Meta} annotation is present.
+     * There will be no replacement as custom mapped names are no longer supported.
      */
     @ApiStatus.Internal
+    @Deprecated(since = "3.7.2", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public static void map(Class<? extends Addon> addon, String name) {
         MAPPED_NAMES.put(addon, name);
     }
