@@ -75,8 +75,9 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
      */
     public static List<AddonConfiguration> of(CraftsNet craftsNet, AddonLoader loader, Class<? extends Addon> addon) {
         Meta meta = addon.getDeclaredAnnotation(Meta.class);
-        if (meta == null && !MAPPED_NAMES.containsKey(addon))
+        if (meta == null && !MAPPED_NAMES.containsKey(addon)) {
             throw new IllegalStateException("The addon class " + addon.getName() + " is not annotated with @" + Meta.class.getSimpleName() + "!");
+        }
 
         String name = MAPPED_NAMES.getOrDefault(addon, meta != null ? meta.name() : null);
         Depends depends = addon.getDeclaredAnnotation(Depends.class);
@@ -89,16 +90,21 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
                 .set("main", addon.getName());
 
         Set<Depends> classes = new HashSet<>();
-        if (depends != null) classes.add(depends);
-        else {
+        if (depends != null) {
+            classes.add(depends);
+        } else {
             DependsCollection collection = addon.getDeclaredAnnotation(DependsCollection.class);
-            if (collection != null) classes.addAll(List.of(collection.value()));
+            if (collection != null) {
+                classes.addAll(List.of(collection.value()));
+            }
         }
 
         List<AddonConfiguration> configurations = new ArrayList<>();
         for (Depends depend : classes) {
             List<AddonConfiguration> subs = of(craftsNet, loader, depend.value());
-            if (subs.isEmpty()) continue;
+            if (subs.isEmpty()) {
+                continue;
+            }
             configurations.addAll(subs);
 
             AddonConfiguration subConfig = subs.get(subs.size() - 1);
@@ -111,29 +117,47 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
 
         Shadow shadow = addon.getDeclaredAnnotation(Shadow.class);
         EnumMap<ShadowType, List<String>> shadows = new EnumMap<>(ShadowType.class);
-        if (shadow != null) shadows.computeIfAbsent(shadow.type(), s -> new ArrayList<>()).add(shadow.value());
-        else {
+        if (shadow != null) {
+            shadows.computeIfAbsent(shadow.type(), s -> new ArrayList<>()).add(shadow.value());
+        } else {
             ShadowCollection collection = addon.getDeclaredAnnotation(ShadowCollection.class);
-            if (collection != null)
-                for (Shadow nested : collection.value())
+            if (collection != null) {
+                for (Shadow nested : collection.value()) {
                     shadows.computeIfAbsent(nested.type(), s -> new ArrayList<>()).add(nested.value());
+                }
+            }
         }
 
-        // Inject all repositories
-        if (shadows.containsKey(ShadowType.REPOSITORY))
-            for (String repo : shadows.get(ShadowType.REPOSITORY))
+        var mavenRepos = shadows.get(ShadowType.REPOSITORY);
+        if (mavenRepos != null && !mavenRepos.isEmpty()) {
+            artifactLoader.setup();
+            for (String repo : mavenRepos) {
                 artifactLoader.addRepository(repo);
+            }
+        }
 
         // Load all required dependencies
         URL[] dependencies;
-        if (shadows.containsKey(ShadowType.DEPENDENCY))
-            dependencies = artifactLoader.loadLibraries(craftsNet, loader, services, name, shadows.get(ShadowType.DEPENDENCY).toArray(String[]::new));
-        else dependencies = new URL[0];
+        var mavenDependencies = shadows.get(ShadowType.DEPENDENCY);
+        if (mavenDependencies != null && !mavenDependencies.isEmpty()) {
+            artifactLoader.setup();
+            dependencies = artifactLoader.loadLibraries(
+                    craftsNet, loader,
+                    services, name,
+                    shadows.get(ShadowType.DEPENDENCY).toArray(String[]::new)
+            );
+        } else {
+            dependencies = new URL[0];
+        }
 
-        classpath.addAll(Arrays.stream(dependencies).collect(Collectors.toSet()));
         artifactLoader.stop();
 
-        configurations.add(of(null, conf, classpath.toArray(URL[]::new), new DependencyClassLoader[0], services));
+        DependencyClassLoader[] dependencyClassLoaders = Arrays.stream(dependencies)
+                .map(url -> DependencyClassLoader.safelyNew(craftsNet, url))
+                .toArray(DependencyClassLoader[]::new);
+        classpath.addAll(Arrays.stream(dependencies).collect(Collectors.toSet()));
+
+        configurations.add(of(null, conf, classpath.toArray(URL[]::new), dependencyClassLoaders, services));
         return configurations;
     }
 
@@ -164,7 +188,10 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
      */
     private static String sanitizeName(String name) {
         if (NAME_VALIDATOR.matcher(name).matches()) return name;
-        throw new IllegalArgumentException("Addon names must not contain special characters / spaces! Provided: \"" + name + "\"");
+
+        throw new IllegalArgumentException("Invalid addon name: " + name.substring(0, 128) + ". " +
+                "Only letters, numbers, hyphens, underscores and dots are allowed, " +
+                "up to 128 characters.");
     }
 
     /**

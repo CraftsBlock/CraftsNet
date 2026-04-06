@@ -159,22 +159,29 @@ public final class AddonLoader {
                     }
 
                     artifactLoader.cleanup();
-                    if (addon.contains("repositories")) {
-                        for (String repo : addon.getStringList("repositories")) {
-                            artifactLoader.addRepository(repo);
-                        }
+
+                    var mavenRepositories = addon.getStringList("repositories");
+                    if (!mavenRepositories.isEmpty()) {
+                        artifactLoader.setup();
+                        mavenRepositories.forEach(artifactLoader::addRepository);
                     }
 
                     URL[] dependencies;
-                    if (addon.contains("dependencies")) {
-                        dependencies = artifactLoader.loadLibraries(this.craftsNet, this, configuration.services(),
-                                name, addon.getStringList("dependencies").toArray(String[]::new));
+                    var mavenDependencies = addon.getStringList("dependencies");
+                    if (!mavenDependencies.isEmpty()) {
+                        artifactLoader.setup();
+                        dependencies = artifactLoader.loadLibraries(
+                                this.craftsNet, this,
+                                configuration.services(),
+                                name, mavenDependencies.toArray(String[]::new)
+                        );
                     } else {
                         dependencies = new URL[0];
                     }
 
                     DependencyClassLoader[] dependencyClassLoaders = Arrays.stream(dependencies)
-                            .map(url -> DependencyClassLoader.safelyNew(craftsNet, url)).toArray(DependencyClassLoader[]::new);
+                            .map(url -> DependencyClassLoader.safelyNew(craftsNet, url))
+                            .toArray(DependencyClassLoader[]::new);
                     URL[] classpath = new URL[]{path.toUri().toURL()};
 
                     configurations.put(name, new AddonConfiguration(path, configuration.json(), classpath, dependencyClassLoaders,
