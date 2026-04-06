@@ -17,7 +17,6 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import de.craftsblock.craftsnet.events.addons.AllAddonsLoadedEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.net.URI;
@@ -30,7 +29,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
 /**
@@ -44,8 +42,6 @@ import java.util.zip.ZipFile;
  * @since 1.0.0-SNAPSHOT
  */
 public final class AddonLoader {
-
-    public static final Pattern PLUGIN_NAME_PATTERN = Pattern.compile("^[a-zA-Z0-9\\-_.]{1,128}$");
 
     private final Stack<Path> addons = new Stack<>();
     private final CraftsNet craftsNet;
@@ -309,7 +305,7 @@ public final class AddonLoader {
         AddonMeta meta = configuration.meta().get();
         String name = meta.name();
         if (loadOrder.contains(name)) {
-            throw new IllegalStateException("There are two plugins with the same name: \"%s\"!".formatted(name));
+            throw new IllegalStateException("There are two addons with the same name: \"%s\"!".formatted(name));
         }
 
         processDepends(name, meta.depends(), loadOrder::depends);
@@ -383,13 +379,7 @@ public final class AddonLoader {
     private Addon instantiateAddon(AddonConfiguration configuration) {
         try {
             AddonMeta meta = configuration.meta().get();
-
-            String name = meta.name();
-            if (!PLUGIN_NAME_PATTERN.matcher(name).matches()) {
-                throw new IllegalArgumentException("Invalid plugin name: " + name.substring(0, 128) + ". " +
-                        "Only letters, numbers, hyphens, underscores and dots are allowed, " +
-                        "up to 128 characters.");
-            }
+            String name = AddonConfiguration.ensureValidAddonName(meta.name());
 
             logger.info("Found addon %s, add it to load order", name);
 

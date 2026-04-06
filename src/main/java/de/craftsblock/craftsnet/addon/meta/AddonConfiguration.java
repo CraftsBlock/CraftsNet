@@ -43,6 +43,11 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
                                  AtomicReference<AddonMeta> meta, AtomicReference<AddonClassLoader> classLoader)
         implements Comparable<AddonConfiguration> {
 
+    /**
+     * Pattern for validating addon names.
+     */
+    public static final Pattern ADDON_NAME_VALIDATOR = Pattern.compile("^[a-zA-Z0-9\\-_.]{1,128}$");
+
     @ApiStatus.Internal
     private static final ConcurrentHashMap<Class<? extends Addon>, String> MAPPED_NAMES = new ConcurrentHashMap<>();
 
@@ -86,7 +91,7 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
         List<URL> classpath = new ArrayList<>();
         classpath.add(addon.getProtectionDomain().getCodeSource().getLocation());
 
-        Json conf = Json.empty().set("name", sanitizeName(name))
+        Json conf = Json.empty().set("name", ensureValidAddonName(name))
                 .set("main", addon.getName());
 
         Set<Depends> classes = new HashSet<>();
@@ -174,20 +179,16 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
     }
 
     /**
-     * Pattern for validating addon names.
-     * <p>Addon names can only contain alphanumeric characters.</p>
-     */
-    public static final Pattern NAME_VALIDATOR = Pattern.compile("^[a-zA-Z0-9]*$");
-
-    /**
-     * Sanitizes the name of the addon through checking the name against the {@link AddonConfiguration#NAME_VALIDATOR}.
+     * Sanitizes the name of the addon through checking the name against the {@link AddonConfiguration#ADDON_NAME_VALIDATOR}.
      *
      * @param name The name of the addon.
      * @return The sanitized name of the addon.
-     * @throws IllegalArgumentException If the addon name does not match with {@link AddonConfiguration#NAME_VALIDATOR}.
+     * @throws IllegalArgumentException If the addon name does not match with {@link AddonConfiguration#ADDON_NAME_VALIDATOR}.
      */
-    private static String sanitizeName(String name) {
-        if (NAME_VALIDATOR.matcher(name).matches()) return name;
+    public static String ensureValidAddonName(String name) {
+        if (ADDON_NAME_VALIDATOR.matcher(name).matches()) {
+            return name;
+        }
 
         throw new IllegalArgumentException("Invalid addon name: " + name.substring(0, 128) + ". " +
                 "Only letters, numbers, hyphens, underscores and dots are allowed, " +
@@ -200,6 +201,7 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
      * @param addon The addon class.
      * @param name  The name to associate with the addon class.
      */
+    @ApiStatus.Internal
     public static void map(Class<? extends Addon> addon, String name) {
         MAPPED_NAMES.put(addon, name);
     }
