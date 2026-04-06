@@ -202,49 +202,40 @@ public final class AddonLoader {
             configurations = new ArrayList<>(rawConfigurations);
         }
 
-        AddonLoadOrder loadOrder = new AddonLoadOrder();
-        HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources = new HashMap<>();
 
-        configurations.forEach(configuration -> {
-            configuration.meta().set(AddonMeta.of(configuration));
+        try (AddonLoadOrder loadOrder = new AddonLoadOrder()) {
+            configurations.forEach(configuration -> {
+                configuration.meta().set(AddonMeta.of(configuration));
 
-            configuration.classLoader().set(new AddonClassLoader(this.craftsNet, configuration));
-            preBuildLoadOrder(loadOrder, configuration);
-        });
+                configuration.classLoader().set(new AddonClassLoader(this.craftsNet, configuration));
+                preBuildLoadOrder(loadOrder, configuration);
+            });
 
-        sortConfigurations(loadOrder, configurations);
+            sortConfigurations(loadOrder, configurations);
 
-        // Initialize tasks
-        configurations.forEach(configuration -> {
-            Addon addon = instantiateAddon(configuration);
-            if (addon == null) {
-                return;
+            HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources = new HashMap<>();
+            configurations.forEach(configuration -> {
+                Addon addon = instantiateAddon(configuration);
+                if (addon == null) {
+                    return;
+                }
+
+                craftsNet.getAddonManager().register(addon);
+                configuration.addon().set(addon);
+
+                addToLoadOrder(loadOrder, addon);
+                addCodeSource(configuration, addon, codesSources);
+            });
+
+            configurations.forEach(this::loadServices);
+
+            HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos;
+            try (AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader()) {
+                autoRegisterInfos = convertToAutoRegister(autoRegisterLoader, codesSources);
             }
 
-            craftsNet.getAddonManager().register(addon);
-            configuration.addon().set(addon);
-
-            addToLoadOrder(loadOrder, addon);
-            addCodeSource(configuration, addon, codesSources);
-        });
-
-        configurations.forEach(this::loadServices);
-
-        HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos;
-        try (AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader()) {
-            autoRegisterInfos = convertToAutoRegister(autoRegisterLoader, codesSources);
-        }
-
-        Collection<Addon> orderedLoad = enableAddons(loadOrder, autoRegisterInfos);
-
-        autoRegisterInfos.clear();
-        orderedLoad.clear();
-        loadOrder.close();
-
-        try {
+            enableAddons(loadOrder, autoRegisterInfos);
             craftsNet.getListenerRegistry().call(new AllAddonsLoadedEvent());
-        } catch (Exception e) {
-            logger.error("Can not fire addons loaded event!", e);
         }
     }
 
@@ -253,10 +244,9 @@ public final class AddonLoader {
      *
      * @param loadOrder         The {@link AddonLoadOrder load order} in which the addons will be loaded.
      * @param autoRegisterInfos A list of {@link AutoRegisterInfo} which should be applied for the addons.
-     * @return The list of all loaded addons.
      * @since 3.5.0
      */
-    private @NotNull Collection<Addon> enableAddons(AddonLoadOrder loadOrder, HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos) {
+    private void enableAddons(AddonLoadOrder loadOrder, HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos) {
         Collection<Addon> orderedLoad = loadOrder.getLoadOrder();
 
         // Loading all addons
@@ -282,8 +272,6 @@ public final class AddonLoader {
 
             craftsNet.getAutoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.ENABLE);
         });
-
-        return orderedLoad;
     }
 
     /**
@@ -294,7 +282,7 @@ public final class AddonLoader {
      * @since 3.4.3
      */
     private void sortConfigurations(AddonLoadOrder loadOrder, List<AddonConfiguration> configurations) {
-        var orderedConfigurationNames = loadOrder.getPreLoadOrder();
+        List<String> orderedConfigurationNames = loadOrder.getPreLoadOrder();
         Map<String, Integer> sortMap = new HashMap<>();
         for (int i = 0; i < orderedConfigurationNames.size(); i++) {
             sortMap.put(orderedConfigurationNames.get(i), i);
