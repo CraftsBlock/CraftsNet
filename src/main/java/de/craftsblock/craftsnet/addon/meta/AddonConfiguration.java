@@ -78,12 +78,18 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
      * @throws IllegalStateException If the provided addon class is not annotated with {@link Meta}.
      */
     public static List<AddonConfiguration> of(CraftsNet craftsNet, AddonLoader loader, Class<? extends Addon> addon) {
+        String name;
         Meta meta = addon.getDeclaredAnnotation(Meta.class);
-        if (meta == null && !MAPPED_NAMES.containsKey(addon)) {
-            throw new IllegalStateException("The addon class " + addon.getName() + " is not annotated with @" + Meta.class.getSimpleName() + "!");
+        if (meta != null) {
+            name = meta.name();
+        } else if (MAPPED_NAMES.containsKey(addon)) {
+            name = MAPPED_NAMES.get(addon);
+            craftsNet.getLogger().warning("Deprecated: " + addon.getName() + " still uses a mapped addon name!");
+        } else {
+            name = addon.getSimpleName();
         }
 
-        String name = MAPPED_NAMES.getOrDefault(addon, meta != null ? meta.name() : null);
+        ensureValidAddonName(name);
         Depends depends = addon.getDeclaredAnnotation(Depends.class);
 
         List<RegisteredService> services = new ArrayList<>();
