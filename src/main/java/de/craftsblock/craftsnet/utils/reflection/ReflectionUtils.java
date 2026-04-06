@@ -75,8 +75,7 @@ public class ReflectionUtils {
      * @since 3.5.0
      */
     public static void restrictToCallers(Class<?>... allowed) {
-        Class<?> caller = ReflectionUtils.getCallerClass();
-        Class<?> callersCaller = ReflectionUtils.getCallerClass(4);
+        Class<?> callersCaller = ReflectionUtils.getCallerClass(3);
 
         for (Class<?> allow : allowed) {
             if (allow.isAssignableFrom(callersCaller)) {
@@ -84,7 +83,7 @@ public class ReflectionUtils {
             }
         }
 
-        throw new IllegalStateException(callersCaller.getName() + " is not permitted to call a " + caller.getSimpleName());
+        throw new IllegalStateException(callersCaller.getName() + " is not permitted to call this");
     }
 
     /**
