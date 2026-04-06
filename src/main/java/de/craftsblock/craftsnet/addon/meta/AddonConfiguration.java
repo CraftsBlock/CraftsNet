@@ -17,7 +17,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Represents the configuration details of an {@link Addon}, including its metadata, classpath, and dependencies.
@@ -88,10 +87,7 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
         Depends depends = addon.getDeclaredAnnotation(Depends.class);
 
         List<RegisteredService> services = new ArrayList<>();
-        List<URL> classpath = new ArrayList<>();
-        classpath.add(addon.getProtectionDomain().getCodeSource().getLocation());
-
-        Json conf = Json.empty().set("name", ensureValidAddonName(name))
+        Json conf = Json.empty().set("name", name)
                 .set("main", addon.getName());
 
         Set<Depends> classes = new HashSet<>();
@@ -104,7 +100,7 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
             }
         }
 
-        List<AddonConfiguration> configurations = new ArrayList<>();
+        Set<AddonConfiguration> configurations = new HashSet<>();
         for (Depends depend : classes) {
             List<AddonConfiguration> subs = of(craftsNet, loader, depend.value());
             if (subs.isEmpty()) {
@@ -114,7 +110,7 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
 
             AddonConfiguration subConfig = subs.get(subs.size() - 1);
             conf.set((depend.soft() ? "softD" : "d") + "epends.$new", subConfig.json().get("name"));
-            classpath.addAll(Arrays.stream(subConfig.classpath()).collect(Collectors.toSet()));
+            configurations.addAll(subs);
         }
 
         // Create a new artifact loader
@@ -160,10 +156,12 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
         DependencyClassLoader[] dependencyClassLoaders = Arrays.stream(dependencies)
                 .map(url -> DependencyClassLoader.safelyNew(craftsNet, url))
                 .toArray(DependencyClassLoader[]::new);
-        classpath.addAll(Arrays.stream(dependencies).collect(Collectors.toSet()));
+        URL[] classpath = new URL[]{addon.getProtectionDomain().getCodeSource().getLocation()};
 
-        configurations.add(of(null, conf, classpath.toArray(URL[]::new), dependencyClassLoaders, services));
-        return configurations;
+        AddonConfiguration configuration = of(null, conf, classpath, dependencyClassLoaders, services);
+        configuration.classLoader().set(new AddonClassLoader(craftsNet, configuration));
+        configurations.add(configuration);
+        return new ArrayList<>(configurations);
     }
 
     /**
