@@ -19,7 +19,6 @@ import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.supplier.RepositorySystemSupplier;
 import org.eclipse.aether.util.artifact.DefaultArtifactTypeRegistry;
-import org.eclipse.aether.util.filter.OrDependencyFilter;
 import org.eclipse.aether.util.graph.manager.ClassicDependencyManager;
 import org.eclipse.aether.util.graph.selector.AndDependencySelector;
 import org.eclipse.aether.util.graph.selector.ExclusionDependencySelector;
@@ -45,16 +44,20 @@ import java.util.zip.ZipFile;
  */
 public final class ArtifactLoader {
 
-    private final RepositorySystem repository;
-    private final RepositorySystemSession.CloseableSession session;
-    private final List<RemoteRepository> repositories;
-    private final List<RemoteRepository> defaultRepos;
+    private RepositorySystem repository;
+    private RepositorySystemSession.CloseableSession session;
+    private List<RemoteRepository> repositories;
+    private List<RemoteRepository> defaultRepos;
 
     /**
-     * Creates a new instance of the artifact loader
+     * Sets up the artifact loading.
      */
     @SuppressWarnings("deprecation")
-    public ArtifactLoader() {
+    public void setup() {
+        if (repository != null) {
+            return;
+        }
+
         RepositorySystemSupplier repositorySupplier = new RepositorySystemSupplier();
         repository = repositorySupplier.get();
 
@@ -90,6 +93,10 @@ public final class ArtifactLoader {
      * Cleanup internal repository cache
      */
     public void cleanup() {
+        if (repositories == null) {
+            return;
+        }
+
         repositories.removeIf(remoteRepository -> !defaultRepos.contains(remoteRepository));
     }
 
@@ -97,6 +104,10 @@ public final class ArtifactLoader {
      * Cleanup and shutdown of the internal repository resolver
      */
     public void stop() {
+        if (repository == null) {
+            return;
+        }
+
         cleanup();
         session.close();
         repository.shutdown();
