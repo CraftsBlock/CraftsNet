@@ -121,7 +121,7 @@ public class LoggerImpl implements Logger {
      * @return {@inheritDoc}
      */
     @Override
-    public Logger cloneWithName(String name) {
+    public Logger cloneWithName(@Nullable String name) {
         return new LoggerImpl(this.debug, name);
     }
 
