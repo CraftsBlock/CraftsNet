@@ -198,8 +198,13 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
      *
      * @param addon The addon class.
      * @param name  The name to associate with the addon class.
+     * @deprecated Addon classes will use the class name as it's mapped name
+     * if no {@link de.craftsblock.craftsnet.addon.meta.annotations.Meta} annotation is present.
+     * There will be no replacement as custom mapped names are no longer supported.
      */
     @ApiStatus.Internal
+    @Deprecated(since = "3.7.2", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public static void map(Class<? extends Addon> addon, String name) {
         MAPPED_NAMES.put(addon, name);
     }

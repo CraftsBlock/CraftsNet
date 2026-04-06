@@ -44,7 +44,13 @@ public class AddonContainingBuilder extends CraftsNetBuilder {
      * @param type The addon class.
      * @param name The name to associate with the addon class.
      * @return The {@link AddonContainingBuilder} instance.
+     * @deprecated Addon classes will use the class name as it's mapped name
+     * if no {@link de.craftsblock.craftsnet.addon.meta.annotations.Meta} annotation is present.
+     * There will be no replacement as custom mapped names are no longer supported.
      */
+    @SuppressWarnings("removal")
+    @Deprecated(since = "3.7.2", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public AddonContainingBuilder map(Class<? extends Addon> type, String name) {
         AddonConfiguration.map(type, name);
         return this;
