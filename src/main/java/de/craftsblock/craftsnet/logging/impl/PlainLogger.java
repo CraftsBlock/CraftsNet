@@ -103,7 +103,7 @@ public record PlainLogger(Logger previous) implements Logger {
      * @return {@inheritDoc}
      */
     @Override
-    public Logger cloneWithName(String name) {
+    public Logger cloneWithName(@Nullable String name) {
         return this;
     }
 
