@@ -52,7 +52,7 @@ public class CraftsNet {
     /**
      * The current version of CraftsNet.
      */
-    public static final String version = "3.7.1";
+    public static final String version = "3.7.2";
 
     private static CraftsNet instance;
 
