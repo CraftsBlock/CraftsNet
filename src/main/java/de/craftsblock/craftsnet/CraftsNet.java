@@ -35,7 +35,6 @@ import java.net.URISyntaxException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.CodeSource;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.jar.JarFile;
@@ -546,7 +545,7 @@ public class CraftsNet {
      */
     @SafeVarargs
     public static AddonContainingBuilder create(Class<? extends Addon>... addons) {
-        return CraftsNet.create(List.of(addons));
+        return create(ReflectionUtils.getCallerClass(), List.of(addons));
     }
 
     /**
@@ -559,8 +558,21 @@ public class CraftsNet {
      * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
      */
     public static AddonContainingBuilder create(Collection<Class<? extends Addon>> addons) {
+        return create(ReflectionUtils.getCallerClass(), addons);
+    }
+
+    /**
+     * Creates a new builder instance for configuring CraftsNet with the specified addons
+     * and caller class.
+     *
+     * @param caller The caller that called the create method.
+     * @param addons A {@link Collection} of {@link Addon} classes to include in the configuration.
+     * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
+     * @since 3.8.14
+     */
+    private static AddonContainingBuilder create(Class<?> caller, Collection<Class<? extends Addon>> addons) {
         return new AddonContainingBuilder(addons)
-                .addCodeSource(ReflectionUtils.getCallerClass().getProtectionDomain().getCodeSource());
+                .addCodeSource(caller.getProtectionDomain().getCodeSource());
     }
 
 }
