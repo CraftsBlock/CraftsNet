@@ -83,22 +83,21 @@ public class AutoRegisterLoader implements Closeable {
         Set<AutoRegisterInfo> infos = Collections.newSetFromMap(new ConcurrentHashMap<>());
         ClassLoader classLoader = (loader != null ? loader : ClassLoader.getSystemClassLoader());
 
-        ConcurrentLinkedQueue<Future<?>> futures = new ConcurrentLinkedQueue<>();
-
-        // Process each entry in the JAR file
+        Collection<CompletableFuture<?>> futures = new ArrayList<>();
         StreamSupport.stream(file.stream().spliterator(), true)
                 .filter(this::isValidClassEntry)
                 .map(JarEntry::getName)
                 .map(this::convertToJvmName)
-                .map(jvmName -> executor.submit(() -> processEntry(jvmName, bounding, classLoader, type, infos)))
-                .forEach(futures::add);
+                .map(jvmName -> CompletableFuture.runAsync(
+                        () -> processEntry(jvmName, bounding, classLoader, type, infos),
+                        executor
+                )).forEach(futures::add);
 
-        // Wait for all futures to complete
-        for (Future<?> future : futures)
-            try {
-                future.get();
-            } catch (InterruptedException | ExecutionException ignored) {
-            }
+        try {
+            CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).get();
+        } catch (InterruptedException | ExecutionException e) {
+            throw new RuntimeException("Failed to await auto registration", e);
+        }
 
         futures.clear();
         return infos.stream().distinct().collect(Collectors.toCollection(ArrayList::new));
@@ -111,14 +110,17 @@ public class AutoRegisterLoader implements Closeable {
      * @return True if the entry is a valid class file, false otherwise.
      */
     private boolean isValidClassEntry(JarEntry entry) {
-        if (entry.isDirectory()) return false;
+        if (entry.isDirectory()) {
+            return false;
+        }
 
         String name = entry.getName();
-        // Skip classes that belong to certain packages
-        for (String skip : SKIP_PACKAGES)
-            if (name.startsWith(skip)) return false;
+        for (String skip : SKIP_PACKAGES) {
+            if (name.startsWith(skip)) {
+                return false;
+            }
+        }
 
-        // Only process .class files and exclude module-info.class
         return name.endsWith(".class") && !entry.getName().endsWith("module-info.class");
     }
 
@@ -145,8 +147,11 @@ public class AutoRegisterLoader implements Closeable {
                               @NotNull Class<? extends Annotation> type, @NotNull Set<AutoRegisterInfo> infos) {
         try {
             Class<?> clazz = Class.forName(jvmName, false, classLoader);
-            if (clazz.isInterface() || clazz.isEnum() || Modifier.isAbstract(clazz.getModifiers())) return;
-            if (!clazz.isAnnotationPresent(type)) return;
+            if (clazz.isInterface() || clazz.isEnum()
+                    || Modifier.isAbstract(clazz.getModifiers())
+                    || !clazz.isAnnotationPresent(type)) {
+                return;
+            }
 
             Annotation annotation = clazz.getDeclaredAnnotation(type);
             List<String> parentTypes = new ArrayList<>();
@@ -169,8 +174,9 @@ public class AutoRegisterLoader implements Closeable {
 
         while (clazz != null && !clazz.equals(Object.class)) {
             clazz = clazz.getSuperclass();
-            if (clazz != null)
+            if (clazz != null) {
                 superclasses.add(clazz.getName());
+            }
         }
 
         return superclasses;
@@ -195,7 +201,9 @@ public class AutoRegisterLoader implements Closeable {
      * @param interfaces A set to collect interface names.
      */
     private void collectInterfaces(Class<?> clazz, Set<String> interfaces) {
-        if (clazz == null || clazz.equals(Object.class)) return;
+        if (clazz == null || clazz.equals(Object.class)) {
+            return;
+        }
 
         for (Class<?> iface : clazz.getInterfaces()) {
             if (interfaces.add(iface.getName())) {
