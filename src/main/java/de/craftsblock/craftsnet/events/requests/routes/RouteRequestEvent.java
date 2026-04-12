@@ -38,6 +38,16 @@ public class RouteRequestEvent extends EventWithCancelReason implements GenericR
      * @return {@inheritDoc}
      */
     @Override
+    protected boolean isAsyncAllowed() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
     public @NotNull Exchange getExchange() {
         return exchange;
     }

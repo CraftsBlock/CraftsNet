@@ -38,6 +38,16 @@ public class ReceivedPongMessageEvent extends Event implements GenericSocketMess
      * @return {@inheritDoc}
      */
     @Override
+    protected boolean isAsyncAllowed() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
     public @NotNull SocketExchange getExchange() {
         return exchange;
     }

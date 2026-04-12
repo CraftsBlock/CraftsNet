@@ -15,4 +15,14 @@ import de.craftsblock.craftscore.event.Event;
  */
 public class AllAddonsLoadedEvent extends Event {
 
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
+    protected boolean isAsyncAllowed() {
+        return false;
+    }
+
 }

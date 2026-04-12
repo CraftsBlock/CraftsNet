@@ -47,6 +47,16 @@ public class ShareFileLoadedEvent extends CancellableEvent implements GenericReq
      * @return {@inheritDoc}
      */
     @Override
+    protected boolean isAsyncAllowed() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
     public @NotNull Exchange getExchange() {
         return exchange;
     }

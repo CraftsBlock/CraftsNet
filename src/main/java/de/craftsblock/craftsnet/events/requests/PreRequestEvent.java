@@ -34,6 +34,16 @@ public class PreRequestEvent extends CancellableEvent implements GenericRequestE
      * @return {@inheritDoc}
      */
     @Override
+    protected boolean isAsyncAllowed() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
     public @NotNull Exchange getExchange() {
         return exchange;
     }

@@ -38,6 +38,16 @@ public class PostRequestEvent extends Event implements GenericRequestEventBase {
      * @return {@inheritDoc}
      */
     @Override
+    protected boolean isAsyncAllowed() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
     public @NotNull Exchange getExchange() {
         return exchange;
     }

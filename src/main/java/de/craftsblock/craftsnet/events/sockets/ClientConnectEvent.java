@@ -42,6 +42,16 @@ public class ClientConnectEvent extends EventWithCancelReason implements Generic
      * @return {@inheritDoc}
      */
     @Override
+    protected boolean isAsyncAllowed() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
     public @NotNull SocketExchange getExchange() {
         return exchange;
     }

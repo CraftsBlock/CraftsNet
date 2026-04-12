@@ -37,6 +37,16 @@ public class OutgoingSocketMessageEvent extends CancellableEvent implements Gene
      * @return {@inheritDoc}
      */
     @Override
+    protected boolean isAsyncAllowed() {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
     public @NotNull SocketExchange getExchange() {
         return exchange;
     }
