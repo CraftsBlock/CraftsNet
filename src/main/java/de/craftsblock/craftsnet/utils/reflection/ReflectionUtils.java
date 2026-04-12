@@ -21,7 +21,7 @@ import java.util.Arrays;
 public class ReflectionUtils {
 
     private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
-    private static final StackWalker STACK_WALKER = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
+    public static final StackWalker STACK_WALKER = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
 
     /**
      * Private constructor to prevent direct instantiation
