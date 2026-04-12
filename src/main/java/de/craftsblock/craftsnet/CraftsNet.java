@@ -120,10 +120,10 @@ public class CraftsNet {
         logStream.start();
 
         if (instance != null) {
-            Arrays.stream(new Logger[]{logger, instance.logger}).forEach(log -> {
+            for (Logger log : new Logger[]{logger, instance.logger}) {
                 log.warning("Detected another instance of CraftsNet in the jvm!");
                 log.warning("This may cause some errors.");
-            });
+            }
         }
 
         instance = this;
