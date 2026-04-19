@@ -52,7 +52,8 @@ public class Versions {
      * @return the cleaned version string containing only digits and dots
      */
     private static String cleanVersion(String version) {
-        return version.replaceAll("[^\\d.]", "");
+        return version.replace("-", ".")
+                .replaceAll("[^\\d.]", "");
     }
 
     /**
@@ -66,8 +67,11 @@ public class Versions {
         Matcher matcher = pattern.matcher(version.substring(0, Math.min(version.length(), 2)));
 
         String operator;
-        if (matcher.find()) operator = matcher.group();
-        else operator = "=";
+        if (matcher.find()) {
+            operator = matcher.group();
+        } else {
+            operator = "=";
+        }
 
         return Comparison.from(operator);
     }
@@ -77,7 +81,7 @@ public class Versions {
      *
      * @param craftsNet The current {@link CraftsNet} instance.
      */
-    public static void verbalCheck(CraftsNet craftsNet) {
+    public static void verbalCheckCraftsNet(CraftsNet craftsNet) {
         Logger logger = craftsNet.getLogger();
         logger.info("Checking for new version...");
         try {
@@ -90,12 +94,13 @@ public class Versions {
                     return;
                 }
 
-                if (Versions.suitable(CraftsNet.version, ">=" + json.getString("version"))) {
+                String latest = json.getString("version");
+                if (Versions.suitable(CraftsNet.version, ">=" + latest)) {
                     logger.info("You are using the newest version");
                     return;
                 }
 
-                logger.warning("There is a newer version (%s) of CraftsNet available", json.getString("version"));
+                logger.warning("There is a newer version (%s) of CraftsNet available", latest);
             }
         } catch (Exception e) {
             logger.error("Failed to fetch the latest version of CraftsNet!", e);
