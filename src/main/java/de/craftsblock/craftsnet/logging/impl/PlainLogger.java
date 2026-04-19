@@ -9,9 +9,8 @@ import org.jetbrains.annotations.Nullable;
  * in the {@link System#out} or the {@link System#err} stream, without any
  * further formating.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @since 3.1.0-SNAPSHOT
  */
 public record PlainLogger(Logger previous) implements Logger {
@@ -104,7 +103,7 @@ public record PlainLogger(Logger previous) implements Logger {
      * @return {@inheritDoc}
      */
     @Override
-    public Logger cloneWithName(String name) {
+    public Logger cloneWithName(@Nullable String name) {
         return this;
     }
 

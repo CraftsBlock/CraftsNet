@@ -11,7 +11,6 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.1
  * @see GenericRequestEventBase
  * @since 3.1.0-SNAPSHOT
  */
@@ -31,6 +30,16 @@ public class PostRequestEvent extends Event implements GenericRequestEventBase {
         this.exchange = exchange;
         this.found = found;
         this.shared = shared;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
+    protected boolean isAsyncAllowed() {
+        return false;
     }
 
     /**

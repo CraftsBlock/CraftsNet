@@ -61,9 +61,8 @@ import java.util.regex.Pattern;
  * <p>
  * The class also handles the disconnection of the client, sending messages, and reading headers and messages from the socket.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.8.1
+ * @author CraftsBlock
  * @see WebSocketServer
  * @since 2.1.1-SNAPSHOT
  */

@@ -14,9 +14,8 @@ import java.util.List;
  * The ClientDisconnectEvent class represents an event related to a client disconnection from a websocket connection.
  * It extends the base Event class and provides information about the SocketExchange and the SocketMapping associated with the disconnection event.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @see GenericSocketEventBase
  * @since 2.1.1-SNAPSHOT
  */
@@ -46,6 +45,16 @@ public class ClientDisconnectEvent extends Event implements GenericSocketEventBa
         this.closeCode = ClosureCode.fromInt(closeCode);
         this.closeReason = closeReason;
         this.closeByServer = closeByServer;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
+    protected boolean isAsyncAllowed() {
+        return false;
     }
 
     /**

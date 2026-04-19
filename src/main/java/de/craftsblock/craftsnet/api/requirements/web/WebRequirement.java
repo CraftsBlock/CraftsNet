@@ -8,9 +8,8 @@ import java.lang.annotation.Annotation;
 /**
  * Abstract class representing a web specific requirement.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @see Requirement
  * @since 3.0.5-SNAPSHOT
  */

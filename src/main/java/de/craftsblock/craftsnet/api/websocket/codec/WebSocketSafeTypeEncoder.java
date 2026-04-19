@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
  * @param <T> The input type to be encoded.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.1.0
  * @see TypeToBufferUtilEncoder
  * @see TypeToByteArrayEncoder
  * @see TypeToByteBufferEncoder
@@ -41,7 +40,6 @@ public sealed interface WebSocketSafeTypeEncoder<R, T> extends Encoder<R, T>
      * @param <T> The type of the object to encode.
      * @author Philipp Maywald
      * @author CraftsBlock
-     * @version 1.0.0
      * @since 3.5.0
      */
     non-sealed interface TypeToByteArrayEncoder<T> extends WebSocketSafeTypeEncoder<byte[], T> {
@@ -53,7 +51,6 @@ public sealed interface WebSocketSafeTypeEncoder<R, T> extends Encoder<R, T>
      * @param <T> The type of the object to encode.
      * @author Philipp Maywald
      * @author CraftsBlock
-     * @version 1.0.0
      * @since 3.7.0
      */
     non-sealed interface TypeToBufferUtilEncoder<T> extends WebSocketSafeTypeEncoder<BufferUtil, T> {
@@ -65,7 +62,6 @@ public sealed interface WebSocketSafeTypeEncoder<R, T> extends Encoder<R, T>
      * @param <T> The type of the object to encode.
      * @author Philipp Maywald
      * @author CraftsBlock
-     * @version 1.0.0
      * @since 3.7.0
      */
     non-sealed interface TypeToByteBufferEncoder<T> extends WebSocketSafeTypeEncoder<ByteBuffer, T> {
@@ -77,7 +73,6 @@ public sealed interface WebSocketSafeTypeEncoder<R, T> extends Encoder<R, T>
      * @param <T> The type of the object to encode.
      * @author Philipp Maywald
      * @author CraftsBlock
-     * @version 1.0.0
      * @since 3.5.0
      * @deprecated in favor of {@link TypeToBufferUtilEncoder}
      */
@@ -94,7 +89,6 @@ public sealed interface WebSocketSafeTypeEncoder<R, T> extends Encoder<R, T>
      * @param <T> The type of the object to encode.
      * @author Philipp Maywald
      * @author CraftsBlock
-     * @version 1.0.0
      * @since 3.5.0
      */
     non-sealed interface TypeToJsonEncoder<T> extends WebSocketSafeTypeEncoder<Json, T> {
@@ -107,7 +101,6 @@ public sealed interface WebSocketSafeTypeEncoder<R, T> extends Encoder<R, T>
      * @param <T> The type of the object to encode.
      * @author Philipp Maywald
      * @author CraftsBlock
-     * @version 1.0.0
      * @since 3.5.0
      */
     non-sealed interface TypeToStringEncoder<T> extends WebSocketSafeTypeEncoder<String, T> {

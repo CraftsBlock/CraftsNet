@@ -17,9 +17,8 @@ import java.lang.annotation.Target;
  * <p>This annotation is marked with {@link ApiStatus.Internal}, indicating that it is for internal use only
  * and should not be relied upon by external code.</p>
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @see Transformer
  * @since 3.0.2-SNAPSHOT
  */

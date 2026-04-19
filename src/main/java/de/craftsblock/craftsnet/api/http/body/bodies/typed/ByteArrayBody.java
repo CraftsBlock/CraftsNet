@@ -7,9 +7,8 @@ import org.jetbrains.annotations.NotNull;
  * The {@link ByteArrayBody} class represents an http request body which
  * contains {@code byte[]} data.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @see TypedBody
  * @since 3.5.0
  */

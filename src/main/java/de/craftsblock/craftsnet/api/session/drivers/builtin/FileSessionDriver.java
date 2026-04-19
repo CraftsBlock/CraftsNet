@@ -28,7 +28,6 @@ import java.nio.file.StandardOpenOption;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.2.2
  * @see Session
  * @see SessionDriver
  * @since 3.3.5-SNAPSHOT

@@ -12,7 +12,6 @@ import java.lang.annotation.Target;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see Shadow
  * @since 3.3.4-SNAPSHOT
  */

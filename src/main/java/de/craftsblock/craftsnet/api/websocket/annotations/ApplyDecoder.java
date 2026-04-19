@@ -17,7 +17,6 @@ import java.lang.annotation.*;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see WebSocketSafeTypeDecoder
  * @since 3.5.0
  */

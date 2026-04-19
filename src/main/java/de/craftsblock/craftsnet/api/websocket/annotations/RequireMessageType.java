@@ -12,9 +12,8 @@ import java.lang.annotation.*;
  * Specifies the message type that should be received.
  * This annotation can be applied to methods or classes.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @see WebServer
  * @since 3.0.5-SNAPSHOT
  */

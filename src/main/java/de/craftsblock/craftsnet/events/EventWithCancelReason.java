@@ -6,9 +6,8 @@ import de.craftsblock.craftscore.event.CancellableEvent;
  * An abstract class extending {@link CancellableEvent}, providing the ability to set and retrieve
  * a custom cancellation reason. It can be used by listeners to communicate why an event was canceled.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @see CancellableEvent
  * @since 3.1.0-SNAPSHOT
  */

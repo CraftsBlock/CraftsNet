@@ -34,9 +34,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * It is used internally by the WebServer to construct and send HTTP responses to client requests.
  * Developers should not create instances of this class directly but use the provided methods in the WebServer class.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.0
+ * @author CraftsBlock
  * @see Exchange
  * @see WebServer
  * @since 1.0.0-SNAPSHOT

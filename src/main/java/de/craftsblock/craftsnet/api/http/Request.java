@@ -25,9 +25,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * The class is responsible for parsing and providing access to various elements of the request, making it easier for
  * request handlers to process and respond to the incoming requests.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.6.2
+ * @author CraftsBlock
  * @see Exchange
  * @since 1.0.0-SNAPSHOT
  */

@@ -9,9 +9,8 @@ import org.jetbrains.annotations.Nullable;
  * Implementations of this interface can be used for logging messages to various destinations
  * such as console, files, databases, etc.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.0
+ * @author CraftsBlock
  * @since 1.0.0-SNAPSHOT
  */
 public interface Logger {

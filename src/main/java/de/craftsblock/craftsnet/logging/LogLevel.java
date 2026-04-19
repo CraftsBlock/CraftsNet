@@ -4,9 +4,8 @@ package de.craftsblock.craftsnet.logging;
  * An enumeration of log levels used for categorizing log messages.
  * Each log level has an associated color-coded prefix for formatting purposes.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @author CraftsBlock
  * @since 3.1.0-SNAPSHOT
  */
 public enum LogLevel {

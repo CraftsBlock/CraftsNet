@@ -11,9 +11,8 @@ import java.util.List;
 /**
  * Abstract class representing a server in the CraftsNet framework.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.3
+ * @author CraftsBlock
  * @since 3.0.3-SNAPSHOT
  */
 public abstract class Server {

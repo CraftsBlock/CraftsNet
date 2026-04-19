@@ -18,7 +18,6 @@ import java.util.Map;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.3
  * @since 3.5.0
  */
 public class TypeUtils {

@@ -24,7 +24,6 @@ import java.util.stream.Stream;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.4
  * @see Addon
  * @see AddonLoader
  * @since 1.0.0-SNAPSHOT

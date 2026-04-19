@@ -1,7 +1,8 @@
 plugins {
     id "java-library"
     id "application"
-    id "de.craftsblock.gradle.publish" version "0.0.20"
+    id "de.craftsblock.gradle.publish" version "0.0.21"
+    id("com.autonomousapps.dependency-analysis") version "3.8.0"
 }
 
 java {
@@ -17,7 +18,7 @@ application {
 }
 
 group = "de.craftsblock"
-version = "3.7.1"
+version = "3.7.2-2"
 
 repositories {
     mavenCentral()
@@ -29,7 +30,7 @@ dependencies {
     // CraftsBlock related dependencies ---------------------------------------------------------------------------------------
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/bom
-    implementation platform("de.craftsblock.craftscore:bom:3.8.13-pre9")
+    implementation platform("de.craftsblock.craftscore:bom:3.8.15")
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/buffer
     api "de.craftsblock.craftscore:buffer"
@@ -49,7 +50,7 @@ dependencies {
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
     // https://mvnrepository.com/artifact/org.apache.tika/tika-core
-    implementation "org.apache.tika:tika-core:3.2.3"
+    implementation "org.apache.tika:tika-core:3.3.0"
 
     // https://mvnrepository.com/artifact/org.jetbrains/annotations
     implementation "org.jetbrains:annotations:26.1.0"
@@ -76,6 +77,20 @@ dependencies {
 
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-util
     implementation "org.apache.maven.resolver:maven-resolver-util:2.0.16"
+
+    // Testing ----------------------------------------------------------------------------------------------------------------
+
+    // https://mvnrepository.com/artifact/org.junit/junit-bom
+    testImplementation platform('org.junit:junit-bom:6.1.0-M1')
+
+    // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
+    testImplementation 'org.junit.jupiter:junit-jupiter-api'
+
+    // https://mvnrepository.com/artifact/org.junit.platform/junit-platform-launcher
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // https://mvnrepository.com/artifact/org.assertj/assertj-core
+    testImplementation 'org.assertj:assertj-core:4.0.0-M1'
 }
 
 tasks.withType(JavaCompile).configureEach {

@@ -12,9 +12,8 @@ import java.util.Objects;
  * It also includes the UNKNOWN value for unrecognized methods.
  * The enum provides methods to parse and convert these methods to strings and arrays for use in HTTP request handling.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.1
+ * @author CraftsBlock
  * @see Route
  * @since 1.0.0-SNAPSHOT
  */

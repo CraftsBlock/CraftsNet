@@ -10,7 +10,6 @@ package de.craftsblock.craftsnet.api.codec;
  * @param <T> The input type to be decoded.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @since 3.5.0
  */
 public non-sealed interface Decoder<R, T> extends Codec<R, T> {

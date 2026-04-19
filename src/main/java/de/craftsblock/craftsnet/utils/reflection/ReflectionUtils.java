@@ -16,13 +16,12 @@ import java.util.Arrays;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.4.4
  * @since 3.2.0-SNAPSHOT
  */
 public class ReflectionUtils {
 
     private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
-    private static final StackWalker STACK_WALKER = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
+    public static final StackWalker STACK_WALKER = StackWalker.getInstance(StackWalker.Option.RETAIN_CLASS_REFERENCE);
 
     /**
      * Private constructor to prevent direct instantiation
@@ -76,8 +75,7 @@ public class ReflectionUtils {
      * @since 3.5.0
      */
     public static void restrictToCallers(Class<?>... allowed) {
-        Class<?> caller = ReflectionUtils.getCallerClass();
-        Class<?> callersCaller = ReflectionUtils.getCallerClass(4);
+        Class<?> callersCaller = ReflectionUtils.getCallerClass(3);
 
         for (Class<?> allow : allowed) {
             if (allow.isAssignableFrom(callersCaller)) {
@@ -85,7 +83,7 @@ public class ReflectionUtils {
             }
         }
 
-        throw new IllegalStateException(callersCaller.getName() + " is not permitted to call a " + caller.getSimpleName());
+        throw new IllegalStateException(callersCaller.getName() + " is not permitted to call this");
     }
 
     /**

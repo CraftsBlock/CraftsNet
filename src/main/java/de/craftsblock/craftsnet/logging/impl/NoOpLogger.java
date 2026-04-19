@@ -9,9 +9,8 @@ import org.jetbrains.annotations.Nullable;
  * The {@link NoOpLogger} simply accepts log messages and errors but does not process
  * them in any way.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.1
+ * @author CraftsBlock
  * @since 3.4.0-SNAPSHOT
  */
 public record NoOpLogger(Logger previous) implements Logger {
@@ -92,7 +91,7 @@ public record NoOpLogger(Logger previous) implements Logger {
      * @return {@inheritDoc}
      */
     @Override
-    public Logger cloneWithName(String name) {
+    public Logger cloneWithName(@Nullable String name) {
         return this;
     }
 

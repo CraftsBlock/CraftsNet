@@ -13,9 +13,8 @@ import java.util.Collection;
  * This class provides information about the {@link Exchange} and the {@link RouteRegistry.EndpointMapping}
  * involved in the request event.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.1
+ * @author CraftsBlock
  * @see EventWithCancelReason
  * @see GenericRequestEventBase
  * @since 1.0.0-SNAPSHOT
@@ -31,6 +30,16 @@ public class RouteRequestEvent extends EventWithCancelReason implements GenericR
      */
     public RouteRequestEvent(Exchange exchange) {
         this.exchange = exchange;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
+    protected boolean isAsyncAllowed() {
+        return false;
     }
 
     /**

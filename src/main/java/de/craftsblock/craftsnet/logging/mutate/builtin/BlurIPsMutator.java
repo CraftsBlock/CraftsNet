@@ -17,7 +17,6 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see Utils#blurIPs(String)
  * @since 3.5.0
  */

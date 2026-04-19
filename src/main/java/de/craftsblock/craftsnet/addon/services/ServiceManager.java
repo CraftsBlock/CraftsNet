@@ -22,9 +22,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * The ServiceManager class represents a manager responsible for handling various service loaders in a system.
  * It manages the registration, unregistration, and loading of service providers through the use of ServiceLoader instances.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.6
+ * @author CraftsBlock
  * @since 3.0.0-SNAPSHOT
  */
 public class ServiceManager {

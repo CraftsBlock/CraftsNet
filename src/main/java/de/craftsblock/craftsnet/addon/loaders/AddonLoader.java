@@ -17,7 +17,6 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import de.craftsblock.craftsnet.events.addons.AllAddonsLoadedEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
-import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.net.URI;
@@ -30,7 +29,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.BiConsumer;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
 /**
@@ -39,7 +37,6 @@ import java.util.zip.ZipFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.3.4
  * @see Addon
  * @see AddonManager
  * @since 1.0.0-SNAPSHOT
@@ -158,22 +155,29 @@ public final class AddonLoader {
                     }
 
                     artifactLoader.cleanup();
-                    if (addon.contains("repositories")) {
-                        for (String repo : addon.getStringList("repositories")) {
-                            artifactLoader.addRepository(repo);
-                        }
+
+                    var mavenRepositories = addon.getStringList("repositories");
+                    if (!mavenRepositories.isEmpty()) {
+                        artifactLoader.setup();
+                        mavenRepositories.forEach(artifactLoader::addRepository);
                     }
 
                     URL[] dependencies;
-                    if (addon.contains("dependencies")) {
-                        dependencies = artifactLoader.loadLibraries(this.craftsNet, this, configuration.services(),
-                                name, addon.getStringList("dependencies").toArray(String[]::new));
+                    var mavenDependencies = addon.getStringList("dependencies");
+                    if (!mavenDependencies.isEmpty()) {
+                        artifactLoader.setup();
+                        dependencies = artifactLoader.loadLibraries(
+                                this.craftsNet, this,
+                                configuration.services(),
+                                name, mavenDependencies.toArray(String[]::new)
+                        );
                     } else {
                         dependencies = new URL[0];
                     }
 
                     DependencyClassLoader[] dependencyClassLoaders = Arrays.stream(dependencies)
-                            .map(url -> DependencyClassLoader.safelyNew(craftsNet, url)).toArray(DependencyClassLoader[]::new);
+                            .map(url -> DependencyClassLoader.safelyNew(craftsNet, url))
+                            .toArray(DependencyClassLoader[]::new);
                     URL[] classpath = new URL[]{path.toUri().toURL()};
 
                     configurations.put(name, new AddonConfiguration(path, configuration.json(), classpath, dependencyClassLoaders,
@@ -201,49 +205,40 @@ public final class AddonLoader {
             configurations = new ArrayList<>(rawConfigurations);
         }
 
-        AddonLoadOrder loadOrder = new AddonLoadOrder();
-        HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources = new HashMap<>();
 
-        configurations.forEach(configuration -> {
-            configuration.meta().set(AddonMeta.of(configuration));
+        try (AddonLoadOrder loadOrder = new AddonLoadOrder()) {
+            configurations.forEach(configuration -> {
+                configuration.meta().set(AddonMeta.of(configuration));
 
-            configuration.classLoader().set(new AddonClassLoader(this.craftsNet, configuration));
-            preBuildLoadOrder(loadOrder, configuration);
-        });
+                configuration.classLoader().set(new AddonClassLoader(this.craftsNet, configuration));
+                preBuildLoadOrder(loadOrder, configuration);
+            });
 
-        sortConfigurations(loadOrder, configurations);
+            sortConfigurations(loadOrder, configurations);
 
-        // Initialize tasks
-        configurations.forEach(configuration -> {
-            Addon addon = instantiateAddon(configuration);
-            if (addon == null) {
-                return;
+            HashMap<URI, Map.Entry<JarFile, ArrayList<Addon>>> codesSources = new HashMap<>();
+            configurations.forEach(configuration -> {
+                Addon addon = instantiateAddon(configuration);
+                if (addon == null) {
+                    return;
+                }
+
+                craftsNet.getAddonManager().register(addon);
+                configuration.addon().set(addon);
+
+                addToLoadOrder(loadOrder, addon);
+                addCodeSource(configuration, addon, codesSources);
+            });
+
+            configurations.forEach(this::loadServices);
+
+            HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos;
+            try (AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader()) {
+                autoRegisterInfos = convertToAutoRegister(autoRegisterLoader, codesSources);
             }
 
-            craftsNet.getAddonManager().register(addon);
-            configuration.addon().set(addon);
-
-            addToLoadOrder(loadOrder, addon);
-            addCodeSource(configuration, addon, codesSources);
-        });
-
-        configurations.forEach(this::loadServices);
-
-        HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos;
-        try (AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader()) {
-            autoRegisterInfos = convertToAutoRegister(autoRegisterLoader, codesSources);
-        }
-
-        Collection<Addon> orderedLoad = enableAddons(loadOrder, autoRegisterInfos);
-
-        autoRegisterInfos.clear();
-        orderedLoad.clear();
-        loadOrder.close();
-
-        try {
+            enableAddons(loadOrder, autoRegisterInfos);
             craftsNet.getListenerRegistry().call(new AllAddonsLoadedEvent());
-        } catch (Exception e) {
-            logger.error("Can not fire addons loaded event!", e);
         }
     }
 
@@ -252,10 +247,9 @@ public final class AddonLoader {
      *
      * @param loadOrder         The {@link AddonLoadOrder load order} in which the addons will be loaded.
      * @param autoRegisterInfos A list of {@link AutoRegisterInfo} which should be applied for the addons.
-     * @return The list of all loaded addons.
      * @since 3.5.0
      */
-    private @NotNull Collection<Addon> enableAddons(AddonLoadOrder loadOrder, HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos) {
+    private void enableAddons(AddonLoadOrder loadOrder, HashMap<Addon, List<AutoRegisterInfo>> autoRegisterInfos) {
         Collection<Addon> orderedLoad = loadOrder.getLoadOrder();
 
         // Loading all addons
@@ -281,8 +275,6 @@ public final class AddonLoader {
 
             craftsNet.getAutoRegisterRegistry().handleAll(autoRegisterInfos.get(addon), Startup.ENABLE);
         });
-
-        return orderedLoad;
     }
 
     /**
@@ -293,7 +285,7 @@ public final class AddonLoader {
      * @since 3.4.3
      */
     private void sortConfigurations(AddonLoadOrder loadOrder, List<AddonConfiguration> configurations) {
-        var orderedConfigurationNames = loadOrder.getPreLoadOrder();
+        List<String> orderedConfigurationNames = loadOrder.getPreLoadOrder();
         Map<String, Integer> sortMap = new HashMap<>();
         for (int i = 0; i < orderedConfigurationNames.size(); i++) {
             sortMap.put(orderedConfigurationNames.get(i), i);
@@ -313,7 +305,7 @@ public final class AddonLoader {
         AddonMeta meta = configuration.meta().get();
         String name = meta.name();
         if (loadOrder.contains(name)) {
-            throw new IllegalStateException("There are two plugins with the same name: \"%s\"!".formatted(name));
+            throw new IllegalStateException("There are two addons with the same name: \"%s\"!".formatted(name));
         }
 
         processDepends(name, meta.depends(), loadOrder::depends);
@@ -387,12 +379,7 @@ public final class AddonLoader {
     private Addon instantiateAddon(AddonConfiguration configuration) {
         try {
             AddonMeta meta = configuration.meta().get();
-
-            String name = meta.name();
-            Pattern pattern = Pattern.compile("^[a-zA-Z0-9]*$");
-            if (!pattern.matcher(name).matches()) {
-                throw new IllegalArgumentException("Plugin names must not contain special characters / spaces! Plugin name: \"" + name + "\"");
-            }
+            String name = AddonConfiguration.ensureValidAddonName(meta.name());
 
             logger.info("Found addon %s, add it to load order", name);
 
@@ -408,7 +395,6 @@ public final class AddonLoader {
                         ") is not an instance of " + Addon.class.getSimpleName() + "!");
             }
 
-            // Create an instance of the main class and inject dependencies using reflection
             Class<? extends Addon> addonClass = clazz.asSubclass(Addon.class);
             Addon addon = ReflectionUtils.getNewInstance(addonClass);
             ReflectionUtils.setField("craftsNet", addon, craftsNet);

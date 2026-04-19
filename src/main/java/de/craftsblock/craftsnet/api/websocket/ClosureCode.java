@@ -7,9 +7,8 @@ import java.util.Map;
  * Enumeration representing WebSocket closure codes along with their integer values and internal status.
  * These codes are defined in RFC 6455 (<a href="https://datatracker.ietf.org/doc/html/rfc6455#section-7.4.1">https://datatracker.ietf.org/doc/html/rfc6455#section-7.4.1</a>).
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.0
+ * @author CraftsBlock
  * @since 3.0.5-SNAPSHOT
  */
 public enum ClosureCode {

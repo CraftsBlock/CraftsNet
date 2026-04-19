@@ -17,7 +17,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Represents the configuration details of an {@link Addon}, including its metadata, classpath, and dependencies.
@@ -36,13 +35,17 @@ import java.util.stream.Collectors;
  * @param meta              Reference to the {@link AddonMeta} metadata of the addon.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.4.0
  * @since 3.1.0-SNAPSHOT
  */
 public record AddonConfiguration(Path path, Json json, URL[] classpath, DependencyClassLoader[] dependencyLoaders,
                                  Collection<RegisteredService> services, AtomicReference<Addon> addon,
                                  AtomicReference<AddonMeta> meta, AtomicReference<AddonClassLoader> classLoader)
         implements Comparable<AddonConfiguration> {
+
+    /**
+     * Pattern for validating addon names.
+     */
+    public static final Pattern ADDON_NAME_VALIDATOR = Pattern.compile("^[a-zA-Z0-9\\-_.]{1,128}$");
 
     @ApiStatus.Internal
     private static final ConcurrentHashMap<Class<? extends Addon>, String> MAPPED_NAMES = new ConcurrentHashMap<>();
@@ -75,36 +78,45 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
      * @throws IllegalStateException If the provided addon class is not annotated with {@link Meta}.
      */
     public static List<AddonConfiguration> of(CraftsNet craftsNet, AddonLoader loader, Class<? extends Addon> addon) {
+        String name;
         Meta meta = addon.getDeclaredAnnotation(Meta.class);
-        if (meta == null && !MAPPED_NAMES.containsKey(addon))
-            throw new IllegalStateException("The addon class " + addon.getName() + " is not annotated with @" + Meta.class.getSimpleName() + "!");
+        if (meta != null) {
+            name = meta.name();
+        } else if (MAPPED_NAMES.containsKey(addon)) {
+            name = MAPPED_NAMES.get(addon);
+            craftsNet.getLogger().warning("Deprecated: " + addon.getName() + " still uses a mapped addon name!");
+        } else {
+            name = addon.getSimpleName();
+        }
 
-        String name = MAPPED_NAMES.getOrDefault(addon, meta != null ? meta.name() : null);
+        ensureValidAddonName(name);
         Depends depends = addon.getDeclaredAnnotation(Depends.class);
 
         List<RegisteredService> services = new ArrayList<>();
-        List<URL> classpath = new ArrayList<>();
-        classpath.add(addon.getProtectionDomain().getCodeSource().getLocation());
-
-        Json conf = Json.empty().set("name", sanitizeName(name))
+        Json conf = Json.empty().set("name", name)
                 .set("main", addon.getName());
 
         Set<Depends> classes = new HashSet<>();
-        if (depends != null) classes.add(depends);
-        else {
+        if (depends != null) {
+            classes.add(depends);
+        } else {
             DependsCollection collection = addon.getDeclaredAnnotation(DependsCollection.class);
-            if (collection != null) classes.addAll(List.of(collection.value()));
+            if (collection != null) {
+                classes.addAll(List.of(collection.value()));
+            }
         }
 
-        List<AddonConfiguration> configurations = new ArrayList<>();
+        Set<AddonConfiguration> configurations = new HashSet<>();
         for (Depends depend : classes) {
             List<AddonConfiguration> subs = of(craftsNet, loader, depend.value());
-            if (subs.isEmpty()) continue;
+            if (subs.isEmpty()) {
+                continue;
+            }
             configurations.addAll(subs);
 
             AddonConfiguration subConfig = subs.get(subs.size() - 1);
             conf.set((depend.soft() ? "softD" : "d") + "epends.$new", subConfig.json().get("name"));
-            classpath.addAll(Arrays.stream(subConfig.classpath()).collect(Collectors.toSet()));
+            configurations.addAll(subs);
         }
 
         // Create a new artifact loader
@@ -112,30 +124,50 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
 
         Shadow shadow = addon.getDeclaredAnnotation(Shadow.class);
         EnumMap<ShadowType, List<String>> shadows = new EnumMap<>(ShadowType.class);
-        if (shadow != null) shadows.computeIfAbsent(shadow.type(), s -> new ArrayList<>()).add(shadow.value());
-        else {
+        if (shadow != null) {
+            shadows.computeIfAbsent(shadow.type(), s -> new ArrayList<>()).add(shadow.value());
+        } else {
             ShadowCollection collection = addon.getDeclaredAnnotation(ShadowCollection.class);
-            if (collection != null)
-                for (Shadow nested : collection.value())
+            if (collection != null) {
+                for (Shadow nested : collection.value()) {
                     shadows.computeIfAbsent(nested.type(), s -> new ArrayList<>()).add(nested.value());
+                }
+            }
         }
 
-        // Inject all repositories
-        if (shadows.containsKey(ShadowType.REPOSITORY))
-            for (String repo : shadows.get(ShadowType.REPOSITORY))
+        var mavenRepos = shadows.get(ShadowType.REPOSITORY);
+        if (mavenRepos != null && !mavenRepos.isEmpty()) {
+            artifactLoader.setup();
+            for (String repo : mavenRepos) {
                 artifactLoader.addRepository(repo);
+            }
+        }
 
         // Load all required dependencies
         URL[] dependencies;
-        if (shadows.containsKey(ShadowType.DEPENDENCY))
-            dependencies = artifactLoader.loadLibraries(craftsNet, loader, services, name, shadows.get(ShadowType.DEPENDENCY).toArray(String[]::new));
-        else dependencies = new URL[0];
+        var mavenDependencies = shadows.get(ShadowType.DEPENDENCY);
+        if (mavenDependencies != null && !mavenDependencies.isEmpty()) {
+            artifactLoader.setup();
+            dependencies = artifactLoader.loadLibraries(
+                    craftsNet, loader,
+                    services, name,
+                    shadows.get(ShadowType.DEPENDENCY).toArray(String[]::new)
+            );
+        } else {
+            dependencies = new URL[0];
+        }
 
-        classpath.addAll(Arrays.stream(dependencies).collect(Collectors.toSet()));
         artifactLoader.stop();
 
-        configurations.add(of(null, conf, classpath.toArray(URL[]::new), new DependencyClassLoader[0], services));
-        return configurations;
+        DependencyClassLoader[] dependencyClassLoaders = Arrays.stream(dependencies)
+                .map(url -> DependencyClassLoader.safelyNew(craftsNet, url))
+                .toArray(DependencyClassLoader[]::new);
+        URL[] classpath = new URL[]{addon.getProtectionDomain().getCodeSource().getLocation()};
+
+        AddonConfiguration configuration = of(null, conf, classpath, dependencyClassLoaders, services);
+        configuration.classLoader().set(new AddonClassLoader(craftsNet, configuration));
+        configurations.add(configuration);
+        return new ArrayList<>(configurations);
     }
 
     /**
@@ -151,21 +183,20 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
     }
 
     /**
-     * Pattern for validating addon names.
-     * <p>Addon names can only contain alphanumeric characters.</p>
-     */
-    public static final Pattern NAME_VALIDATOR = Pattern.compile("^[a-zA-Z0-9]*$");
-
-    /**
-     * Sanitizes the name of the addon through checking the name against the {@link AddonConfiguration#NAME_VALIDATOR}.
+     * Sanitizes the name of the addon through checking the name against the {@link AddonConfiguration#ADDON_NAME_VALIDATOR}.
      *
      * @param name The name of the addon.
      * @return The sanitized name of the addon.
-     * @throws IllegalArgumentException If the addon name does not match with {@link AddonConfiguration#NAME_VALIDATOR}.
+     * @throws IllegalArgumentException If the addon name does not match with {@link AddonConfiguration#ADDON_NAME_VALIDATOR}.
      */
-    private static String sanitizeName(String name) {
-        if (NAME_VALIDATOR.matcher(name).matches()) return name;
-        throw new IllegalArgumentException("Addon names must not contain special characters / spaces! Provided: \"" + name + "\"");
+    public static String ensureValidAddonName(String name) {
+        if (ADDON_NAME_VALIDATOR.matcher(name).matches()) {
+            return name;
+        }
+
+        throw new IllegalArgumentException("Invalid addon name: " + name.substring(0, 128) + ". " +
+                "Only letters, numbers, hyphens, underscores and dots are allowed, " +
+                "up to 128 characters.");
     }
 
     /**
@@ -173,7 +204,13 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
      *
      * @param addon The addon class.
      * @param name  The name to associate with the addon class.
+     * @deprecated Addon classes will use the class name as it's mapped name
+     * if no {@link de.craftsblock.craftsnet.addon.meta.annotations.Meta} annotation is present.
+     * There will be no replacement as custom mapped names are no longer supported.
      */
+    @ApiStatus.Internal
+    @Deprecated(since = "3.7.2", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
     public static void map(Class<? extends Addon> addon, String name) {
         MAPPED_NAMES.put(addon, name);
     }

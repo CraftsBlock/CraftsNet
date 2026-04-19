@@ -35,7 +35,6 @@ import java.net.URISyntaxException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.CodeSource;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.jar.JarFile;
@@ -46,7 +45,6 @@ import java.util.jar.JarFile;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.6.1
  * @since 1.0.0-SNAPSHOT
  */
 public class CraftsNet {
@@ -54,7 +52,7 @@ public class CraftsNet {
     /**
      * The current version of CraftsNet.
      */
-    public static final String version = "3.7.1";
+    public static final String version = "3.7.2-2";
 
     private static CraftsNet instance;
 
@@ -121,10 +119,10 @@ public class CraftsNet {
         logStream.start();
 
         if (instance != null) {
-            Arrays.stream(new Logger[]{logger, instance.logger}).forEach(log -> {
+            for (Logger log : new Logger[]{logger, instance.logger}) {
                 log.warning("Detected another instance of CraftsNet in the jvm!");
                 log.warning("This may cause some errors.");
-            });
+            }
         }
 
         instance = this;
@@ -134,8 +132,8 @@ public class CraftsNet {
         logger.debug("JVM Version: %s; Max recognizable class file version: %s.%s",
                 jvmVersion.toString(), jvmVersion.feature() + 44, jvmVersion.interim());
 
-        if (!builder.shouldSkipVersionCheck() && version.matches("^\\d+(?:\\.\\d+)*$")) {
-            Versions.verbalCheck(this);
+        if (!builder.shouldSkipVersionCheck() && version.matches("^\\d+(?:[.-]\\d+)*$")) {
+            Versions.verbalCheckCraftsNet(this);
         }
 
         logger.debug("Preloading gson for faster processing");
@@ -547,7 +545,7 @@ public class CraftsNet {
      */
     @SafeVarargs
     public static AddonContainingBuilder create(Class<? extends Addon>... addons) {
-        return CraftsNet.create(List.of(addons));
+        return create(ReflectionUtils.getCallerClass(), List.of(addons));
     }
 
     /**
@@ -560,8 +558,21 @@ public class CraftsNet {
      * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
      */
     public static AddonContainingBuilder create(Collection<Class<? extends Addon>> addons) {
+        return create(ReflectionUtils.getCallerClass(), addons);
+    }
+
+    /**
+     * Creates a new builder instance for configuring CraftsNet with the specified addons
+     * and caller class.
+     *
+     * @param caller The caller that called the create method.
+     * @param addons A {@link Collection} of {@link Addon} classes to include in the configuration.
+     * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
+     * @since 3.8.14
+     */
+    private static AddonContainingBuilder create(Class<?> caller, Collection<Class<? extends Addon>> addons) {
         return new AddonContainingBuilder(addons)
-                .addCodeSource(ReflectionUtils.getCallerClass().getProtectionDomain().getCodeSource());
+                .addCodeSource(caller.getProtectionDomain().getCodeSource());
     }
 
 }

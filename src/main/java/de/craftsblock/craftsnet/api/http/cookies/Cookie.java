@@ -11,9 +11,8 @@ import java.util.Objects;
  * Represents a http cookie with various attributes such as name, value, path, domain, expiry date,
  * same-site policy, security, and HttpOnly flag.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @author CraftsBlock
  * @since 3.0.6
  */
 public class Cookie {

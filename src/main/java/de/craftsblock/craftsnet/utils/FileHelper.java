@@ -27,7 +27,6 @@ import java.util.stream.Stream;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
  * @since 3.1.0-SNAPSHOT
  */
 public class FileHelper {

@@ -21,7 +21,6 @@ import java.util.stream.Stream;
  * @param values     A map of key-value pairs representing the annotation's values.
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.2
  * @see RequirementMeta
  * @see RequirementStore
  * @since 3.1.0-SNAPSHOT

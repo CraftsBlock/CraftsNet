@@ -1,209 +1,277 @@
 package de.craftsblock.craftsnet.addon.loaders;
 
 import de.craftsblock.craftsnet.addon.Addon;
-import de.craftsblock.craftsnet.autoregister.loaders.AutoRegisterLoader;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Unmodifiable;
 
 import java.io.Closeable;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Represents a system for managing the load order of addons.
- * This class may be used to organize and control the order in which addons are loaded or executed.
- * It provides methods for adding addons, specifying dependencies, and retrieving the load order.
  *
- * @author CraftsBlock
+ * <p>This implementation is based on a directed dependency graph and uses
+ * a topological sorting algorithm (Kahn's Algorithm) to determine a valid
+ * and efficient load order.</p>
+ *
  * @author Philipp Maywald
- * @version 1.1.1
+ * @author CraftsBlock
  * @since 3.0.2-SNAPSHOT
  */
-final class AddonLoadOrder implements Closeable {
-
-    private final Map<String, BootMapping> addonLoadOrder = Collections.synchronizedMap(new LinkedHashMap<>());
+public final class AddonLoadOrder implements Closeable {
 
     /**
-     * Adds an Addon to the system, considering its load order.
-     * The method utilizes a ConcurrentHashMap to efficiently manage the load order of addons based on their names.
-     * If an addon with the same name already exists, the load order is updated accordingly.
+     * Stores all known addons mapped by their name.
+     */
+    private final Map<String, BootMapping> addonLoadOrder =
+            Collections.synchronizedMap(new LinkedHashMap<>());
+
+    /**
+     * Stores required dependencies.
+     */
+    private final Map<String, Set<String>> dependencies = new HashMap<>();
+
+    /**
+     * Stores optional dependencies.
+     */
+    private final Map<String, Set<String>> softDependencies = new HashMap<>();
+
+    /**
+     * Adds an Addon to the system.
      *
-     * @param addon The Addon object to be added to the system.
+     * @param addon The Addon to add
      */
     public void addAddon(Addon addon) {
-        addonLoadOrder.compute(addon.getName(), (name, bootMapping) ->
-                (bootMapping == null) ? new BootMapping(name, 0, addon, true) : bootMapping.addon(addon));
+        addonLoadOrder.compute(
+                addon.getName(),
+                (name, mapping) -> {
+                    if (mapping == null) {
+                        return new BootMapping(name, addon, true);
+                    }
+
+                    return mapping.setAddon(addon);
+                }
+        );
     }
 
     /**
-     * Perform cleanup for the current {@link AddonLoadOrder}
-     * when it is no longer used.
+     * Clears all stored data.
      */
     @Override
     public void close() {
         addonLoadOrder.clear();
+        dependencies.clear();
+        softDependencies.clear();
     }
 
     /**
-     * Checks if the specified addon is present in the addon load order and has a non-null association.
+     * Checks if the given addon exists.
      *
-     * @param addon The addon to be checked for presence.
-     * @return true if the addon is present in the addon load order and has a non-null association, false otherwise.
+     * @param addon The addon instance
+     * @return true if present
      */
     public boolean contains(Addon addon) {
         return contains(addon.getName());
     }
 
     /**
-     * Checks if the specified addon is present in the addon load order and has a non-null association.
+     * Checks if the given addon exists.
      *
-     * @param addon The addon to be checked for presence.
-     * @return true if the addon is present in the addon load order and has a non-null association, false otherwise.
+     * @param addon The addon name
+     * @return true if present
      */
     public boolean contains(String addon) {
-        return addonLoadOrder.containsKey(addon) && addonLoadOrder.get(addon).addon() != null;
+        return addonLoadOrder.containsKey(addon)
+                && addonLoadOrder.get(addon).getAddon() != null;
     }
 
     /**
-     * Registers a required dependency for the specified addon.
+     * Registers a required dependency.
      *
-     * @param addon     the addon that declares the dependency
-     * @param dependsOn the name of the addon that is depended on
+     * @param addon     The addon declaring the dependency
+     * @param dependsOn The required dependency
      */
     public void depends(String addon, String dependsOn) {
-        this.dryDepends(addon, dependsOn, true);
+        dryDepends(addon, dependsOn, dependencies, true);
     }
 
     /**
-     * Registers an optional (soft) dependency for the specified addon.
+     * Registers an optional dependency.
      *
-     * @param addon     the addon that declares the dependency
-     * @param dependsOn the name of the addon that is optionally depended on
-     * @since 3.3.4-SNAPSHOT
+     * @param addon     The addon declaring the dependency
+     * @param dependsOn The optional dependency
      */
     public void softDepends(String addon, String dependsOn) {
-        this.dryDepends(addon, dependsOn, false);
+        this.dryDepends(addon, dependsOn, softDependencies, false);
     }
 
     /**
-     * Registers a dependency for the specified addon on another addon.
-     * <p>
-     * The dependency can be either required or optional based on the {@code required} parameter.
-     * This method updates the internal addon load order by merging a new {@link BootMapping} into the existing mapping.
-     * If a dependency mapping for {@code dependsOn} already exists, the method adjusts its priority and, if necessary,
-     * marks it as required.
-     * </p>
+     * Registers a dependency with the specified required state.
      *
-     * @param addon     the addon that declares the dependency
-     * @param dependsOn the name of the addon that is being depended on
-     * @param required  {@code true} if the dependency is required, {@code false} otherwise.
-     * @throws IllegalStateException if the addon attempts to depend on itself
-     * @since 3.3.4-SNAPSHOT
+     * @param addon        The addon declaring the dependency.
+     * @param dependsOn    The dependency.
+     * @param dependencies The dependencies the dependency should be registered to.
+     * @param required     Whether the dependency is forcibly required.
      */
-    private void dryDepends(String addon, String dependsOn, boolean required) {
+    private void dryDepends(String addon, String dependsOn,
+                            Map<String, Set<String>> dependencies,
+                            boolean required) {
+        validateSelfDependency(addon, dependsOn);
+
+        dependencies.computeIfAbsent(addon, k -> new HashSet<>())
+                .add(dependsOn);
+
+        addonLoadOrder.putIfAbsent(addon, new BootMapping(addon, null, false));
+
+        if (addonLoadOrder.containsKey(dependsOn)) {
+            addonLoadOrder.get(dependsOn).mergeRequired(required);
+        } else {
+            addonLoadOrder.put(dependsOn, new BootMapping(dependsOn, null, required));
+        }
+    }
+
+    /**
+     * Creates a new sorted stream of the currently registered
+     * {@link BootMapping}'s.
+     *
+     * @return The created and sorted stream.
+     */
+    private @Unmodifiable Stream<BootMapping> createSortedBootMappingStream() {
+        Map<String, List<String>> graph = new HashMap<>();
+        Map<String, Integer> inDegree = new HashMap<>();
+
+        for (String name : addonLoadOrder.keySet()) {
+            graph.putIfAbsent(name, new ArrayList<>());
+            inDegree.putIfAbsent(name, 0);
+        }
+
+        for (Map.Entry<String, Set<String>> entry : dependencies.entrySet()) {
+            String addon = entry.getKey();
+
+            for (String dep : entry.getValue()) {
+                if (!addonLoadOrder.containsKey(dep)) {
+                    throw new IllegalStateException("Missing required dependency: " + dep);
+                }
+
+                graph.computeIfAbsent(dep, k -> new ArrayList<>()).add(addon);
+                inDegree.put(addon, inDegree.getOrDefault(addon, 0) + 1);
+            }
+        }
+
+        for (Map.Entry<String, Set<String>> entry : softDependencies.entrySet()) {
+            String addon = entry.getKey();
+
+            for (String dep : entry.getValue()) {
+                if (!addonLoadOrder.containsKey(dep)) {
+                    continue;
+                }
+
+                graph.computeIfAbsent(dep, k -> new ArrayList<>()).add(addon);
+                inDegree.put(addon, inDegree.getOrDefault(addon, 0) + 1);
+            }
+        }
+
+        Queue<String> queue = new ArrayDeque<>();
+        for (Map.Entry<String, Integer> entry : inDegree.entrySet()) {
+            if (entry.getValue() == 0) {
+                queue.add(entry.getKey());
+            }
+        }
+
+        List<String> sorted = new ArrayList<>();
+        while (!queue.isEmpty()) {
+            String current = queue.poll();
+            sorted.add(current);
+
+            for (String next : graph.getOrDefault(current, Collections.emptyList())) {
+                int newDegree = inDegree.merge(next, -1, Integer::sum);
+                if (newDegree == 0) {
+                    queue.add(next);
+                }
+            }
+        }
+
+        if (sorted.size() != addonLoadOrder.size()) {
+            throw new IllegalStateException("Dependency cycle detected!");
+        }
+
+        return sorted.stream().map(addonLoadOrder::get);
+    }
+
+    /**
+     * Builds and returns the final load order.
+     *
+     * <p>This method performs a topological sort over the dependency graph.</p>
+     *
+     * @return ordered list of addons
+     * @throws IllegalStateException if dependencies are missing or cyclic
+     */
+    public @Unmodifiable List<String> getPreLoadOrder() {
+        return createSortedBootMappingStream()
+                .filter(Objects::nonNull)
+                .map(BootMapping::getName)
+                .toList();
+    }
+
+    /**
+     * Builds and returns the final load order.
+     *
+     * <p>This method performs a topological sort over the dependency graph.</p>
+     *
+     * @return ordered list of addons
+     * @throws IllegalStateException if dependencies are missing or cyclic
+     */
+    public @Unmodifiable List<Addon> getLoadOrder() {
+        return createSortedBootMappingStream()
+                .filter(Objects::nonNull)
+                .filter(BootMapping::presenceFilter)
+                .map(BootMapping::getAddon)
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    /**
+     * Validates that an addon does not depend on itself.
+     */
+    private void validateSelfDependency(String addon, String dependsOn) {
         if (addon.equalsIgnoreCase(dependsOn)) {
             throw new IllegalStateException("Can not add " + addon + " as depends to itself!");
         }
-
-        final int addonPriority = getPriority(addon);
-        addonLoadOrder.merge(dependsOn, new BootMapping(dependsOn, addonPriority + 1, null, required),
-                (existingMapping, newMapping) -> {
-                    int dependsOnPriority = getPriority(dependsOn);
-
-                    if (required) {
-                        existingMapping.require();
-                    }
-
-                    return (addonPriority <= dependsOnPriority) ?
-                            existingMapping.priority(addonPriority + 1) :
-                            existingMapping;
-                });
     }
 
     /**
-     * Retrieves an unmodifiable collection representing the load order of addons names.
-     * The method generates a sorted list of addon names based on their load priorities,
-     * and then maps the names to their corresponding addons using the addonLoadOrder map.
-     *
-     * @return An unmodifiable Collection of addons, representing the load order.
-     * @since 3.4.3
-     */
-    public @Unmodifiable List<String> getPreLoadOrder() {
-        List<String> bootOrderList = new ArrayList<>(addonLoadOrder.keySet());
-        bootOrderList.sort(Comparator.comparingInt(value -> addonLoadOrder.get(value.toString()).priority()).reversed());
-        return bootOrderList;
-    }
-
-    /**
-     * Retrieves an unmodifiable collection representing the load order of addons.
-     * The resulting list of addons is filtered to exclude any null values, and the final collection is returned.
-     *
-     * @return An unmodifiable Collection of addons, representing the load order.
-     */
-    public @Unmodifiable List<Addon> getLoadOrder() {
-        return getPreLoadOrder().stream()
-                .map(addonLoadOrder::get)
-                .filter(Objects::nonNull)
-                .filter(BootMapping::presenceFilter)
-                .sorted((o1, o2) -> Integer.compare(o2.priority(), o1.priority()))
-                .map(BootMapping::addon)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(ArrayList::new));
-    }
-
-    /**
-     * Retrieves the priority of an addon in the load order.
-     * If the addon is not found in the load order, a default BootMapping with priority 0 is used.
-     *
-     * @param addon The name of the addon for which the priority is to be retrieved.
-     * @return The priority of the specified addon in the load order.
-     */
-    private int getPriority(String addon) {
-        if (addonLoadOrder.containsKey(addon)) {
-            return addonLoadOrder.get(addon).priority();
-        }
-
-        return 0;
-    }
-
-    /**
-     * Represents a mapping used in the context of addon load order, associating a priority level with an addon.
-     * This class is utilized for organizing and managing the load order of addons within the system.
+     * Represents an internal mapping for an addon.
      */
     private static class BootMapping {
 
         private final String name;
-        private int priority;
-        private Addon addon;
         private boolean required;
+        private Addon addon;
 
         /**
-         * Constructs a BootMapping with the specified priority and addon.
+         * Constructs a BootMapping for the specified addon.
          *
          * @param name     The name of the addon.
-         * @param priority The priority level assigned to the addon in the load order.
          * @param addon    The addon associated with this mapping.
          * @param required Whether this {@link BootMapping} is required to properly start or not.
          */
-        public BootMapping(@NotNull String name, int priority, @Nullable Addon addon, boolean required) {
+        public BootMapping(@NotNull String name,
+                           @Nullable Addon addon,
+                           boolean required) {
             this.name = name;
-            this.priority = priority;
             this.addon = addon;
             this.required = required;
         }
 
         /**
-         * Sets the priority level for the addon in the load order.
+         * Gets the addon name associated with this mapping.
          *
-         * @param priority The new priority level to be set.
-         * @return The modified BootMapping instance with the updated priority.
+         * @return The addon name.
          */
-        public BootMapping priority(int priority) {
-            this.priority = priority;
-            return this;
+        public String getName() {
+            return name;
         }
 
         /**
@@ -212,27 +280,9 @@ final class AddonLoadOrder implements Closeable {
          * @param addon The addon to be associated with this mapping.
          * @return The modified BootMapping instance with the updated addon.
          */
-        public BootMapping addon(Addon addon) {
+        public BootMapping setAddon(Addon addon) {
             this.addon = addon;
             return this;
-        }
-
-        /**
-         * Marks this {@link BootMapping} as required to properly start.
-         *
-         * @since 3.3.4-SNAPSHOT
-         */
-        public void require() {
-            this.required = true;
-        }
-
-        /**
-         * Retrieves the priority level assigned to the addon in the load order.
-         *
-         * @return The priority level of the addon in the load order.
-         */
-        public int priority() {
-            return priority;
         }
 
         /**
@@ -240,28 +290,36 @@ final class AddonLoadOrder implements Closeable {
          *
          * @return The addon associated with this mapping.
          */
-        public Addon addon() {
+        public Addon getAddon() {
             return addon;
         }
 
         /**
-         * Filter for the presence check of this {@link BootMapping}.
+         * Merges the required state into this mapping.
          *
-         * @return {@code true} if the {@link BootMapping} is properly present.
-         * @throws IllegalStateException If the addon is required but not present.
-         * @since 3.3.4-SNAPSHOT
+         * @param required The required state to apply if this mapping is not already required.
          */
-        public boolean presenceFilter() {
-            if (!required) {
-                return true;
+        public void mergeRequired(boolean required) {
+            if (this.required) {
+                return;
             }
 
-            if (addon != null) {
-                return true;
-            }
-
-            throw new IllegalStateException("The addon \"" + this.name + "\" is required but not found!");
+            this.required = required;
         }
 
+        /**
+         * Ensures required addons are present.
+         *
+         * @return true if valid
+         */
+        public boolean presenceFilter() {
+            if (!required || addon != null) {
+                return true;
+            }
+
+            throw new IllegalStateException(
+                    "The addon " + this.name + " is required but not found!"
+            );
+        }
     }
 }

@@ -9,9 +9,8 @@ import java.util.UUID;
  * A transformer class for converting a string representation of an uuid value to an {@link UUID} object.
  * Implements the {@link Transformable} interface.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @see Transformable
  * @since 3.5.5
  */

@@ -26,7 +26,6 @@ import java.util.function.Function;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.4
  * @since 3.1.0
  */
 public class CorsPolicy {

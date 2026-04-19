@@ -15,7 +15,6 @@ import java.lang.annotation.*;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.1
  * @see DependsCollection
  * @since 3.1.0-SNAPSHOT
  */

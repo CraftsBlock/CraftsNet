@@ -11,9 +11,8 @@ import java.util.Enumeration;
  * A concrete implementation of the {@link ServiceLoader} interface for managing instances of {@link Driver}.
  * This class specifically focuses on loading instances of {@link Driver} into the {@link DriverManager}.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @since 3.0.0-SNAPSHOT
  */
 public class SQLDriverLoader implements ServiceLoader<Driver> {

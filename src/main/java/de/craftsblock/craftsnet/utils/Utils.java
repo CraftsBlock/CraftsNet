@@ -12,7 +12,6 @@ import java.util.regex.Pattern;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.2.1
  * @since 2.1.1-SNAPSHOT
  */
 public class Utils {

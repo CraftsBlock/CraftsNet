@@ -31,9 +31,8 @@ import java.util.concurrent.*;
  * The server can be configured to use SSL encryption by providing the necessary SSL key file.
  * It uses a ServerSocket to listen for incoming connections on the specified port.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.5
+ * @author CraftsBlock
  * @see WebSocketClient
  * @since 2.1.1-SNAPSHOT
  */

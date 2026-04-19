@@ -9,9 +9,8 @@ import java.util.List;
 /**
  * A specific web requirement that checks if the domain of an HTTP request matches certain criteria.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @see WebRequirement
  * @since 3.0.5-SNAPSHOT
  */

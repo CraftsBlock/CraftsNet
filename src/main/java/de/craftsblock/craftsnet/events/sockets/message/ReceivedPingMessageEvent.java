@@ -11,9 +11,8 @@ import org.jetbrains.annotations.Nullable;
 /**
  * An event indicating that a Ping message has been received.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.1.0
+ * @author CraftsBlock
  * @see GenericSocketMessageEventBase
  * @since 3.0.5-SNAPSHOT
  */
@@ -31,6 +30,16 @@ public class ReceivedPingMessageEvent extends Event implements GenericSocketMess
     public ReceivedPingMessageEvent(SocketExchange exchange, @NotNull Frame frame) {
         this.exchange = exchange;
         this.frame = frame;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @return {@inheritDoc}
+     */
+    @Override
+    protected boolean isAsyncAllowed() {
+        return false;
     }
 
     /**

@@ -8,9 +8,8 @@ import de.craftsblock.craftsnet.api.http.body.bodies.typed.TypedBody;
  * The {@link JsonBody} class represents an http request body which
  * contains {@link Json} data.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.1.0
+ * @author CraftsBlock
  * @see TypedBody
  * @since 2.2.0-SNAPSHOT
  */

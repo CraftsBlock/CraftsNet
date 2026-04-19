@@ -11,7 +11,6 @@ import java.lang.annotation.*;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @see ShadowCollection
  * @see ShadowType
  * @since 3.3.4-SNAPSHOT

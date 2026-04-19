@@ -31,9 +31,8 @@ import java.util.stream.Stream;
  * A utility class for logging to files.
  * This class provides methods to log messages to files, handle error logs, and redirect standard output and error streams to log files.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.2.6
+ * @author CraftsBlock
  * @see MutatedPrintStream
  * @since 3.0.2-SNAPSHOT
  */

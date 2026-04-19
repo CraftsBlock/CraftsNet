@@ -21,9 +21,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * This abstract class serves to provide common properties and methods for different types of
  * request bodies.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 2.0.1
+ * @author CraftsBlock
  * @see FormBody
  * @see JsonBody
  * @since 2.2.0-SNAPSHOT

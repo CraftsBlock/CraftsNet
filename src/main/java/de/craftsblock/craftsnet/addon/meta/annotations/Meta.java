@@ -1,5 +1,7 @@
 package de.craftsblock.craftsnet.addon.meta.annotations;
 
+import org.intellij.lang.annotations.Pattern;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -14,7 +16,6 @@ import java.lang.annotation.Target;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @version 1.0.0
  * @since 3.1.0-SNAPSHOT
  */
 @Target(ElementType.TYPE)
@@ -30,6 +31,6 @@ public @interface Meta {
      *
      * @return The name of the addon.
      */
-    String name();
+    @Pattern("^[a-zA-Z0-9\\-_.]{1,128}$") String name();
 
 }

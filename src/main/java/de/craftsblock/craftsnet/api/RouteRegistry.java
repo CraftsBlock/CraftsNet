@@ -40,9 +40,8 @@ import java.util.stream.Stream;
  * The RouteRegistry class manages the registration and unregistration of {@link RequestHandler} (routes) and {@link SocketHandler} (websockets).
  * It stores and maps the registered routes and sockets based on their patterns, allowing for efficient handling of incoming requests.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 3.5.6
+ * @author CraftsBlock
  * @since 1.0.0-SNAPSHOT
  */
 public class RouteRegistry {
@@ -641,7 +640,6 @@ public class RouteRegistry {
      * @param validator    The {@link Pattern} used for validating input related to the endpoint.
      * @param requirements A concurrent map of requirements, indexed by their annotation class.
      * @param middlewares  A {@link Deque} containing locally present middlewares
-     * @version 2.0.0
      * @since 3.0.5-SNAPSHOT
      */
     public record EndpointMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull Handler handler,
@@ -699,7 +697,6 @@ public class RouteRegistry {
      * The ServerMapping class represents a mapping of a server, and it's instance.
      *
      * @param rawServer The type of the server.
-     * @version 1.1.0
      * @since 3.0.3-SNAPSHOT
      */
     private record ServerMapping(Class<? extends Server> rawServer) {
@@ -737,7 +734,6 @@ public class RouteRegistry {
      * <p>Provides default methods for checking and retrieving metadata about requirements
      * indexed by annotation types.</p>
      *
-     * @version 2.0.0
      * @since 3.0.3-SNAPSHOT
      */
     public interface Mapping {

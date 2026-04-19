@@ -6,9 +6,8 @@ import de.craftsblock.craftsnet.CraftsNet;
  * Default pages for HTTP error responses.
  * This class provides static methods to generate HTML content for common HTTP error responses such as 404 Not Found and 403 Forbidden.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.0
+ * @author CraftsBlock
  * @since 2.3.3-SNAPSHOT
  */
 class DefaultPages {

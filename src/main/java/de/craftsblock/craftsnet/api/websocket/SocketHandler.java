@@ -7,9 +7,8 @@ import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
  * Represents a contract for classes that handle WebSocket connections in a server application.
  * WebSocket server handlers must implement this interface to define their behavior.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0
+ * @author CraftsBlock
  * @see Socket
  * @since 2.1.1-SNAPSHOT
  */

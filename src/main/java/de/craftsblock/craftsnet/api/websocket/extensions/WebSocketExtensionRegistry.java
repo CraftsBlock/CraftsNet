@@ -8,9 +8,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * unregistration, and lookup of WebSocket extensions by their protocol names. It is designed
  * to be thread-safe, using a concurrent hash map to store the extensions.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.1
+ * @author CraftsBlock
  * @since 3.0.6-SNAPSHOT
  */
 public class WebSocketExtensionRegistry {

@@ -9,9 +9,8 @@ import de.craftsblock.craftsnet.events.sockets.message.ReceivedPingMessageEvent;
  * A default implementation of a ping responder for handling incoming ping messages.
  * This responder sends a pong message back to the client when a ping message is received.
  *
- * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.0.2
+ * @author CraftsBlock
  * @see ReceivedPingMessageEvent
  * @see WebSocketClient
  * @since 3.0.5-SNAPSHOT

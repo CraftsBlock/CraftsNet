@@ -5,6 +5,8 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
 import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -14,7 +16,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
  *
  * @author CraftsBlock
  * @author Philipp Maywald
- * @version 1.3.0
  * @see CraftsNetUrlClassLoader
  * @since 3.0.3-SNAPSHOT
  */
@@ -40,8 +41,10 @@ public final class AddonClassLoader extends CraftsNetUrlClassLoader<AddonClassLo
      * @param craftsNet     The CraftsNet instance which instantiates this classloader
      * @param configuration The configuration of the addon.
      */
-    AddonClassLoader(CraftsNet craftsNet, AddonConfiguration configuration) {
+    @ApiStatus.Internal
+    public AddonClassLoader(CraftsNet craftsNet, AddonConfiguration configuration) {
         super(craftsNet, configuration.classpath(), ClassLoader.getSystemClassLoader());
+        ReflectionUtils.restrictToCallers(AddonConfiguration.class, AddonLoader.class);
         this.logger = this.getCraftsNet().getLogger();
 
         addonLoaders.add(this);
