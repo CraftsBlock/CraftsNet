@@ -132,8 +132,8 @@ public class CraftsNet {
         logger.debug("JVM Version: %s; Max recognizable class file version: %s.%s",
                 jvmVersion.toString(), jvmVersion.feature() + 44, jvmVersion.interim());
 
-        if (!builder.shouldSkipVersionCheck() && version.matches("^\\d+(?:\\.\\d+)*$")) {
-            Versions.verbalCheck(this);
+        if (!builder.shouldSkipVersionCheck() && version.matches("^\\d+(?:[.-]\\d+)*$")) {
+            Versions.verbalCheckCraftsNet(this);
         }
 
         logger.debug("Preloading gson for faster processing");

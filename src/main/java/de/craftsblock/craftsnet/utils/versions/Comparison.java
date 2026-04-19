@@ -1,5 +1,8 @@
 package de.craftsblock.craftsnet.utils.versions;
 
+import org.jetbrains.annotations.Range;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,11 +26,15 @@ enum Comparison {
     GREATER_OR_EQUAL(">="),
     EQUAL("=");
 
-    private static final Map<String, Comparison> SYMBOLS = new HashMap<>();
+    private static final Map<String, Comparison> SYMBOLS;
 
     static {
-        for (Comparison comparison : Comparison.values())
-            SYMBOLS.put(comparison.symbol, comparison);
+        HashMap<String, Comparison> symbols = new HashMap<>();
+        for (Comparison comparison : Comparison.values()) {
+            symbols.put(comparison.symbol, comparison);
+        }
+
+        SYMBOLS = Collections.unmodifiableMap(symbols);
     }
 
     private final String symbol;
@@ -60,10 +67,17 @@ enum Comparison {
             int c = parsePart(cs, i);
             int e = parsePart(es, i);
 
-            if (e == Integer.MIN_VALUE) continue;
+            if (e == Integer.MIN_VALUE) {
+                continue;
+            }
 
-            if (c < e) return apply(-1);
-            else if (c > e) return apply(1);
+            if (c < e) {
+                return apply(-1);
+            }
+
+            if (c > e) {
+                return apply(1);
+            }
         }
 
         return apply(0);
@@ -78,10 +92,16 @@ enum Comparison {
      * @return the parsed integer value of the version part, or 0 if not valid
      */
     private int parsePart(String[] parts, int index) {
-        if (index >= parts.length) return 0;
+        if (index >= parts.length) {
+            return 0;
+        }
+
         try {
             String part = parts[index];
-            if (part.equals("*")) return Integer.MIN_VALUE;
+            if (part.equals("*")) {
+                return Integer.MIN_VALUE;
+            }
+
             return Integer.parseInt(part);
         } catch (NumberFormatException e) {
             return 0;
@@ -104,7 +124,7 @@ enum Comparison {
      * @param result the result of the comparison: -1 (less than), 0 (equal), or 1 (greater than)
      * @return true if the comparison satisfies the operation, false otherwise
      */
-    public boolean apply(int result) {
+    public boolean apply(@Range(from = -1, to = 1) int result) {
         return switch (this) {
             case LESS -> result < 0;
             case GREATER -> result > 0;
