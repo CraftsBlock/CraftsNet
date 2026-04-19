@@ -48,9 +48,6 @@ bin/
 /logs/
 /sessions/
 
-### Test Stuff ###
-test/
-
 ### Mac OS ###
 .DS_Store
 
