@@ -27,11 +27,12 @@ import java.util.*;
 public class AutoRegisterInfo {
 
     private final @NotNull String className;
+    private final @NotNull boolean isInterface;
     private final @Nullable Collection<Addon> bounding;
     private final @NotNull Annotation annotation;
     private final @NotNull ClassLoader loader;
     @NotNull
-    private final @Unmodifiable List<String> parentTypes;
+    private final @Unmodifiable List<Class<?>> parentTypes;
 
     private Object instantiated;
 
@@ -39,14 +40,17 @@ public class AutoRegisterInfo {
      * Constructs an {@code AutoRegisterInfo} object with the given parameters.
      *
      * @param className   The fully qualified name of the class to be registered.
+     * @param isInterface {@code true} if the class is an interface {@code false} otherwise.
      * @param bounding    The optional {@link Addon} that contains the class. Can be {@code null} if not inside an addon.
      * @param annotation  The annotation associated with the class.
      * @param loader      The {@link ClassLoader} that was used to load the class.
      * @param parentTypes A list of parent types (superclasses and interfaces) of the class.
      */
-    public AutoRegisterInfo(@NotNull String className, @Nullable Collection<Addon> bounding, @NotNull Annotation annotation,
-                            @NotNull ClassLoader loader, @NotNull List<String> parentTypes) {
+    public AutoRegisterInfo(@NotNull String className, boolean isInterface, @Nullable Collection<Addon> bounding,
+                            @NotNull Annotation annotation, @NotNull ClassLoader loader,
+                            @NotNull List<Class<?>> parentTypes) {
         this.className = className;
+        this.isInterface = isInterface;
         this.bounding = bounding;
         this.annotation = annotation;
         this.loader = loader;
@@ -92,6 +96,10 @@ public class AutoRegisterInfo {
             clazz = getLoader().loadClass(getClassName());
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
+        }
+
+        if (isInterface) {
+            return clazz;
         }
 
         EnumMap<ConstructorType, Collection<Constructor<?>>> constructors = new EnumMap<>(ConstructorType.class);
@@ -150,6 +158,17 @@ public class AutoRegisterInfo {
     }
 
     /**
+     * Returns {@code true} if the autoregister subject is a interface
+     * {@code false} otherwise.
+     *
+     * @return {@code true} if the class is an interface, {@code false} otherwise.
+     * @since 3.7.3
+     */
+    public boolean isInterface() {
+        return isInterface;
+    }
+
+    /**
      * Returns the {@link Addon} associated with this class, if any.
      *
      * @return The {@link Addon} instance or {@code null} if no addon is associated.
@@ -191,7 +210,7 @@ public class AutoRegisterInfo {
      *
      * @return An unmodifiable list of parent type names.
      */
-    public @NotNull @Unmodifiable List<String> getParentTypes() {
+    public @NotNull @Unmodifiable List<Class<?>> getParentTypes() {
         return parentTypes;
     }
 
@@ -222,15 +241,17 @@ public class AutoRegisterInfo {
      * Creates a new instance of {@link AutoRegisterInfo}.
      *
      * @param className   The name of the class.
+     * @param isInterface {@code true} if the class is an interface {@code false} otherwise.
      * @param bounding    The list of addons that the auto register info is from. Nullable if the register info does not come from an addon.
      * @param annotation  The annotation associated with the class.
      * @param loader      The class loader that was used to load the class.
      * @param parentTypes A list of the names of the parent types (superclasses and interfaces) of the class.
      * @return A new instance of {@link AutoRegisterInfo}.
      */
-    public static AutoRegisterInfo of(@NotNull String className, @Nullable Collection<Addon> bounding, @NotNull Annotation annotation,
-                                      @NotNull ClassLoader loader, @NotNull List<String> parentTypes) {
-        return new AutoRegisterInfo(className, bounding, annotation, loader, parentTypes);
+    public static AutoRegisterInfo of(@NotNull String className, boolean isInterface, @Nullable Collection<Addon> bounding,
+                                      @NotNull Annotation annotation, @NotNull ClassLoader loader,
+                                      @NotNull List<Class<?>> parentTypes) {
+        return new AutoRegisterInfo(className, isInterface, bounding, annotation, loader, parentTypes);
     }
 
 }

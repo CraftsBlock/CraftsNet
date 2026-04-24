@@ -147,18 +147,20 @@ public class AutoRegisterLoader implements Closeable {
                               @NotNull Class<? extends Annotation> type, @NotNull Set<AutoRegisterInfo> infos) {
         try {
             Class<?> clazz = Class.forName(jvmName, false, classLoader);
-            if (clazz.isInterface() || clazz.isEnum()
-                    || Modifier.isAbstract(clazz.getModifiers())
-                    || !clazz.isAnnotationPresent(type)) {
+            if (clazz.isEnum() || !clazz.isAnnotationPresent(type)) {
                 return;
             }
 
             Annotation annotation = clazz.getDeclaredAnnotation(type);
-            List<String> parentTypes = new ArrayList<>();
+            List<Class<?>> parentTypes = new ArrayList<>();
             parentTypes.addAll(loadSuperclasses(clazz));
             parentTypes.addAll(loadInterfaces(clazz));
+            parentTypes.add(Object.class);
 
-            infos.add(AutoRegisterInfo.of(jvmName, bounding, annotation, classLoader, parentTypes.stream().distinct().toList()));
+            infos.add(AutoRegisterInfo.of(
+                    jvmName, clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers()),
+                    bounding, annotation, classLoader, parentTypes.stream().distinct().toList())
+            );
         } catch (ClassNotFoundException | NoClassDefFoundError ignored) {
         }
     }
@@ -169,13 +171,13 @@ public class AutoRegisterLoader implements Closeable {
      * @param clazz The class to load superclasses for.
      * @return A list of superclass names.
      */
-    private List<String> loadSuperclasses(Class<?> clazz) {
-        List<String> superclasses = new ArrayList<>();
+    private List<Class<?>> loadSuperclasses(Class<?> clazz) {
+        List<Class<?>> superclasses = new ArrayList<>();
 
         while (clazz != null && !clazz.equals(Object.class)) {
             clazz = clazz.getSuperclass();
             if (clazz != null) {
-                superclasses.add(clazz.getName());
+                superclasses.add(clazz);
             }
         }
 
@@ -188,8 +190,8 @@ public class AutoRegisterLoader implements Closeable {
      * @param clazz The class to load interfaces for.
      * @return A list of interface names.
      */
-    private List<String> loadInterfaces(Class<?> clazz) {
-        Set<String> interfaces = new HashSet<>();
+    private List<Class<?>> loadInterfaces(Class<?> clazz) {
+        Set<Class<?>> interfaces = new HashSet<>();
         collectInterfaces(clazz, interfaces);
         return new ArrayList<>(interfaces);
     }
@@ -200,13 +202,13 @@ public class AutoRegisterLoader implements Closeable {
      * @param clazz      The class to collect interfaces for.
      * @param interfaces A set to collect interface names.
      */
-    private void collectInterfaces(Class<?> clazz, Set<String> interfaces) {
+    private void collectInterfaces(Class<?> clazz, Set<Class<?>> interfaces) {
         if (clazz == null || clazz.equals(Object.class)) {
             return;
         }
 
         for (Class<?> iface : clazz.getInterfaces()) {
-            if (interfaces.add(iface.getName())) {
+            if (interfaces.add(iface)) {
                 collectInterfaces(iface, interfaces);
             }
         }
