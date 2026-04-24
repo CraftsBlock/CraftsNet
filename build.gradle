@@ -33,19 +33,19 @@ dependencies {
     implementation platform("de.craftsblock.craftscore:bom:3.8.15")
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/buffer
-    api "de.craftsblock.craftscore:buffer"
+    implementation "de.craftsblock.craftscore:buffer"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/cache
-    api "de.craftsblock.craftscore:cache"
+    implementation "de.craftsblock.craftscore:cache"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/event
-    api "de.craftsblock.craftscore:event"
+    implementation "de.craftsblock.craftscore:event"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/json
-    api "de.craftsblock.craftscore:json"
+    implementation "de.craftsblock.craftscore:json"
 
     // https://repo.craftsblock.de/#/releases/de/craftsblock/craftscore/utils
-    api "de.craftsblock.craftscore:utils"
+    implementation "de.craftsblock.craftscore:utils"
 
     // Third party needed dependencies ----------------------------------------------------------------------------------------
 
@@ -54,6 +54,12 @@ dependencies {
 
     // https://mvnrepository.com/artifact/org.jetbrains/annotations
     implementation "org.jetbrains:annotations:26.1.0"
+
+    // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    implementation 'com.google.code.gson:gson:2.13.2'
+
+    // https://mvnrepository.com/artifact/commons-io/commons-io
+    implementation 'commons-io:commons-io:2.21.0'
 
     // Artifact resolving dependencies ----------------------------------------------------------------------------------------
 
@@ -78,10 +84,16 @@ dependencies {
     // https://mvnrepository.com/artifact/org.apache.maven.resolver/maven-resolver-util
     implementation "org.apache.maven.resolver:maven-resolver-util:2.0.16"
 
+    // https://mvnrepository.com/artifact/org.apache.maven/maven-resolver-provider
+    implementation 'org.apache.maven:maven-resolver-provider:4.0.0-rc-5'
+
     // Testing ----------------------------------------------------------------------------------------------------------------
 
     // https://mvnrepository.com/artifact/org.junit/junit-bom
     testImplementation platform('org.junit:junit-bom:6.1.0-M1')
+
+    // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
+    testImplementation 'org.junit.jupiter:junit-jupiter'
 
     // https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
     testImplementation 'org.junit.jupiter:junit-jupiter-api'
@@ -91,6 +103,10 @@ dependencies {
 
     // https://mvnrepository.com/artifact/org.assertj/assertj-core
     testImplementation 'org.assertj:assertj-core:4.0.0-M1'
+}
+
+test {
+    useJUnitPlatform()
 }
 
 tasks.withType(JavaCompile).configureEach {
