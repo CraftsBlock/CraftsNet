@@ -2,7 +2,7 @@ plugins {
     id "java-library"
     id "application"
     id "de.craftsblock.gradle.publish" version "0.0.21"
-    id("com.autonomousapps.dependency-analysis") version "3.8.0"
+    id("com.autonomousapps.dependency-analysis") version "3.9.0"
 }
 
 java {
