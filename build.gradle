@@ -59,7 +59,7 @@ dependencies {
     implementation "com.google.code.gson:gson:2.14.0"
 
     // https://mvnrepository.com/artifact/commons-io/commons-io
-    implementation 'commons-io:commons-io:2.21.0'
+    implementation 'commons-io:commons-io:2.22.0'
 
     // Artifact resolving dependencies ----------------------------------------------------------------------------------------
 
