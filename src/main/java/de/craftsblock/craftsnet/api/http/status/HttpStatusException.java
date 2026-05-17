@@ -23,6 +23,8 @@ public class HttpStatusException extends RuntimeException {
 
     private final HttpStatus status;
 
+    private boolean rawMessageFormat = false;
+
     /**
      * Creates a new {@link HttpStatusException} using the given status.
      * <p>
@@ -68,6 +70,32 @@ public class HttpStatusException extends RuntimeException {
                                @NotNull Throwable cause) {
         super(message, cause);
         this.status = status;
+    }
+
+    /**
+     * Marks this {@link HttpStatusException} as raw message.
+     * The {@link de.craftsblock.craftsnet.api.http.WebHandler} will not
+     * wrap the message in a custom JSON context if this is set.
+     *
+     * @return This {@link HttpStatusException} for chaining.
+     * @since 3.7.3
+     */
+    public HttpStatusException asRawMessageFormat() {
+        rawMessageFormat = true;
+        return this;
+    }
+
+    /**
+     * Checks whether this {@link HttpStatusException} is a raw message.
+     * This determines if the {@link de.craftsblock.craftsnet.api.http.WebHandler WebHandler}
+     * should wrap the message in a custom JSON context.
+     *
+     * @return {@code true} if the {@link de.craftsblock.craftsnet.api.http.WebHandler WebHandler} should
+     * not wrap the message; {@code false} otherwise.
+     * @since 3.7.3
+     */
+    public boolean isRawMessageFormat() {
+        return rawMessageFormat;
     }
 
     /**
