@@ -157,7 +157,7 @@ public class WebHandler implements HttpHandler {
      * @since 3.7.1
      */
     private void handleThrowable(Response response, String url, HttpMethod httpMethod, Throwable t) {
-        BiConsumer<Json, Integer> responder = (json, code) -> {
+        BiConsumer<String, Integer> responder = (json, code) -> {
             if (!response.headersSent()) {
                 response.setStatus(code);
             }
@@ -186,7 +186,8 @@ public class WebHandler implements HttpHandler {
                 Json.empty()
                         .set("code", HttpStatus.ServerError.INTERNAL_SERVER_ERROR.getCode())
                         .set("message", "An unexpected exception happened whilst processing your request!")
-                        .setIf("incident", errorID, () -> errorID != null),
+                        .setIf("incident", errorID, () -> errorID != null)
+                        .toString(),
                 HttpStatus.ServerError.INTERNAL_SERVER_ERROR.getCode()
         );
     }
@@ -217,13 +218,18 @@ public class WebHandler implements HttpHandler {
      * @param statusException The caught {@link HttpStatusException}.
      * @since 3.7.1
      */
-    private void handleHttpStatusException(BiConsumer<Json, Integer> responder, HttpStatusException statusException) {
-        responder.accept(
-                Json.empty()
-                        .set("code", statusException.getCode())
-                        .set("message", statusException.getMessage()),
-                statusException.getCode()
-        );
+    private void handleHttpStatusException(BiConsumer<String, Integer> responder, HttpStatusException statusException) {
+        String message;
+        if (statusException.isRawMessageFormat()) {
+            message = statusException.getMessage();
+        } else {
+            message = Json.empty()
+                    .set("code", statusException.getCode())
+                    .set("message", statusException.getMessage())
+                    .toString();
+        }
+
+        responder.accept(message, statusException.getCode());
     }
 
     /**
