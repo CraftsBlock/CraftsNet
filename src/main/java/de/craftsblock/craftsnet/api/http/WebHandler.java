@@ -167,12 +167,8 @@ public class WebHandler implements HttpHandler {
             }
         };
 
-        if (t instanceof HttpStatusException httpStatusException) {
-            handleHttpStatusException(responder, httpStatusException);
-            return;
-        }
-
-        if (t.getCause() instanceof HttpStatusException httpStatusException) {
+        HttpStatusException httpStatusException = getHttpStatusException(t);
+        if (httpStatusException != null) {
             handleHttpStatusException(responder, httpStatusException);
             return;
         }
@@ -193,6 +189,25 @@ public class WebHandler implements HttpHandler {
                         .setIf("incident", errorID, () -> errorID != null),
                 HttpStatus.ServerError.INTERNAL_SERVER_ERROR.getCode()
         );
+    }
+
+    /**
+     * Checks whether a {@link Throwable} was caused by an {@link HttpStatusException}
+     * and returns the {@link HttpStatusException}.
+     *
+     * @param throwable The {@link Throwable} to check.
+     * @return The throwable causing {@link HttpStatusException}.
+     */
+    private HttpStatusException getHttpStatusException(Throwable throwable) {
+        if (throwable instanceof HttpStatusException httpStatusException) {
+            return httpStatusException;
+        }
+
+        if (throwable.getCause() == null) {
+            return null;
+        }
+
+        return getHttpStatusException(throwable.getCause());
     }
 
     /**
