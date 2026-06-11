@@ -9,6 +9,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.http.cookies.Cookie;
 import de.craftsblock.craftsnet.api.http.cors.CorsPolicy;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoder;
+import de.craftsblock.craftsnet.api.http.entities.ResponseEntity;
 import de.craftsblock.craftsnet.api.http.status.HttpStatus;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.ApiStatus;
@@ -89,6 +90,11 @@ public class Response implements AutoCloseable {
      */
     public synchronized void print(Object object) {
         checkOutput();
+
+        if (object instanceof ResponseEntity entity) {
+            entity.send(this.exchange);
+            return;
+        }
 
         if (exchange != null) {
             Request r = exchange.request();
