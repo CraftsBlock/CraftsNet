@@ -114,6 +114,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 tasks.register("runnableJar", Jar) {
+    group = "build"
     archiveClassifier.set("runnable")
 
     manifest {
