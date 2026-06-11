@@ -21,6 +21,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.*;
@@ -109,9 +110,10 @@ public class WebSocketServer extends Server {
                     serverSocket = sslServerSocket;
                 }
             }
-        } catch (IOException | UnrecoverableKeyException | KeyManagementException | NoSuchAlgorithmException |
-                 KeyStoreException | CertificateException e) {
-            logger.error(e);
+        } catch (UnrecoverableKeyException | KeyManagementException | KeyStoreException |
+                 NoSuchAlgorithmException | CertificateException | IOException |
+                 InvalidKeySpecException e) {
+            logger.error("Failed to load ssl certificate", e);
         } finally {
             if (serverSocket == null) {
                 if (ssl) {

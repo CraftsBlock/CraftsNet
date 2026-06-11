@@ -47,7 +47,10 @@ public class SSL {
      * @throws KeyManagementException    If there's an error with the key management.
      * @throws UnrecoverableKeyException If the key is unrecoverable.
      */
-    public static SSLContext load(CraftsNet craftsNet) throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, UnrecoverableKeyException {
+    public static SSLContext load(CraftsNet craftsNet)
+            throws CertificateException, IOException,
+            NoSuchAlgorithmException, KeyStoreException, KeyManagementException,
+            UnrecoverableKeyException, InvalidKeySpecException {
         return load(craftsNet, "./certificates/fullchain.pem", "./certificates/privkey.pem");
     }
 
@@ -66,161 +69,154 @@ public class SSL {
      * @throws KeyManagementException    If there's an error with the key management.
      * @throws UnrecoverableKeyException If the key is unrecoverable.
      */
-    public static SSLContext load(CraftsNet craftsNet, String fullchain, String privkey) throws CertificateException, IOException, NoSuchAlgorithmException, KeyStoreException, KeyManagementException, UnrecoverableKeyException {
-        KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-        keyStore.load(null);
+    public static SSLContext load(CraftsNet craftsNet, String fullchain, String privkey)
+            throws CertificateException, IOException,
+            NoSuchAlgorithmException, KeyStoreException, KeyManagementException,
+            UnrecoverableKeyException, InvalidKeySpecException {
+        KeyStore keyStore = KeyStore.getInstance("PKCS12");
+        keyStore.load(null, null);
 
-        File privkeyFile = file(privkey);
+        File certFile = file(fullchain);
+        File keyFile = file(privkey);
 
         byte[] passphrase = PassphraseUtils.generateSecure(55, 75, true);
-        char[] key = SecureEncodingUtils.decode(passphrase, StandardCharsets.UTF_8);
+        char[] password = SecureEncodingUtils.decode(passphrase, StandardCharsets.UTF_8);
         PassphraseUtils.erase(passphrase);
 
-        try (InputStream fullchainStream = new FileInputStream(file(fullchain));
-             InputStream privateKeyStream = new FileInputStream(privkeyFile)) {
-            X509Certificate[] certificates = getCertificateChain(fullchainStream);
-            if (certificates == null || certificates.length != 2) {
-                craftsNet.getLogger().error("Your fullchain (%s) is not valid. Expected Certificates: 2, Got: %s",
-                        fullchain, certificates != null ? certificates.length : "null");
+        try (InputStream certStream = new FileInputStream(certFile);
+             InputStream keyStream = new FileInputStream(keyFile)) {
+
+            X509Certificate[] chain = getCertificateChain(certStream);
+
+            if (chain == null || chain.length == 0) {
+                craftsNet.getLogger().error(
+                        "Your fullchain (%s) does not contain any certificates!",
+                        fullchain);
                 return null;
             }
 
-            PrivateKey privateKey = getPrivateKey(craftsNet, privateKeyStream);
+            PrivateKey privateKey = getPrivateKey(keyStream);
 
-            try {
-                for (X509Certificate certificate : certificates) {
-                    certificate.checkValidity();
-                    try {
-                        certificate.checkValidity(Date.from(OffsetDateTime.now().plusDays(30).toInstant()));
-                    } catch (CertificateExpiredException | CertificateNotYetValidException e) {
-                        craftsNet.getLogger().warning("The lifespan of your certificate is less than 30 days!");
-                    }
+            for (X509Certificate cert : chain) {
+                cert.checkValidity();
+
+                try {
+                    cert.checkValidity(Date.from(OffsetDateTime.now().plusDays(30).toInstant()));
+                } catch (Exception e) {
+                    craftsNet.getLogger().warning(
+                            "The lifespan of your certificate is less than 30 days!");
                 }
-            } catch (CertificateExpiredException | CertificateNotYetValidException e) {
-                craftsNet.getLogger().error("Could not activate ssl!", e);
-                return null;
             }
 
-            try {
-                if (!verify(certificates[0], privateKey))
-                    throw new InvalidKeyException("The value signed with the private key could not be verified with the public key!");
-            } catch (NoSuchAlgorithmException | InvalidKeyException | SignatureException | NullPointerException e) {
-                craftsNet.getLogger().error("Could not activate ssl: There was an unexpected exception while verifying the key pair!", e);
-                return null;
-            }
-
-            keyStore.setKeyEntry("privateKey", privateKey, key, certificates);
+            keyStore.setKeyEntry("privateKey", privateKey, password, chain);
         }
 
-        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        keyManagerFactory.init(keyStore, key);
+        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(
+                KeyManagerFactory.getDefaultAlgorithm());
+        keyManagerFactory.init(keyStore, password);
 
-        PassphraseUtils.erase(key);
+        PassphraseUtils.erase(password);
 
-        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        trustManagerFactory.init(keyStore);
+        TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance(
+                TrustManagerFactory.getDefaultAlgorithm());
+        trustManagerFactory.init((KeyStore) null);
 
         SSLContext sslContext = SSLContext.getInstance("TLS");
-        sslContext.init(keyManagerFactory.getKeyManagers(), trustManagerFactory.getTrustManagers(), new SecureRandom());
+        sslContext.init(
+                keyManagerFactory.getKeyManagers(),
+                trustManagerFactory.getTrustManagers(),
+                new SecureRandom()
+        );
+
         return sslContext;
     }
 
     /**
-     * This method verifies the authenticity of a certificate using a given private key.
-     * It generates a challenge, signs it with the private key, and then verifies the signature
-     * using the public key extracted from the provided certificate.
+     * Returns a File object for the given path and ensures that it exists.
      *
-     * @param certificate The certificate to verify.
-     * @param privateKey  The private key used to sign the challenge.
-     * @return true if the signature is successfully verified, false otherwise.
-     * @throws NoSuchAlgorithmException If the algorithm used for signature verification is not available.
-     * @throws InvalidKeyException      If the private key or public key is invalid.
-     * @throws SignatureException       If an error occurs during signature verification.
-     */
-    private static boolean verify(Certificate certificate, PrivateKey privateKey) throws NoSuchAlgorithmException, InvalidKeyException, SignatureException {
-        byte[] challenge = new byte[32];
-        SecureRandom random = SecureRandom.getInstanceStrong();
-        random.nextBytes(challenge);
-
-        Signature sig = Signature.getInstance("SHA256withRSA");
-        sig.initSign(privateKey);
-        sig.update(challenge);
-        byte[] signature = sig.sign();
-
-        sig.initVerify(certificate.getPublicKey());
-        sig.update(challenge);
-
-        return sig.verify(signature);
-    }
-
-    /**
-     * This method creates a File instance for the given file path.
-     * If the file does not exist, it throws a FileNotFoundException.
-     * It also creates any necessary parent directories for the file.
-     *
-     * @param path The path to the file.
-     * @return The File instance representing the file.
+     * @param path Path to the file.
+     * @return File instance representing the path.
      * @throws FileNotFoundException If the file does not exist.
      */
     private static File file(String path) throws FileNotFoundException {
         File file = new File(path);
-        file.getParentFile().mkdirs();
-        if (!file.exists())
+
+        if (!file.exists()) {
             throw new FileNotFoundException("File " + file.getAbsolutePath() + " not found!");
+        }
+
         return file;
     }
 
     /**
-     * This method reads an InputStream containing a certificate chain in PEM format,
-     * decodes it, and returns an array of X509Certificate instances representing the chain.
+     * Parses a PEM encoded certificate chain into X509Certificate objects.
      *
-     * @param chainStream An InputStream containing the certificate chain data in PEM format.
-     * @return An array of X509Certificate instances representing the certificate chain.
-     * @throws IOException          If an I/O error occurs while reading the input stream.
-     * @throws CertificateException If an error occurs while generating the certificate chain.
+     * @param chainStream InputStream containing PEM encoded certificate chain.
+     * @return Array of X509Certificates or {@code null} if none found.
+     * @throws IOException          If reading the stream fails.
+     * @throws CertificateException If certificate parsing fails.
      */
-    private static X509Certificate[] getCertificateChain(InputStream chainStream) throws IOException, CertificateException {
-        List<X509Certificate> certificates = new ArrayList<>();
-        CertificateFactory certificateFactory = CertificateFactory.getInstance("X.509");
+    private static X509Certificate[] getCertificateChain(InputStream chainStream)
+            throws IOException, CertificateException {
+
+        CertificateFactory factory = CertificateFactory.getInstance("X.509");
+        List<X509Certificate> certs = new ArrayList<>();
+
+        StringBuilder pem = new StringBuilder();
+        boolean inside = false;
+
         try (BufferedReader br = new BufferedReader(new InputStreamReader(chainStream))) {
-            if (!br.readLine().contains("BEGIN CERTIFICATE")) return null;
             String line;
-            StringBuilder certContent = new StringBuilder();
+
             while ((line = br.readLine()) != null) {
+                if (line.contains("BEGIN CERTIFICATE")) {
+                    inside = true;
+                    continue;
+                }
+
                 if (line.contains("END CERTIFICATE")) {
-                    byte[] cert = Base64.getDecoder().decode(certContent.toString());
-                    Certificate certificate = certificateFactory.generateCertificate(new ByteArrayInputStream(cert));
-                    certificates.add((X509Certificate) certificate);
-                    certContent.delete(0, certContent.length());
-                } else if (!line.contains("----")) certContent.append(line);
+                    byte[] decoded = Base64.getDecoder().decode(pem.toString());
+                    Certificate cert = factory.generateCertificate(new ByteArrayInputStream(decoded));
+
+                    certs.add((X509Certificate) cert);
+                    pem.setLength(0);
+                    inside = false;
+                    continue;
+                }
+
+                if (inside) {
+                    pem.append(line.trim());
+                }
             }
         }
-        return certificates.toArray(X509Certificate[]::new);
+
+        return certs.isEmpty() ? null : certs.toArray(X509Certificate[]::new);
     }
 
     /**
-     * This method reads an InputStream containing a private key in PEM format,
-     * decodes it, and returns a PrivateKey instance.
+     * Parses a PEM encoded PKCS#8 private key.
      *
-     * @param craftsNet        The CraftsNet instance which instantiates this ssl private key operation.
-     * @param privateKeyStream An InputStream containing the private key data in PEM format.
-     * @return The PrivateKey instance decoded from the provided input stream.
-     * @throws IOException If an I/O error occurs while reading the input stream.
+     * @param privateKeyStream InputStream containing the PEM encoded private key.
+     * @return The decoded PrivateKey or {@code null} if parsing fails.
      */
-    private static PrivateKey getPrivateKey(CraftsNet craftsNet, InputStream privateKeyStream) throws IOException {
+    private static PrivateKey getPrivateKey(InputStream privateKeyStream)
+            throws IOException, NoSuchAlgorithmException, InvalidKeySpecException {
         try (BufferedReader br = new BufferedReader(new InputStreamReader(privateKeyStream))) {
+            StringBuilder pem = new StringBuilder();
             String line;
-            StringBuilder key = new StringBuilder();
-            while ((line = br.readLine()) != null) if (!line.startsWith("-")) key.append(line);
-            byte[] decodedKey = Base64.getDecoder().decode(key.toString());
-            try {
-                KeyFactory keyFactory = KeyFactory.getInstance("RSA");
-                return keyFactory.generatePrivate(new PKCS8EncodedKeySpec(decodedKey));
-            } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-                craftsNet.getLogger().error(e);
+
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("-")) {
+                    continue;
+                }
+
+                pem.append(line.trim());
             }
+
+            byte[] decoded = Base64.getDecoder().decode(pem.toString());
+            KeyFactory factory = KeyFactory.getInstance("RSA");
+            return factory.generatePrivate(new PKCS8EncodedKeySpec(decoded));
         }
-        return null;
     }
 
 }
