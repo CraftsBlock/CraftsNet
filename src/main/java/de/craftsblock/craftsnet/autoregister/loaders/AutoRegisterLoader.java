@@ -83,7 +83,7 @@ public class AutoRegisterLoader implements Closeable {
         Set<AutoRegisterInfo> infos = Collections.newSetFromMap(new ConcurrentHashMap<>());
         ClassLoader classLoader = (loader != null ? loader : ClassLoader.getSystemClassLoader());
 
-        Collection<CompletableFuture<?>> futures = new ArrayList<>();
+        Collection<CompletableFuture<?>> futures = Collections.synchronizedCollection(new ArrayList<>());
         StreamSupport.stream(file.stream().spliterator(), true)
                 .filter(this::isValidClassEntry)
                 .map(JarEntry::getName)
