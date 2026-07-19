@@ -6,15 +6,15 @@ import org.jetbrains.annotations.NotNull;
 
 public class ServerBuilder extends AbstractCraftsNetBuilder<ServerBuilder> {
 
-    public ServerBuilder(@NotNull CraftsNetBuilder parent, @NotNull ServerState state, int port) {
+    public ServerBuilder(@NotNull CraftsNetBuilder parent, @NotNull ServerState state, int port, boolean skipDefaultRoute) {
         super(parent);
         acquire(this);
 
-        state(state).port(port);
+        state(state).port(port).skipDefaultRoute(skipDefaultRoute);
     }
 
     public @NotNull ServerBuilder state(@NotNull ServerState state) {
-        set("state", state, Enum::name);
+        set("state", state);
         return this;
     }
 
@@ -33,6 +33,15 @@ public class ServerBuilder extends AbstractCraftsNetBuilder<ServerBuilder> {
 
     public int port() {
         return asShort("port");
+    }
+
+    public @NotNull ServerBuilder skipDefaultRoute(boolean skipDefaultRoute) {
+        set("skipDefaultRoute", skipDefaultRoute);
+        return this;
+    }
+
+    public boolean skipDefaultRoute() {
+        return asBoolean("skipDefaultRoute");
     }
 
     public boolean isPort(int port) {

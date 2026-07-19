@@ -4,6 +4,10 @@ public enum ServerState {
 
     FORCE,
     DYNAMIC,
-    DISABLED
+    DISABLED;
+
+    public boolean isEnabled() {
+        return this != DISABLED;
+    }
 
 }
