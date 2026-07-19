@@ -21,8 +21,10 @@ import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegis
 import de.craftsblock.craftsnet.autoregister.AutoRegisterRegistry;
 import de.craftsblock.craftsnet.autoregister.loaders.AutoRegisterLoader;
 import de.craftsblock.craftsnet.builder.ActivateType;
-import de.craftsblock.craftsnet.builder.AddonContainingBuilder;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
+import de.craftsblock.craftsnet.builder.addon.AddonSystemBuilder;
+import de.craftsblock.craftsnet.builder.addon.AddonSystemState;
+import de.craftsblock.craftsnet.builder.server.ServerBuilder;
 import de.craftsblock.craftsnet.builder.server.ServerState;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.mutate.LogStream;
@@ -39,6 +41,7 @@ import java.security.CodeSource;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.jar.JarFile;
 
 /**
@@ -195,44 +198,83 @@ public class CraftsNet {
         logger.debug("Initialization of the auto register registry");
         autoRegisterRegistry = new AutoRegisterRegistry(this);
 
-        if (!builder.isAddonSystem(ActivateType.DISABLED)) {
-            addonManager.fromFiles();
-
-            if (builder instanceof AddonContainingBuilder addonBuilder) {
-                addonBuilder.loadAddons(this);
-            }
-
-            addonManager.startup();
-        }
-
-        if (builder.isWebServer(ActivateType.ENABLED) || builder.isWebServer(ActivateType.DYNAMIC)) {
-            if (!builder.shouldSkipDefaultRoute() && !routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
-                logger.debug("No routes and sockets found, creating the default route");
-                getRouteRegistry().register(DefaultRoute.getInstance());
-            }
-
-            if (routeRegistry.hasRoutes() || builder.isWebServer(ActivateType.ENABLED)) {
-                webServer.start();
-            }
-        } else if (builder.isWebServer(ActivateType.DISABLED) && routeRegistry.hasRoutes()) {
-            logger.warning("The web server is forcible disabled, but has registered routes!");
-        }
-
-        if (builder.isWebSocketServer(ActivateType.ENABLED) || builder.isWebSocketServer(ActivateType.DYNAMIC)) {
-            logger.debug("Implementing the default ping responder");
-            DefaultPingResponder.register(this);
-
-            if (routeRegistry.hasWebsockets() || builder.isWebSocketServer(ActivateType.ENABLED)) {
-                webSocketServer.start();
-            }
-        } else if (builder.isWebSocketServer(ActivateType.DISABLED) && routeRegistry.hasWebsockets()) {
-            logger.warning("The websocket server is forcible disabled, but has registered endpoints!");
-        }
+        builder.addonSystem(setupAddonSystem())
+                .webServer(setupWebServer())
+                .webSocketServer(setupWebSocketServer());
 
         this.shutdownThread = new Thread(this::stop, "CraftsNet Shutdown");
         Runtime.getRuntime().addShutdownHook(this.shutdownThread);
         logger.debug("JVM Shutdown Hook is implemented");
 
+        performAutoRegister();
+
+        // Log successful startup message with elapsed time
+        logger.info("CraftsNet was successfully started after %sms", System.currentTimeMillis() - start);
+        started = true;
+    }
+
+    private Consumer<AddonSystemBuilder> setupAddonSystem() {
+        return builder -> {
+            try {
+                AddonSystemState addonSystemState = builder.state();
+                if (addonSystemState.isEnabled()) {
+                    if (addonSystemState.allowsFile()) {
+                        addonManager.fromFiles();
+                    }
+
+                    if (addonSystemState.allowsInMemory()) {
+                        builder.loadAddons(this);
+                    }
+
+                    addonManager.startup();
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to setup addon system", e);
+            }
+        };
+    }
+
+    private Consumer<ServerBuilder> setupWebServer() {
+        return builder -> {
+            if (builder.state().isEnabled()) {
+                if (!builder.skipDefaultRoute() && !routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
+                    logger.debug("No routes and sockets found, creating the default route");
+                    getRouteRegistry().register(DefaultRoute.getInstance());
+                }
+
+                if (routeRegistry.hasRoutes() || builder.isState(ServerState.FORCE)) {
+                    webServer.start();
+                }
+
+                return;
+            }
+
+            if (builder.isState(ServerState.DISABLED) && routeRegistry.hasRoutes()) {
+                logger.warning("The web server is forcible disabled, but has registered routes!");
+            }
+        };
+    }
+
+    private Consumer<ServerBuilder> setupWebSocketServer() {
+        return builder -> {
+            if (builder.state().isEnabled()) {
+                logger.debug("Implementing the default ping responder");
+                DefaultPingResponder.register(this);
+
+                if (routeRegistry.hasWebsockets() || builder.isState(ServerState.FORCE)) {
+                    webSocketServer.start();
+                }
+
+                return;
+            }
+
+            if (builder.isState(ServerState.DISABLED) && routeRegistry.hasWebsockets()) {
+                logger.warning("The websocket server is forcible disabled, but has registered endpoints!");
+            }
+        };
+    }
+
+    private void performAutoRegister() {
         try (AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader()) {
             for (CodeSource codeSource : builder.getCodeSources()) {
                 try {
@@ -249,10 +291,6 @@ public class CraftsNet {
                 }
             }
         }
-
-        // Log successful startup message with elapsed time
-        logger.info("CraftsNet was successfully started after %sms", System.currentTimeMillis() - start);
-        started = true;
     }
 
     /**
@@ -543,10 +581,10 @@ public class CraftsNet {
      * more than one addon is in the same jar file. Use with caution in production!
      *
      * @param addons An array of {@link Addon} classes to include in the configuration.
-     * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
+     * @return A new {@link CraftsNetBuilder} instance initialized with the specified addons.
      */
     @SafeVarargs
-    public static AddonContainingBuilder create(Class<? extends Addon>... addons) {
+    public static CraftsNetBuilder create(Class<? extends Addon>... addons) {
         return CraftsNet.create(List.of(addons));
     }
 
@@ -557,10 +595,11 @@ public class CraftsNet {
      * more than one addon is in the same jar file. Use with caution in production!
      *
      * @param addons A {@link Collection} of {@link Addon} classes to include in the configuration.
-     * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
+     * @return A new {@link CraftsNetBuilder} instance initialized with the specified addons.
      */
-    public static AddonContainingBuilder create(Collection<Class<? extends Addon>> addons) {
-        return new AddonContainingBuilder(addons)
+    public static CraftsNetBuilder create(Collection<Class<? extends Addon>> addons) {
+        return new CraftsNetBuilder()
+                .addonSystem(builder -> builder.add(addons))
                 .addCodeSource(ReflectionUtils.getCallerClass().getProtectionDomain().getCodeSource());
     }
 
