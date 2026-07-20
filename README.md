@@ -76,7 +76,7 @@ import de.craftsblock.backend.api.http.Route;
 public class MyRoute implements RequestHandler {
     
   @Route("/v1/route")
-  public void handleRoute(Exchange exchange) {
+  public void handleRoute(Exchange httpExchange) {
     // Process the request
   }
     
@@ -95,7 +95,7 @@ import de.craftsblock.backend.api.websocket.SocketHandler;
 public class MySocket implements SocketHandler {
     
   @Socket("/v1/socket")
-  public void handleSocketMessage(SocketExchange exchange, String data) {
+  public void handleSocketMessage(SocketExchange httpExchange, String data) {
     // Process the socket message
   }
     

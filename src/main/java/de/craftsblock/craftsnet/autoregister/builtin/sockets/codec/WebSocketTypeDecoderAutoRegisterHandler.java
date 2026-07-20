@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.autoregister.builtin.sockets.codec;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.api.websocket.WebSocketHandler;
 import de.craftsblock.craftsnet.api.websocket.annotations.ApplyDecoder;
 import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeDecoder;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
@@ -30,7 +31,7 @@ public class WebSocketTypeDecoderAutoRegisterHandler extends AutoRegisterHandler
      * Handles the registration of the provided {@link WebSocketSafeTypeDecoder}.
      *
      * <p>This method is used to display a warning, because {@link WebSocketSafeTypeDecoder}
-     * are only registered to a {@link de.craftsblock.craftsnet.api.websocket.SocketHandler}
+     * are only registered to a {@link WebSocketHandler}
      * using {@link ApplyDecoder}</p>
      *
      * @param webSocketSafeTypeDecoder The {@link WebSocketSafeTypeDecoder} to be registered.

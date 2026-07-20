@@ -13,7 +13,7 @@ import de.craftsblock.craftsnet.api.requirements.Requirement;
 import de.craftsblock.craftsnet.api.requirements.meta.RequirementInfo;
 import de.craftsblock.craftsnet.api.websocket.*;
 import de.craftsblock.craftsnet.api.websocket.annotations.ApplyDecoder;
-import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
+import de.craftsblock.craftsnet.api.websocket.annotations.WebSocket;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
 import org.jetbrains.annotations.ApiStatus;
@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * The RouteRegistry class manages the registration and unregistration of {@link RequestHandler} (routes) and {@link SocketHandler} (websockets).
+ * The RouteRegistry class manages the registration and unregistration of {@link RouteHandler} (routes) and {@link WebSocketHandler} (websockets).
  * It stores and maps the registered routes and sockets based on their patterns, allowing for efficient handling of incoming requests.
  *
  * @author Philipp Maywald
@@ -62,7 +62,7 @@ public class RouteRegistry {
     }
 
     /**
-     * Registers an endpoint handler ({@link RequestHandler} and or {@link SocketHandler}) by inspecting its annotated methods and adding it to the registry.
+     * Registers an endpoint handler ({@link RouteHandler} and or {@link WebSocketHandler}) by inspecting its annotated methods and adding it to the registry.
      *
      * @param handler The Handler to be registered.
      */
@@ -88,23 +88,23 @@ public class RouteRegistry {
                     var firstParamMismatchExceptionText = "The method %s has the annotation %s but does not require %s as the first parameter!";
                     if (WebServer.class.isAssignableFrom(rawServer)) {
                         var firstParamMismatchException = new IllegalStateException(firstParamMismatchExceptionText.formatted(
-                                method.getName(), annotation.getName(), Exchange.class.getName()
+                                method.getName(), annotation.getName(), HttpExchange.class.getName()
                         ));
 
                         if (method.getParameterCount() <= 0)
                             throw firstParamMismatchException;
 
-                        if (!Exchange.class.isAssignableFrom(method.getParameterTypes()[0]))
+                        if (!HttpExchange.class.isAssignableFrom(method.getParameterTypes()[0]))
                             throw firstParamMismatchException;
                     } else {
                         var firstParamMismatchException = new IllegalStateException(firstParamMismatchExceptionText.formatted(
-                                method.getName(), annotation.getName(), SocketExchange.class.getName()
+                                method.getName(), annotation.getName(), WebSocketExchange.class.getName()
                         ));
 
                         if (method.getParameterCount() <= 1)
                             throw firstParamMismatchException;
 
-                        if (!SocketExchange.class.isAssignableFrom(method.getParameterTypes()[0]))
+                        if (!WebSocketExchange.class.isAssignableFrom(method.getParameterTypes()[0]))
                             throw firstParamMismatchException;
 
                         var secondParameter = method.getParameterTypes()[1];
@@ -260,7 +260,7 @@ public class RouteRegistry {
     /**
      * Unregisters an endpoint handler (route or websocket) from the registry.
      *
-     * @param handler The RequestHandler to be unregistered.
+     * @param handler The RouteHandler to be unregistered.
      */
     public void unregister(final Handler handler) {
         if (!isRegistered(handler)) return;
@@ -596,14 +596,14 @@ public class RouteRegistry {
      */
     private ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> retrieveHandlerInfoMap(Class<? extends Handler> handler) {
         ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = new ConcurrentHashMap<>();
-        if (RequestHandler.class.isAssignableFrom(handler))
+        if (RouteHandler.class.isAssignableFrom(handler))
             annotations.computeIfAbsent(Route.class, c -> new ServerMapping(WebServer.class));
 
-        if (SocketHandler.class.isAssignableFrom(handler))
-            annotations.computeIfAbsent(Socket.class, c -> new ServerMapping(WebSocketServer.class));
+        if (WebSocketHandler.class.isAssignableFrom(handler))
+            annotations.computeIfAbsent(WebSocket.class, c -> new ServerMapping(WebSocketServer.class));
 
         if (annotations.isEmpty())
-            throw new IllegalStateException("Invalid handler type " + handler.getSimpleName() + " only RequestHandler and SocketHandler are allowed!");
+            throw new IllegalStateException("Invalid handler type " + handler.getSimpleName() + " only RouteHandler and WebSocketHandler are allowed!");
         return annotations;
     }
 

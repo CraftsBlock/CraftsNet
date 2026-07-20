@@ -1,7 +1,6 @@
 package de.craftsblock.craftsnet.api.http;
 
 import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
@@ -78,7 +77,7 @@ public class WebHandler implements HttpHandler {
      * @throws IOException If an I/O error occurs during request processing.
      */
     @Override
-    public void handle(HttpExchange httpExchange) throws IOException {
+    public void handle(com.sun.net.httpserver.HttpExchange httpExchange) throws IOException {
         try (httpExchange) {
             // Extract relevant information from the incoming request.
             String requestMethod = httpExchange.getRequestMethod();
@@ -125,7 +124,7 @@ public class WebHandler implements HttpHandler {
                 // Create a Request object to encapsulate the incoming request information.
                 try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, connectingIp, domain, httpMethod);
                      Session session = craftsNet.getSessionCache().getOrNew(SessionInfo.extractSession(request));
-                     Exchange exchange = new Exchange(new Context(), protocolVersion, request, response, session)) {
+                     HttpExchange exchange = new HttpExchange(new Context(), protocolVersion, request, response, session)) {
                     exchange.session().setExchange(exchange);
 
                     PreRequestEvent event = new PreRequestEvent(exchange);
@@ -234,27 +233,27 @@ public class WebHandler implements HttpHandler {
 
     /**
      * Handles a http request and determines whether a valid route or share is available
-     * for the given exchange. If a matching route or share is found, the appropriate handler
+     * for the given httpExchange. If a matching route or share is found, the appropriate handler
      * is invoked. Otherwise, an error is returned indicating the path is not found.
      *
-     * @param exchange The {@link Exchange} containing the request and response.
+     * @param httpExchange The {@link HttpExchange} containing the request and response.
      * @return A {@link Map.Entry} where the first {@link Boolean} indicates if a route or share
      * was found (true if found, false otherwise), and the second {@link Boolean} indicates
      * if it was a shared file (true if so, false otherwise).
-     * @throws Exception If any error occurs during the handling of the exchange.
+     * @throws Exception If any error occurs during the handling of the httpExchange.
      */
-    private Map.Entry<Boolean, Boolean> handle(Exchange exchange) throws Exception {
-        Request request = exchange.request();
-        Response response = exchange.response();
+    private Map.Entry<Boolean, Boolean> handle(HttpExchange httpExchange) throws Exception {
+        Request request = httpExchange.request();
+        Response response = httpExchange.response();
 
         String url = request.getUrl();
         HttpMethod httpMethod = request.getHttpMethod();
 
         // Handle global middlewares
         MiddlewareCallbackInfo callback = new MiddlewareCallbackInfo();
-        for (Middleware middleware : craftsNet.getMiddlewareRegistry().getMiddlewares(exchange)) {
-            if (middleware.isApplicable(exchange)) {
-                middleware.handle(callback, exchange);
+        for (Middleware middleware : craftsNet.getMiddlewareRegistry().getMiddlewares(httpExchange)) {
+            if (middleware.isApplicable(httpExchange)) {
+                middleware.handle(callback, httpExchange);
             }
         }
 
@@ -264,13 +263,13 @@ public class WebHandler implements HttpHandler {
         }
 
         // Check if the route is registered and process it if so
-        if (handleRoute(exchange)) {
+        if (handleRoute(httpExchange)) {
             return Map.entry(true, false);
         }
 
         // Check if the URL can be handled as a shared resource and if it accepts the current http method
         if (registry.isShare(url) && registry.canShareAccept(url, httpMethod)) {
-            handleShare(exchange);
+            handleShare(httpExchange);
             return Map.entry(true, true);
         }
 
@@ -283,14 +282,14 @@ public class WebHandler implements HttpHandler {
     /**
      * Handles route-specific requests by delegating to the appropriate route handler.
      *
-     * @param exchange The {@link Exchange} representing the request.
+     * @param httpExchange The {@link HttpExchange} representing the request.
      * @throws IOException               If an I/O error occurs during request processing.
      * @throws InvocationTargetException If an error occurs while invoking the route handler.
      * @throws IllegalAccessException    If the route handler cannot be accessed.
      */
-    private boolean handleRoute(Exchange exchange) throws Exception {
-        Request request = exchange.request();
-        Response response = exchange.response();
+    private boolean handleRoute(HttpExchange httpExchange) throws Exception {
+        Request request = httpExchange.request();
+        Response response = httpExchange.response();
 
         HttpMethod requestMethod = request.getHttpMethod();
         String url = request.getUrl();
@@ -308,7 +307,7 @@ public class WebHandler implements HttpHandler {
         request.setRoutes(routes.values().stream().flatMap(Collection::stream).toList());
 
         // Create a RequestEvent and call listeners before invoking the API handler method.
-        RouteRequestEvent event = new RouteRequestEvent(exchange);
+        RouteRequestEvent event = new RouteRequestEvent(httpExchange);
         craftsNet.getListenerRegistry().call(event);
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "ABORTED";
@@ -332,7 +331,7 @@ public class WebHandler implements HttpHandler {
         try {
             for (ProcessPriority.Priority priority : routes.keySet()) {
                 for (RouteRegistry.EndpointMapping mapping : routes.get(priority)) {
-                    if (!(mapping.handler() instanceof RequestHandler handler)) {
+                    if (!(mapping.handler() instanceof RouteHandler handler)) {
                         continue;
                     }
 
@@ -353,13 +352,13 @@ public class WebHandler implements HttpHandler {
                     // Prepare the argument array to be passed to the API handler method.
                     Object[] args = new Object[matcher.groupCount()];
 
-                    args[0] = exchange;
+                    args[0] = httpExchange;
                     for (int i = 2; i <= matcher.groupCount(); i++) {
                         args[i - 1] = matcher.group(i);
                     }
 
                     MiddlewareCallbackInfo callback = new MiddlewareCallbackInfo();
-                    mapping.middlewares().forEach(middleware -> middleware.handle(callback, exchange));
+                    mapping.middlewares().forEach(middleware -> middleware.handle(callback, httpExchange));
                     if (callback.isCancelled()) {
                         continue;
                     }
@@ -374,7 +373,7 @@ public class WebHandler implements HttpHandler {
                     // Call the method of the route handler
                     Object result = ReflectionUtils.invokeMethod(handler, method, args);
                     if (result != null) {
-                        exchange.response().print(result);
+                        httpExchange.response().print(result);
                     }
                 }
             }
@@ -390,11 +389,11 @@ public class WebHandler implements HttpHandler {
     /**
      * Handles share-specific requests by delegating to the appropriate share handler.
      *
-     * @param exchange The {@link Exchange} representing the request.
+     * @param httpExchange The {@link HttpExchange} representing the request.
      */
-    private void handleShare(Exchange exchange) {
-        Request request = exchange.request();
-        Response response = exchange.response();
+    private void handleShare(HttpExchange httpExchange) {
+        Request request = httpExchange.request();
+        Response response = httpExchange.response();
 
         String ip = request.getIp();
         String url = request.getUrl();
@@ -408,7 +407,7 @@ public class WebHandler implements HttpHandler {
             return;
         }
 
-        ShareRequestEvent event = new ShareRequestEvent(url, matcher.group(1), exchange, registry.getShare(url));
+        ShareRequestEvent event = new ShareRequestEvent(url, matcher.group(1), httpExchange, registry.getShare(url));
         craftsNet.getListenerRegistry().call(event);
         if (event.isCancelled()) {
             String cancelReason = event.hasCancelReason() ? event.getCancelReason() : "SHARE ABORTED";
@@ -419,7 +418,7 @@ public class WebHandler implements HttpHandler {
         String path = event.getFilePath();
         logger.info(MESSAGE_FORMAT_REQUEST + " \u001b[38;5;205m[SHARED]", httpMethod, url, ip);
 
-        ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(exchange, folder.resolve((path.isBlank() ? "index.html" : path)));
+        ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(httpExchange, folder.resolve((path.isBlank() ? "index.html" : path)));
         craftsNet.getListenerRegistry().call(fileLoadedEvent);
         if (fileLoadedEvent.isCancelled()) {
             return;

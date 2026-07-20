@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.api.middlewares;
 
-import de.craftsblock.craftsnet.api.BaseExchange;
+import de.craftsblock.craftsnet.api.Exchange;
 import de.craftsblock.craftsnet.api.Handler;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.api.middlewares.annotation.ApplyMiddleware;
@@ -114,7 +114,7 @@ public class MiddlewareRegistry {
      *                 should be applicable.
      * @return The {@link Deque deque} of {@link Middleware middlewares} for global appliance.
      */
-    public Deque<Middleware> getMiddlewares(BaseExchange exchange) {
+    public Deque<Middleware> getMiddlewares(Exchange exchange) {
         return getMiddlewares(exchange.scheme().getServerRaw());
     }
 

@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.events.requests.routes;
 
 import de.craftsblock.craftsnet.api.RouteRegistry;
-import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.api.http.HttpExchange;
 import de.craftsblock.craftsnet.events.EventWithCancelReason;
 import de.craftsblock.craftsnet.events.requests.GenericRequestEventBase;
 import org.jetbrains.annotations.NotNull;
@@ -10,7 +10,7 @@ import java.util.Collection;
 
 /**
  * The {@link RouteRequestEvent} class represents an event related to a route request.
- * This class provides information about the {@link Exchange} and the {@link RouteRegistry.EndpointMapping}
+ * This class provides information about the {@link HttpExchange} and the {@link RouteRegistry.EndpointMapping}
  * involved in the request event.
  *
  * @author Philipp Maywald
@@ -21,15 +21,15 @@ import java.util.Collection;
  */
 public class RouteRequestEvent extends EventWithCancelReason implements GenericRequestEventBase {
 
-    private final Exchange exchange;
+    private final HttpExchange httpExchange;
 
     /**
-     * Constructs a new {@link RouteRequestEvent} with the specified {@link Exchange} and {@link RouteRegistry.EndpointMapping}.
+     * Constructs a new {@link RouteRequestEvent} with the specified {@link HttpExchange} and {@link RouteRegistry.EndpointMapping}.
      *
-     * @param exchange The {@link Exchange} object representing the request and its associated data.
+     * @param httpExchange The {@link HttpExchange} object representing the request and its associated data.
      */
-    public RouteRequestEvent(Exchange exchange) {
-        this.exchange = exchange;
+    public RouteRequestEvent(HttpExchange httpExchange) {
+        this.httpExchange = httpExchange;
     }
 
     /**
@@ -48,8 +48,8 @@ public class RouteRequestEvent extends EventWithCancelReason implements GenericR
      * @return {@inheritDoc}
      */
     @Override
-    public @NotNull Exchange getExchange() {
-        return exchange;
+    public @NotNull HttpExchange getExchange() {
+        return httpExchange;
     }
 
     /**

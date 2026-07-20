@@ -2,7 +2,7 @@ package de.craftsblock.craftsnet.events.requests.shares;
 
 import com.sun.net.httpserver.Headers;
 import de.craftsblock.craftsnet.api.RouteRegistry;
-import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.api.http.HttpExchange;
 import de.craftsblock.craftsnet.api.http.Response;
 import de.craftsblock.craftsnet.events.EventWithCancelReason;
 import de.craftsblock.craftsnet.events.requests.GenericRequestEventBase;
@@ -24,7 +24,7 @@ import java.util.List;
 public class ShareRequestEvent extends EventWithCancelReason implements GenericRequestEventBase {
 
     private final String httpPath;
-    private final Exchange exchange;
+    private final HttpExchange httpExchange;
     private final RouteRegistry.ShareMapping mapping;
 
     private String filePath;
@@ -34,13 +34,13 @@ public class ShareRequestEvent extends EventWithCancelReason implements GenericR
      *
      * @param httpPath The url used to access the share
      * @param filePath The relativ path on the file system
-     * @param exchange The exchange used by the share to handle its connection
+     * @param httpExchange The httpExchange used by the share to handle its connection
      * @param mapping  The share mapping of the request
      */
-    public ShareRequestEvent(@NotNull String httpPath, @NotNull String filePath, @NotNull Exchange exchange, @NotNull RouteRegistry.ShareMapping mapping) {
+    public ShareRequestEvent(@NotNull String httpPath, @NotNull String filePath, @NotNull HttpExchange httpExchange, @NotNull RouteRegistry.ShareMapping mapping) {
         this.httpPath = httpPath;
         this.filePath = filePath;
-        this.exchange = exchange;
+        this.httpExchange = httpExchange;
         this.mapping = mapping;
     }
 
@@ -60,8 +60,8 @@ public class ShareRequestEvent extends EventWithCancelReason implements GenericR
      * @return {@inheritDoc}
      */
     @Override
-    public @NotNull Exchange getExchange() {
-        return exchange;
+    public @NotNull HttpExchange getExchange() {
+        return httpExchange;
     }
 
     /**

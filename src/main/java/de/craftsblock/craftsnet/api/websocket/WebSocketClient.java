@@ -90,7 +90,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final TransformerPerformer transformerPerformer;
     private final Map<String, Matcher> matchers;
 
-    private SocketExchange exchange;
+    private WebSocketExchange exchange;
     private ProtocolVersion protocolVersion;
     private Headers headers;
     private String connectingIp;
@@ -121,7 +121,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * Creates a new WebSocketClient with the provided socket and server.
      *
      * @param craftsNet The CraftsNet instance which instantiates this
-     * @param socket    The Socket used for communication with the client.
+     * @param socket    The WebSocket used for communication with the client.
      * @param server    The WebSocketServer to which this client belongs.
      */
     public WebSocketClient(CraftsNet craftsNet, Socket socket, WebSocketServer server) {
@@ -169,7 +169,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             int secWebsocketVersion = headers.containsKey("Sec-WebSocket-Version") ? Integer.parseInt(headers.getFirst("Sec-WebSocket-Version")) : 0;
             this.protocolVersion = new ProtocolVersion(this.scheme, secWebsocketVersion, 0);
 
-            this.exchange = new SocketExchange(new Context(), this.protocolVersion, this.server, this);
+            this.exchange = new WebSocketExchange(new Context(), this.protocolVersion, this.server, this);
 
             if (path == null) {
                 logger.warning("The path could not be loaded. (Maybe an unsupported request method?)");
@@ -379,7 +379,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     private void handleMapping(EndpointMapping mapping, Frame frame) {
         try {
-            if (!(mapping.handler() instanceof SocketHandler handler)) {
+            if (!(mapping.handler() instanceof WebSocketHandler handler)) {
                 return;
             }
 
@@ -732,12 +732,12 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
-     * Returns the {@link SocketExchange} of this websocket client.
+     * Returns the {@link WebSocketExchange} of this websocket client.
      *
-     * @return The {@link SocketExchange} of this websocket client instance.
+     * @return The {@link WebSocketExchange} of this websocket client instance.
      * @since 3.6.0
      */
-    public SocketExchange getExchange() {
+    public WebSocketExchange getExchange() {
         return exchange;
     }
 

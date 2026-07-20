@@ -1,10 +1,7 @@
 package de.craftsblock.craftsnet.api.http.builtin;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.api.http.Exchange;
-import de.craftsblock.craftsnet.api.http.HttpMethod;
-import de.craftsblock.craftsnet.api.http.RequestHandler;
-import de.craftsblock.craftsnet.api.http.Response;
+import de.craftsblock.craftsnet.api.http.*;
 import de.craftsblock.craftsnet.api.http.annotations.RequestMethod;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
 
@@ -18,7 +15,7 @@ import java.io.IOException;
  * @author CraftsBlock
  * @since 3.0.3-SNAPSHOT
  */
-public class DefaultRoute implements RequestHandler {
+public class DefaultRoute implements RouteHandler {
 
     private static final DefaultRoute instance;
 
@@ -37,13 +34,13 @@ public class DefaultRoute implements RequestHandler {
     /**
      * Handles the default GET request.
      *
-     * @param exchange The exchange object representing the HTTP request and response.
+     * @param httpExchange The httpExchange object representing the HTTP request and response.
      * @throws IOException If an I/O error occurs while handling the request.
      */
     @Route
     @RequestMethod(HttpMethod.ALL)
-    public void handleDefault(Exchange exchange) throws Exception {
-        Response response = exchange.response();
+    public void handleDefault(HttpExchange httpExchange) throws Exception {
+        Response response = httpExchange.response();
         if (!response.isBodyAble() || response.headersSent()) return;
 
         response.setContentType("text/text");
