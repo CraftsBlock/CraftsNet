@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.api.http.entities;
 
-import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.api.http.HttpExchange;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.Response;
 
@@ -8,7 +8,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 /**
- * Represents a response abstraction that can be sent through an {@link Exchange}.
+ * Represents a response abstraction that can be sent through an {@link HttpExchange}.
  * <p>
  * A {@code ResponseEntity} encapsulates a response body together with optional
  * transformation steps that can modify the {@link Request} and {@link Response}
@@ -21,11 +21,11 @@ import java.util.function.Consumer;
 public interface ResponseEntity {
 
     /**
-     * Sends this response entity through the given {@link Exchange}.
+     * Sends this response entity through the given {@link HttpExchange}.
      *
-     * @param exchange The HTTP exchange containing request and response objects.
+     * @param httpExchange The HTTP httpExchange containing request and response objects.
      */
-    void send(Exchange exchange);
+    void send(HttpExchange httpExchange);
 
     /**
      * Adds a transformation step that operates only on the {@link Response}.

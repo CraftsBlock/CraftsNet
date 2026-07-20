@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.utils.Scheme;
  * @author CraftsBlock
  * @since 1.0.0-SNAPSHOT
  */
-public interface BaseExchange extends AutoCloseable {
+public interface Exchange extends AutoCloseable {
 
     /**
      * Performs last actions before the exchange is closed.

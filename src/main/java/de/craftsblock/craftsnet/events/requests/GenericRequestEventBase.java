@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.events.requests;
 
-import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.api.http.HttpExchange;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.Response;
 import org.jetbrains.annotations.NotNull;
@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @see Exchange
+ * @see HttpExchange
  * @see Request
  * @see Response
  * @since 3.4.0-SNAPSHOT
@@ -18,12 +18,12 @@ import org.jetbrains.annotations.NotNull;
 public interface GenericRequestEventBase {
 
     /**
-     * Gets the {@link Exchange} which stores the involved request, response and some other data.
+     * Gets the {@link HttpExchange} which stores the involved request, response and some other data.
      *
-     * @return The {@link Exchange}.
+     * @return The {@link HttpExchange}.
      */
     @NotNull
-    Exchange getExchange();
+    HttpExchange getExchange();
 
     /**
      * Gets the {@link Request} which is involved in this event.

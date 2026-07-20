@@ -4,7 +4,7 @@ import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.websocket.ClosureCode;
-import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import de.craftsblock.craftsnet.api.websocket.WebSocketExchange;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.EnumMap;
@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * The ClientDisconnectEvent class represents an event related to a client disconnection from a websocket connection.
- * It extends the base Event class and provides information about the SocketExchange and the SocketMapping associated with the disconnection event.
+ * It extends the base Event class and provides information about the WebSocketExchange and the SocketMapping associated with the disconnection event.
  *
  * @author Philipp Maywald
  * @author CraftsBlock
@@ -21,7 +21,7 @@ import java.util.List;
  */
 public class ClientDisconnectEvent extends Event implements GenericSocketEventBase {
 
-    private final SocketExchange exchange;
+    private final WebSocketExchange exchange;
     private final EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappings;
 
     private final int rawCloseCode;
@@ -30,14 +30,14 @@ public class ClientDisconnectEvent extends Event implements GenericSocketEventBa
     private final boolean closeByServer;
 
     /**
-     * Constructs a new ClientDisconnectEvent with the specified SocketExchange and SocketMapping.
+     * Constructs a new ClientDisconnectEvent with the specified WebSocketExchange and SocketMapping.
      *
-     * @param exchange      The SocketExchange object representing the socket connection and its associated data.
+     * @param exchange      The WebSocketExchange object representing the socket connection and its associated data.
      * @param closeCode     The close code.
      * @param closeReason   The close reason.
      * @param closeByServer Whether the connection was closed by the server or the client.
      */
-    public ClientDisconnectEvent(SocketExchange exchange, int closeCode, String closeReason, boolean closeByServer) {
+    public ClientDisconnectEvent(WebSocketExchange exchange, int closeCode, String closeReason, boolean closeByServer) {
         this.exchange = exchange;
         this.mappings = exchange.client().getEndpoint();
 
@@ -63,7 +63,7 @@ public class ClientDisconnectEvent extends Event implements GenericSocketEventBa
      * @return {@inheritDoc}
      */
     @Override
-    public @NotNull SocketExchange getExchange() {
+    public @NotNull WebSocketExchange getExchange() {
         return exchange;
     }
 

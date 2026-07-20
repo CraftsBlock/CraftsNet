@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.api.http;
 
-import de.craftsblock.craftsnet.api.BaseExchange;
+import de.craftsblock.craftsnet.api.Exchange;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
@@ -11,19 +11,19 @@ import org.jetbrains.annotations.NotNull;
  * Represents the exchange of data between the client (request) and the server (response).
  * This record holds both the request and response objects for handling HTTP communication.
  * <p>
- * The Exchange object encapsulates the incoming request data (headers, parameters, cookies, body) as a {@link Request} object,
+ * The HttpExchange object encapsulates the incoming request data (headers, parameters, cookies, body) as a {@link Request} object,
  * and the outgoing response data (headers, status code, body) as a {@link Response} object.
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @see BaseExchange
+ * @see Exchange
  * @see Request
  * @see Response
  * @see Session
  * @since 1.0.0-SNAPSHOT
  */
-public record Exchange(@NotNull Context context, @NotNull ProtocolVersion protocolVersion,
-                       @NotNull Request request, @NotNull Response response, @NotNull Session session) implements BaseExchange {
+public record HttpExchange(@NotNull Context context, @NotNull ProtocolVersion protocolVersion,
+                           @NotNull Request request, @NotNull Response response, @NotNull Session session) implements Exchange {
 
     /**
      * @param context         The {@link Context} object containing temporary data for the exchange.
@@ -32,7 +32,7 @@ public record Exchange(@NotNull Context context, @NotNull ProtocolVersion protoc
      * @param response        The {@link Response} object used to send data back to the client.
      * @param session         The {@link Session} object used to store session related things.
      */
-    public Exchange {
+    public HttpExchange {
         request.setExchange(this);
         response.setExchange(this);
     }
@@ -90,7 +90,7 @@ public record Exchange(@NotNull Context context, @NotNull ProtocolVersion protoc
     }
 
     /**
-     * A wrapper method for {@link Request#getRawUrl()} retrieved from the {@link Exchange#request()}.
+     * A wrapper method for {@link Request#getRawUrl()} retrieved from the {@link HttpExchange#request()}.
      * <p>This method is used for backwards compatibility with older versions of CraftsNet.</p>
      *
      * @return The raw url.

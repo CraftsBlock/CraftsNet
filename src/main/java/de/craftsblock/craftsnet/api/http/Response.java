@@ -2,7 +2,6 @@ package de.craftsblock.craftsnet.api.http;
 
 import com.google.gson.JsonElement;
 import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpExchange;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.json.JsonParser;
 import de.craftsblock.craftsnet.CraftsNet;
@@ -37,7 +36,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @see Exchange
+ * @see HttpExchange
  * @see WebServer
  * @since 1.0.0-SNAPSHOT
  */
@@ -45,7 +44,7 @@ public class Response implements AutoCloseable {
 
     private final CraftsNet craftsNet;
 
-    private final HttpExchange httpExchange;
+    private final com.sun.net.httpserver.HttpExchange httpExchange;
     private final Headers headers;
     private final ConcurrentHashMap<String, Cookie> cookies = new ConcurrentHashMap<>();
     private final CorsPolicy corsPolicy;
@@ -55,7 +54,7 @@ public class Response implements AutoCloseable {
     private OutputStream encodedStream;
     private OutputStream rawStream;
 
-    private Exchange exchange;
+    private HttpExchange httpExchange;
 
     private HttpStatus status = HttpStatus.Success.OK;
     private boolean headersSent = false;
@@ -66,10 +65,10 @@ public class Response implements AutoCloseable {
      *
      * @param craftsNet     The {@link CraftsNet} instance which instantiates this
      * @param streamEncoder The {@link StreamEncoder} that should be used to encode the response body.
-     * @param httpExchange  The {@link HttpExchange} object representing the HTTP request-response exchange.
+     * @param httpExchange  The {@link com.sun.net.httpserver.HttpExchange} object representing the HTTP request-response httpExchange.
      * @param httpMethod    The {@link HttpMethod} used to access the route.
      */
-    protected Response(CraftsNet craftsNet, StreamEncoder streamEncoder, HttpExchange httpExchange,
+    protected Response(CraftsNet craftsNet, StreamEncoder streamEncoder, com.sun.net.httpserver.HttpExchange httpExchange,
                        HttpMethod httpMethod) {
         this.craftsNet = craftsNet;
 
@@ -92,12 +91,12 @@ public class Response implements AutoCloseable {
         checkOutput();
 
         if (object instanceof ResponseEntity entity) {
-            entity.send(this.exchange);
+            entity.send(this.httpExchange);
             return;
         }
 
-        if (exchange != null) {
-            Request r = exchange.request();
+        if (httpExchange != null) {
+            Request r = httpExchange.request();
 
             // Todo: Build pretty format system for object prints
             if ("pretty".equalsIgnoreCase(r.retrieveParam("format"))) {
@@ -341,8 +340,8 @@ public class Response implements AutoCloseable {
             addHeader("Set-Cookie", cookie.toString());
         }
 
-        if (exchange != null) {
-            this.corsPolicy.apply(exchange);
+        if (httpExchange != null) {
+            this.corsPolicy.apply(httpExchange);
         }
 
         if (this.streamEncoder != null) {
@@ -616,7 +615,7 @@ public class Response implements AutoCloseable {
      * @return The deleted Cookie object
      */
     public Cookie deleteCookie(String name) {
-        return cookies.computeIfAbsent(name, n -> exchange.request().retrieveCookie(n, new Cookie(n))).markDeleted();
+        return cookies.computeIfAbsent(name, n -> httpExchange.request().retrieveCookie(n, new Cookie(n))).markDeleted();
     }
 
     /**
@@ -655,21 +654,21 @@ public class Response implements AutoCloseable {
     }
 
     /**
-     * Sets the {@link Exchange} managing this response.
+     * Sets the {@link HttpExchange} managing this response.
      *
-     * @param exchange The {@link Exchange} managing the response
+     * @param httpExchange The {@link HttpExchange} managing the response
      */
-    protected void setExchange(Exchange exchange) {
-        this.exchange = exchange;
+    protected void setExchange(HttpExchange httpExchange) {
+        this.httpExchange = httpExchange;
     }
 
     /**
-     * Gets the {@link Exchange} managing this response.
+     * Gets the {@link HttpExchange} managing this response.
      *
-     * @return The {@link Exchange} managing this response.
+     * @return The {@link HttpExchange} managing this response.
      */
-    public Exchange getExchange() {
-        return exchange;
+    public HttpExchange getExchange() {
+        return httpExchange;
     }
 
     /**
@@ -703,9 +702,9 @@ public class Response implements AutoCloseable {
     /**
      * Retrieves the underlying HttpExchange object associated with this Response.
      *
-     * @return The HttpExchange object representing the HTTP request-response exchange.
+     * @return The HttpExchange object representing the HTTP request-response httpExchange.
      */
-    public HttpExchange unsafe() {
+    public com.sun.net.httpserver.HttpExchange unsafe() {
         return httpExchange;
     }
 

@@ -1,26 +1,26 @@
 package de.craftsblock.craftsnet.api.websocket;
 
-import de.craftsblock.craftsnet.api.BaseExchange;
+import de.craftsblock.craftsnet.api.Exchange;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
-import de.craftsblock.craftsnet.api.websocket.annotations.Socket;
+import de.craftsblock.craftsnet.api.websocket.annotations.WebSocket;
 import org.jetbrains.annotations.NotNull;
 
 /**
- * The SocketExchange record represents an exchange object that provides a way to interact
+ * The WebSocketExchange record represents an exchange object that provides a way to interact
  * with the WebSocket server and client within the context of a WebSocket connection.
  * It allows sending broadcast messages to all clients connected to the same WebSocket path.
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @see BaseExchange
- * @see Socket
- * @see SocketHandler
+ * @see Exchange
+ * @see WebSocket
+ * @see WebSocketHandler
  * @since 2.1.1-SNAPSHOT
  */
-public record SocketExchange(@NotNull Context context, @NotNull ProtocolVersion protocolVersion,
-                             @NotNull WebSocketServer server, @NotNull WebSocketClient client) implements BaseExchange {
+public record WebSocketExchange(@NotNull Context context, @NotNull ProtocolVersion protocolVersion,
+                                @NotNull WebSocketServer server, @NotNull WebSocketClient client) implements Exchange {
 
     /**
      * @param context         The {@link Context} object containing temporary data for the exchange.
@@ -28,7 +28,7 @@ public record SocketExchange(@NotNull Context context, @NotNull ProtocolVersion 
      * @param server          The {@link WebSocketServer} object that the client connected to.
      * @param client          The {@link WebSocketClient} object representing the websocket connection.
      */
-    public SocketExchange {
+    public WebSocketExchange {
     }
 
     /**

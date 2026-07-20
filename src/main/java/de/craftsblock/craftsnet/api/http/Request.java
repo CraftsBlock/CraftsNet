@@ -1,7 +1,6 @@
 package de.craftsblock.craftsnet.api.http;
 
 import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpExchange;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.http.body.Body;
@@ -27,14 +26,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @see Exchange
+ * @see HttpExchange
  * @since 1.0.0-SNAPSHOT
  */
 public class Request implements AutoCloseable, RequireAble {
 
     private final CraftsNet craftsNet;
     private StreamEncoder streamEncoder;
-    private final HttpExchange httpExchange;
+    private final com.sun.net.httpserver.HttpExchange httpExchange;
     private final Headers headers;
     private final String domain;
     private final HttpMethod httpMethod;
@@ -45,7 +44,7 @@ public class Request implements AutoCloseable, RequireAble {
     private final String ip;
     private final String connectingIp;
 
-    private Exchange exchange;
+    private HttpExchange httpExchange;
 
     private File bodyLocation;
     private Collection<RouteRegistry.EndpointMapping> routes;
@@ -55,14 +54,14 @@ public class Request implements AutoCloseable, RequireAble {
      * Constructs a new Request object.
      *
      * @param craftsNet    The {@link CraftsNet} instance to which the request was made.
-     * @param httpExchange The {@link HttpExchange} object representing the incoming HTTP request.
+     * @param httpExchange The {@link com.sun.net.httpserver.HttpExchange} object representing the incoming HTTP request.
      * @param headers      The {@link Headers} object representing the headers of the incoming http request.
      * @param url          The query string extracted from the request URI.
      * @param ip           The ip address of the client sending the request.
      * @param domain       The domain used to make the http request.
      * @param httpMethod   The {@link HttpMethod} used to access the route.
      */
-    public Request(CraftsNet craftsNet, HttpExchange httpExchange,
+    public Request(CraftsNet craftsNet, com.sun.net.httpserver.HttpExchange httpExchange,
                    Headers headers, String url, String ip, String connectingIp, String domain, HttpMethod httpMethod) {
         this.craftsNet = craftsNet;
         this.httpExchange = httpExchange;
@@ -152,21 +151,21 @@ public class Request implements AutoCloseable, RequireAble {
     }
 
     /**
-     * Sets the {@link Exchange} managing this request.
+     * Sets the {@link HttpExchange} managing this request.
      *
-     * @param exchange The {@link Exchange} managing the request
+     * @param httpExchange The {@link HttpExchange} managing the request
      */
-    protected void setExchange(Exchange exchange) {
-        this.exchange = exchange;
+    protected void setExchange(HttpExchange httpExchange) {
+        this.httpExchange = httpExchange;
     }
 
     /**
-     * Gets the {@link Exchange} managing this request.
+     * Gets the {@link HttpExchange} managing this request.
      *
-     * @return The {@link Exchange} managing this request.
+     * @return The {@link HttpExchange} managing this request.
      */
-    public Exchange getExchange() {
-        return exchange;
+    public HttpExchange getExchange() {
+        return httpExchange;
     }
 
     /**
@@ -429,7 +428,7 @@ public class Request implements AutoCloseable, RequireAble {
      *
      * @return The HttpExchange object.
      */
-    public HttpExchange unsafe() {
+    public com.sun.net.httpserver.HttpExchange unsafe() {
         return httpExchange;
     }
 

@@ -3,17 +3,17 @@ package de.craftsblock.craftsnet.addon.services.builtin.handlers;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.services.ServiceLoader;
 import de.craftsblock.craftsnet.api.RouteRegistry;
-import de.craftsblock.craftsnet.api.http.RequestHandler;
+import de.craftsblock.craftsnet.api.http.RouteHandler;
 
 /**
- * A concrete implementation of the {@link ServiceLoader} interface for managing instances of {@link RequestHandler}.
- * This class specifically focuses on loading instances of {@link RequestHandler} into the {@link RouteRegistry}.
+ * A concrete implementation of the {@link ServiceLoader} interface for managing instances of {@link RouteHandler}.
+ * This class specifically focuses on loading instances of {@link RouteHandler} into the {@link RouteRegistry}.
  *
  * @author Philipp Maywald
  * @author CraftsBlock
  * @since 3.1.0-SNAPSHOT
  */
-public class RequestHandlerLoader implements ServiceLoader<RequestHandler> {
+public class RequestHandlerLoader implements ServiceLoader<RouteHandler> {
 
     private final CraftsNet craftsNet;
 
@@ -27,13 +27,13 @@ public class RequestHandlerLoader implements ServiceLoader<RequestHandler> {
     }
 
     /**
-     * Loads an {@link RequestHandler} into the {@link RouteRegistry} for further processing.
+     * Loads an {@link RouteHandler} into the {@link RouteRegistry} for further processing.
      *
-     * @param provider The instance of the {@link RequestHandler} to be loaded.
+     * @param provider The instance of the {@link RouteHandler} to be loaded.
      * @return {@code true} if the provider is successfully loaded and registered, {@code false} otherwise.
      */
     @Override
-    public boolean load(RequestHandler provider) {
+    public boolean load(RouteHandler provider) {
         craftsNet.getRouteRegistry().register(provider);
         return true;
     }

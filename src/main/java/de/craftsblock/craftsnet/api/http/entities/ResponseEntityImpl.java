@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.api.http.entities;
 
-import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.api.http.HttpExchange;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.Response;
 
@@ -38,19 +38,19 @@ final class ResponseEntityImpl implements ResponseEntity {
     }
 
     /**
-     * Sends the response entity through the given {@link Exchange}.
+     * Sends the response entity through the given {@link HttpExchange}.
      *
-     * @param exchange The HTTP exchange containing request and response objects.
+     * @param httpExchange The HTTP httpExchange containing request and response objects.
      * @throws IllegalStateException If this entity has already been sent.
      */
     @Override
-    public void send(Exchange exchange) {
+    public void send(HttpExchange httpExchange) {
         if (sent.compareAndSet(false, true)) {
             throw new IllegalStateException("Response entity has already been sent!");
         }
 
-        final Request request = exchange.request();
-        final Response response = exchange.response();
+        final Request request = httpExchange.request();
+        final Response response = httpExchange.response();
 
         for (BiConsumer<Request, Response> transformer : transformers) {
             transformer.accept(request, response);
