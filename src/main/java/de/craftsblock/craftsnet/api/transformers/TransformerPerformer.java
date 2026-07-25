@@ -1,6 +1,5 @@
 package de.craftsblock.craftsnet.api.transformers;
 
-import de.craftsblock.craftscore.cache.DoubleKeyedCache;
 import de.craftsblock.craftscore.cache.DoubleKeyedLruCache;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Handler;
@@ -9,6 +8,7 @@ import de.craftsblock.craftsnet.api.transformers.annotations.TransformerCollecti
 import de.craftsblock.craftsnet.api.transformers.exceptions.TransformerException;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -121,7 +121,7 @@ public class TransformerPerformer {
                 return false;
             }
 
-            if (!type.isAssignableFrom(value.getClass())) {
+            if (!TypeUtils.isAssignable(type, value.getClass())) {
                 String name = type.getSimpleName();
 
                 Method converter = ReflectionUtils.findMethod(value.getClass(), name + "Value");
@@ -204,36 +204,33 @@ public class TransformerPerformer {
         try {
             Class<? extends Transformable<?, ?>> transformable = transformer.transformer();
             args[groupIndex] = transform(value, transformer, transformable);
-        } catch (RuntimeException | InvocationTargetException parent) {
-            if (parent.getCause() == null) {
-                return;
-            }
+        } catch (RuntimeException | InvocationTargetException exception) {
+            TransformerException transformerException = getTransformerException(exception);
 
-            args[groupIndex] = getTransformerException(parent);
+            if (transformerException != null) {
+                args[groupIndex] = transformerException;
+            } else if (exception instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            } else {
+                throw new RuntimeException(exception);
+            }
         }
     }
 
     /**
      * Wraps a given exception into a {@link TransformerException}.
      *
-     * @param parent The exception that should be wrapped.
+     * @param throwable The exception that should be wrapped.
      * @return The wrapped exception.
      */
-    private static @NotNull TransformerException getTransformerException(Exception parent) {
-        Throwable cause = parent.getCause();
-        TransformerException exception;
-        if (cause instanceof TransformerException e) {
-            exception = e;
-        } else if (cause.getCause() != null && cause.getCause() instanceof TransformerException e) {
-            exception = e;
-        } else {
-            exception = null;
+    private static TransformerException getTransformerException(Throwable throwable) {
+        if (throwable instanceof TransformerException e) {
+            return e;
+        } else if (throwable.getCause() != null) {
+            return getTransformerException(throwable.getCause());
         }
 
-        if (exception == null) {
-            throw (parent instanceof RuntimeException re ? re : new RuntimeException(parent));
-        }
-        return exception;
+        return null;
     }
 
     /**
