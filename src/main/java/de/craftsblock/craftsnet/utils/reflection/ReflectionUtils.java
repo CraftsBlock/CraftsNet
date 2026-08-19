@@ -111,11 +111,21 @@ public class ReflectionUtils {
     @Contract("_, _ -> fail")
     public static <T> T rethrowReflectionThrowable(Throwable throwable, String alternativeMessage) {
         if (throwable instanceof InvocationTargetException invocationTargetException) {
-            return rethrowReflectionThrowable(invocationTargetException, alternativeMessage);
+            Throwable target = invocationTargetException.getTargetException();
+            if (target == null) {
+                throw new RuntimeException(alternativeMessage, invocationTargetException);
+            }
+
+            return rethrowReflectionThrowable(target, alternativeMessage);
         }
 
         if (throwable instanceof UndeclaredThrowableException undeclaredThrowableException) {
-            throw undeclaredThrowableException;
+            Throwable undeclared = undeclaredThrowableException.getUndeclaredThrowable();
+            if (undeclared == null) {
+                throw undeclaredThrowableException;
+            }
+
+            return rethrowReflectionThrowable(undeclared, alternativeMessage);
         }
 
         if (throwable instanceof RuntimeException runtimeException) {
