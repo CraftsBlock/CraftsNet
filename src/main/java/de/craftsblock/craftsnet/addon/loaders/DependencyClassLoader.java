@@ -73,12 +73,14 @@ public final class DependencyClassLoader extends CraftsNetUrlClassLoader<Depende
         } catch (ClassNotFoundException ignored) {
         }
 
-        if (lookup) {
-            for (DependencyClassLoader loader : dependenciesLoaders.values()) {
-                try {
-                    return loader.loadClass0(name, resolve, false);
-                } catch (ClassNotFoundException ignored) {
-                }
+        if (!lookup) {
+            throw new ClassNotFoundException(name);
+        }
+
+        for (DependencyClassLoader loader : dependenciesLoaders.values()) {
+            try {
+                return loader.loadClass0(name, resolve, false);
+            } catch (ClassNotFoundException ignored) {
             }
         }
 

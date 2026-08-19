@@ -88,32 +88,34 @@ public final class AddonClassLoader extends CraftsNetUrlClassLoader<AddonClassLo
         } catch (ClassNotFoundException ignored) {
         }
 
-        if (lookup) {
-            for (AddonClassLoader loader : addonLoaders) {
-                try {
-                    Class<?> result = loader.loadClass0(name, resolve, false);
+        if (!lookup) {
+            throw new ClassNotFoundException(name);
+        }
 
-                    if (result.getClassLoader() instanceof AddonClassLoader usedClassLoader) {
-                        AddonConfiguration usedAddonConfig = usedClassLoader.addon;
-                        String usedAddonName = usedAddonConfig.json().getString("name");
+        for (AddonClassLoader loader : addonLoaders) {
+            try {
+                Class<?> result = loader.loadClass0(name, resolve, false);
 
-                        if (usedAddonConfig != addon && !ignoreNotDepended.contains(addon) && !depends.contains(usedAddonName)) {
-                            logger.warning("%s loaded %s from %s which is not marked as dependent!", addonName, name, usedAddonName);
-                            ignoreNotDepended.add(addon);
-                        }
+                if (result.getClassLoader() instanceof AddonClassLoader usedClassLoader) {
+                    AddonConfiguration usedAddonConfig = usedClassLoader.addon;
+                    String usedAddonName = usedAddonConfig.json().getString("name");
+
+                    if (usedAddonConfig != addon && !ignoreNotDepended.contains(addon) && !depends.contains(usedAddonName)) {
+                        logger.warning("%s loaded %s from %s which is not marked as dependent!", addonName, name, usedAddonName);
+                        ignoreNotDepended.add(addon);
                     }
-
-                    return result;
-                } catch (ClassNotFoundException ignored) {
                 }
+
+                return result;
+            } catch (ClassNotFoundException ignored) {
             }
+        }
 
-            var dependencyLoaders = addon.dependencyLoaders();
-            if (dependencyLoaders != null && dependencyLoaders.length >= 1) {
-                try {
-                    return dependencyLoaders[0].loadClass(name, resolve);
-                } catch (ClassNotFoundException ignored) {
-                }
+        var dependencyLoaders = addon.dependencyLoaders();
+        if (dependencyLoaders != null && dependencyLoaders.length >= 1) {
+            try {
+                return dependencyLoaders[0].loadClass(name, resolve);
+            } catch (ClassNotFoundException ignored) {
             }
         }
 
