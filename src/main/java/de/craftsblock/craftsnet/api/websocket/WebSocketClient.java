@@ -240,10 +240,10 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             logger.info("%s connected to %s", ip, path);
 
-            AtomicBoolean loop = new AtomicBoolean(true);
-            while (!Thread.currentThread().isInterrupted() && isConnected()) {
+            AtomicBoolean continueReading = new AtomicBoolean(true);
+            while (!Thread.currentThread().isInterrupted() && continueReading.get() && isConnected()) {
                 Frame frame = readMessage();
-                handleIncomingMessage(frame, loop);
+                handleIncomingMessage(frame, continueReading);
 
                 if (frame != null) {
                     Arrays.fill(frame.getData(), (byte) 0);
