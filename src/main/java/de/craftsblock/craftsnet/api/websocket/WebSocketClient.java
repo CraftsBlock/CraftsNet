@@ -480,13 +480,12 @@ public class WebSocketClient implements Runnable, RequireAble {
             return;
         }
 
-        // @FixMe: Using switch when upgrading to java 21+
-        args[1] = switch (method.getParameterTypes()[1].getName()) {
-            case "java.lang.String" -> new String(frame.getData(), StandardCharsets.UTF_8);
-            case "de.craftsblock.craftsnet.api.websocket.Frame" -> frame.clone();
-            case "de.craftsblock.craftsnet.utils.ByteBuffer" -> frame.getBuffer();
-            case "de.craftsblock.craftscore.buffer.BufferUtil" -> frame.getBufferUtil();
-            case "java.nio.ByteBuffer" -> frame.getBufferUtil().getRaw();
+        args[1] = switch (method.getParameterTypes()[1]) {
+            case Class<?> type when TypeUtils.isAssignable(String.class, type) -> new String(frame.getData(), StandardCharsets.UTF_8);
+            case Class<?> type when TypeUtils.isAssignable(Frame.class, type) -> frame.clone();
+            case Class<?> type when TypeUtils.isAssignable(de.craftsblock.craftsnet.utils.ByteBuffer.class, type) -> frame.getBuffer();
+            case Class<?> type when TypeUtils.isAssignable(BufferUtil.class, type) -> frame.getBufferUtil();
+            case Class<?> type when TypeUtils.isAssignable(ByteBuffer.class, type) -> frame.getBufferUtil().getRaw();
             default -> args[1];
         };
     }
@@ -892,15 +891,15 @@ public class WebSocketClient implements Runnable, RequireAble {
     /**
      * Sends a message to the connected WebSocket client.
      * <p>
-     * This method will try to parse the object in the following order:
-     * <ol>
+     * This method will try to parse the object to one of the following type:
+     * <ul>
      *     <li>{@link String}</li>
      *     <li>{@code byte[]}</li>
      *     <li>{@link Json}</li>
      *     <li>{@link ByteBuffer}</li>
      *     <li>{@link BufferUtil}</li>
      *     <li><s>{@link de.craftsblock.craftsnet.utils.ByteBuffer}</s> - Deprecated and marked for removal</li>
-     * </ol>
+     * </ul>
      * If none of these types can be applied, the object is converted
      * into a string with {@link Object#toString()} and then sent.
      *
@@ -909,28 +908,28 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     @SuppressWarnings("removal")
     public void sendMessage(Object data) {
-        // @FixMe: Using switch when upgrading to java 21+
+        switch (data) {
+            case String string -> this.sendMessage(string);
+            case byte[] bytes -> this.sendMessage(bytes);
+            case Json json -> this.sendMessage(json);
+            case ByteBuffer buffer -> this.sendMessage(buffer);
+            case BufferUtil bufferUtil -> this.sendMessage(bufferUtil);
+            case de.craftsblock.craftsnet.utils.ByteBuffer buffer -> this.sendMessage(buffer);
+            default -> {
+                var encoders = server.getTypeEncoderRegistry();
+                Class<?> type = data.getClass();
+                if (encoders.hasCodec(type)) {
+                    var codecLink = encoders.getLinkedCodecMethod(type);
 
-        if (data instanceof String string) this.sendMessage(string);
-        else if (data instanceof byte[] bytes) this.sendMessage(bytes);
-        else if (data instanceof Json json) this.sendMessage(json);
-        else if (data instanceof ByteBuffer buffer) this.sendMessage(buffer);
-        else if (data instanceof BufferUtil bufferUtil) this.sendMessage(bufferUtil);
-        else if (data instanceof de.craftsblock.craftsnet.utils.ByteBuffer buffer) this.sendMessage(buffer);
-        else {
-            var encoders = server.getTypeEncoderRegistry();
-            Class<?> type = data.getClass();
-            if (encoders.hasCodec(type)) {
-                var codecLink = encoders.getLinkedCodecMethod(type);
-
-                if (codecLink != null) {
-                    var result = ReflectionUtils.invokeMethod(codecLink.codec(), codecLink.method(), data);
-                    this.sendMessage(result);
-                    return;
+                    if (codecLink != null) {
+                        var result = ReflectionUtils.invokeMethod(codecLink.codec(), codecLink.method(), data);
+                        this.sendMessage(result);
+                        return;
+                    }
                 }
-            }
 
-            this.sendMessage(data.toString());
+                this.sendMessage(data.toString());
+            }
         }
     }
 
