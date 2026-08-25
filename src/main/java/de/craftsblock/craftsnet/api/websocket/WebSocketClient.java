@@ -46,6 +46,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
@@ -189,7 +190,6 @@ public class WebSocketClient implements Runnable, RequireAble {
                 ip = connectingIp;
             }
 
-
             if (getHeader("Sec-websocket-extensions") != null) {
                 for (String extension : getHeader("Sec-websocket-extensions").split(";\\s+")) {
                     if (craftsNet.getWebSocketExtensionRegistry().hasExtension(extension)) {
@@ -232,7 +232,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             if (!event.isAllowedWithoutMapping() && (mappings == null || mappings.isEmpty())) {
                 logger.debug("%s connected to %s \u001b[38;5;9m[NOT FOUND]", ip, path);
-                closeInternally(ClosureCode.BAD_GATEWAY, Json.empty().set("error", "Path do not match any API endpoint!").toString(), true);
+                closeInternally(ClosureCode.POLICY_VIOLATION, "The requested path does not match any API endpoint", true);
                 return;
             }
 
@@ -240,11 +240,10 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             logger.info("%s connected to %s", ip, path);
 
+            AtomicBoolean loop = new AtomicBoolean(true);
             while (!Thread.currentThread().isInterrupted() && isConnected()) {
                 Frame frame = readMessage();
-                if (handleIncomingMessage(frame)) {
-                    break;
-                }
+                handleIncomingMessage(frame, loop);
 
                 if (frame != null) {
                     Arrays.fill(frame.getData(), (byte) 0);
@@ -269,29 +268,46 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @return {@code true} if the read loop should be exited, {@code false} otherwise.
      * @since 3.4.0-SNAPSHOT
      */
-    private boolean handleIncomingMessage(Frame frame) {
-        if (frame == null || frame.getOpcode().isUnknown()) {
-            logger.warning("Received invalid websocket packet!");
-            return true;
+    private void handleIncomingMessage(Frame frame, AtomicBoolean continueReading) {
+        if (frame == null) {
+            logger.warning("Received null websocket frame!");
+            continueReading.set(false);
+            return;
+        }
+
+        var opcode = frame.getOpcode();
+        if (opcode.isUnknown()) {
+            logger.warning("Received websocket frame with unknown opcode!");
+
+            closeInternally(
+                    ClosureCode.PROTOCOL_ERROR,
+                    "Received unknown opcode",
+                    true
+            );
+
+            continueReading.set(false);
+            return;
         }
 
         if (!this.connected || !this.socket.isConnected()) {
-            return true;
+            continueReading.set(false);
+            return;
         }
 
-        if (isCloseFrame(frame)) {
-            return true;
+        if (handleCloseFrame(frame)) {
+            continueReading.set(false);
+            return;
         }
 
         switch (frame.getOpcode()) {
             case PING -> {
                 craftsNet.getListenerRegistry().call(new ReceivedPingMessageEvent(exchange, frame));
-                return false;
+                return;
             }
 
             case PONG -> {
                 craftsNet.getListenerRegistry().call(new ReceivedPongMessageEvent(exchange, frame));
-                return false;
+                return;
             }
 
             case TEXT -> {
@@ -299,26 +315,27 @@ public class WebSocketClient implements Runnable, RequireAble {
                     break;
                 }
 
-                closeInternally(ClosureCode.UNSUPPORTED_PAYLOAD, "Send byte values are not utf8 valid!", true);
-                return true;
+                closeInternally(ClosureCode.UNSUPPORTED_PAYLOAD, "Sent byte values are not valid UTF-8", true);
+                continueReading.set(false);
+                return;
             }
         }
 
         IncomingSocketMessageEvent incomingMessageEvent = new IncomingSocketMessageEvent(exchange, frame);
         craftsNet.getListenerRegistry().call(incomingMessageEvent);
         if (incomingMessageEvent.isCancelled()) {
-            return false;
+            return;
         }
 
         MiddlewareCallbackInfo callbackInfo = performForEachAvailableMiddleware(
                 (info, middleware) -> middleware.handleMessageReceived(info, exchange, frame)
         );
         if (callbackInfo.isCancelled()) {
-            return false;
+            return;
         }
 
         if (mappings == null || mappings.isEmpty()) {
-            return false;
+            return;
         }
 
         mappings.keySet().stream()
@@ -328,7 +345,6 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         transformerPerformer.clearCache();
         matchers.clear();
-        return false;
     }
 
     /**
@@ -338,20 +354,19 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @return {@code true} if the frame is a close frame, {@code false} otherwise.
      * @since 3.4.0-SNAPSHOT
      */
-    private boolean isCloseFrame(Frame frame) {
-        byte @NotNull [] data = frame.getData();
-
+    private boolean handleCloseFrame(Frame frame) {
         if (!frame.getOpcode().equals(Opcode.CLOSE)) {
             return false;
         }
 
+        byte @NotNull [] data = frame.getData();
         if (data.length <= 2) {
             return true;
         }
 
         closeCode = (data[0] & 0xFF) << 8 | (data[1] & 0xFF);
         closeReason = new String(Arrays.copyOfRange(data, 2, data.length));
-        closeInternally(ClosureCode.NORMAL, "Acknowledged close", false);
+        closeInternally(ClosureCode.NORMAL, null, false);
         return true;
     }
 
@@ -600,7 +615,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             Frame read = Frame.read(inputStream);
 
             if (read.getOpcode().isUnknown()) {
-                closeInternally(ClosureCode.PROTOCOL_ERROR, "Unknown opcode!", true);
+                closeInternally(ClosureCode.PROTOCOL_ERROR, "Received unknown opcode", true);
                 throw new IOException("Unknown opcode received!");
             }
 
@@ -985,53 +1000,110 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
-     * Disconnects the client gracefully without providing any information about the reason.
+     * Closes the WebSocket connection gracefully using close code {@code 1000}
+     * ({@link ClosureCode#NORMAL}) without a reason.
+     *
+     * <p>This initiates the WebSocket closing handshake by sending a Close frame
+     * to the peer.</p>
      */
     public void close() {
-        sendMessage((byte[]) null, Opcode.CLOSE);
+        close(ClosureCode.NORMAL);
     }
 
     /**
-     * Disconnects the client gracefully with a specified reason.
+     * Closes the WebSocket connection gracefully using close code {@code 1000}
+     * ({@link ClosureCode#NORMAL}) and the specified reason.
      *
-     * @param reason The reason why the client has been closed.
-     * @throws IllegalStateException If the code used to close the connection is only for internal use.
+     * <p>The reason is encoded as UTF-8 and must not exceed 123 bytes. This limit
+     * is imposed by the maximum payload size of a WebSocket control frame.</p>
+     *
+     * @param reason the UTF-8 reason describing why the connection is being closed;
+     *               may be {@code null}
+     * @throws IllegalArgumentException if the UTF-8 encoded reason exceeds
+     *                                  123 bytes
      */
     public void close(String reason) {
         close(ClosureCode.NORMAL, reason);
     }
 
     /**
-     * Disconnects the client gracefully with a specified pre-defined code and reason.
+     * Closes the WebSocket connection gracefully using the specified close code
+     * without a reason.
      *
-     * @param code   The pre-defined code that is responsible for closing the socket.
-     * @param reason The reason why the client has been closed.
-     * @throws IllegalStateException If the code used to close the connection is only for internal use.
+     * @param code the close code to send to the peer
+     * @throws IllegalArgumentException if the code is not valid for use in a
+     *                                  Close frame
+     */
+    public void close(ClosureCode code) {
+        close(code, null);
+    }
+
+    /**
+     * Closes the WebSocket connection gracefully using the specified close code
+     * and reason.
+     *
+     * <p>The close code and reason are sent in the payload of a WebSocket
+     * Close frame. The reason is encoded using UTF-8 and, together with the
+     * two-byte close code, must fit into the 125-byte maximum payload size
+     * of a WebSocket control frame.</p>
+     *
+     * @param code   the close code to send to the peer
+     * @param reason the UTF-8 reason describing why the connection is being closed;
+     *               may be {@code null}
+     * @throws IllegalArgumentException if the code is not valid for use in a
+     *                                  Close frame, or if the encoded reason
+     *                                  exceeds 123 bytes
      */
     public void close(ClosureCode code, String reason) {
         close(code.intValue(), reason);
     }
 
     /**
-     * Disconnects the client gracefully with a specified code and reason.
+     * Closes the WebSocket connection gracefully using the specified close code
+     * without a reason.
      *
-     * @param code   The close code.
-     * @param reason The reason why the client has been closed.
-     * @throws IllegalStateException If the code used to close the connection is only for internal use.
+     * @param code the close code to send to the peer
+     * @throws IllegalArgumentException if the code is not valid for use in a
+     *                                  Close frame
+     */
+    public void close(@Range(from = 1000, to = 4999) int code) {
+        close(code, null);
+    }
+
+    /**
+     * Closes the WebSocket connection gracefully using the specified close code
+     * and reason.
+     *
+     * <p>RFC 6455 permits close codes in the ranges 1000-2999, 3000-3999,
+     * and 4000-4999 for different purposes. Codes that are reserved for
+     * protocol use or that are not permitted to appear in a Close frame
+     * are rejected.</p>
+     *
+     * <p>The reason is encoded as UTF-8. Since a Close frame is a WebSocket
+     * control frame and its payload is limited to 125 bytes, the encoded
+     * reason must not exceed 123 bytes after the two-byte close code.</p>
+     *
+     * @param code   the close code to send to the peer
+     * @param reason the UTF-8 reason describing why the connection is being closed;
+     *               may be {@code null}
+     * @throws IllegalArgumentException if the close code is invalid or reserved
+     *                                  for internal use, or if the UTF-8 encoded
+     *                                  reason exceeds 123 bytes
      */
     public void close(@Range(from = 1000, to = 4999) int code, String reason) {
-        if (ClosureCode.isInternal(code)) {
-            throw new IllegalArgumentException("Invalid close code %s: not allowed to use internal close codes!".formatted(
-                    code
-            ));
+        ClosureCode.validateCloseCode(code);
+
+        byte[] reasonBytes = reason == null
+                ? new byte[0]
+                : reason.getBytes(StandardCharsets.UTF_8);
+
+        if (reasonBytes.length > 123) {
+            throw new IllegalArgumentException(
+                    "Close reason must not exceed 123 UTF-8 bytes!"
+            );
         }
 
-        if (code < 1000 || code > 4999) {
-            closeInternally(ClosureCode.SERVER_ERROR, "Used close code " + code, true);
-            throw new IllegalArgumentException("Invalid close code " + code + ": must be between 1000–4999!");
-        }
-
-        closeInternally(code, reason, true);
+        closeInternally(code, reasonBytes, true);
     }
 
     /**
@@ -1041,29 +1113,34 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param reason The reason why the client has been closed.
      */
     private void closeInternally(ClosureCode code, String reason, boolean closeByServer) {
-        closeInternally(code.intValue(), reason, closeByServer);
+        byte[] reasonBytes = reason == null
+                ? new byte[0]
+                : reason.getBytes(StandardCharsets.UTF_8);
+        closeInternally(code.intValue(), reasonBytes, closeByServer);
     }
 
     /**
-     * Closes the client internally with a close code and a reason.
+     * Closes the WebSocket connection internally.
      *
-     * @param code   The close code.
-     * @param reason The reason why the client has been closed.
+     * @param code          the close code
+     * @param reasonBytes   the UTF-8 encoded close reason
+     * @param closeByServer whether the close was initiated by the server
      */
-    private void closeInternally(int code, String reason, boolean closeByServer) {
-        byte[] message = reason.getBytes(StandardCharsets.UTF_8);
-        byte[] data = new byte[2 + message.length];
+    private void closeInternally(int code, byte[] reasonBytes, boolean closeByServer) {
+        byte[] data = new byte[2 + reasonBytes.length];
 
-        data[0] = (byte) (code >> 8);
+        data[0] = (byte) (code >>> 8);
         data[1] = (byte) code;
-        System.arraycopy(message, 0, data, 2, message.length);
+
+        System.arraycopy(reasonBytes, 0, data, 2, reasonBytes.length);
 
         sendMessage(data, Opcode.CLOSE);
 
         this.closeCode = code;
-        this.closeReason = reason;
+        this.closeReason = reasonBytes.length == 0
+                ? null
+                : new String(reasonBytes, StandardCharsets.UTF_8);
         this.closeByServer = closeByServer;
-        this.connected = false;
     }
 
     /**
@@ -1204,10 +1281,12 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             if (!closeByServer && this.connected) {
                 logger.warning("%s disconnected abnormal: The underlying tcp connection has been killed!", ip);
-            } else if (!closeByServer && closeCode != -1 && closeCode != ClosureCode.NORMAL.intValue()) {
-                ClosureCode code = ClosureCode.fromInt(closeCode);
-                logger.warning("%s disconnected abnormal (Code: %s)%s",
-                        ip, code != null ? code : closeCode, closeReason != null && !closeReason.isEmpty() ? ": " + closeReason : "");
+            } else if (!closeByServer && !ClosureCode.isGraceful(closeCode)) {
+                logger.warning(
+                        "%s disconnected abnormal (Code: %s)%s",
+                        ip, closeCode,
+                        closeReason != null && !closeReason.isEmpty() ? ": " + closeReason : ""
+                );
             } else {
                 logger.info("%s disconnected", ip);
             }
