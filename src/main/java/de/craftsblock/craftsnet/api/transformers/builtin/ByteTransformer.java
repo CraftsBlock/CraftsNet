@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */
-public class ByteTransformer implements Transformable<Byte, String> {
+public class ByteTransformer implements Transformable<String, Byte> {
 
     /**
      * Transforms the provided string parameter into a Byte object.

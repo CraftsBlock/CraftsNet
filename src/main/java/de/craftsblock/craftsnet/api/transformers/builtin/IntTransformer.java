@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */
-public class IntTransformer implements Transformable<Integer, String> {
+public class IntTransformer implements Transformable<String, Integer> {
 
     /**
      * Transforms the provided string parameter into an Integer object.

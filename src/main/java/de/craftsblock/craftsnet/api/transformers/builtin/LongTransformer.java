@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */
-public class LongTransformer implements Transformable<Long, String> {
+public class LongTransformer implements Transformable<String, Long> {
 
     /**
      * Transforms the provided string parameter into a Long object.

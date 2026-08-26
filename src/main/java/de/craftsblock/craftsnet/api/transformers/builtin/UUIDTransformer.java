@@ -14,7 +14,7 @@ import java.util.UUID;
  * @see Transformable
  * @since 3.5.5
  */
-public class UUIDTransformer implements Transformable<UUID, String> {
+public class UUIDTransformer implements Transformable<String, UUID> {
 
     /**
      * Transforms the provided string parameter into an {@link UUID} object.

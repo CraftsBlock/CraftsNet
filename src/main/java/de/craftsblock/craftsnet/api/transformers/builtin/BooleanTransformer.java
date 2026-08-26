@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */
-public class BooleanTransformer implements Transformable<Boolean, String> {
+public class BooleanTransformer implements Transformable<String, Boolean> {
 
     /**
      * Transforms the provided string parameter into a Boolean object.

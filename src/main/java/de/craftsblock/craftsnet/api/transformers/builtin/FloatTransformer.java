@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */
-public class FloatTransformer implements Transformable<Float, String> {
+public class FloatTransformer implements Transformable<String, Float> {
 
     /**
      * Transforms the provided string parameter into a Float object.

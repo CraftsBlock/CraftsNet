@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */
-public class ShortTransformer implements Transformable<Short, String> {
+public class ShortTransformer implements Transformable<String, Short> {
 
     /**
      * Transforms the provided string parameter into a Short object.

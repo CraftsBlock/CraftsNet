@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */
-public class DoubleTransformer implements Transformable<Double, String> {
+public class DoubleTransformer implements Transformable<String, Double> {
 
     /**
      * Transforms the provided string parameter into a Double object.
