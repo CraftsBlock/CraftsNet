@@ -755,7 +755,10 @@ public class WebSocketClient implements Runnable, RequireAble {
      * Returns whether the outgoing messages should be masked or not.
      *
      * @return {@code true} if the outgoing messages should be masked, {@code false} otherwise.
+     * @deprecated Outgoing frames should never be masked. There will be no replacement.
      */
+    @Deprecated(since = "3.7.3", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
     public boolean shouldMaskOutgoing() {
         return shouldMaskOutgoing;
     }
@@ -764,7 +767,10 @@ public class WebSocketClient implements Runnable, RequireAble {
      * Sets whether the outgoing message should be masked or not.
      *
      * @param shouldMaskOutgoing {@code true} if the outgoing messages should be masked, {@code false} otherwise.
+     * @deprecated Outgoing frames should never be masked. There will be no replacement.
      */
+    @Deprecated(since = "3.7.3", forRemoval = true)
+    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
     public void setMaskingOutgoing(boolean shouldMaskOutgoing) {
         this.shouldMaskOutgoing = shouldMaskOutgoing;
     }
