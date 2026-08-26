@@ -100,7 +100,7 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
         if (depends != null) {
             classes.add(depends);
         } else {
-            DependsCollection collection = addon.getDeclaredAnnotation(DependsCollection.class);
+            Depends.List collection = addon.getDeclaredAnnotation(Depends.List.class);
             if (collection != null) {
                 classes.addAll(List.of(collection.value()));
             }
@@ -127,7 +127,7 @@ public record AddonConfiguration(Path path, Json json, URL[] classpath, Dependen
         if (shadow != null) {
             shadows.computeIfAbsent(shadow.type(), s -> new ArrayList<>()).add(shadow.value());
         } else {
-            ShadowCollection collection = addon.getDeclaredAnnotation(ShadowCollection.class);
+            Shadow.List collection = addon.getDeclaredAnnotation(Shadow.List.class);
             if (collection != null) {
                 for (Shadow nested : collection.value()) {
                     shadows.computeIfAbsent(nested.type(), s -> new ArrayList<>()).add(nested.value());

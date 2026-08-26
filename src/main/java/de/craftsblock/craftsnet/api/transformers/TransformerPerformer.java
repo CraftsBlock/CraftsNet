@@ -4,7 +4,6 @@ import de.craftsblock.craftscore.cache.DoubleKeyedLruCache;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Handler;
 import de.craftsblock.craftsnet.api.transformers.annotations.Transformer;
-import de.craftsblock.craftsnet.api.transformers.annotations.TransformerCollection;
 import de.craftsblock.craftsnet.api.transformers.exceptions.TransformerException;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
@@ -26,13 +25,13 @@ import static de.craftsblock.craftsnet.utils.Utils.getGroupNames;
  * It serves as a central component in the transformation process within the CraftsNet API.</p>
  *
  * <p>Transformations are essential for converting and validating input data before it is processed by various methods.
- * This class facilitates the application of transformers defined by annotations such as {@link Transformer} and {@link TransformerCollection},
+ * This class facilitates the application of transformers defined by annotations such as {@link Transformer} and {@link Transformer.List},
  * allowing for dynamic and customizable data processing.</p>
  *
  * @author CraftsBlock
  * @author Philipp Maywald
  * @see Transformer
- * @see TransformerCollection
+ * @see Transformer.List
  * @see Transformable
  * @since 3.0.3-SNAPSHOT
  */
@@ -143,7 +142,7 @@ public class TransformerPerformer {
      * @return {@code true} if there are transformers present, {@code false} otherwise
      */
     public boolean hasNoTransformers(Object obj) {
-        return (obj instanceof Method method ? method : obj.getClass()).getAnnotation(TransformerCollection.class) == null &&
+        return (obj instanceof Method method ? method : obj.getClass()).getAnnotation(Transformer.List.class) == null &&
                 (obj instanceof Method method ? method : obj.getClass()).getAnnotation(Transformer.class) == null;
     }
 
@@ -158,7 +157,7 @@ public class TransformerPerformer {
      *                                access to the method Transformable.transform(String) is restricted.
      */
     private void applyTransformers(Object[] args, Object obj) throws NoSuchMethodException, InstantiationException, IllegalAccessException {
-        TransformerCollection transformers = (obj instanceof Method method ? method : obj.getClass()).getAnnotation(TransformerCollection.class);
+        Transformer.List transformers = (obj instanceof Method method ? method : obj.getClass()).getAnnotation(Transformer.List.class);
         if (transformers != null) {
             for (Transformer transformer : transformers.value()) {
                 transform(groupNames, args, transformer);

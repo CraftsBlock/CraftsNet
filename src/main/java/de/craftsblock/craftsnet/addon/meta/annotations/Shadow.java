@@ -11,14 +11,13 @@ import java.lang.annotation.*;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @see ShadowCollection
  * @see ShadowType
  * @since 3.3.4-SNAPSHOT
  */
-@ApiStatus.Experimental
+@Documented
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Repeatable(ShadowCollection.class)
+@Repeatable(Shadow.List.class)
 public @interface Shadow {
 
     /**
@@ -35,5 +34,25 @@ public @interface Shadow {
      * @return the type of the shadow dependency
      */
     ShadowType type() default ShadowType.DEPENDENCY;
+
+    /**
+     * A container annotation for grouping multiple {@link Shadow} annotations.
+     *
+     * @since 3.7.3
+     */
+    @Documented
+    @ApiStatus.Internal
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface List {
+
+        /**
+         * An array of {@link Shadow} annotations.
+         *
+         * @return The grouped {@link Shadow} annotations.
+         */
+        Shadow[] value();
+
+    }
 
 }

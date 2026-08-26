@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.middlewares.annotation;
 
 import de.craftsblock.craftsnet.api.middlewares.Middleware;
+import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.annotation.*;
@@ -31,11 +32,10 @@ public @interface ApplyMiddleware {
      * The {@link List} annotation is used to repeat the {@link ApplyMiddleware}
      * annotation.
      *
-     * @author Philipp Maywald
-     * @author CraftsBlock
      * @since 3.4.0-SNAPSHOT
      */
     @Documented
+    @ApiStatus.Internal
     @Retention(RetentionPolicy.RUNTIME)
     @Target({ElementType.TYPE, ElementType.METHOD})
     @interface List {
