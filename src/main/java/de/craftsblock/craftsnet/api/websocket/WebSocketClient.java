@@ -252,7 +252,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         } catch (SocketException ignored) {
         } catch (Throwable t) {
             if (t instanceof IOException ioException && ioException.getMessage().contains("EOF")) {
-                logger.error("EOF: No more data can be read from the input streams!");
+                logger.error("EOF: No more data can be read from the input streams!", t);
                 return;
             }
             createErrorLog(t);
@@ -264,8 +264,8 @@ public class WebSocketClient implements Runnable, RequireAble {
     /**
      * Handles the frame of an incoming message.
      *
-     * @param frame The frame of the incoming message.
-     * @return {@code true} if the read loop should be exited, {@code false} otherwise.
+     * @param frame           The frame of the incoming message.
+     * @param continueReading A flag whether the message reading should continue.
      * @since 3.4.0-SNAPSHOT
      */
     private void handleIncomingMessage(Frame frame, AtomicBoolean continueReading) {
