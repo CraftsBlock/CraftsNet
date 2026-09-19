@@ -33,7 +33,7 @@ public class Request implements AutoCloseable, RequireAble {
 
     private final CraftsNet craftsNet;
     private StreamEncoder streamEncoder;
-    private final com.sun.net.httpserver.HttpExchange httpExchange;
+    private final com.sun.net.httpserver.HttpExchange unsafe;
     private final Headers headers;
     private final String domain;
     private final HttpMethod httpMethod;
@@ -53,18 +53,18 @@ public class Request implements AutoCloseable, RequireAble {
     /**
      * Constructs a new Request object.
      *
-     * @param craftsNet    The {@link CraftsNet} instance to which the request was made.
-     * @param httpExchange The {@link com.sun.net.httpserver.HttpExchange} object representing the incoming HTTP request.
-     * @param headers      The {@link Headers} object representing the headers of the incoming http request.
-     * @param url          The query string extracted from the request URI.
-     * @param ip           The ip address of the client sending the request.
-     * @param domain       The domain used to make the http request.
-     * @param httpMethod   The {@link HttpMethod} used to access the route.
+     * @param craftsNet  The {@link CraftsNet} instance to which the request was made.
+     * @param unsafe     The {@link com.sun.net.httpserver.HttpExchange} object representing the incoming HTTP request.
+     * @param headers    The {@link Headers} object representing the headers of the incoming http request.
+     * @param url        The query string extracted from the request URI.
+     * @param ip         The ip address of the client sending the request.
+     * @param domain     The domain used to make the http request.
+     * @param httpMethod The {@link HttpMethod} used to access the route.
      */
-    public Request(CraftsNet craftsNet, com.sun.net.httpserver.HttpExchange httpExchange,
+    public Request(CraftsNet craftsNet, com.sun.net.httpserver.HttpExchange unsafe,
                    Headers headers, String url, String ip, String connectingIp, String domain, HttpMethod httpMethod) {
         this.craftsNet = craftsNet;
-        this.httpExchange = httpExchange;
+        this.unsafe = unsafe;
         this.headers = headers;
         this.rawUrl = url;
         this.ip = ip;
@@ -102,7 +102,7 @@ public class Request implements AutoCloseable, RequireAble {
         if (streamEncoder == null)
             throw new RuntimeException(new UnsupportedEncodingException("Unsupported request body encoding: " + encoding));
 
-        try (InputStream input = streamEncoder.encodeInputStream(new FilterInputStream(httpExchange.getRequestBody()) {
+        try (InputStream input = streamEncoder.encodeInputStream(new FilterInputStream(unsafe.getRequestBody()) {
             public void close() {
             }
         })) {
@@ -410,7 +410,7 @@ public class Request implements AutoCloseable, RequireAble {
      * @return The RequestMethod enum representing the request method.
      */
     public HttpMethod getRequestMethod() {
-        return HttpMethod.parse(httpExchange.getRequestMethod());
+        return HttpMethod.parse(unsafe.getRequestMethod());
     }
 
     /**
@@ -429,7 +429,7 @@ public class Request implements AutoCloseable, RequireAble {
      * @return The HttpExchange object.
      */
     public com.sun.net.httpserver.HttpExchange unsafe() {
-        return httpExchange;
+        return unsafe;
     }
 
     /**
