@@ -22,7 +22,7 @@ public class FloatTransformer implements Transformable<String, Float> {
      * @throws NotTransformableException If the parameter cannot be transformed to a Float.
      */
     @Override
-    public Float transform(String parameter) {
+    public Float apply(String parameter) {
         try {
             return Float.parseFloat(parameter);
         } catch (NumberFormatException e) {

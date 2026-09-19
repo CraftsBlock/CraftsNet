@@ -22,7 +22,7 @@ public class BooleanTransformer implements Transformable<String, Boolean> {
      * @throws NotTransformableException If the parameter cannot be transformed to a Boolean.
      */
     @Override
-    public Boolean transform(String parameter) {
+    public Boolean apply(String parameter) {
         try {
             return Boolean.parseBoolean(parameter);
         } catch (NumberFormatException e) {

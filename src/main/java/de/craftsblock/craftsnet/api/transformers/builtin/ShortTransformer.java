@@ -22,7 +22,7 @@ public class ShortTransformer implements Transformable<String, Short> {
      * @throws NotTransformableException If the parameter cannot be transformed to a Short.
      */
     @Override
-    public Short transform(String parameter) {
+    public Short apply(String parameter) {
         try {
             return Short.parseShort(parameter);
         } catch (NumberFormatException e) {

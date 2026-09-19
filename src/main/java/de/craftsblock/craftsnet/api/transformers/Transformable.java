@@ -24,24 +24,14 @@ public interface Transformable<T, R> extends Function<T, R> {
      * @param parameter The parameter to be transformed.
      * @return The transformed parameter of type {@link T}.
      */
-    R transform(T parameter);
-
-    /**
-     * Delegates to {@link #transform(Object)}.
-     *
-     * @param parameter the function argument
-     * @return The transformed parameter.
-     */
     @Override
-    default R apply(T parameter) {
-        return this.transform(parameter);
-    }
+    R apply(T parameter);
 
     /**
      * Gets the parent {@link Transformable transformer} which is invoked before invoking
-     * {@link #transform(Object)} on this {@link Transformable transformer}.
+     * {@link #apply(Object)} on this {@link Transformable transformer}.
      * If the parent is null, no parent {@link Transformable transformer} will be applied
-     * before invoking {@link #transform(Object)}.
+     * before invoking {@link #apply(Object)}.
      *
      * @return The parent {@link Transformable transformer}, may be null.
      * @since 3.4.0-SNAPSHOT
@@ -51,7 +41,7 @@ public interface Transformable<T, R> extends Function<T, R> {
     }
 
     /**
-     * Gets whether the result of {@link #transform(Object)} should be cached or not.
+     * Gets whether the result of {@link #apply(Object)} should be cached or not.
      *
      * @return true when its cacheable, false otherwise.
      */

@@ -24,7 +24,7 @@ public class UUIDTransformer implements Transformable<String, UUID> {
      * @throws NotTransformableException If the parameter cannot be transformed to an {@link UUID}.
      */
     @Override
-    public UUID transform(String parameter) {
+    public UUID apply(String parameter) {
         try {
             return UUID.fromString(parameter);
         } catch (IllegalArgumentException e) {

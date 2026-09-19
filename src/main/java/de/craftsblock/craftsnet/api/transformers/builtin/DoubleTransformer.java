@@ -22,7 +22,7 @@ public class DoubleTransformer implements Transformable<String, Double> {
      * @throws NotTransformableException If the parameter cannot be transformed to a Double.
      */
     @Override
-    public Double transform(String parameter) {
+    public Double apply(String parameter) {
         try {
             return Double.parseDouble(parameter);
         } catch (NumberFormatException e) {

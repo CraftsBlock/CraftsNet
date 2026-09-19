@@ -22,7 +22,7 @@ public class ByteTransformer implements Transformable<String, Byte> {
      * @throws NotTransformableException If the parameter cannot be transformed to a Byte.
      */
     @Override
-    public Byte transform(String parameter) {
+    public Byte apply(String parameter) {
         try {
             return Byte.parseByte(parameter);
         } catch (NumberFormatException e) {

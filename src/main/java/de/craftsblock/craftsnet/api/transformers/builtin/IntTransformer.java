@@ -22,7 +22,7 @@ public class IntTransformer implements Transformable<String, Integer> {
      * @throws NotTransformableException If the parameter cannot be transformed to an Integer.
      */
     @Override
-    public Integer transform(String parameter) {
+    public Integer apply(String parameter) {
         try {
             return Integer.parseInt(parameter);
         } catch (NumberFormatException e) {

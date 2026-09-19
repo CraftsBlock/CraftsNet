@@ -22,7 +22,7 @@ public class LongTransformer implements Transformable<String, Long> {
      * @throws NotTransformableException If the parameter cannot be transformed to a Long.
      */
     @Override
-    public Long transform(String parameter) {
+    public Long apply(String parameter) {
         try {
             return Long.parseLong(parameter);
         } catch (NumberFormatException e) {
