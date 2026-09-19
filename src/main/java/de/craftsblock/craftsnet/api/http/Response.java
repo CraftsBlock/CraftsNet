@@ -44,7 +44,7 @@ public class Response implements AutoCloseable {
 
     private final CraftsNet craftsNet;
 
-    private final com.sun.net.httpserver.HttpExchange httpExchange;
+    private final com.sun.net.httpserver.HttpExchange unsafe;
     private final Headers headers;
     private final ConcurrentHashMap<String, Cookie> cookies = new ConcurrentHashMap<>();
     private final CorsPolicy corsPolicy;
@@ -65,16 +65,16 @@ public class Response implements AutoCloseable {
      *
      * @param craftsNet     The {@link CraftsNet} instance which instantiates this
      * @param streamEncoder The {@link StreamEncoder} that should be used to encode the response body.
-     * @param httpExchange  The {@link com.sun.net.httpserver.HttpExchange} object representing the HTTP request-response httpExchange.
+     * @param unsafe        The {@link com.sun.net.httpserver.HttpExchange} object representing the HTTP request-response httpExchange.
      * @param httpMethod    The {@link HttpMethod} used to access the route.
      */
-    protected Response(CraftsNet craftsNet, StreamEncoder streamEncoder, com.sun.net.httpserver.HttpExchange httpExchange,
+    protected Response(CraftsNet craftsNet, StreamEncoder streamEncoder, com.sun.net.httpserver.HttpExchange unsafe,
                        HttpMethod httpMethod) {
         this.craftsNet = craftsNet;
 
-        this.httpExchange = httpExchange;
+        this.unsafe = unsafe;
         this.streamEncoder = streamEncoder;
-        this.headers = httpExchange.getResponseHeaders();
+        this.headers = unsafe.getResponseHeaders();
         this.bodyAble = httpMethod.isResponseBodyAble();
         this.corsPolicy = new CorsPolicy();
 
@@ -353,7 +353,7 @@ public class Response implements AutoCloseable {
         }
 
         try {
-            httpExchange.sendResponseHeaders(status.getCode(), length);
+            unsafe.sendResponseHeaders(status.getCode(), length);
             this.headersSent = true;
         } catch (IOException e) {
             throw new UncheckedIOException("Failed to send response headers: " + e.getMessage(), e);
@@ -363,7 +363,7 @@ public class Response implements AutoCloseable {
             return;
         }
 
-        this.rawStream = httpExchange.getResponseBody();
+        this.rawStream = unsafe.getResponseBody();
     }
 
     /**
@@ -705,7 +705,7 @@ public class Response implements AutoCloseable {
      * @return The HttpExchange object representing the HTTP request-response httpExchange.
      */
     public com.sun.net.httpserver.HttpExchange unsafe() {
-        return httpExchange;
+        return unsafe;
     }
 
     /**
