@@ -57,39 +57,19 @@ public final class AddonClassLoader extends CraftsNetUrlClassLoader<AddonClassLo
     }
 
     /**
-     * Loads the class with the specified name, optionally linking it after loading.
+     * {@inheritDoc}
      *
-     * @param name    The binary name of the class to be loaded.
-     * @param resolve {@code true} to resolve the class; {@code false} to skip resolution.
-     * @return The {@code Class} object representing the loaded class.
-     * @throws ClassNotFoundException If the class could not be found.
+     * @param name    {@inheritDoc}
+     * @param resolve {@inheritDoc}
+     * @param lookup  {@inheritDoc}
+     * @return {@inheritDoc}
+     * @throws ClassNotFoundException {@inheritDoc}
      */
     @Override
-    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        return loadClass0(name, resolve, true);
-    }
-
-    /**
-     * Loads the class with the specified name, optionally linking it after loading.
-     *
-     * @param name    The binary name of the class to be loaded.
-     * @param resolve {@code true} to resolve the class; {@code false} to skip resolution.
-     * @param lookup  {@code true} to perform a lookup if the class is not found in this loader;
-     *                {@code false} to skip lookup.
-     * @return The {@code Class} object representing the loaded class.
-     * @throws ClassNotFoundException If the class could not be found.
-     */
-    private Class<?> loadClass0(String name, boolean resolve, boolean lookup) throws ClassNotFoundException {
-        try {
-            Class<?> result = super.loadClass(name, resolve);
-            if (lookup || result.getClassLoader() == this) {
-                return result;
-            }
-        } catch (ClassNotFoundException ignored) {
-        }
-
-        if (!lookup) {
-            throw new ClassNotFoundException(name);
+    Class<?> loadClass0(String name, boolean resolve, boolean lookup) throws ClassNotFoundException {
+        Class<?> parentResult = super.loadClass0(name, resolve, lookup);
+        if (parentResult != null) {
+            return parentResult;
         }
 
         for (AddonClassLoader loader : addonLoaders) {
