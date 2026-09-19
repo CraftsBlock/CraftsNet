@@ -19,6 +19,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 public abstract class AutoRegisterHandler<T> {
 
     protected final CraftsNet craftsNet;
+    protected final boolean acceptInterfaces;
 
     /**
      * Constructs an {@link AutoRegisterHandler} with the specified {@link CraftsNet} instance.
@@ -26,7 +27,19 @@ public abstract class AutoRegisterHandler<T> {
      * @param craftsNet The main {@link CraftsNet} instance, which provides access to the application's context.
      */
     public AutoRegisterHandler(CraftsNet craftsNet) {
+        this(craftsNet, false);
+    }
+
+    /**
+     * Constructs an {@link AutoRegisterHandler} with the specified {@link CraftsNet} instance.
+     *
+     * @param craftsNet        The main {@link CraftsNet} instance, which provides access to the application's context.
+     * @param acceptInterfaces {@code true} if this handler accepts interfaces, {@code false} otherwise.
+     * @since 3.7.3
+     */
+    public AutoRegisterHandler(CraftsNet craftsNet, boolean acceptInterfaces) {
         this.craftsNet = craftsNet;
+        this.acceptInterfaces = acceptInterfaces;
     }
 
     /**
@@ -47,6 +60,17 @@ public abstract class AutoRegisterHandler<T> {
      */
     public CraftsNet getCraftsNet() {
         return craftsNet;
+    }
+
+    /**
+     * Returns whether this {@link AutoRegisterHandler} accepts interfaces
+     * for registration.
+     *
+     * @return {@code true} if it accepts interfaces, {@code false} otherwise.
+     * @since 3.7.3
+     */
+    public boolean isAcceptInterfaces() {
+        return acceptInterfaces;
     }
 
 }

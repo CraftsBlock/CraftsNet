@@ -17,6 +17,7 @@ import de.craftsblock.craftsnet.autoregister.builtin.sockets.codec.WebSocketType
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
+import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -142,7 +143,9 @@ public class AutoRegisterRegistry {
                     return false;
 
         List<? extends AutoRegisterHandler<?>> handlers = autoRegisterHandlers.entrySet().stream()
-                .filter(entry -> info.getParentTypes().contains(entry.getKey().getName()))
+                .filter(entry -> info.getParentTypes()
+                        .stream().anyMatch(type -> TypeUtils.isAssignable(entry.getKey(), type)))
+                .filter(entry -> entry.getValue().isAcceptInterfaces() || !info.isInterface())
                 .map(Map.Entry::getValue)
                 .toList();
 

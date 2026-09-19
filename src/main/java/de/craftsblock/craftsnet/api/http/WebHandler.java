@@ -157,7 +157,7 @@ public class WebHandler implements HttpHandler {
      * @since 3.7.1
      */
     private void handleThrowable(Response response, String url, HttpMethod httpMethod, Throwable t) {
-        BiConsumer<Json, Integer> responder = (json, code) -> {
+        BiConsumer<String, Integer> responder = (json, code) -> {
             if (!response.headersSent()) {
                 response.setStatus(code);
             }
@@ -167,12 +167,8 @@ public class WebHandler implements HttpHandler {
             }
         };
 
-        if (t instanceof HttpStatusException httpStatusException) {
-            handleHttpStatusException(responder, httpStatusException);
-            return;
-        }
-
-        if (t.getCause() instanceof HttpStatusException httpStatusException) {
+        HttpStatusException httpStatusException = getHttpStatusException(t);
+        if (httpStatusException != null) {
             handleHttpStatusException(responder, httpStatusException);
             return;
         }
@@ -190,9 +186,29 @@ public class WebHandler implements HttpHandler {
                 Json.empty()
                         .set("code", HttpStatus.ServerError.INTERNAL_SERVER_ERROR.getCode())
                         .set("message", "An unexpected exception happened whilst processing your request!")
-                        .setIf("incident", errorID, () -> errorID != null),
+                        .setIf("incident", errorID, () -> errorID != null)
+                        .toString(),
                 HttpStatus.ServerError.INTERNAL_SERVER_ERROR.getCode()
         );
+    }
+
+    /**
+     * Checks whether a {@link Throwable} was caused by an {@link HttpStatusException}
+     * and returns the {@link HttpStatusException}.
+     *
+     * @param throwable The {@link Throwable} to check.
+     * @return The throwable causing {@link HttpStatusException}.
+     */
+    private HttpStatusException getHttpStatusException(Throwable throwable) {
+        if (throwable instanceof HttpStatusException httpStatusException) {
+            return httpStatusException;
+        }
+
+        if (throwable.getCause() == null) {
+            return null;
+        }
+
+        return getHttpStatusException(throwable.getCause());
     }
 
     /**
@@ -202,13 +218,18 @@ public class WebHandler implements HttpHandler {
      * @param statusException The caught {@link HttpStatusException}.
      * @since 3.7.1
      */
-    private void handleHttpStatusException(BiConsumer<Json, Integer> responder, HttpStatusException statusException) {
-        responder.accept(
-                Json.empty()
-                        .set("code", statusException.getCode())
-                        .set("message", statusException.getMessage()),
-                statusException.getCode()
-        );
+    private void handleHttpStatusException(BiConsumer<String, Integer> responder, HttpStatusException statusException) {
+        String message;
+        if (statusException.isRawMessageFormat()) {
+            message = statusException.getMessage();
+        } else {
+            message = Json.empty()
+                    .set("code", statusException.getCode())
+                    .set("message", statusException.getMessage())
+                    .toString();
+        }
+
+        responder.accept(message, statusException.getCode());
     }
 
     /**

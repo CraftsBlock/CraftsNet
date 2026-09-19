@@ -55,6 +55,45 @@ public sealed abstract class CraftsNetUrlClassLoader<T extends CraftsNetUrlClass
     }
 
     /**
+     * Loads the class with the specified name, optionally linking it after loading.
+     *
+     * @param name    The binary name of the class to be loaded.
+     * @param resolve {@code true} to resolve the class; {@code false} to skip resolution.
+     * @return The {@code Class} object representing the loaded class.
+     * @throws ClassNotFoundException If the class could not be found.
+     */
+    @Override
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        return loadClass0(name, resolve, true);
+    }
+
+    /**
+     * Loads the class with the specified name, optionally linking it after loading.
+     *
+     * @param name    The binary name of the class to be loaded.
+     * @param resolve {@code true} to resolve the class; {@code false} to skip resolution.
+     * @param lookup  {@code true} to perform a lookup if the class is not found in this loader;
+     *                {@code false} to skip lookup.
+     * @return The {@code Class} object representing the loaded class.
+     * @throws ClassNotFoundException If the class could not be found.
+     */
+    Class<?> loadClass0(String name, boolean resolve, boolean lookup) throws ClassNotFoundException {
+        try {
+            Class<?> result = super.loadClass(name, resolve);
+            if (lookup || result.getClassLoader() == this) {
+                return result;
+            }
+        } catch (ClassNotFoundException ignored) {
+        }
+
+        if (lookup) {
+            return null;
+        }
+
+        throw new ClassNotFoundException(name);
+    }
+
+    /**
      * {@inheritDoc}
      * <p>
      * If the requested resource is located under {@code META-INF/services},

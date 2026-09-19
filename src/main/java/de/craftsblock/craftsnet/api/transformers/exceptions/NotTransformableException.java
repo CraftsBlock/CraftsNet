@@ -19,8 +19,7 @@ public class NotTransformableException extends TransformerException {
      */
     public NotTransformableException(String parameter, Class<?> targetType) {
         super(
-                "\"" + parameter + "\" is not transformable to type " +
-                        targetType.getSimpleName().split("\\.")[targetType.getSimpleName().split("\\.").length - 1]
+                "\"" + parameter + "\" is not transformable to type " + targetType.getSimpleName()
         );
     }
 

@@ -18,6 +18,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -102,9 +103,10 @@ public class WebServer extends Server {
                     server = httpsServer;
                 }
             }
-        } catch (UnrecoverableKeyException | KeyManagementException | KeyStoreException | NoSuchAlgorithmException | CertificateException |
-                 IOException e) {
-            logger.error(e);
+        } catch (UnrecoverableKeyException | KeyManagementException | KeyStoreException |
+                 NoSuchAlgorithmException | CertificateException | IOException |
+                 InvalidKeySpecException e) {
+            logger.error("Failed to load ssl certificate", e);
         } finally {
             if (server == null) {
                 if (ssl)

@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */
-public class LongTransformer implements Transformable<Long, String> {
+public class LongTransformer implements Transformable<String, Long> {
 
     /**
      * Transforms the provided string parameter into a Long object.
@@ -22,7 +22,7 @@ public class LongTransformer implements Transformable<Long, String> {
      * @throws NotTransformableException If the parameter cannot be transformed to a Long.
      */
     @Override
-    public Long transform(String parameter) {
+    public Long apply(String parameter) {
         try {
             return Long.parseLong(parameter);
         } catch (NumberFormatException e) {

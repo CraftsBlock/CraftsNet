@@ -15,12 +15,12 @@ import java.lang.annotation.*;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @see DependsCollection
  * @since 3.1.0-SNAPSHOT
  */
+@Documented
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
-@Repeatable(DependsCollection.class)
+@Repeatable(Depends.List.class)
 public @interface Depends {
 
     /**
@@ -43,5 +43,25 @@ public @interface Depends {
      * @since 3.3.4-SNAPSHOT
      */
     boolean soft() default false;
+
+    /**
+     * A container annotation for grouping multiple {@link Depends} annotations.
+     *
+     * @since 3.7.3
+     */
+    @Documented
+    @ApiStatus.Internal
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface List {
+
+        /**
+         * An array of {@link Depends} annotations.
+         *
+         * @return The grouped {@link Depends} annotations.
+         */
+        Depends[] value();
+
+    }
 
 }

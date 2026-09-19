@@ -9,6 +9,7 @@ import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Method;
 import java.util.Deque;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,7 +26,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class MiddlewareRegistry {
 
-    private final Map<Class<? extends Server>, Deque<Middleware>> middlewares = new ConcurrentHashMap<>();
+    private final Map<Class<? extends Server>, Deque<Middleware>> middlewares = new HashMap<>();
 
     /**
      * Constructs a new {@link MiddlewareRegistry} and initializes the middleware storage
@@ -46,9 +47,15 @@ public class MiddlewareRegistry {
      * @param middleware The {@link Middleware middleware} to register.
      */
     public void register(Middleware middleware) {
-        if (isRegistered(middleware)) return;
+        if (isRegistered(middleware)) {
+            return;
+        }
+
         Server.SERVER_TYPES.forEach(type -> {
-            if (!middleware.isApplicable(type)) return;
+            if (!middleware.isApplicable(type)) {
+                return;
+            }
+
             middlewares.get(type).add(middleware);
         });
     }
@@ -61,7 +68,10 @@ public class MiddlewareRegistry {
      */
     public void unregister(Middleware middleware) {
         Server.SERVER_TYPES.forEach(type -> {
-            if (!middleware.isApplicable(type)) return;
+            if (!middleware.isApplicable(type)) {
+                return;
+            }
+
             middlewares.get(type).remove(middleware);
         });
     }
@@ -77,7 +87,10 @@ public class MiddlewareRegistry {
         AtomicBoolean registered = new AtomicBoolean(true);
 
         Server.SERVER_TYPES.forEach(type -> {
-            if (!registered.get() || !middleware.isApplicable(type)) return;
+            if (!registered.get() || !middleware.isApplicable(type)) {
+                return;
+            }
+
             registered.set(middlewares.get(type).contains(middleware));
         });
 
@@ -149,8 +162,9 @@ public class MiddlewareRegistry {
         if (ReflectionUtils.isAnnotationPresent(element, ApplyMiddleware.List.class)) {
             ApplyMiddleware.List list = ReflectionUtils.retrieveRawAnnotation(element, ApplyMiddleware.List.class);
 
-            for (ApplyMiddleware middleware : list.value())
+            for (ApplyMiddleware middleware : list.value()) {
                 this.unpackMiddleware(middleware, deque);
+            }
         }
     }
 
@@ -164,15 +178,21 @@ public class MiddlewareRegistry {
      *                        {@link Middleware middlewares} should go.
      */
     private void unpackMiddleware(ApplyMiddleware applyMiddleware, Deque<Middleware> stack) {
-        if (applyMiddleware == null) return;
+        if (applyMiddleware == null) {
+            return;
+        }
 
         Class<? extends Middleware>[] middlewareTypes = applyMiddleware.value();
         for (Class<? extends Middleware> middlewareType : middlewareTypes) {
-            if (stack.stream().map(Object::getClass).anyMatch(type -> type.equals(middlewareType)))
+            if (stack.stream().map(Object::getClass).anyMatch(type -> type.equals(middlewareType))) {
                 continue;
+            }
 
             Middleware middleware = ReflectionUtils.getNewInstance(middlewareType);
-            if (isRegistered(middleware)) return;
+            if (isRegistered(middleware)) {
+                return;
+            }
+
             stack.push(middleware);
         }
     }

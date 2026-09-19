@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Map;
 
 /**
@@ -83,10 +84,13 @@ public enum ClosureCode {
      */
     TLS_HANDSHAKE_FAIL(1015, true);
 
-    private static final Map<Integer, ClosureCode> LOOKUP = new HashMap<>();
+    private static final Map<Integer, ClosureCode> LOOKUP;
 
     static {
-        for (ClosureCode closureCode : ClosureCode.values()) {
+        var values = values();
+        LOOKUP = new HashMap<>(values.length);
+
+        for (ClosureCode closureCode : values) {
             LOOKUP.put(closureCode.code, closureCode);
         }
     }
@@ -123,6 +127,10 @@ public enum ClosureCode {
         return internal;
     }
 
+    public boolean isGraceful() {
+        return this.equals(NORMAL);
+    }
+
     /**
      * Checks if a closure code exists in as defined in
      * <a href="https://datatracker.ietf.org/doc/html/rfc6455#section-5.2">RFC 6455</a>.
@@ -143,8 +151,42 @@ public enum ClosureCode {
      * @since 3.5.3
      */
     public static boolean isInternal(int code) {
-        if (!exists(code)) return false;
+        if (!exists(code)) {
+            return false;
+        }
+
         return fromInt(code).isInternal();
+    }
+
+    public static boolean isGraceful(int code) {
+        if (!exists(code)) {
+            return false;
+        }
+
+        return fromInt(code).isGraceful();
+    }
+
+    /**
+     * Validates whether a close code may be sent in a WebSocket Close frame.
+     *
+     * @param code the close code to validate
+     * @throws IllegalArgumentException if the code is not valid for use in a
+     *                                  Close frame
+     */
+    public static void validateCloseCode(int code) {
+        if (code < 1000 || code > 4999) {
+            throw new IllegalArgumentException(
+                    "Invalid close code %d: must be between 1000 and 4999!"
+                            .formatted(code)
+            );
+        }
+
+        if (ClosureCode.isInternal(code)) {
+            throw new IllegalArgumentException(
+                    "Invalid close code %d: reserved for internal use!"
+                            .formatted(code)
+            );
+        }
     }
 
     /**

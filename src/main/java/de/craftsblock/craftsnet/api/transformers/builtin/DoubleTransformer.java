@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */
-public class DoubleTransformer implements Transformable<Double, String> {
+public class DoubleTransformer implements Transformable<String, Double> {
 
     /**
      * Transforms the provided string parameter into a Double object.
@@ -22,7 +22,7 @@ public class DoubleTransformer implements Transformable<Double, String> {
      * @throws NotTransformableException If the parameter cannot be transformed to a Double.
      */
     @Override
-    public Double transform(String parameter) {
+    public Double apply(String parameter) {
         try {
             return Double.parseDouble(parameter);
         } catch (NumberFormatException e) {

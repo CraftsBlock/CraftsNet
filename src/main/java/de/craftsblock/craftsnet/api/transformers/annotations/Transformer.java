@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.transformers.annotations;
 
 import de.craftsblock.craftsnet.api.transformers.Transformable;
+import org.jetbrains.annotations.ApiStatus;
 
 import java.lang.annotation.*;
 
@@ -16,10 +17,10 @@ import java.lang.annotation.*;
  * @author Philipp Maywald
  * @author CraftsBlock
  * @see Transformable
- * @see TransformerCollection
  * @since 3.0.2-SNAPSHOT
  */
-@Repeatable(TransformerCollection.class)
+@Documented
+@Repeatable(Transformer.List.class)
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.METHOD, ElementType.TYPE})
 public @interface Transformer {
@@ -46,5 +47,25 @@ public @interface Transformer {
      * @return True if caching is enabled, false otherwise.
      */
     boolean cacheable() default true;
+
+    /**
+     * A container annotation for grouping multiple {@link Transformer} annotations.
+     *
+     * @since 3.7.3
+     */
+    @Documented
+    @ApiStatus.Internal
+    @Target(ElementType.TYPE)
+    @Retention(RetentionPolicy.RUNTIME)
+    @interface List {
+
+        /**
+         * An array of {@link Transformer} annotations.
+         *
+         * @return The grouped {@link Transformer} annotations.
+         */
+        Transformer[] value();
+
+    }
 
 }

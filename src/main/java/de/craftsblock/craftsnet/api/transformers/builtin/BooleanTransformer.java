@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */
-public class BooleanTransformer implements Transformable<Boolean, String> {
+public class BooleanTransformer implements Transformable<String, Boolean> {
 
     /**
      * Transforms the provided string parameter into a Boolean object.
@@ -22,7 +22,7 @@ public class BooleanTransformer implements Transformable<Boolean, String> {
      * @throws NotTransformableException If the parameter cannot be transformed to a Boolean.
      */
     @Override
-    public Boolean transform(String parameter) {
+    public Boolean apply(String parameter) {
         try {
             return Boolean.parseBoolean(parameter);
         } catch (NumberFormatException e) {
