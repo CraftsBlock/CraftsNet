@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */
-public class IntTransformer implements Transformable<Integer, String> {
+public class IntTransformer implements Transformable<String, Integer> {
 
     /**
      * Transforms the provided string parameter into an Integer object.
@@ -22,7 +22,7 @@ public class IntTransformer implements Transformable<Integer, String> {
      * @throws NotTransformableException If the parameter cannot be transformed to an Integer.
      */
     @Override
-    public Integer transform(String parameter) {
+    public Integer apply(String parameter) {
         try {
             return Integer.parseInt(parameter);
         } catch (NumberFormatException e) {

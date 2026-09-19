@@ -12,7 +12,7 @@ import de.craftsblock.craftsnet.api.transformers.exceptions.NotTransformableExce
  * @see Transformable
  * @since 3.0.2-SNAPSHOT
  */
-public class ShortTransformer implements Transformable<Short, String> {
+public class ShortTransformer implements Transformable<String, Short> {
 
     /**
      * Transforms the provided string parameter into a Short object.
@@ -22,7 +22,7 @@ public class ShortTransformer implements Transformable<Short, String> {
      * @throws NotTransformableException If the parameter cannot be transformed to a Short.
      */
     @Override
-    public Short transform(String parameter) {
+    public Short apply(String parameter) {
         try {
             return Short.parseShort(parameter);
         } catch (NumberFormatException e) {
