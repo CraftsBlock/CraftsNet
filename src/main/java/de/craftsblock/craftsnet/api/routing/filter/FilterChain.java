@@ -6,10 +6,11 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-@FunctionalInterface
 public interface FilterChain<E extends Exchange> {
 
     Object nextFilter(E exchange);
+
+    boolean overlaps(FilterChain<?> that);
 
     static <T extends Exchange> FilterChain<T> newFilterChain(@NotNull List<Filter<T>> chain, @NotNull RouteInfo<T> routeInfo) {
         return new FilterChainImpl<>(chain, routeInfo);

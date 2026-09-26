@@ -7,6 +7,7 @@ import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.Response;
 import de.craftsblock.craftsnet.api.routing.builder.LambdaRouteBuilder;
 import de.craftsblock.craftsnet.api.routing.builder.ReflectionRouteBuilder;
+import de.craftsblock.craftsnet.api.routing.filter.http.HttpMethodFilter;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.api.websocket.WebSocketClient;
 import de.craftsblock.craftsnet.api.websocket.WebSocketExchange;
@@ -111,8 +112,29 @@ public class Router {
             @NotNull String path,
             @NotNull Consumer<LambdaRouteBuilder<HttpExchange, Request, Response>> routeBuilderConsumer) {
 
-        return this.registerLambda(
-                LambdaRouteBuilder.http(this),
+        return this.http(
+                (builder) -> {
+                    builder.path(path);
+                    routeBuilderConsumer.accept(builder);
+                }
+        );
+    }
+
+    public @NotNull RouteRegistration http(
+            @NotNull Consumer<LambdaRouteBuilder<HttpExchange, Request, Response>> routeBuilderConsumer) {
+
+        return this.registerLambda(LambdaRouteBuilder.http(this), routeBuilderConsumer.andThen(builder -> {
+            if (builder.getFilters().isEmpty()) {
+                builder.appendFilter(HttpMethodFilter.get());
+            }
+        }));
+    }
+
+    public @NotNull RouteRegistration webSocket(
+            @NotNull String path,
+            @NotNull Consumer<LambdaRouteBuilder<WebSocketExchange, WebSocketClient, WebSocketServer>> routeBuilderConsumer) {
+
+        return this.webSocket(
                 (builder) -> {
                     builder.path(path);
                     routeBuilderConsumer.accept(builder);
@@ -124,19 +146,6 @@ public class Router {
             @NotNull Consumer<LambdaRouteBuilder<WebSocketExchange, WebSocketClient, WebSocketServer>> routeBuilderConsumer) {
 
         return this.registerLambda(LambdaRouteBuilder.webSocket(this), routeBuilderConsumer);
-    }
-
-    public @NotNull RouteRegistration webSocket(
-            @NotNull String path,
-            @NotNull Consumer<LambdaRouteBuilder<WebSocketExchange, WebSocketClient, WebSocketServer>> routeBuilderConsumer) {
-
-        return this.registerLambda(
-                LambdaRouteBuilder.webSocket(this),
-                (builder) -> {
-                    builder.path(path);
-                    routeBuilderConsumer.accept(builder);
-                }
-        );
     }
 
     private <E extends Exchange, A, B> @NotNull RouteRegistration registerLambda(
