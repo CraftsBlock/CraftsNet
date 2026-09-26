@@ -28,13 +28,13 @@ public final class ReflectionRouteBuilder implements RouteBuilder<Exchange> {
         return this;
     }
 
-    public ReflectionRouteBuilder appendFilter(Filter<Exchange> filter) {
+    public ReflectionRouteBuilder appendGlobalFilter(Filter<Exchange> filter) {
         this.filters.add(filter);
         return this;
     }
 
     @Override
-    public @NotNull RouteInfo<Exchange> build() {
+    public @NotNull List<@NotNull RouteInfo<Exchange>> build() {
         return null;
     }
 

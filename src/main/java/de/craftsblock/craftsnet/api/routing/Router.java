@@ -5,7 +5,6 @@ import de.craftsblock.craftsnet.api.Handler;
 import de.craftsblock.craftsnet.api.http.HttpExchange;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.Response;
-import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.api.routing.builder.LambdaRouteBuilder;
 import de.craftsblock.craftsnet.api.routing.builder.ReflectionRouteBuilder;
 import de.craftsblock.craftsnet.api.utils.Scheme;
@@ -31,7 +30,7 @@ public class Router {
 
     private final RouterConfiguration configuration;
 
-    private final EnumMap<ServerType, Map<String, List<RouteInfo<?>>>> directRoutes = new EnumMap<>(ServerType.class);
+    private final EnumMap<ServerType, Map<String, List<RouteRegistration>>> directRoutes = new EnumMap<>(ServerType.class);
     private final EnumMap<ServerType, RoutingTrie> routingTries = new EnumMap<>(ServerType.class);
 
     private final RoutingCache routingCache;
@@ -74,7 +73,7 @@ public class Router {
         var directRoutes = withLock(readLock, () -> this.directRoutes.get(serverType).get(path));
         if (directRoutes != null && !directRoutes.isEmpty()) {
             return directRoutes.stream()
-                    .<RouteSearchResult<?>>map(RouteSearchResult::of)
+                    .<RouteSearchResult<?>>map((registration) -> RouteSearchResult.of(registration.getRouteInfo()))
                     .toList();
         }
 
@@ -87,26 +86,25 @@ public class Router {
         );
     }
 
-    public @NotNull RouteRegistration register(@NotNull Handler handler) {
+    public @NotNull @UnmodifiableView List<RouteRegistration> register(@NotNull Handler handler) {
         return this.register(handler, (ignored) -> {
         });
     }
 
-    public @NotNull RouteRegistration register(@NotNull Handler handler,
-                                               @NotNull Consumer<ReflectionRouteBuilder> routeBuilderConsumer) {
+    public @NotNull @UnmodifiableView List<RouteRegistration> register(@NotNull Handler handler,
+                                                                       @NotNull Consumer<ReflectionRouteBuilder> routeBuilderConsumer) {
         ReflectionRouteBuilder builder = new ReflectionRouteBuilder(this);
         builder.setHandler(handler);
 
         routeBuilderConsumer.accept(builder);
 
-        RouteInfo<Exchange> routeInfo = builder.build();
-        return this.addRoute(routeInfo);
-    }
+        List<RouteInfo<Exchange>> routeInfos = builder.build();
+        List<RouteRegistration> registrations = new ArrayList<>(routeInfos.size());
+        for (RouteInfo<Exchange> routeInfo : routeInfos) {
+            registrations.add(this.addRoute(routeInfo));
+        }
 
-    public @NotNull RouteRegistration http(
-            @NotNull Consumer<LambdaRouteBuilder<HttpExchange, Request, Response>> routeBuilderConsumer) {
-
-        return this.registerLambda(LambdaRouteBuilder.http(this), routeBuilderConsumer);
+        return Collections.unmodifiableList(registrations);
     }
 
     public @NotNull RouteRegistration http(
@@ -146,11 +144,12 @@ public class Router {
             @NotNull Consumer<LambdaRouteBuilder<E, A, B>> routeBuilderConsumer) {
 
         routeBuilderConsumer.accept(builder);
-        return this.addRoute(builder.build());
+        return this.addRoute(builder.build().get(0));
     }
 
     private @NotNull RouteRegistration addRoute(@NotNull RouteInfo<?> routeInfo) {
         ServerType serverType = routeInfo.serverType();
+        RouteRegistration registration = new RouteRegistration(this, routeInfo);
 
         var serverDirectRoutes = this.directRoutes.get(serverType);
         var serverRoutingTrie = this.routingTries.get(serverType);
@@ -161,14 +160,14 @@ public class Router {
             if (routeInfo.direct()) {
                 serverDirectRoutes
                         .computeIfAbsent(routeInfo.path(), p -> new ArrayList<>())
-                        .add(routeInfo);
+                        .add(registration);
                 return;
             }
 
-            serverRoutingTrie.insert(routeInfo);
+            serverRoutingTrie.insert(registration);
         });
 
-        return new RouteRegistration(this, routeInfo);
+        return registration;
     }
 
     void unregister(@NotNull RouteInfo<?> routeInfo) {
@@ -189,7 +188,7 @@ public class Router {
                 return;
             }
 
-            routes.remove(routeInfo);
+            routes.removeIf(routeRegistration -> routeRegistration.unregister(routeInfo));
             if (routes.isEmpty()) {
                 serverDirectRoutes.remove(path);
             }

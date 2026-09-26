@@ -7,6 +7,7 @@ import de.craftsblock.craftsnet.api.routing.filter.FilterChain;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnmodifiableView;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
@@ -27,7 +28,7 @@ public record RouteInfo<E extends Exchange>(
         this.serverType = serverType;
         this.path = path;
         this.handler = handler;
-        this.filters = Collections.unmodifiableList(filters);
+        this.filters = List.copyOf(filters);
         this.direct = direct;
     }
 

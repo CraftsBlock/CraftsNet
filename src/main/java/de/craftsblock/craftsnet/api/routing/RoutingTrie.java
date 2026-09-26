@@ -7,9 +7,10 @@ public final class RoutingTrie {
 
     private final Node root = new Node();
 
-    public void insert(RouteInfo<?> routeInfo) {
+    public void insert(RouteRegistration routeRegistration) {
         Node current = root;
         Set<String> parameterNames = new HashSet<>();
+        RouteInfo<?> routeInfo = routeRegistration.getRouteInfo();
 
         for (String segment : split(routeInfo.path())) {
             if (isParameter(segment)) {
@@ -27,7 +28,7 @@ public final class RoutingTrie {
             }
         }
 
-        current.routeInfos.add(routeInfo);
+        current.routeRegistrations.add(routeRegistration);
     }
 
     public void remove(RouteInfo<?> routeInfo) {
@@ -36,7 +37,7 @@ public final class RoutingTrie {
 
     private boolean remove(Node node, String[] segments, int index, RouteInfo<?> routeInfo) {
         if (index == segments.length) {
-            node.routeInfos.remove(routeInfo);
+            node.routeRegistrations.removeIf(routeRegistration -> routeRegistration.unregister(routeInfo));
             return node.isEmpty();
         }
 
@@ -71,8 +72,8 @@ public final class RoutingTrie {
                         Map<String, String> params, List<RouteSearchResult<?>> results) {
 
         if (index == segments.length) {
-            for (RouteInfo<?> routeInfo : node.routeInfos) {
-                results.add(createResult(routeInfo, params));
+            for (RouteRegistration routeRegistration : node.routeRegistrations) {
+                results.add(createResult(routeRegistration, params));
             }
             return;
         }
@@ -102,9 +103,9 @@ public final class RoutingTrie {
         }
     }
 
-    private RouteSearchResult<?> createResult(RouteInfo<?> routeInfo, Map<String, String> params) {
+    private RouteSearchResult<?> createResult(RouteRegistration routeRegistration, Map<String, String> params) {
         return RouteSearchResult.of(
-                routeInfo,
+                routeRegistration.getRouteInfo(),
                 params.isEmpty()
                         ? RouteSearchResult.EMPTY_PARAMS
                         : Collections.unmodifiableMap(new LinkedHashMap<>(params))
@@ -130,7 +131,7 @@ public final class RoutingTrie {
         private final Map<String, Node> children = new HashMap<>();
         private final Map<String, Node> parameters = new HashMap<>();
 
-        private final List<RouteInfo<?>> routeInfos = new ArrayList<>();
+        private final List<RouteRegistration> routeRegistrations = new ArrayList<>();
 
         private Node parameter(String name) {
             return parameters.computeIfAbsent(name, k -> new Node());
@@ -139,7 +140,7 @@ public final class RoutingTrie {
         private boolean isEmpty() {
             return children.isEmpty()
                     && parameters.isEmpty()
-                    && routeInfos.isEmpty();
+                    && routeRegistrations.isEmpty();
         }
     }
 

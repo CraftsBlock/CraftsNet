@@ -14,6 +14,7 @@ import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
@@ -77,7 +78,7 @@ public final class LambdaRouteBuilder<E extends Exchange, A, B> implements Route
     }
 
     @Override
-    public @NotNull RouteInfo<E> build() {
+    public @NotNull List<@NotNull RouteInfo<E>> build() {
         if (path == null) {
             throw new IllegalStateException("Route path is missing");
         }
@@ -86,13 +87,19 @@ public final class LambdaRouteBuilder<E extends Exchange, A, B> implements Route
             throw new IllegalStateException("Route handler is missing");
         }
 
-        return new RouteInfo<>(
-                this.serverType,
-                this.path,
-                this.handler,
-                this.filters,
-                !this.path.contains("{") && !this.path.contains("}")
+        return List.of(
+                new RouteInfo<>(
+                        this.serverType,
+                        this.path,
+                        this.handler,
+                        this.filters,
+                        !this.path.contains("{") && !this.path.contains("}")
+                )
         );
+    }
+
+    public List<Filter<E>> getFilters() {
+        return Collections.unmodifiableList(filters);
     }
 
     @Override
