@@ -1,11 +1,12 @@
 package de.craftsblock.craftsnet.api.http;
 
+import com.sun.source.tree.LiteralTree;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * The RequestMethod enum represents the different HTTP request methods, such as POST, GET, PUT, DELETE, PATCH, and HEAD.
@@ -173,18 +174,37 @@ public enum HttpMethod {
      * @return A normalized array of distinct, valid HttpMethod values
      * @since 3.4.3-SNAPSHOT
      */
-    public static HttpMethod[] normalize(HttpMethod @NotNull ... methods) {
-        return Arrays.stream(methods)
+    public static HttpMethod[] normalize(@NotNull HttpMethod... methods) {
+        return normalize(List.of(methods)).toArray(HttpMethod[]::new);
+    }
+
+    /**
+     * Normalizes the provided array of HttpMethod values by:
+     * <ul>
+     *     <li>Removing null values</li>
+     *     <li>Excluding UNKNOWN methods</li>
+     *     <li>Flattening ALL and ALL_RAW into their actual method components</li>
+     *     <li>Removing duplicates</li>
+     * </ul>
+     *
+     * @param methods The array of HttpMethod values to normalize
+     * @return A normalized array of distinct, valid HttpMethod values
+     * @since TODO: TDB
+     */
+    public static List<HttpMethod> normalize(@NotNull List<HttpMethod> methods) {
+        if (!methods.contains(ALL) && !methods.contains(ALL_RAW)) {
+            return new ArrayList<>(new HashSet<>(methods));
+        }
+
+        return methods.stream()
                 .filter(Objects::nonNull)
-                .filter(method -> !method.equals(UNKNOWN))
-                .distinct()
                 .flatMap(method -> switch (method) {
                     case ALL, ALL_RAW -> Arrays.stream(method.getMethods());
-                    default -> Arrays.stream(new HttpMethod[]{method});
+                    case UNKNOWN -> Stream.empty();
+                    default -> Stream.of(method);
                 })
-                .filter(Objects::nonNull)
                 .distinct()
-                .toArray(HttpMethod[]::new);
+                .toList();
     }
 
     /**
@@ -209,7 +229,10 @@ public enum HttpMethod {
      * @since 3.4.3-SNAPSHOT
      */
     public static String join(@NotNull CharSequence delimiter, HttpMethod @NotNull ... methods) {
-        if (methods.length == 0) return "";
+        if (methods.length == 0) {
+            return "";
+        }
+
         return String.join(delimiter, Arrays.stream(normalize(methods)).map(HttpMethod::name).toList());
     }
 
