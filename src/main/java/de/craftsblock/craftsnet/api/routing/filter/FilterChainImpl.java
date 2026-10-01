@@ -62,4 +62,12 @@ final class FilterChainImpl<E extends Exchange> implements FilterChain<E> {
         return Objects.hash(filters);
     }
 
+    @Override
+    public String toString() {
+        return "FilterChainImpl{" +
+                "filters=" + filters +
+                ", routeInfo=" + routeInfo +
+                '}';
+    }
+
 }

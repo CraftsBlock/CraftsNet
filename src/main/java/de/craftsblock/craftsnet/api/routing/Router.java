@@ -7,6 +7,8 @@ import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.Response;
 import de.craftsblock.craftsnet.api.routing.builder.LambdaRouteBuilder;
 import de.craftsblock.craftsnet.api.routing.builder.ReflectionRouteBuilder;
+import de.craftsblock.craftsnet.api.routing.filter.Filter;
+import de.craftsblock.craftsnet.api.routing.filter.http.HeaderFilter;
 import de.craftsblock.craftsnet.api.routing.filter.http.HttpMethodFilter;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.api.websocket.WebSocketClient;
@@ -33,6 +35,7 @@ public class Router {
 
     private final EnumMap<ServerType, Map<String, List<RouteRegistration>>> directRoutes = new EnumMap<>(ServerType.class);
     private final EnumMap<ServerType, RoutingTrie> routingTries = new EnumMap<>(ServerType.class);
+    private final EnumMap<ServerType, Map<Class<?>, Filter<?>>> defaultFilters = new EnumMap<>(ServerType.class);
 
     private final RoutingCache routingCache;
 
@@ -50,6 +53,8 @@ public class Router {
         this.routingTries.put(ServerType.WS, new RoutingTrie());
 
         this.routingCache = new RoutingCache(configuration.isCacheEnabled(), configuration.getCacheSize());
+
+        this.registerFilterDefault(HttpExchange.class, HttpMethodFilter.get());
     }
 
     public void configure(Consumer<RouterConfiguration> configurationHandler) {
@@ -57,6 +62,12 @@ public class Router {
 
         this.routingCache.setEnabled(this.configuration.isCacheEnabled());
         this.routingCache.resize(this.configuration.getCacheSize());
+    }
+
+    public <E extends Exchange> void registerFilterDefault(Class<E> exchange, Filter<E> defaultValue) {
+        ServerType serverType = this.getServerType(exchange);
+        defaultFilters.computeIfAbsent(serverType, s -> new HashMap<>(1))
+                .put(defaultValue.getClass(), defaultValue);
     }
 
     public List<RouteSearchResult<?>> lookup(@NotNull Exchange exchange) {
@@ -123,11 +134,7 @@ public class Router {
     public @NotNull RouteRegistration http(
             @NotNull Consumer<LambdaRouteBuilder<HttpExchange, Request, Response>> routeBuilderConsumer) {
 
-        return this.registerLambda(LambdaRouteBuilder.http(this), routeBuilderConsumer.andThen(builder -> {
-            if (builder.getFilters().isEmpty()) {
-                builder.appendFilter(HttpMethodFilter.get());
-            }
-        }));
+        return this.registerLambda(LambdaRouteBuilder.http(this), routeBuilderConsumer);
     }
 
     public @NotNull RouteRegistration webSocket(
@@ -148,11 +155,25 @@ public class Router {
         return this.registerLambda(LambdaRouteBuilder.webSocket(this), routeBuilderConsumer);
     }
 
+    @SuppressWarnings("unchecked")
     private <E extends Exchange, A, B> @NotNull RouteRegistration registerLambda(
             @NotNull LambdaRouteBuilder<E, A, B> builder,
             @NotNull Consumer<LambdaRouteBuilder<E, A, B>> routeBuilderConsumer) {
 
         routeBuilderConsumer.accept(builder);
+
+        Map<Class<?>, Filter<?>> filterDefaults = this.defaultFilters.get(builder.getServerType());
+        if (!filterDefaults.isEmpty()) {
+            filterDefaults.forEach((type, filter) -> {
+                boolean alreadyRegistered = builder.getFilters().stream()
+                        .anyMatch(existing -> existing.getClass().equals(type));
+
+                if (!alreadyRegistered) {
+                    builder.appendFilter((Filter<E>) filter);
+                }
+            });
+        }
+
         return this.addRoute(builder.build().get(0));
     }
 
@@ -225,6 +246,18 @@ public class Router {
     @TestOnly
     public RoutingTrie getRoutingTrie(ServerType serverType) {
         return routingTries.get(serverType);
+    }
+
+    public @NotNull ServerType getServerType(@NotNull Class<? extends Exchange> exchange) {
+        if (exchange.equals(HttpExchange.class)) {
+            return ServerType.HTTP;
+        }
+
+        if (exchange.equals(WebSocketExchange.class)) {
+            return ServerType.WS;
+        }
+
+        throw new IllegalStateException("Unexpected value: " + exchange.getName());
     }
 
     public @NotNull ServerType getServerType(@NotNull Scheme scheme) {

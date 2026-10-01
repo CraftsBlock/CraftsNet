@@ -107,6 +107,10 @@ public final class LambdaRouteBuilder<E extends Exchange, A, B> implements Route
         return router;
     }
 
+    public ServerType getServerType() {
+        return serverType;
+    }
+
     public static LambdaRouteBuilder<HttpExchange, Request, Response> http(Router router) {
         return new LambdaRouteBuilder<>(router, ServerType.HTTP, HttpExchange::request, HttpExchange::response);
     }
