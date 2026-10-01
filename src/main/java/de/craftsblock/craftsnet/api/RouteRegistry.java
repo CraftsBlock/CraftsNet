@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * The RouteRegistry class manages the registration and unregistration of {@link RouteHandler} (routes) and {@link WebSocketHandler} (websockets).
+ * The RouteRegistry class manages the registration and unregistration of {@link HttpHandler} (routes) and {@link WebSocketHandler} (websockets).
  * It stores and maps the registered routes and sockets based on their patterns, allowing for efficient handling of incoming requests.
  *
  * @author Philipp Maywald
@@ -62,7 +62,7 @@ public class RouteRegistry {
     }
 
     /**
-     * Registers an endpoint handler ({@link RouteHandler} and or {@link WebSocketHandler}) by inspecting its annotated methods and adding it to the registry.
+     * Registers an endpoint handler ({@link HttpHandler} and or {@link WebSocketHandler}) by inspecting its annotated methods and adding it to the registry.
      *
      * @param handler The Handler to be registered.
      */
@@ -260,7 +260,7 @@ public class RouteRegistry {
     /**
      * Unregisters an endpoint handler (route or websocket) from the registry.
      *
-     * @param handler The RouteHandler to be unregistered.
+     * @param handler The HttpHandler to be unregistered.
      */
     public void unregister(final Handler handler) {
         if (!isRegistered(handler)) return;
@@ -596,14 +596,14 @@ public class RouteRegistry {
      */
     private ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> retrieveHandlerInfoMap(Class<? extends Handler> handler) {
         ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = new ConcurrentHashMap<>();
-        if (RouteHandler.class.isAssignableFrom(handler))
+        if (HttpHandler.class.isAssignableFrom(handler))
             annotations.computeIfAbsent(Route.class, c -> new ServerMapping(WebServer.class));
 
         if (WebSocketHandler.class.isAssignableFrom(handler))
             annotations.computeIfAbsent(WebSocket.class, c -> new ServerMapping(WebSocketServer.class));
 
         if (annotations.isEmpty())
-            throw new IllegalStateException("Invalid handler type " + handler.getSimpleName() + " only RouteHandler and WebSocketHandler are allowed!");
+            throw new IllegalStateException("Invalid handler type " + handler.getSimpleName() + " only HttpHandler and WebSocketHandler are allowed!");
         return annotations;
     }
 

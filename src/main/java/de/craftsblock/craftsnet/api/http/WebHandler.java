@@ -1,7 +1,6 @@
 package de.craftsblock.craftsnet.api.http;
 
 import com.sun.net.httpserver.Headers;
-import com.sun.net.httpserver.HttpHandler;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.RouteRegistry;
@@ -47,7 +46,7 @@ import java.util.regex.Pattern;
  * @see WebServer
  * @since 3.0.1-SNAPSHOT
  */
-public class WebHandler implements HttpHandler {
+public class WebHandler implements com.sun.net.httpserver.HttpHandler {
 
     private static final String MESSAGE_FORMAT_REQUEST = "%s %s from %s";
     private static final String MESSAGE_FORMAT_REQUEST_ERROR = MESSAGE_FORMAT_REQUEST + " \u001b[38;5;9m[%s]";
@@ -331,7 +330,7 @@ public class WebHandler implements HttpHandler {
         try {
             for (ProcessPriority.Priority priority : routes.keySet()) {
                 for (RouteRegistry.EndpointMapping mapping : routes.get(priority)) {
-                    if (!(mapping.handler() instanceof RouteHandler handler)) {
+                    if (!(mapping.handler() instanceof HttpHandler handler)) {
                         continue;
                     }
 

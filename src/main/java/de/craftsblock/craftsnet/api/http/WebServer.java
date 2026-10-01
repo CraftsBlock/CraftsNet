@@ -30,7 +30,7 @@ import java.util.concurrent.ThreadPoolExecutor;
  * @author Philipp Maywald
  * @author CraftsBlock
  * @see HttpExchange
- * @see RouteHandler
+ * @see HttpHandler
  * @see Route
  * @see WebHandler
  * @since 1.0.0-SNAPSHOT
@@ -66,7 +66,7 @@ public class WebServer extends Server {
         this.executor = (ThreadPoolExecutor) Executors.newCachedThreadPool(r -> {
             Thread thread = threadFactory.newThread(r);
             String oldName = thread.getName();
-            thread.setName("CraftsNet RouteHandler-" + oldName.substring(oldName.lastIndexOf('-') + 1));
+            thread.setName("CraftsNet HttpHandler-" + oldName.substring(oldName.lastIndexOf('-') + 1));
             return thread;
         });
     }

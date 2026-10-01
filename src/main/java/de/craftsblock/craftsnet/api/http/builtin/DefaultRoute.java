@@ -15,7 +15,7 @@ import java.io.IOException;
  * @author CraftsBlock
  * @since 3.0.3-SNAPSHOT
  */
-public class DefaultRoute implements RouteHandler {
+public class DefaultRoute implements HttpHandler {
 
     private static final DefaultRoute instance;
 
