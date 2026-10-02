@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.api;
 
+import de.craftsblock.craftsnet.api.routing.RouteInfo;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
@@ -22,6 +23,8 @@ public interface Exchange extends AutoCloseable {
         Context context = context();
         if (context != null) context.clear();
     }
+
+    RouteInfo<Exchange> routeInfo();
 
     /**
      * Get the {@link Context} of the exchange.

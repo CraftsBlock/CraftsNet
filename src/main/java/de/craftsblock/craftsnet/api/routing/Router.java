@@ -1,14 +1,13 @@
 package de.craftsblock.craftsnet.api.routing;
 
+import de.craftsblock.craftsnet.api.EndpointHandler;
 import de.craftsblock.craftsnet.api.Exchange;
-import de.craftsblock.craftsnet.api.Handler;
 import de.craftsblock.craftsnet.api.http.HttpExchange;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.Response;
 import de.craftsblock.craftsnet.api.routing.builder.LambdaRouteBuilder;
 import de.craftsblock.craftsnet.api.routing.builder.ReflectionRouteBuilder;
 import de.craftsblock.craftsnet.api.routing.filter.Filter;
-import de.craftsblock.craftsnet.api.routing.filter.http.HeaderFilter;
 import de.craftsblock.craftsnet.api.routing.filter.http.HttpMethodFilter;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.api.websocket.WebSocketClient;
@@ -98,12 +97,12 @@ public class Router {
         );
     }
 
-    public @NotNull @UnmodifiableView List<RouteRegistration> register(@NotNull Handler handler) {
+    public @NotNull @UnmodifiableView List<RouteRegistration> register(@NotNull EndpointHandler handler) {
         return this.register(handler, (ignored) -> {
         });
     }
 
-    public @NotNull @UnmodifiableView List<RouteRegistration> register(@NotNull Handler handler,
+    public @NotNull @UnmodifiableView List<RouteRegistration> register(@NotNull EndpointHandler handler,
                                                                        @NotNull Consumer<ReflectionRouteBuilder> routeBuilderConsumer) {
         ReflectionRouteBuilder builder = new ReflectionRouteBuilder(this);
         builder.setHandler(handler);

@@ -10,5 +10,5 @@ import de.craftsblock.craftsnet.api.websocket.annotations.WebSocket;
  * @see WebSocket
  * @since 3.0.5-SNAPSHOT
  */
-public interface Handler {
+public interface EndpointHandler {
 }

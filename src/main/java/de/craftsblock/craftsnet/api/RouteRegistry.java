@@ -64,10 +64,10 @@ public class RouteRegistry {
     /**
      * Registers an endpoint handler ({@link HttpHandler} and or {@link WebSocketHandler}) by inspecting its annotated methods and adding it to the registry.
      *
-     * @param handler The Handler to be registered.
+     * @param handler The EndpointHandler to be registered.
      */
     @SuppressWarnings("removal")
-    public void register(Handler handler) {
+    public void register(EndpointHandler handler) {
         if (isRegistered(handler)) return;
         var annotations = retrieveHandlerInfoMap(handler.getClass());
 
@@ -170,25 +170,25 @@ public class RouteRegistry {
     }
 
     /**
-     * Checks if the given {@link Handler} is registered.
+     * Checks if the given {@link EndpointHandler} is registered.
      * This class is a wrapper for {@link RouteRegistry#isRegistered(Class)}.
      *
-     * @param handler The {@link Handler} to check.
-     * @return {@code true} when the {@link Handler} was registered, {@code false} otherwise.
+     * @param handler The {@link EndpointHandler} to check.
+     * @return {@code true} when the {@link EndpointHandler} was registered, {@code false} otherwise.
      * @since 3.2.1-SNAPSHOT
      */
-    public boolean isRegistered(Handler handler) {
+    public boolean isRegistered(EndpointHandler handler) {
         return isRegistered(handler.getClass());
     }
 
     /**
-     * Checks if the given class representation of the {@link Handler} is registered.
+     * Checks if the given class representation of the {@link EndpointHandler} is registered.
      *
-     * @param type The class representation of the {@link Handler} to check.
-     * @return {@code true} when the {@link Handler} was registered, {@code false} otherwise.
+     * @param type The class representation of the {@link EndpointHandler} to check.
+     * @return {@code true} when the {@link EndpointHandler} was registered, {@code false} otherwise.
      * @since 3.2.1-SNAPSHOT
      */
-    public boolean isRegistered(Class<? extends Handler> type) {
+    public boolean isRegistered(Class<? extends EndpointHandler> type) {
         if (serverMappings.isEmpty()) return false;
 
         return retrieveHandlerInfoMap(type).values().stream()
@@ -262,7 +262,7 @@ public class RouteRegistry {
      *
      * @param handler The HttpHandler to be unregistered.
      */
-    public void unregister(final Handler handler) {
+    public void unregister(final EndpointHandler handler) {
         if (!isRegistered(handler)) return;
 
         ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = retrieveHandlerInfoMap(handler.getClass());
@@ -594,7 +594,7 @@ public class RouteRegistry {
      * @param handler The handler type from which the information should be retrieved.
      * @return The information about the server types held by the handler.
      */
-    private ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> retrieveHandlerInfoMap(Class<? extends Handler> handler) {
+    private ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> retrieveHandlerInfoMap(Class<? extends EndpointHandler> handler) {
         ConcurrentHashMap<Class<? extends Annotation>, ServerMapping> annotations = new ConcurrentHashMap<>();
         if (HttpHandler.class.isAssignableFrom(handler))
             annotations.computeIfAbsent(Route.class, c -> new ServerMapping(WebServer.class));
@@ -636,13 +636,13 @@ public class RouteRegistry {
      *
      * @param priority     The {@link ProcessPriority.Priority} level for this endpoint.
      * @param method       The {@link Method} associated with the handler.
-     * @param handler      The {@link Handler} instance that owns the method.
+     * @param handler      The {@link EndpointHandler} instance that owns the method.
      * @param validator    The {@link Pattern} used for validating input related to the endpoint.
      * @param requirements A concurrent map of requirements, indexed by their annotation class.
      * @param middlewares  A {@link Deque} containing locally present middlewares
      * @since 3.0.5-SNAPSHOT
      */
-    public record EndpointMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull Handler handler,
+    public record EndpointMapping(@NotNull ProcessPriority.Priority priority, @NotNull Method method, @NotNull EndpointHandler handler,
                                   @NotNull Pattern validator, Map<Class<? extends Annotation>, RequirementInfo> requirements,
                                   Deque<Middleware> middlewares) implements Mapping {
 

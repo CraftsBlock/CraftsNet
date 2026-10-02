@@ -3,10 +3,7 @@ package de.craftsblock.craftsnet.addon.services;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.addon.services.builtin.IIOServiceLoader;
 import de.craftsblock.craftsnet.addon.services.builtin.SQLDriverLoader;
-import de.craftsblock.craftsnet.addon.services.builtin.handlers.GenericHandlerLoader;
-import de.craftsblock.craftsnet.addon.services.builtin.handlers.MiddlewareHandlerLoader;
-import de.craftsblock.craftsnet.addon.services.builtin.handlers.RequestHandlerLoader;
-import de.craftsblock.craftsnet.addon.services.builtin.handlers.SocketHandlerLoader;
+import de.craftsblock.craftsnet.addon.services.builtin.handlers.*;
 import de.craftsblock.craftsnet.addon.services.builtin.listeners.ListenerAdapterLoader;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
@@ -44,10 +41,8 @@ public class ServiceManager {
         // Register default service loaders
         register(new IIOServiceLoader());
 
-        register(new GenericHandlerLoader(craftsNet));
+        register(new EndpointHandlerLoader(craftsNet));
         register(new MiddlewareHandlerLoader(craftsNet));
-        register(new RequestHandlerLoader(craftsNet));
-        register(new SocketHandlerLoader(craftsNet));
 
         register(new SQLDriverLoader());
 

@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.api.http;
 
-import de.craftsblock.craftsnet.api.Handler;
+import de.craftsblock.craftsnet.api.EndpointHandler;
 
 /**
  * The HttpHandler interface serves as a marker interface for classes that are intended to handle incoming HTTP requests.
@@ -18,7 +18,7 @@ import de.craftsblock.craftsnet.api.Handler;
  * @author CraftsBlock
  * @since 1.0.0-SNAPSHOT
  */
-public interface HttpHandler extends Handler {
+public interface HttpHandler extends EndpointHandler {
     // No methods are declared in this interface since it serves as a marker interface.
     // Classes implementing this interface are expected to provide their own request handling logic.
 }

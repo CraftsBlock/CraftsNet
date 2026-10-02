@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.api.middlewares;
 
 import de.craftsblock.craftsnet.api.Exchange;
-import de.craftsblock.craftsnet.api.Handler;
+import de.craftsblock.craftsnet.api.EndpointHandler;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.api.middlewares.annotation.ApplyMiddleware;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
@@ -12,7 +12,6 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -132,17 +131,17 @@ public class MiddlewareRegistry {
 
     /**
      * Retrieves a {@link Deque stack} of {@link Middleware middlewares}
-     * from a specific {@link Handler endpoint handler} nd its child
+     * from a specific {@link EndpointHandler endpoint handler} nd its child
      * {@link Method method}.
      *
-     * @param root    The {@link Handler endpoint handler}.
+     * @param root    The {@link EndpointHandler endpoint handler}.
      * @param handler The {@link Method method}.
      * @return A {@link Deque stack} of {@link Middleware middlewares} that are present.
      */
-    public Deque<Middleware> resolveMiddlewares(Handler root, Method handler) {
+    public Deque<Middleware> resolveMiddlewares(EndpointHandler root, Method handler) {
         Deque<Middleware> middelwareDeque = new ConcurrentLinkedDeque<>();
 
-        Class<? extends Handler> type = root.getClass();
+        Class<? extends EndpointHandler> type = root.getClass();
         this.resolveMiddlewares(type, middelwareDeque);
         this.resolveMiddlewares(handler, middelwareDeque);
 

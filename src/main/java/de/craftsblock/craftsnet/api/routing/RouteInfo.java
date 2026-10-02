@@ -26,7 +26,7 @@ public record RouteInfo<E extends Exchange>(
             @NotNull List<Filter<E>> filters,
             boolean direct) {
         this.serverType = serverType;
-        this.path = path;
+        this.path = normalizePath(path);
         this.handler = handler;
         this.filters = List.copyOf(filters);
         this.direct = direct;
@@ -38,6 +38,11 @@ public record RouteInfo<E extends Exchange>(
 
     public FilterChain<E> filterChain() {
         return FilterChain.newFilterChain(this.filters, this);
+    }
+
+    public static String normalizePath(String path) {
+        return "/" + path.replaceAll("^/+|/+$", "")
+                .replaceAll("//+", "/");
     }
 
 }

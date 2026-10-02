@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.http;
 
 import de.craftsblock.craftsnet.api.Exchange;
+import de.craftsblock.craftsnet.api.routing.RouteInfo;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
@@ -35,6 +36,11 @@ public record HttpExchange(@NotNull Context context, @NotNull ProtocolVersion pr
     public HttpExchange {
         request.setExchange(this);
         response.setExchange(this);
+    }
+
+    @Override
+    public RouteInfo<Exchange> routeInfo() {
+        return null;
     }
 
     /**

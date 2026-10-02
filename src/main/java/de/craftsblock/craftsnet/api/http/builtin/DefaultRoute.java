@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.http.builtin;
 
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.api.EndpointHandler;
 import de.craftsblock.craftsnet.api.http.*;
 import de.craftsblock.craftsnet.api.http.annotations.RequestMethod;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
@@ -15,7 +16,7 @@ import java.io.IOException;
  * @author CraftsBlock
  * @since 3.0.3-SNAPSHOT
  */
-public class DefaultRoute implements HttpHandler {
+public class DefaultRoute implements EndpointHandler {
 
     private static final DefaultRoute instance;
 

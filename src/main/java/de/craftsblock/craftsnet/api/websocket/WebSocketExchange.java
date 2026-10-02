@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket;
 
 import de.craftsblock.craftsnet.api.Exchange;
+import de.craftsblock.craftsnet.api.routing.RouteInfo;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
@@ -52,6 +53,11 @@ public record WebSocketExchange(@NotNull Context context, @NotNull ProtocolVersi
     @Override
     public WebSocketClient client() {
         return client;
+    }
+
+    @Override
+    public RouteInfo<Exchange> routeInfo() {
+        return null;
     }
 
     /**
