@@ -55,7 +55,7 @@ public @interface Transformer {
      */
     @Documented
     @ApiStatus.Internal
-    @Target(ElementType.TYPE)
+    @Target({ElementType.METHOD, ElementType.TYPE})
     @Retention(RetentionPolicy.RUNTIME)
     @interface List {
 
