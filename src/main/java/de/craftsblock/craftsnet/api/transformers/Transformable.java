@@ -36,7 +36,7 @@ public interface Transformable<T, R> extends Function<T, R> {
      * @return The parent {@link Transformable transformer}, may be null.
      * @since 3.4.0-SNAPSHOT
      */
-    default @Nullable Class<? extends Transformable<T, ?>> getParent() {
+    default @Nullable Class<? extends Transformable<?, T>> getParent() {
         return null;
     }
 
