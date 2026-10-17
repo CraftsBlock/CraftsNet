@@ -157,13 +157,13 @@ public class WebHandler implements HttpHandler {
      * @since 3.7.1
      */
     private void handleThrowable(Response response, String url, HttpMethod httpMethod, Throwable t) {
-        BiConsumer<String, Integer> responder = (json, code) -> {
+        BiConsumer<String, Integer> responder = (message, code) -> {
             if (!response.headersSent()) {
                 response.setStatus(code);
             }
 
-            if (!response.sendingFile() && !httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN)) {
-                response.print(json);
+            if (!response.sendingFile() && !httpMethod.isResponseBodyAble()) {
+                response.print(message);
             }
         };
 
