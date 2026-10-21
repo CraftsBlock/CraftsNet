@@ -5,20 +5,53 @@ import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
 import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
-import de.craftsblock.craftsnet.builder.AbstractCraftsNetBuilder;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
+import de.craftsblock.craftsnet.builder.NamespacedBuilder;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
+import java.util.function.Consumer;
 
-public class AddonSystemBuilder extends AbstractCraftsNetBuilder<AddonSystemBuilder> {
+public class AddonSystemBuilder extends NamespacedBuilder<AddonSystemBuilder> {
 
-    public AddonSystemBuilder(@NotNull CraftsNetBuilder parent, AddonSystemState state) {
-        super(parent);
+    private final Map<String, AddonBuilder> addonBuilders;
+
+    public AddonSystemBuilder(@NotNull CraftsNetBuilder root, AddonSystemState state) {
+        super(root, "addons");
         acquire(this);
+        this.addonBuilders = new HashMap<>();
+
+        setArgTransformer("state", value -> AddonSystemState.valueOf(value.toUpperCase()));
 
         state(state).set("in_memory", Collections.synchronizedList(new ArrayList<>()));
+    }
+
+    @Override
+    public @NotNull AddonSystemBuilder set(@NotNull String arg, @NotNull Object value) {
+        Objects.requireNonNull(arg, "arg");
+
+        if (!arg.contains(":")) {
+            return super.set(arg, value);
+        }
+
+        String[] parts = arg.split(":", 2);
+        addon(parts[0]).set(parts[1], value);
+        return this;
+    }
+
+    public AddonSystemBuilder addon(@NotNull String addon, Consumer<AddonBuilder> builderConsumer) {
+        builderConsumer.accept(this.addon(addon));
+        return this;
+    }
+
+    public AddonBuilder addon(@NotNull String addon) {
+        Objects.requireNonNull(addon, "addon");
+
+        return this.addonBuilders.computeIfAbsent(
+                addon.toLowerCase(),
+                namespace -> isFrozen() ? null : new AddonBuilder(this, namespace)
+        );
     }
 
     public @NotNull AddonSystemBuilder state(@NotNull AddonSystemState state) {
@@ -27,25 +60,32 @@ public class AddonSystemBuilder extends AbstractCraftsNetBuilder<AddonSystemBuil
     }
 
     public @NotNull AddonSystemState state() {
-        return asEnum("state", AddonSystemState.class);
+        return Objects.requireNonNull(
+                getEnum("state", AddonSystemState.class),
+                "No state for the addon system found"
+        );
     }
 
     public boolean isState(@NotNull AddonSystemState state) {
         return this.state() == state;
     }
 
+    @SuppressWarnings("rawtypes")
+    public @NotNull Collection<Class> getInMemoryAddons() {
+        return Objects
+                .requireNonNull(
+                        getCollection("in_memory", Class.class),
+                        "No in memory addons present on the builder"
+                );
+    }
+
     public @NotNull AddonSystemBuilder add(@NotNull Class<? extends Addon> addonType) {
-        asCollection("in_memory", Class.class).add(addonType);
+        getInMemoryAddons().add(addonType);
         return this;
     }
 
     public @NotNull AddonSystemBuilder add(@NotNull Collection<Class<? extends Addon>> addonTypes) {
-        asCollection("in_memory", Class.class).addAll(addonTypes);
-        return this;
-    }
-
-    public AddonSystemBuilder map(@NotNull Class<? extends Addon> type, @NotNull String name) {
-        AddonConfiguration.map(type, name);
+        getInMemoryAddons().addAll(addonTypes);
         return this;
     }
 
@@ -60,7 +100,7 @@ public class AddonSystemBuilder extends AbstractCraftsNetBuilder<AddonSystemBuil
         List<AddonConfiguration> configurations = new ArrayList<>();
 
         AddonLoader loader = manager.getAddonLoader();
-        for (Class<?> type : asCollection("in_memory", Class.class)) {
+        for (Class<?> type : getInMemoryAddons()) {
             Class<? extends Addon> addonType = type.asSubclass(Addon.class);
             configurations.addAll(AddonConfiguration.of(craftsNet, loader, addonType));
         }

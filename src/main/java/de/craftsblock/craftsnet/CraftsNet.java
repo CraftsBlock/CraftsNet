@@ -99,7 +99,7 @@ public class CraftsNet {
      */
     public static void main(String[] args) throws IOException {
         Thread.currentThread().setName("CraftsNet Main");
-        CraftsNet.create().withArgs(args).build();
+        CraftsNet.create().setAll(args).build();
     }
 
     /**
@@ -143,6 +143,7 @@ public class CraftsNet {
         logger.debug("Preloading gson for faster processing");
         Json.empty();
 
+        logger.debug("Changing the default uncaught exception handler");
         this.oldDefaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             if (logStream != null) {
@@ -153,48 +154,48 @@ public class CraftsNet {
 
             logger.error(e);
         });
-        logger.debug("Injected the default uncaught exception handler");
 
         this.fileHelper = new FileHelper(this, builder.shouldPlaceTempFilesOnNormalFileSystem());
 
-        logger.info("Initialization of system variables");
-        logger.debug("Initialization of the session cache");
+        logger.debug("Creating the session cache");
         this.sessionCache = new SessionCache(builder.getSessionCacheSize());
 
-        logger.debug("Initialization of the stream encoder registry");
+        logger.debug("Creating the stream encoder registry");
         streamEncoderRegistry = new StreamEncoderRegistry();
 
-        logger.debug("Initialization of the listener registry");
+        logger.debug("Creating the listener registry");
         listenerRegistry = new ListenerRegistry();
 
-        logger.debug("Initialization of the middleware registry");
+        logger.debug("Creating the middleware registry");
         middlewareRegistry = new MiddlewareRegistry();
 
-        logger.debug("Initialization of the route registry");
+        logger.debug("Creating the route registry");
         routeRegistry = new RouteRegistry(this);
 
-        logger.debug("Initialization of the requirement registry");
+        logger.debug("Creating the requirement registry");
         requirementRegistry = new RequirementRegistry(this);
 
-        logger.debug("Initialization of the service manager");
+        logger.debug("Creating the service manager");
         serviceManager = new ServiceManager(this);
 
-        logger.debug("Initialization of the websocket extension registry");
+        logger.debug("Creating the websocket extension registry");
         webSocketExtensionRegistry = new WebSocketExtensionRegistry();
 
-        logger.debug("Initialization of the body registry");
+        logger.debug("Creating the body registry");
         bodyRegistry = new BodyRegistry();
 
-        logger.debug("Initialization of the addon manager");
+        logger.debug("Creating the addon manager");
         addonManager = new AddonManager(this);
 
         logger.info("Preparing the webserver");
-        webServer = new WebServer(this, builder.getWebServerPort(), 25, builder.isSSL());
+        ServerBuilder webServerBuilder = builder.webServer();
+        webServer = new WebServer(this, webServerBuilder.port(), 25, webServerBuilder.ssl());
 
         logger.info("Preparing the websocket server");
-        webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), 25, builder.isSSL());
+        ServerBuilder webSocketServerBuilder = builder.webSocketServer();
+        webSocketServer = new WebSocketServer(this, webSocketServerBuilder.port(), 25, webSocketServerBuilder.ssl());
 
-        logger.debug("Initialization of the auto register registry");
+        logger.debug("Creating the auto register registry");
         autoRegisterRegistry = new AutoRegisterRegistry(this);
 
         builder.addonSystem(setupAddonSystem())
@@ -208,7 +209,7 @@ public class CraftsNet {
         performAutoRegister();
 
         // Log successful startup message with elapsed time
-        logger.info("CraftsNet was successfully started after %sms", System.currentTimeMillis() - start);
+        logger.info("CraftsNet successfully started after %sms", System.currentTimeMillis() - start);
         started = true;
     }
 
@@ -229,12 +230,16 @@ public class CraftsNet {
                 }
             } catch (IOException e) {
                 throw new RuntimeException("Failed to setup addon system", e);
+            } finally {
+                builder.freeze();
             }
         };
     }
 
     private Consumer<ServerBuilder> setupWebServer() {
         return builder -> {
+            builder.freeze();
+
             if (builder.state().isEnabled()) {
                 if (!builder.skipDefaultRoute() && !routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
                     logger.debug("No routes and sockets found, creating the default route");
@@ -256,6 +261,8 @@ public class CraftsNet {
 
     private Consumer<ServerBuilder> setupWebSocketServer() {
         return builder -> {
+            builder.freeze();
+
             if (builder.state().isEnabled()) {
                 logger.debug("Implementing the default ping responder");
                 DefaultPingResponder.register(this);

@@ -1,29 +1,44 @@
 package de.craftsblock.craftsnet.builder;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 import java.util.function.Function;
 
 public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilder<T>> {
 
     private T owner;
-    private final @NotNull CraftsNetBuilder parent;
     private boolean frozen = false;
 
-    private final Map<String, String> args = new ConcurrentHashMap<>();
-    private final Map<String, String> argsView = Collections.unmodifiableMap(args);
+    private final Map<String, Object> args = new HashMap<>();
+    private final Map<String, Function<String, Object>> argTransformers = new HashMap<>();
 
-    public AbstractCraftsNetBuilder(@NotNull CraftsNetBuilder parent) {
-        this.parent = parent;
+    public AbstractCraftsNetBuilder() {
+        this(Map.of());
     }
 
-    protected final void acquire(T owner) {
-        this.owner = owner;
+    public AbstractCraftsNetBuilder(@NotNull Map<String, Function<String, Object>> argTransformers) {
+        Objects.requireNonNull(argTransformers, "argTransformers").forEach(this::setArgTransformer);
+    }
+
+    protected void setArgTransformer(@NotNull String arg, @NotNull Function<String, Object> transformer) {
+        Objects.requireNonNull(arg, "arg");
+        Objects.requireNonNull(transformer, "transformer");
+
+        ensureNotFrozen();
+        this.argTransformers.put(arg.toLowerCase(), transformer);
+    }
+
+    protected final void acquire(@NotNull T owner) {
+        ensureNotFrozen();
+
+        if (this.owner != null) {
+            throw new IllegalStateException("The builder is already known by a root");
+        }
+
+        this.owner = Objects.requireNonNull(owner, "owner");
     }
 
     public @NotNull T set(@NotNull String arg) {
@@ -31,79 +46,116 @@ public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilde
     }
 
     public @NotNull T set(@NotNull String arg, @NotNull Object value) {
-        return this.set(arg, value, Object::toString);
-    }
+        Objects.requireNonNull(arg, "arg");
+        Objects.requireNonNull(value, "value");
 
-    public <E> @NotNull T set(@NotNull String arg, @NotNull E value,
-                              @NotNull Function<@NotNull E, @NotNull String> stringifier) {
         ensureNotFrozen();
-        this.args.put(arg.toLowerCase(), stringifier.apply(value));
+
+        Object transformed;
+        if (value instanceof String string) {
+            transformed = this.argTransformers.getOrDefault(arg.toLowerCase(), s -> s).apply(string);
+        } else {
+            transformed = value;
+        }
+
+        this.args.put(arg.toLowerCase(), transformed);
         return owner;
     }
 
-    public String asString(@NotNull String arg) {
-        return this.args.get(arg.toLowerCase());
+    public @Nullable Object get(@NotNull String arg) {
+        Objects.requireNonNull(arg, "arg");
+
+        return this.args.get(arg);
     }
 
-    public boolean asBoolean(@NotNull String arg) {
-        return Boolean.parseBoolean(this.asString(arg));
+    @SuppressWarnings("unchecked")
+    public <E> @Nullable E getTyped(@NotNull String arg, @NotNull Class<E> type) {
+        Objects.requireNonNull(arg, "arg");
+        Objects.requireNonNull(type, "type");
+
+        Object value = this.get(arg);
+        if (value == null) {
+            return null;
+        }
+
+        return (E) value;
     }
 
-    public byte asByte(@NotNull String arg) {
-        return Byte.parseByte(this.asString(arg));
+    public @Nullable String getString(@NotNull String arg) {
+        return this.getTyped(arg, String.class);
     }
 
-    public byte asByte(@NotNull String arg, int radix) {
-        return Byte.parseByte(this.asString(arg), radix);
+    public @Nullable Boolean getBoolean(@NotNull String arg) {
+        return this.getTyped(arg, Boolean.class);
     }
 
-    public short asShort(@NotNull String arg) {
-        return Short.parseShort(this.asString(arg));
+    public @Nullable Byte getByte(@NotNull String arg) {
+        return this.getTyped(arg, Byte.class);
     }
 
-    public short asShort(@NotNull String arg, int radix) {
-        return Short.parseShort(this.asString(arg), radix);
+    public @Nullable Short getShort(@NotNull String arg) {
+        return this.getTyped(arg, Short.class);
     }
 
-    public int asInt(@NotNull String arg) {
-        return Integer.parseInt(this.asString(arg));
+    public @Nullable Integer getInt(@NotNull String arg) {
+        return this.getTyped(arg, Integer.class);
     }
 
-    public int asInt(@NotNull String arg, int radix) {
-        return Integer.parseInt(this.asString(arg), radix);
+    public @Nullable Long getLong(@NotNull String arg) {
+        return this.getTyped(arg, Long.class);
     }
 
-    public long asLong(@NotNull String arg) {
-        return Long.parseLong(this.asString(arg));
+    public @Nullable Float getFloat(@NotNull String arg) {
+        return this.getTyped(arg, Float.class);
     }
 
-    public long asLong(@NotNull String arg, int radix) {
-        return Long.parseLong(this.asString(arg), radix);
+    public @Nullable Double getDouble(@NotNull String arg) {
+        return this.getTyped(arg, Double.class);
     }
 
-    public float asFloat(@NotNull String arg) {
-        return Float.parseFloat(this.asString(arg));
+    public <E extends Enum<E>> @Nullable E getEnum(@NotNull String arg, @NotNull Class<E> type) {
+        return this.getTyped(arg, type);
     }
 
-    public double asDouble(@NotNull String arg) {
-        return Double.parseDouble(this.asString(arg));
+    public @Nullable Collection<?> getCollection(@NotNull String arg) {
+        return this.getTyped(arg, Collection.class);
     }
 
-    public <E extends Enum<E>> E asEnum(@NotNull String arg, @NotNull Class<E> type) {
-        return Enum.valueOf(type, this.asString(arg).toUpperCase());
+    @SuppressWarnings("unchecked")
+    public <E> @Nullable Collection<E> getCollection(@NotNull String arg, @NotNull Class<E> subType) {
+        Objects.requireNonNull(subType, "subType");
+
+        return (Collection<E>) getCollection(arg);
     }
 
-    public UUID asUuid(@NotNull String arg) {
-        return UUID.fromString(this.asString(arg));
+    public @Nullable Map<?, ?> getMap(@NotNull String arg) {
+        return this.getTyped(arg, Map.class);
     }
 
-    public boolean present(@NotNull String arg) {
+    @SuppressWarnings("unchecked")
+    public <K> @Nullable Map<K, Object> getMap(@NotNull String arg, @NotNull Class<K> keyType) {
+        Objects.requireNonNull(keyType, "keyType");
+
+        return (Map<K, Object>) this.getMap(arg);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <K, V> @Nullable Map<K, V> getMap(@NotNull String arg, @NotNull Class<K> keyType, @NotNull Class<V> valueType) {
+        Objects.requireNonNull(keyType, "keyType");
+        Objects.requireNonNull(valueType, "valueType");
+
+        return (Map<K, V>) this.getMap(arg);
+    }
+
+    public boolean isPresent(@NotNull String arg) {
+        Objects.requireNonNull(arg, "arg");
+
         return this.args.containsKey(arg);
     }
 
     @UnmodifiableView
-    public @NotNull Map<String, String> getAllArgs() {
-        return argsView;
+    public @NotNull Map<String, Object> getArgsView() {
+        return Collections.unmodifiableMap(args);
     }
 
     public final void freeze() {
@@ -119,10 +171,6 @@ public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilde
 
     public final boolean isFrozen() {
         return frozen;
-    }
-
-    public final @NotNull CraftsNetBuilder back() {
-        return parent;
     }
 
 }
