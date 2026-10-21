@@ -173,4 +173,18 @@ public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilde
         return frozen;
     }
 
+    protected static Function<String, Object> flagArgTransformer() {
+        return value -> value.isBlank() || Boolean.parseBoolean(value) || value.equalsIgnoreCase("1");
+    }
+
+    protected static <E extends Enum<E>> Function<String, Object> enumArgTransformer(Class<E> type) {
+        return value -> Enum.valueOf(type, value.toUpperCase());
+    }
+
+    protected static Function<String, Object> notAllowedTransformer(String message) {
+        return value -> {
+            throw new IllegalArgumentException(message == null ? "Not allowed to set this via the cli" : message);
+        };
+    }
+
 }

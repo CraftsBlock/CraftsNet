@@ -2,7 +2,6 @@ package de.craftsblock.craftsnet.builder;
 
 import de.craftsblock.craftscore.utils.Arguments;
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.builder.addon.AddonBuilder;
 import de.craftsblock.craftsnet.builder.addon.AddonSystemBuilder;
 import de.craftsblock.craftsnet.builder.addon.AddonSystemState;
 import de.craftsblock.craftsnet.builder.server.ServerBuilder;
@@ -16,7 +15,6 @@ import org.jetbrains.annotations.Range;
 import java.io.IOException;
 import java.security.CodeSource;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
@@ -48,7 +46,6 @@ public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder>
     private Collection<String> trustedProxyHeadersView;
 
     private boolean allowResponseEncoding;
-    private boolean debug;
     private boolean hideIpsInLog;
     private boolean tempFilesOnNormalFileSystem;
     private boolean skipVersionCheck;
@@ -62,15 +59,17 @@ public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder>
         acquire(this);
 
         this.internalBuilders = new HashMap<>();
+        setArgTransformer("debug", AbstractCraftsNetBuilder.flagArgTransformer());
 
         this.addonSystemBuilder = new AddonSystemBuilder(this, AddonSystemState.FULL);
 
-        this.webServerBuilder = new ServerBuilder(this, "http", ServerState.DYNAMIC, 5000, false, false);
-        this.webSocketServerBuilder = new ServerBuilder(this, "websocket", ServerState.DYNAMIC, 5001, false, false);
+        this.webServerBuilder = new ServerBuilder(this, "http", ServerState.DYNAMIC, (short) 5000, false, false);
+        this.webSocketServerBuilder = new ServerBuilder(this, "websocket", ServerState.DYNAMIC, (short) 5001, false, false);
+
+        debug(false);
 
         fileLogger = ActivateType.ENABLED;
         withSessionCache(5);
-        withDebug(false);
         withIpsInLog(true);
         withApplyResponseEncoding(false);
         withTempFilesOnNormalFileSystem(false);
@@ -137,6 +136,18 @@ public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder>
 
     public AddonSystemBuilder addonSystem() {
         return this.addonSystemBuilder;
+    }
+
+    public CraftsNetBuilder debug(boolean debug) {
+        this.set("debug", debug);
+        return this;
+    }
+
+    public boolean debug() {
+        return Objects.requireNonNull(
+                this.getBoolean("debug"),
+                "No debug flag found"
+        );
     }
 
     /**
@@ -272,17 +283,6 @@ public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder>
     }
 
     /**
-     * Specifies whether debug mode should be enabled.
-     *
-     * @param enabled {@code true} if debug mode should be enabled, {@code false} otherwise.
-     * @return The {@link CraftsNetBuilder} instance.
-     */
-    public CraftsNetBuilder withDebug(boolean enabled) {
-        this.debug = enabled;
-        return this;
-    }
-
-    /**
      * Specifies whether ips should be blurred in the log output.
      *
      * @param enabled {@code true} if ips should be readable in the log, {@code false} otherwise.
@@ -387,15 +387,6 @@ public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder>
     }
 
     /**
-     * Checks if debug mode is enabled.
-     *
-     * @return {@code true} if debug mode is enabled, {@code false} otherwise.
-     */
-    public boolean isDebug() {
-        return debug;
-    }
-
-    /**
      * Checks if ips should be hidden in the log output.
      *
      * @return {@code true} if ips should be hidden, {@code false} otherwise.
@@ -431,7 +422,9 @@ public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder>
      */
     public CraftsNet build() throws IOException {
         // Set up the logger if no logger was given
-        if (logger == null) logger = new LoggerImpl(isDebug());
+        if (logger == null) {
+            logger = new LoggerImpl(debug());
+        }
 
         CraftsNet craftsNet = new CraftsNet();
         craftsNet.start(this);

@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.builder.server;
 
+import de.craftsblock.craftsnet.builder.AbstractCraftsNetBuilder;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.builder.NamespacedBuilder;
 import org.jetbrains.annotations.NotNull;
@@ -8,14 +9,14 @@ import java.util.Objects;
 
 public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
 
-    public ServerBuilder(@NotNull CraftsNetBuilder root, String namespace, @NotNull ServerState state, int port, boolean ssl, boolean skipDefaultRoute) {
+    public ServerBuilder(@NotNull CraftsNetBuilder root, String namespace, @NotNull ServerState state, short port, boolean ssl, boolean skipDefaultRoute) {
         super(root, namespace);
         acquire(this);
 
-        this.setArgTransformer("state", value -> ServerState.valueOf(value.toUpperCase()));
-        this.setArgTransformer("port", Integer::parseInt);
-        this.setArgTransformer("ssl", value -> value.isBlank() || Boolean.parseBoolean(value));
-        this.setArgTransformer("skipDefaultRoute", value -> value.isBlank() || Boolean.parseBoolean(value));
+        this.setArgTransformer("state", value -> AbstractCraftsNetBuilder.enumArgTransformer(ServerState.class));
+        this.setArgTransformer("port", Short::parseShort);
+        this.setArgTransformer("ssl", value -> AbstractCraftsNetBuilder.flagArgTransformer());
+        this.setArgTransformer("skipDefaultRoute", AbstractCraftsNetBuilder.flagArgTransformer());
 
         state(state).port(port).ssl(ssl).skipDefaultRoute(skipDefaultRoute);
     }
@@ -36,12 +37,12 @@ public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
         return this.state() == state;
     }
 
-    public @NotNull ServerBuilder port(int port) {
+    public @NotNull ServerBuilder port(short port) {
         set("port", port);
         return this;
     }
 
-    public int port() {
+    public short port() {
         return Objects.requireNonNull(
                 getShort("port"),
                 "No port found for the " + getNamespace()
@@ -72,7 +73,7 @@ public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
         );
     }
 
-    public boolean isPort(int port) {
+    public boolean isPort(short port) {
         return this.port() == port;
     }
 

@@ -5,6 +5,7 @@ import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
 import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
+import de.craftsblock.craftsnet.builder.AbstractCraftsNetBuilder;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.builder.NamespacedBuilder;
 import org.jetbrains.annotations.ApiStatus;
@@ -23,6 +24,9 @@ public class AddonSystemBuilder extends NamespacedBuilder<AddonSystemBuilder> {
         this.addonBuilders = new HashMap<>();
 
         setArgTransformer("state", value -> AddonSystemState.valueOf(value.toUpperCase()));
+        setArgTransformer("in_memory", AbstractCraftsNetBuilder.notAllowedTransformer(
+                "The in memory addons can't be set via the cli"
+        ));
 
         state(state).set("in_memory", Collections.synchronizedList(new ArrayList<>()));
     }
