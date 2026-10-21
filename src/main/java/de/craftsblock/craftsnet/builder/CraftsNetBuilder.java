@@ -1,17 +1,21 @@
 package de.craftsblock.craftsnet.builder;
 
-import de.craftsblock.craftscore.utils.ArgumentParser;
+import de.craftsblock.craftscore.utils.Arguments;
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.builder.addon.AddonSystemBuilder;
+import de.craftsblock.craftsnet.builder.addon.AddonSystemState;
+import de.craftsblock.craftsnet.builder.server.ServerBuilder;
+import de.craftsblock.craftsnet.builder.server.ServerState;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.impl.LoggerImpl;
 import de.craftsblock.craftsnet.logging.impl.PlainLogger;
-import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.security.CodeSource;
 import java.util.*;
+import java.util.function.Consumer;
 
 /**
  * Builder class for configuring the CraftsNet.
@@ -21,17 +25,17 @@ import java.util.*;
  * @see ActivateType
  * @since 3.0.3-SNAPSHOT
  */
-public class CraftsNetBuilder {
+@SuppressWarnings("removal")
+public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder> {
 
     private final List<CodeSource> codeSources = new ArrayList<>();
 
-    private int webServerPort;
-    private int webSocketServerPort;
+    private final Map<String, NamespacedBuilder<?>> internalBuilders;
 
-    private ActivateType webServer;
-    private ActivateType webSocketServer;
-    private ActivateType addonSystem;
-    private ActivateType commandSystem;
+    private final AddonSystemBuilder addonSystemBuilder;
+
+    private final ServerBuilder webServerBuilder;
+    private final ServerBuilder webSocketServerBuilder;
 
     private int sessionCacheSize;
 
@@ -42,12 +46,9 @@ public class CraftsNetBuilder {
     private Collection<String> trustedProxyHeadersView;
 
     private boolean allowResponseEncoding;
-    private boolean debug;
     private boolean hideIpsInLog;
     private boolean tempFilesOnNormalFileSystem;
-    private boolean skipDefaultRoute;
     private boolean skipVersionCheck;
-    private boolean ssl;
 
     private long logRotate;
 
@@ -55,100 +56,98 @@ public class CraftsNetBuilder {
      * Constructs a new {@link CraftsNetBuilder} instance with default configuration settings.
      */
     public CraftsNetBuilder() {
-        webServerPort = 5000;
-        webSocketServerPort = 5001;
-        webServer = webSocketServer = ActivateType.DYNAMIC;
-        addonSystem = commandSystem = fileLogger = ActivateType.ENABLED;
+        acquire(this);
+
+        this.internalBuilders = new HashMap<>();
+        setArgTransformer("debug", AbstractCraftsNetBuilder.flagArgTransformer());
+
+        this.addonSystemBuilder = new AddonSystemBuilder(this, AddonSystemState.FULL);
+
+        this.webServerBuilder = new ServerBuilder(this, "http", ServerState.DYNAMIC, (short) 5000, false, false);
+        this.webSocketServerBuilder = new ServerBuilder(this, "websocket", ServerState.DYNAMIC, (short) 5001, false, false);
+
+        debug(false);
+
+        fileLogger = ActivateType.ENABLED;
         withSessionCache(5);
-        withDebug(false);
         withIpsInLog(true);
         withApplyResponseEncoding(false);
         withTempFilesOnNormalFileSystem(false);
-        withSkipDefaultRoute(false);
         withSkipVersionCheck(false);
-        withSSL(false);
         withoutLogRotate();
         withTrustedProxyHeaders(new ArrayList<>());
 
         addCodeSource(this.getClass().getProtectionDomain().getCodeSource());
     }
 
-    /**
-     * Configures the builder using a set of command-line arguments.
-     * <p>
-     * Parses the provided arguments and applies corresponding settings to the builder.
-     * If a specific argument is not recognized, an exception is thrown.
-     * </p>
-     *
-     * @param args An array of command-line arguments to parse.
-     * @return The current instance of {@link CraftsNetBuilder} for chaining.
-     * @throws RuntimeException If there is an error accessing the underlying argument parser's data.
-     */
-    public CraftsNetBuilder withArgs(String[] args) {
-        ArgumentParser parser = new ArgumentParser(args);
+    void registerInternalNamespace(NamespacedBuilder<?> builder) {
+        this.internalBuilders.put(builder.getNamespace().toLowerCase(), builder);
+    }
 
-        try {
-            Field field = ReflectionUtils.findField(parser.getClass(), "arguments");
-
-            if (field == null)
-                throw new IllegalStateException("Can not load the arguments field!");
-
-            field.setAccessible(true);
-
-            @SuppressWarnings("unchecked")
-            Map<String, String> arguments = (Map<String, String>) field.get(parser);
-            arguments.forEach(this::setArg);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException("Could not unpack arguments!", e);
-        }
-
+    public @NotNull CraftsNetBuilder setAll(String[] args) {
+        Arguments arguments = new Arguments(args, Arguments.Pattern.SPACE_SEPARATED);
+        arguments.getMapView().forEach(this::set);
         return this;
     }
 
-    /**
-     * Applies a single argument and its value to the builder.
-     * <p>
-     * Recognizes a predefined set of argument names and updates the corresponding settings.
-     * If the argument is not recognized, an {@link IllegalStateException} is thrown.
-     * </p>
-     *
-     * @param arg   The argument name, case-insensitive.
-     * @param value The argument value, used for arguments requiring additional data.
-     * @throws IllegalStateException If the argument name is not recognized.
-     */
-    protected void setArg(String arg, String value) {
-        switch (arg.toLowerCase()) {
-            // Flags
-            case "debug" -> withDebug(true);
-            case "hideips", "hideipsinlog" -> withIpsInLog(false);
-            case "placetempfileinnormal" -> withTempFilesOnNormalFileSystem(true);
-            case "skipdefaultroute" -> withSkipDefaultRoute(true);
-            case "skipversioncheck" -> withSkipVersionCheck(true);
-            case "ssl" -> withSSL(true);
+    @Override
+    public @NotNull CraftsNetBuilder set(@NotNull String arg, @NotNull Object value) {
+        Objects.requireNonNull(arg, "arg");
 
-            case "disableaddonsystem" -> withAddonSystem(ActivateType.DISABLED);
-            case "disablecommandsystem" -> withCommandSystem(ActivateType.DISABLED);
-            case "disablefilelogger" -> withFileLogger(ActivateType.DISABLED);
-            case "disablelogger" -> withLogger(ActivateType.DISABLED);
-            case "disablelogrotate" -> withoutLogRotate();
-            case "disablewebserver" -> withWebServer(ActivateType.DISABLED);
-            case "disablewebsocketserver" -> withWebSocketServer(ActivateType.DISABLED);
-
-            case "forcewebserver" -> withWebServer(ActivateType.ENABLED);
-            case "forcewebsocketserver" -> withWebSocketServer(ActivateType.ENABLED);
-
-            case "enableresponseencoding" -> withApplyResponseEncoding(true);
-
-            // Arguments
-            case "http-port", "httpport" -> withWebServer(Integer.parseInt(value));
-            case "log-rotate", "logrotate" -> withLogRotate(Integer.parseInt(value));
-            case "socket-port", "socketport", "websocket-port", "websocketport" -> withWebSocketServer(Integer.parseInt(value));
-
-            case "sessioncache", "sessioncachesize" -> withSessionCache(Integer.parseInt(value));
-
-            // Default
-            default -> throw new IllegalStateException("Unexpected argument in startup command: " + arg.toLowerCase());
+        if (!arg.contains(":")) {
+            return super.set(arg, value);
         }
+
+        String[] parts = arg.split(":", 2);
+        String namespace = parts[0];
+
+        NamespacedBuilder<?> builder = this.internalBuilders.get(namespace.toLowerCase());
+        if (builder == null) {
+            throw new IllegalArgumentException("No internal namespace " + namespace
+                    + " found for arg " + arg);
+        }
+
+        builder.set(parts[1], value);
+        return this;
+    }
+
+    public CraftsNetBuilder webServer(Consumer<ServerBuilder> builderConsumer) {
+        builderConsumer.accept(this.webServerBuilder);
+        return this;
+    }
+
+    public ServerBuilder webServer() {
+        return this.webServerBuilder;
+    }
+
+    public CraftsNetBuilder webSocketServer(Consumer<ServerBuilder> builderConsumer) {
+        builderConsumer.accept(this.webSocketServerBuilder);
+        return this;
+    }
+
+    public ServerBuilder webSocketServer() {
+        return this.webSocketServerBuilder;
+    }
+
+    public CraftsNetBuilder addonSystem(Consumer<AddonSystemBuilder> builderConsumer) {
+        builderConsumer.accept(this.addonSystemBuilder);
+        return this;
+    }
+
+    public AddonSystemBuilder addonSystem() {
+        return this.addonSystemBuilder;
+    }
+
+    public CraftsNetBuilder debug(boolean debug) {
+        this.set("debug", debug);
+        return this;
+    }
+
+    public boolean debug() {
+        return Objects.requireNonNull(
+                this.getBoolean("debug"),
+                "No debug flag found"
+        );
     }
 
     /**
@@ -169,98 +168,9 @@ public class CraftsNetBuilder {
      * @param codeSource The {@link CodeSource} that should be removed.
      * @return The {@link CraftsNetBuilder} instance.
      */
+
     public CraftsNetBuilder removeCodeSource(CodeSource codeSource) {
         this.codeSources.remove(codeSource);
-        return this;
-    }
-
-    /**
-     * Specifies the port for the web server.
-     *
-     * @param port The port number for the web server.
-     * @return The {@link CraftsNetBuilder} instance.
-     */
-    public CraftsNetBuilder withWebServer(int port) {
-        return withWebServer(ActivateType.DYNAMIC, port);
-    }
-
-    /**
-     * Specifies the port for the web server.
-     *
-     * @param type The activation type for the web server.
-     * @return The {@link CraftsNetBuilder} instance.
-     * @since 3.0.5-SNAPSHOT
-     */
-    public CraftsNetBuilder withWebServer(ActivateType type) {
-        return withWebServer(type, this.webServerPort);
-    }
-
-    /**
-     * Specifies the activation type and port for the web server.
-     *
-     * @param type The activation type for the web server.
-     * @param port The port number for the web server.
-     * @return The {@link CraftsNetBuilder} instance.
-     */
-    public CraftsNetBuilder withWebServer(ActivateType type, int port) {
-        this.webServer = type;
-        this.webServerPort = port;
-        return this;
-    }
-
-    /**
-     * Specifies the port for the WebSocket server.
-     *
-     * @param port The port number for the WebSocket server.
-     * @return The {@link CraftsNetBuilder} instance.
-     */
-    public CraftsNetBuilder withWebSocketServer(int port) {
-        return withWebSocketServer(ActivateType.DYNAMIC, port);
-    }
-
-    /**
-     * Specifies the activation type and port for the WebSocket server.
-     *
-     * @param type The activation type for the WebSocket server.
-     * @return The {@link CraftsNetBuilder} instance.
-     * @since 3.0.5-SNAPSHOT
-     */
-    public CraftsNetBuilder withWebSocketServer(ActivateType type) {
-        return withWebSocketServer(type, this.webSocketServerPort);
-    }
-
-    /**
-     * Specifies the activation type and port for the WebSocket server.
-     *
-     * @param type The activation type for the WebSocket server.
-     * @param port The port number for the WebSocket server.
-     * @return The {@link CraftsNetBuilder} instance.
-     */
-    public CraftsNetBuilder withWebSocketServer(ActivateType type, int port) {
-        this.webSocketServer = type;
-        this.webSocketServerPort = port;
-        return this;
-    }
-
-    /**
-     * Specifies the activation type for the addon system.
-     *
-     * @param type The activation type for the addon system.
-     * @return The {@link CraftsNetBuilder} instance.
-     */
-    public CraftsNetBuilder withAddonSystem(ActivateType type) {
-        this.addonSystem = type;
-        return this;
-    }
-
-    /**
-     * Specifies the activation type for the command system.
-     *
-     * @param type The activation type for the command system.
-     * @return The {@link CraftsNetBuilder} instance.
-     */
-    public CraftsNetBuilder withCommandSystem(ActivateType type) {
-        this.commandSystem = type;
         return this;
     }
 
@@ -309,19 +219,6 @@ public class CraftsNetBuilder {
      */
     public CraftsNetBuilder withTempFilesOnNormalFileSystem(boolean tempFilesOnNormalFileSystem) {
         this.tempFilesOnNormalFileSystem = tempFilesOnNormalFileSystem;
-        return this;
-    }
-
-    /**
-     * Specifies whether the registration of the default route (if no other route was registered)
-     * should be skipped on startup.
-     *
-     * @param skip {@code true} if the version check should be skipped, {@code false} otherwise.
-     * @return The {@link CraftsNetBuilder} instance.
-     * @since 3.3.3-SNAPSHOT
-     */
-    public CraftsNetBuilder withSkipDefaultRoute(boolean skip) {
-        this.skipDefaultRoute = skip;
         return this;
     }
 
@@ -386,17 +283,6 @@ public class CraftsNetBuilder {
     }
 
     /**
-     * Specifies whether debug mode should be enabled.
-     *
-     * @param enabled {@code true} if debug mode should be enabled, {@code false} otherwise.
-     * @return The {@link CraftsNetBuilder} instance.
-     */
-    public CraftsNetBuilder withDebug(boolean enabled) {
-        this.debug = enabled;
-        return this;
-    }
-
-    /**
      * Specifies whether ips should be blurred in the log output.
      *
      * @param enabled {@code true} if ips should be readable in the log, {@code false} otherwise.
@@ -405,17 +291,6 @@ public class CraftsNetBuilder {
      */
     public CraftsNetBuilder withIpsInLog(boolean enabled) {
         this.hideIpsInLog = !enabled;
-        return this;
-    }
-
-    /**
-     * Specifies whether SSL should be enabled.
-     *
-     * @param enabled {@code true} if SSL should be enabled, {@code false} otherwise.
-     * @return The {@link CraftsNetBuilder} instance.
-     */
-    public CraftsNetBuilder withSSL(boolean enabled) {
-        ssl = enabled;
         return this;
     }
 
@@ -447,100 +322,6 @@ public class CraftsNetBuilder {
      */
     public Collection<CodeSource> getCodeSources() {
         return Collections.unmodifiableCollection(codeSources);
-    }
-
-    /**
-     * Retrieves the port number configured for the web server.
-     *
-     * @return The port number for the web server.
-     */
-    public int getWebServerPort() {
-        return webServerPort;
-    }
-
-    /**
-     * Retrieves the activation type configured for the web server.
-     *
-     * @return The activation type for the web server.
-     */
-    public ActivateType getWebServer() {
-        return webServer;
-    }
-
-    /**
-     * Checks if the web server is configured with the specified activation type.
-     *
-     * @param type The activation type to check.
-     * @return true if the web server is configured with the specified activation type, false otherwise.
-     */
-    public boolean isWebServer(ActivateType type) {
-        return webServer == type;
-    }
-
-    /**
-     * Retrieves the port number configured for the WebSocket server.
-     *
-     * @return The port number for the WebSocket server.
-     */
-    public int getWebSocketServerPort() {
-        return webSocketServerPort;
-    }
-
-    /**
-     * Retrieves the activation type configured for the WebSocket server.
-     *
-     * @return The activation type for the WebSocket server.
-     */
-    public ActivateType getWebSocketServer() {
-        return webSocketServer;
-    }
-
-    /**
-     * Checks if the WebSocket server is configured with the specified activation type.
-     *
-     * @param type The activation type to check.
-     * @return true if the WebSocket server is configured with the specified activation type, false otherwise.
-     */
-    public boolean isWebSocketServer(ActivateType type) {
-        return webSocketServer == type;
-    }
-
-    /**
-     * Retrieves the activation type configured for the addon system.
-     *
-     * @return The activation type for the addon system.
-     */
-    public ActivateType getAddonSystem() {
-        return addonSystem;
-    }
-
-    /**
-     * Checks if the addon system is configured with the specified activation type.
-     *
-     * @param type The activation type to check.
-     * @return true if the addon system is configured with the specified activation type, false otherwise.
-     */
-    public boolean isAddonSystem(ActivateType type) {
-        return addonSystem == type;
-    }
-
-    /**
-     * Retrieves the activation type configured for the command system.
-     *
-     * @return The activation type for the command system.
-     */
-    public ActivateType getCommandSystem() {
-        return commandSystem;
-    }
-
-    /**
-     * Checks if the command system is configured with the specified activation type.
-     *
-     * @param type The activation type to check.
-     * @return true if the command system is configured with the specified activation type, false otherwise.
-     */
-    public boolean isCommandSystem(ActivateType type) {
-        return commandSystem == type;
     }
 
     /**
@@ -583,17 +364,6 @@ public class CraftsNetBuilder {
     }
 
     /**
-     * Determines whether the registration of the default route (if no other route was registered)
-     * should be skipped on startup.
-     *
-     * @return {@code true} if the registration of the default rout should be skipped, {@code false} otherwise.
-     * @since 3.3.3-SNAPSHOT
-     */
-    public boolean shouldSkipDefaultRoute() {
-        return skipDefaultRoute;
-    }
-
-    /**
      * Determines whether the version check should be skipped on startup.
      *
      * @return {@code true} if the version check should be skipped, {@code false} otherwise.
@@ -617,15 +387,6 @@ public class CraftsNetBuilder {
     }
 
     /**
-     * Checks if debug mode is enabled.
-     *
-     * @return {@code true} if debug mode is enabled, {@code false} otherwise.
-     */
-    public boolean isDebug() {
-        return debug;
-    }
-
-    /**
      * Checks if ips should be hidden in the log output.
      *
      * @return {@code true} if ips should be hidden, {@code false} otherwise.
@@ -633,15 +394,6 @@ public class CraftsNetBuilder {
      */
     public boolean shouldHideIps() {
         return hideIpsInLog;
-    }
-
-    /**
-     * Checks if SSL is enabled.
-     *
-     * @return {@code true} if SSL is enabled, {@code false} otherwise.
-     */
-    public boolean isSSL() {
-        return ssl;
     }
 
     /**
@@ -670,7 +422,9 @@ public class CraftsNetBuilder {
      */
     public CraftsNet build() throws IOException {
         // Set up the logger if no logger was given
-        if (logger == null) logger = new LoggerImpl(isDebug());
+        if (logger == null) {
+            logger = new LoggerImpl(debug());
+        }
 
         CraftsNet craftsNet = new CraftsNet();
         craftsNet.start(this);

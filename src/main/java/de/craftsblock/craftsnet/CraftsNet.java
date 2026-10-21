@@ -21,8 +21,11 @@ import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegis
 import de.craftsblock.craftsnet.autoregister.AutoRegisterRegistry;
 import de.craftsblock.craftsnet.autoregister.loaders.AutoRegisterLoader;
 import de.craftsblock.craftsnet.builder.ActivateType;
-import de.craftsblock.craftsnet.builder.AddonContainingBuilder;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
+import de.craftsblock.craftsnet.builder.addon.AddonSystemBuilder;
+import de.craftsblock.craftsnet.builder.addon.AddonSystemState;
+import de.craftsblock.craftsnet.builder.server.ServerBuilder;
+import de.craftsblock.craftsnet.builder.server.ServerState;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.utils.FileHelper;
@@ -37,6 +40,7 @@ import java.nio.file.Path;
 import java.security.CodeSource;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.jar.JarFile;
 
 /**
@@ -95,7 +99,7 @@ public class CraftsNet {
      */
     public static void main(String[] args) throws IOException {
         Thread.currentThread().setName("CraftsNet Main");
-        CraftsNet.create().withArgs(args).build();
+        CraftsNet.create().setAll(args).build();
     }
 
     /**
@@ -139,6 +143,7 @@ public class CraftsNet {
         logger.debug("Preloading gson for faster processing");
         Json.empty();
 
+        logger.debug("Changing the default uncaught exception handler");
         this.oldDefaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             if (logStream != null) {
@@ -149,88 +154,133 @@ public class CraftsNet {
 
             logger.error(e);
         });
-        logger.debug("Injected the default uncaught exception handler");
 
         this.fileHelper = new FileHelper(this, builder.shouldPlaceTempFilesOnNormalFileSystem());
 
-        logger.info("Initialization of system variables");
-        logger.debug("Initialization of the session cache");
+        logger.debug("Creating the session cache");
         this.sessionCache = new SessionCache(builder.getSessionCacheSize());
 
-        logger.debug("Initialization of the stream encoder registry");
+        logger.debug("Creating the stream encoder registry");
         streamEncoderRegistry = new StreamEncoderRegistry();
 
-        logger.debug("Initialization of the listener registry");
+        logger.debug("Creating the listener registry");
         listenerRegistry = new ListenerRegistry();
 
-        logger.debug("Initialization of the middleware registry");
+        logger.debug("Creating the middleware registry");
         middlewareRegistry = new MiddlewareRegistry();
 
-        logger.debug("Initialization of the route registry");
+        logger.debug("Creating the route registry");
         routeRegistry = new RouteRegistry(this);
 
-        logger.debug("Initialization of the requirement registry");
+        logger.debug("Creating the requirement registry");
         requirementRegistry = new RequirementRegistry(this);
 
-        logger.debug("Initialization of the service manager");
+        logger.debug("Creating the service manager");
         serviceManager = new ServiceManager(this);
 
-        logger.debug("Initialization of the websocket extension registry");
+        logger.debug("Creating the websocket extension registry");
         webSocketExtensionRegistry = new WebSocketExtensionRegistry();
 
-        logger.debug("Initialization of the body registry");
+        logger.debug("Creating the body registry");
         bodyRegistry = new BodyRegistry();
 
-        logger.debug("Initialization of the addon manager");
+        logger.debug("Creating the addon manager");
         addonManager = new AddonManager(this);
 
         logger.info("Preparing the webserver");
-        webServer = new WebServer(this, builder.getWebServerPort(), 25, builder.isSSL());
+        ServerBuilder webServerBuilder = builder.webServer();
+        webServer = new WebServer(this, webServerBuilder.port(), 25, webServerBuilder.ssl());
 
         logger.info("Preparing the websocket server");
-        webSocketServer = new WebSocketServer(this, builder.getWebSocketServerPort(), 25, builder.isSSL());
+        ServerBuilder webSocketServerBuilder = builder.webSocketServer();
+        webSocketServer = new WebSocketServer(this, webSocketServerBuilder.port(), 25, webSocketServerBuilder.ssl());
 
-        logger.debug("Initialization of the auto register registry");
+        logger.debug("Creating the auto register registry");
         autoRegisterRegistry = new AutoRegisterRegistry(this);
 
-        if (!builder.isAddonSystem(ActivateType.DISABLED)) {
-            addonManager.fromFiles();
-
-            if (builder instanceof AddonContainingBuilder addonBuilder) {
-                addonBuilder.loadAddons(this);
-            }
-
-            addonManager.startup();
-        }
-
-        if (builder.isWebServer(ActivateType.ENABLED) || builder.isWebServer(ActivateType.DYNAMIC)) {
-            if (!builder.shouldSkipDefaultRoute() && !routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
-                logger.debug("No routes and sockets found, creating the default route");
-                getRouteRegistry().register(DefaultRoute.getInstance());
-            }
-
-            if (routeRegistry.hasRoutes() || builder.isWebServer(ActivateType.ENABLED)) {
-                webServer.start();
-            }
-        } else if (builder.isWebServer(ActivateType.DISABLED) && routeRegistry.hasRoutes()) {
-            logger.warning("The web server is forcible disabled, but has registered routes!");
-        }
-
-        if (builder.isWebSocketServer(ActivateType.ENABLED) || builder.isWebSocketServer(ActivateType.DYNAMIC)) {
-            logger.debug("Implementing the default ping responder");
-            DefaultPingResponder.register(this);
-
-            if (routeRegistry.hasWebsockets() || builder.isWebSocketServer(ActivateType.ENABLED)) {
-                webSocketServer.start();
-            }
-        } else if (builder.isWebSocketServer(ActivateType.DISABLED) && routeRegistry.hasWebsockets()) {
-            logger.warning("The websocket server is forcible disabled, but has registered endpoints!");
-        }
+        builder.addonSystem(setupAddonSystem())
+                .webServer(setupWebServer())
+                .webSocketServer(setupWebSocketServer());
 
         this.shutdownThread = new Thread(this::stop, "CraftsNet Shutdown");
         Runtime.getRuntime().addShutdownHook(this.shutdownThread);
         logger.debug("JVM Shutdown Hook is implemented");
 
+        performAutoRegister();
+
+        // Log successful startup message with elapsed time
+        logger.info("CraftsNet successfully started after %sms", System.currentTimeMillis() - start);
+        started = true;
+    }
+
+    private Consumer<AddonSystemBuilder> setupAddonSystem() {
+        return builder -> {
+            try {
+                AddonSystemState addonSystemState = builder.state();
+                if (addonSystemState.isEnabled()) {
+                    if (addonSystemState.allowsFile()) {
+                        addonManager.fromFiles();
+                    }
+
+                    if (addonSystemState.allowsInMemory()) {
+                        builder.loadAddons(this);
+                    }
+
+                    addonManager.startup();
+                }
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to setup addon system", e);
+            } finally {
+                builder.freeze();
+            }
+        };
+    }
+
+    private Consumer<ServerBuilder> setupWebServer() {
+        return builder -> {
+            builder.freeze();
+
+            if (builder.state().isEnabled()) {
+                if (!builder.skipDefaultRoute() && !routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
+                    logger.debug("No routes and sockets found, creating the default route");
+                    getRouteRegistry().register(DefaultRoute.getInstance());
+                }
+
+                if (routeRegistry.hasRoutes() || builder.isState(ServerState.FORCE)) {
+                    webServer.start();
+                }
+
+                return;
+            }
+
+            if (builder.isState(ServerState.DISABLED) && routeRegistry.hasRoutes()) {
+                logger.warning("The web server is forcible disabled, but has registered routes!");
+            }
+        };
+    }
+
+    private Consumer<ServerBuilder> setupWebSocketServer() {
+        return builder -> {
+            builder.freeze();
+
+            if (builder.state().isEnabled()) {
+                logger.debug("Implementing the default ping responder");
+                DefaultPingResponder.register(this);
+
+                if (routeRegistry.hasWebsockets() || builder.isState(ServerState.FORCE)) {
+                    webSocketServer.start();
+                }
+
+                return;
+            }
+
+            if (builder.isState(ServerState.DISABLED) && routeRegistry.hasWebsockets()) {
+                logger.warning("The websocket server is forcible disabled, but has registered endpoints!");
+            }
+        };
+    }
+
+    private void performAutoRegister() {
         try (AutoRegisterLoader autoRegisterLoader = new AutoRegisterLoader()) {
             for (CodeSource codeSource : builder.getCodeSources()) {
                 try {
@@ -247,10 +297,6 @@ public class CraftsNet {
                 }
             }
         }
-
-        // Log successful startup message with elapsed time
-        logger.info("CraftsNet was successfully started after %sms", System.currentTimeMillis() - start);
-        started = true;
     }
 
     /**
@@ -541,10 +587,10 @@ public class CraftsNet {
      * more than one addon is in the same jar file. Use with caution in production!
      *
      * @param addons An array of {@link Addon} classes to include in the configuration.
-     * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
+     * @return A new {@link CraftsNetBuilder} instance initialized with the specified addons.
      */
     @SafeVarargs
-    public static AddonContainingBuilder create(Class<? extends Addon>... addons) {
+    public static CraftsNetBuilder create(Class<? extends Addon>... addons) {
         return create(ReflectionUtils.getCallerClass(), List.of(addons));
     }
 
@@ -555,9 +601,9 @@ public class CraftsNet {
      * more than one addon is in the same jar file. Use with caution in production!
      *
      * @param addons A {@link Collection} of {@link Addon} classes to include in the configuration.
-     * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
+     * @return A new {@link CraftsNetBuilder} instance initialized with the specified addons.
      */
-    public static AddonContainingBuilder create(Collection<Class<? extends Addon>> addons) {
+    public static CraftsNetBuilder create(Collection<Class<? extends Addon>> addons) {
         return create(ReflectionUtils.getCallerClass(), addons);
     }
 
@@ -567,11 +613,12 @@ public class CraftsNet {
      *
      * @param caller The caller that called the create method.
      * @param addons A {@link Collection} of {@link Addon} classes to include in the configuration.
-     * @return A new {@link AddonContainingBuilder} instance initialized with the specified addons.
+     * @return A new {@link CraftsNetBuilder} instance initialized with the specified addons.
      * @since 3.8.14
      */
-    private static AddonContainingBuilder create(Class<?> caller, Collection<Class<? extends Addon>> addons) {
-        return new AddonContainingBuilder(addons)
+    private static CraftsNetBuilder create(Class<?> caller, Collection<Class<? extends Addon>> addons) {
+        return new CraftsNetBuilder()
+                .addonSystem(builder -> builder.add(addons))
                 .addCodeSource(caller.getProtectionDomain().getCodeSource());
     }
 

@@ -8,7 +8,7 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.api.ssl.SSL;
-import de.craftsblock.craftsnet.builder.ActivateType;
+import de.craftsblock.craftsnet.builder.server.ServerState;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -166,7 +166,7 @@ public class WebServer extends Server {
      */
     @Override
     public synchronized void sleepIfNotNeeded() {
-        if (isRunning() && !craftsNet.getRouteRegistry().hasRoutes() && isStatus(ActivateType.DYNAMIC))
+        if (isRunning() && !craftsNet.getRouteRegistry().hasRoutes() && isStatus(ServerState.DYNAMIC))
             stop();
     }
 
@@ -177,7 +177,7 @@ public class WebServer extends Server {
      */
     @Override
     public boolean isEnabled() {
-        return !isStatus(ActivateType.DISABLED);
+        return !isStatus(ServerState.DISABLED);
     }
 
     /**
@@ -205,8 +205,8 @@ public class WebServer extends Server {
      * @param type The activation which should be present.
      * @return true if the activation status is equals, false otherwise.
      */
-    private boolean isStatus(ActivateType type) {
-        return craftsNet.getBuilder().isWebServer(type);
+    private boolean isStatus(ServerState type) {
+        return craftsNet.getBuilder().webServer().isState(type);
     }
 
 }

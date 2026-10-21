@@ -5,7 +5,7 @@ import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.api.codec.registry.TypeEncoderRegistry;
 import de.craftsblock.craftsnet.api.ssl.SSL;
 import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeEncoder;
-import de.craftsblock.craftsnet.builder.ActivateType;
+import de.craftsblock.craftsnet.builder.server.ServerState;
 import org.jetbrains.annotations.ApiStatus;
 
 import javax.net.ssl.SSLContext;
@@ -240,7 +240,7 @@ public class WebSocketServer extends Server {
      */
     @Override
     public synchronized void sleepIfNotNeeded() {
-        if (isRunning() && !craftsNet.getRouteRegistry().hasWebsockets() && isStatus(ActivateType.DYNAMIC)) {
+        if (isRunning() && !craftsNet.getRouteRegistry().hasWebsockets() && isStatus(ServerState.DYNAMIC)) {
             stop();
         }
     }
@@ -252,7 +252,7 @@ public class WebSocketServer extends Server {
      */
     @Override
     public boolean isEnabled() {
-        return !isStatus(ActivateType.DISABLED);
+        return !isStatus(ServerState.DISABLED);
     }
 
     /**
@@ -277,11 +277,11 @@ public class WebSocketServer extends Server {
     /**
      * Checks if the websocket server has a certain activation status in the builder.
      *
-     * @param type The activation which should be present.
+     * @param state The activation which should be present.
      * @return true if the activation status is equals, false otherwise.
      */
-    private boolean isStatus(ActivateType type) {
-        return craftsNet.getBuilder().isWebSocketServer(type);
+    private boolean isStatus(ServerState state) {
+        return craftsNet.getBuilder().webSocketServer().isState(state);
     }
 
     /**
