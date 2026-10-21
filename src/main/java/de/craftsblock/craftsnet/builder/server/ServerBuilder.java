@@ -1,16 +1,23 @@
 package de.craftsblock.craftsnet.builder.server;
 
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
-import de.craftsblock.craftsnet.builder.AbstractCraftsNetBuilder;
+import de.craftsblock.craftsnet.builder.NamespacedBuilder;
 import org.jetbrains.annotations.NotNull;
 
-public class ServerBuilder extends AbstractCraftsNetBuilder<ServerBuilder> {
+import java.util.Objects;
 
-    public ServerBuilder(@NotNull CraftsNetBuilder parent, @NotNull ServerState state, int port, boolean skipDefaultRoute) {
-        super(parent);
+public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
+
+    public ServerBuilder(@NotNull CraftsNetBuilder root, String namespace, @NotNull ServerState state, int port, boolean ssl, boolean skipDefaultRoute) {
+        super(root, namespace);
         acquire(this);
 
-        state(state).port(port).skipDefaultRoute(skipDefaultRoute);
+        this.setArgTransformer("state", value -> ServerState.valueOf(value.toUpperCase()));
+        this.setArgTransformer("port", Integer::parseInt);
+        this.setArgTransformer("ssl", value -> value.isBlank() || Boolean.parseBoolean(value));
+        this.setArgTransformer("skipDefaultRoute", value -> value.isBlank() || Boolean.parseBoolean(value));
+
+        state(state).port(port).ssl(ssl).skipDefaultRoute(skipDefaultRoute);
     }
 
     public @NotNull ServerBuilder state(@NotNull ServerState state) {
@@ -19,7 +26,10 @@ public class ServerBuilder extends AbstractCraftsNetBuilder<ServerBuilder> {
     }
 
     public @NotNull ServerState state() {
-        return asEnum("state", ServerState.class);
+        return Objects.requireNonNull(
+                getEnum("state", ServerState.class),
+                "No state for the addon system found"
+        );
     }
 
     public boolean isState(@NotNull ServerState state) {
@@ -32,7 +42,22 @@ public class ServerBuilder extends AbstractCraftsNetBuilder<ServerBuilder> {
     }
 
     public int port() {
-        return asShort("port");
+        return Objects.requireNonNull(
+                getShort("port"),
+                "No port found for the " + getNamespace()
+        );
+    }
+
+    public @NotNull ServerBuilder ssl(boolean ssl) {
+        set("ssl", ssl);
+        return this;
+    }
+
+    public boolean ssl() {
+        return Objects.requireNonNull(
+                getBoolean("ssl"),
+                "No ssl state found for the " + getNamespace()
+        );
     }
 
     public @NotNull ServerBuilder skipDefaultRoute(boolean skipDefaultRoute) {
@@ -41,7 +66,10 @@ public class ServerBuilder extends AbstractCraftsNetBuilder<ServerBuilder> {
     }
 
     public boolean skipDefaultRoute() {
-        return asBoolean("skipDefaultRoute");
+        return Objects.requireNonNull(
+                getBoolean("skipDefaultRoute"),
+                "No skip default route state found for the " + getNamespace()
+        );
     }
 
     public boolean isPort(int port) {
