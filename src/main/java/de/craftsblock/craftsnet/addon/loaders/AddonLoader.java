@@ -176,6 +176,7 @@ public final class AddonLoader {
                     }
 
                     DependencyClassLoader[] dependencyClassLoaders = Arrays.stream(dependencies)
+                            .filter(Objects::nonNull)
                             .map(url -> DependencyClassLoader.safelyNew(craftsNet, url))
                             .toArray(DependencyClassLoader[]::new);
                     URL[] classpath = new URL[]{path.toUri().toURL()};
