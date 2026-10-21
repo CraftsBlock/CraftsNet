@@ -2,7 +2,7 @@ package de.craftsblock.craftsnet.events.sockets.message;
 
 import de.craftsblock.craftscore.event.CancellableEvent;
 import de.craftsblock.craftsnet.api.websocket.Frame;
-import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import de.craftsblock.craftsnet.api.websocket.WebSocketExchange;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -16,16 +16,16 @@ import org.jetbrains.annotations.NotNull;
  */
 public class IncomingSocketMessageEvent extends CancellableEvent implements GenericSocketMessageEventBase {
 
-    private final SocketExchange exchange;
+    private final WebSocketExchange exchange;
     private final Frame frame;
 
     /**
-     * Constructs a new IncomingSocketMessageEvent with the specified SocketExchange and incoming message data.
+     * Constructs a new IncomingSocketMessageEvent with the specified WebSocketExchange and incoming message data.
      *
-     * @param exchange The SocketExchange object representing the socket connection and its associated data.
+     * @param exchange The WebSocketExchange object representing the socket connection and its associated data.
      * @param frame    The incoming message frame for this event.
      */
-    public IncomingSocketMessageEvent(SocketExchange exchange, @NotNull Frame frame) {
+    public IncomingSocketMessageEvent(WebSocketExchange exchange, @NotNull Frame frame) {
         this.exchange = exchange;
         this.frame = frame;
     }
@@ -46,7 +46,7 @@ public class IncomingSocketMessageEvent extends CancellableEvent implements Gene
      * @return {@inheritDoc}
      */
     @Override
-    public @NotNull SocketExchange getExchange() {
+    public @NotNull WebSocketExchange getExchange() {
         return exchange;
     }
 

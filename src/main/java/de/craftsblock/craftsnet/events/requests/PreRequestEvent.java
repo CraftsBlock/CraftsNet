@@ -1,13 +1,13 @@
 package de.craftsblock.craftsnet.events.requests;
 
 import de.craftsblock.craftscore.event.CancellableEvent;
-import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.api.http.HttpExchange;
 import org.jetbrains.annotations.NotNull;
 
 /**
  * This event is triggered before a http request is processed as route or share.
  * It allows for pre-processing of the request, including the ability to cancel it before it is handled.
- * The event holds an {@link Exchange} object that contains the details of the request.
+ * The event holds an {@link HttpExchange} object that contains the details of the request.
  * By extending {@link CancellableEvent}, this event can be cancelled, stopping further processing.
  *
  * @author Philipp Maywald
@@ -17,15 +17,15 @@ import org.jetbrains.annotations.NotNull;
  */
 public class PreRequestEvent extends CancellableEvent implements GenericRequestEventBase {
 
-    private final Exchange exchange;
+    private final HttpExchange httpExchange;
 
     /**
-     * Constructs a new {@code PreRequestEvent} with the provided {@link Exchange} object.
+     * Constructs a new {@code PreRequestEvent} with the provided {@link HttpExchange} object.
      *
-     * @param exchange the {@link Exchange} object containing the HTTP request data.
+     * @param httpExchange the {@link HttpExchange} object containing the HTTP request data.
      */
-    public PreRequestEvent(Exchange exchange) {
-        this.exchange = exchange;
+    public PreRequestEvent(HttpExchange httpExchange) {
+        this.httpExchange = httpExchange;
     }
 
     /**
@@ -44,8 +44,8 @@ public class PreRequestEvent extends CancellableEvent implements GenericRequestE
      * @return {@inheritDoc}
      */
     @Override
-    public @NotNull Exchange getExchange() {
-        return exchange;
+    public @NotNull HttpExchange getExchange() {
+        return httpExchange;
     }
 
 }

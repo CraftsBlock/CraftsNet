@@ -1,8 +1,8 @@
 package de.craftsblock.craftsnet.api.middlewares;
 
-import de.craftsblock.craftsnet.api.BaseExchange;
+import de.craftsblock.craftsnet.api.Exchange;
 import de.craftsblock.craftsnet.api.Server;
-import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.api.http.HttpExchange;
 import de.craftsblock.craftsnet.api.http.WebServer;
 
 /**
@@ -17,7 +17,7 @@ import de.craftsblock.craftsnet.api.http.WebServer;
 public interface HttpMiddleware extends Middleware {
 
     /**
-     * Defines the logic this middleware applies to the {@link Exchange exchange}.
+     * Defines the logic this middleware applies to the {@link HttpExchange httpExchange}.
      * <p>
      * <b>Note:</b> This method will be invoked before performing the actual
      * route logic.
@@ -25,22 +25,22 @@ public interface HttpMiddleware extends Middleware {
      *
      * @param callbackInfo The {@link MiddlewareCallbackInfo callback info} that is used
      *                     to store data between middlewares.
-     * @param exchange     The exchange holding the http requests data.
+     * @param httpExchange     The httpExchange holding the http requests data.
      */
-    void handle(MiddlewareCallbackInfo callbackInfo, Exchange exchange);
+    void handle(MiddlewareCallbackInfo callbackInfo, HttpExchange httpExchange);
 
     /**
      * {@inheritDoc}
      * <p>
      * This implementation tries to default all calls to
-     * {@link #handle(MiddlewareCallbackInfo, Exchange)}.
+     * {@link #handle(MiddlewareCallbackInfo, HttpExchange)}.
      *
      * @param callbackInfo {@inheritDoc}
      * @param exchange     {@inheritDoc}
      */
     @Override
-    default void handle(MiddlewareCallbackInfo callbackInfo, BaseExchange exchange) {
-        if (!(exchange instanceof Exchange httpExchange))
+    default void handle(MiddlewareCallbackInfo callbackInfo, Exchange exchange) {
+        if (!(exchange instanceof HttpExchange httpExchange))
             throw new IllegalStateException("Http middleware may not be called with an " + exchange.getClass().getSimpleName() + " exchange!");
         this.handle(callbackInfo, httpExchange);
     }

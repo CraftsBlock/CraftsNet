@@ -2,8 +2,7 @@ package de.craftsblock.craftsnet.events.sockets.message;
 
 import de.craftsblock.craftscore.event.Event;
 import de.craftsblock.craftsnet.api.websocket.Frame;
-import de.craftsblock.craftsnet.api.websocket.SocketExchange;
-import de.craftsblock.craftsnet.events.sockets.GenericSocketEventBase;
+import de.craftsblock.craftsnet.api.websocket.WebSocketExchange;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,16 +17,16 @@ import org.jetbrains.annotations.Nullable;
  */
 public class ReceivedPongMessageEvent extends Event implements GenericSocketMessageEventBase {
 
-    private final SocketExchange exchange;
+    private final WebSocketExchange exchange;
     private final Frame frame;
 
     /**
-     * Constructs a ReceivedPongMessageEvent with the specified SocketExchange.
+     * Constructs a ReceivedPongMessageEvent with the specified WebSocketExchange.
      *
-     * @param exchange The SocketExchange associated with the received Pong message.
+     * @param exchange The WebSocketExchange associated with the received Pong message.
      * @param frame    The {@link Frame frame} send with the pong message.
      */
-    public ReceivedPongMessageEvent(SocketExchange exchange, @NotNull Frame frame) {
+    public ReceivedPongMessageEvent(WebSocketExchange exchange, @NotNull Frame frame) {
         this.exchange = exchange;
         this.frame = frame;
     }
@@ -48,7 +47,7 @@ public class ReceivedPongMessageEvent extends Event implements GenericSocketMess
      * @return {@inheritDoc}
      */
     @Override
-    public @NotNull SocketExchange getExchange() {
+    public @NotNull WebSocketExchange getExchange() {
         return exchange;
     }
 

@@ -2,7 +2,7 @@ package de.craftsblock.craftsnet.events.sockets;
 
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
-import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import de.craftsblock.craftsnet.api.websocket.WebSocketExchange;
 import de.craftsblock.craftsnet.events.EventWithCancelReason;
 import org.jetbrains.annotations.NotNull;
 
@@ -21,17 +21,17 @@ import java.util.List;
  */
 public class ClientConnectEvent extends EventWithCancelReason implements GenericSocketEventBase {
 
-    private final SocketExchange exchange;
+    private final WebSocketExchange exchange;
     private final EnumMap<ProcessPriority.Priority, List<RouteRegistry.EndpointMapping>> mappings;
 
     private boolean allowWithoutMapping = false;
 
     /**
-     * Constructs a new ClientConnectEvent with the specified SocketExchange and SocketMapping.
+     * Constructs a new ClientConnectEvent with the specified WebSocketExchange and SocketMapping.
      *
-     * @param exchange The SocketExchange object representing the socket connection and its associated data.
+     * @param exchange The WebSocketExchange object representing the socket connection and its associated data.
      */
-    public ClientConnectEvent(SocketExchange exchange) {
+    public ClientConnectEvent(WebSocketExchange exchange) {
         this.exchange = exchange;
         this.mappings = exchange.client().getEndpoint();
     }
@@ -52,7 +52,7 @@ public class ClientConnectEvent extends EventWithCancelReason implements Generic
      * @return {@inheritDoc}
      */
     @Override
-    public @NotNull SocketExchange getExchange() {
+    public @NotNull WebSocketExchange getExchange() {
         return exchange;
     }
 

@@ -1,9 +1,6 @@
 package de.craftsblock.craftsnet.api.http.cors;
 
-import de.craftsblock.craftsnet.api.http.Exchange;
-import de.craftsblock.craftsnet.api.http.HttpMethod;
-import de.craftsblock.craftsnet.api.http.Request;
-import de.craftsblock.craftsnet.api.http.Response;
+import de.craftsblock.craftsnet.api.http.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Range;
 import org.jetbrains.annotations.Unmodifiable;
@@ -374,15 +371,15 @@ public class CorsPolicy {
     }
 
     /**
-     * Applies the current CORS policy to an {@link Exchange} object by adding appropriate
+     * Applies the current CORS policy to an {@link HttpExchange} object by adding appropriate
      * headers to the response based on the allowed origins, methods, headers, and credentials.
      *
-     * @param exchange The exchange on which to apply the CORS policy.
+     * @param httpExchange The httpExchange on which to apply the CORS policy.
      */
     @ApiStatus.Internal
-    public void apply(Exchange exchange) {
-        Request request = exchange.request();
-        Response response = exchange.response();
+    public void apply(HttpExchange httpExchange) {
+        Request request = httpExchange.request();
+        Response response = httpExchange.response();
 
         String origin = getOrigin(request, false);
         if (allowAllOrigins) response.setHeader(ALLOW_ORIGIN_HEADER, origin);

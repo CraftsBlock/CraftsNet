@@ -3,7 +3,7 @@ package de.craftsblock.craftsnet.api.websocket.annotations;
 import de.craftsblock.craftsnet.api.requirements.meta.RequirementMeta;
 import de.craftsblock.craftsnet.api.requirements.meta.RequirementStore;
 import de.craftsblock.craftsnet.api.requirements.meta.RequirementType;
-import de.craftsblock.craftsnet.api.websocket.SocketHandler;
+import de.craftsblock.craftsnet.api.websocket.WebSocketHandler;
 
 import java.lang.annotation.*;
 
@@ -12,14 +12,14 @@ import java.lang.annotation.*;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @see SocketHandler
+ * @see WebSocketHandler
  * @since 2.1.1-SNAPSHOT
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE, ElementType.METHOD})
 @RequirementMeta(type = RequirementType.STORING)
-public @interface Socket {
+public @interface WebSocket {
 
     /**
      * Specifies the WebSocket path to which this handler is associated.
