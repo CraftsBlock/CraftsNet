@@ -182,7 +182,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             else host.set(headers.getFirst("Host").split(":")[0]);
             this.domain = host.get();
 
-            Collection<String> trustedProxyHeaders = this.craftsNet.getBuilder().getTrustedProxyHeaders();
+            Collection<String> trustedProxyHeaders = this.craftsNet.getBuilder().webSocketServer().trustedProxyHeader();
             String headerName = trustedProxyHeaders.stream().filter(headers::containsKey).findFirst().orElse(null);
             if (headerName != null) {
                 ip = headers.getFirst(headerName).split(",\\s+")[0];

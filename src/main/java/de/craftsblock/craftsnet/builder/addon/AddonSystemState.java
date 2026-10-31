@@ -1,11 +1,34 @@
 package de.craftsblock.craftsnet.builder.addon;
 
-public enum AddonSystemState {
+import de.craftsblock.craftsnet.builder.MappableState;
+
+import java.util.Objects;
+
+public enum AddonSystemState implements MappableState<AddonSystemState> {
 
     FULL,
     IN_MEMORY_ONLY,
     FILE_ONLY,
-    DISABLED;
+    DISABLED,
+
+    FALSE(DISABLED),
+    TRUE(FULL),
+    ;
+
+    private final AddonSystemState mapTo;
+
+    AddonSystemState() {
+        this(null);
+    }
+
+    AddonSystemState(AddonSystemState mapTo) {
+        this.mapTo = mapTo;
+    }
+
+    @Override
+    public AddonSystemState getMapTo() {
+        return Objects.requireNonNullElse(this.mapTo, this);
+    }
 
     public boolean allowsFile() {
         return this == FULL || this == FILE_ONLY;

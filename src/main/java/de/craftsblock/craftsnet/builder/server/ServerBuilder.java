@@ -1,35 +1,91 @@
 package de.craftsblock.craftsnet.builder.server;
 
-import de.craftsblock.craftsnet.builder.AbstractCraftsNetBuilder;
+import de.craftsblock.craftsnet.builder.ArgumentTransformer;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.builder.NamespacedBuilder;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Objects;
 
 public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
 
-    public ServerBuilder(@NotNull CraftsNetBuilder root, String namespace, @NotNull ServerState state, short port, boolean ssl, boolean skipDefaultRoute) {
+    public ServerBuilder(@NotNull CraftsNetBuilder root, String namespace, @NotNull ServerState state,
+                         short port, boolean ssl, boolean skipDefaultRoute, boolean responseEncoding) {
         super(root, namespace);
-        acquire(this);
+        this.acquire(this);
 
-        this.setArgTransformer("state", value -> AbstractCraftsNetBuilder.enumArgTransformer(ServerState.class));
-        this.setArgTransformer("port", Short::parseShort);
-        this.setArgTransformer("ssl", value -> AbstractCraftsNetBuilder.flagArgTransformer());
-        this.setArgTransformer("skipDefaultRoute", AbstractCraftsNetBuilder.flagArgTransformer());
+        this.addKnownArgument("port", Short::parseShort);
+        this.addKnownArgument("responseEncoding", ArgumentTransformer.booleanFlag());
+        this.addKnownArgument("skipDefaultRoute", ArgumentTransformer.booleanFlag());
+        this.addKnownArgument("ssl", ArgumentTransformer.booleanFlag());
+        this.addKnownArgument("state", ArgumentTransformer.enumType(ServerState.class));
+        this.addKnownArgument("trustedProxyHeader", ArgumentTransformer.list());
 
-        state(state).port(port).ssl(ssl).skipDefaultRoute(skipDefaultRoute);
+        this.port(port);
+        this.responseEncoding(responseEncoding);
+        this.skipDefaultRoute(skipDefaultRoute);
+        this.ssl(ssl);
+        this.state(state);
+    }
+
+    public @NotNull ServerBuilder port(short port) {
+        return this.set("port", port);
+    }
+
+    public short port() {
+        return Objects.requireNonNull(
+                this.getShort("port"),
+                "No port found for the " + getNamespace()
+        );
+    }
+
+    public boolean isPort(short port) {
+        return this.port() == port;
+    }
+
+    public @NotNull ServerBuilder responseEncoding(boolean responseEncoding) {
+        return this.set("responseEncoding", responseEncoding);
+    }
+
+    public boolean responseEncoding() {
+        return Objects.requireNonNull(
+                this.getBoolean("responseEncoding"),
+                "No response encoding flag found for " + this.getNamespace()
+        );
+    }
+
+    public @NotNull ServerBuilder skipDefaultRoute(boolean skipDefaultRoute) {
+        return this.set("skipDefaultRoute", skipDefaultRoute);
+    }
+
+    public boolean skipDefaultRoute() {
+        return Objects.requireNonNull(
+                this.getBoolean("skipDefaultRoute"),
+                "No skip default route state found for " + getNamespace()
+        );
+    }
+
+    public @NotNull ServerBuilder ssl(boolean ssl) {
+        return this.set("ssl", ssl);
+    }
+
+    public boolean ssl() {
+        return Objects.requireNonNull(
+                this.getBoolean("ssl"),
+                "No ssl state found for " + getNamespace()
+        );
     }
 
     public @NotNull ServerBuilder state(@NotNull ServerState state) {
-        set("state", state);
-        return this;
+        return this.set("state", state);
     }
 
     public @NotNull ServerState state() {
         return Objects.requireNonNull(
-                getEnum("state", ServerState.class),
-                "No state for the addon system found"
+                this.getEnum("state", ServerState.class),
+                "No state found for " + getNamespace()
         );
     }
 
@@ -37,44 +93,15 @@ public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
         return this.state() == state;
     }
 
-    public @NotNull ServerBuilder port(short port) {
-        set("port", port);
-        return this;
+    public @NotNull ServerBuilder trustedProxyHeader(@NotNull Collection<String> trustedProxyHeader) {
+        return this.set("trustedProxyHeader", trustedProxyHeader);
     }
 
-    public short port() {
-        return Objects.requireNonNull(
-                getShort("port"),
-                "No port found for the " + getNamespace()
+    public Collection<String> trustedProxyHeader() {
+        return Objects.requireNonNullElse(
+                this.getCollection("trustedProxyHeader", String.class),
+                Collections.emptyList()
         );
-    }
-
-    public @NotNull ServerBuilder ssl(boolean ssl) {
-        set("ssl", ssl);
-        return this;
-    }
-
-    public boolean ssl() {
-        return Objects.requireNonNull(
-                getBoolean("ssl"),
-                "No ssl state found for the " + getNamespace()
-        );
-    }
-
-    public @NotNull ServerBuilder skipDefaultRoute(boolean skipDefaultRoute) {
-        set("skipDefaultRoute", skipDefaultRoute);
-        return this;
-    }
-
-    public boolean skipDefaultRoute() {
-        return Objects.requireNonNull(
-                getBoolean("skipDefaultRoute"),
-                "No skip default route state found for the " + getNamespace()
-        );
-    }
-
-    public boolean isPort(short port) {
-        return this.port() == port;
     }
 
 }

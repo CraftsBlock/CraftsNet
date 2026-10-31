@@ -5,7 +5,7 @@ import de.craftsblock.craftsnet.addon.Addon;
 import de.craftsblock.craftsnet.addon.AddonManager;
 import de.craftsblock.craftsnet.addon.loaders.AddonLoader;
 import de.craftsblock.craftsnet.addon.meta.AddonConfiguration;
-import de.craftsblock.craftsnet.builder.AbstractCraftsNetBuilder;
+import de.craftsblock.craftsnet.builder.ArgumentTransformer;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.builder.NamespacedBuilder;
 import org.jetbrains.annotations.ApiStatus;
@@ -20,19 +20,18 @@ public class AddonSystemBuilder extends NamespacedBuilder<AddonSystemBuilder> {
 
     public AddonSystemBuilder(@NotNull CraftsNetBuilder root, AddonSystemState state) {
         super(root, "addons");
-        acquire(this);
+        this.acquire(this);
         this.addonBuilders = new HashMap<>();
 
-        setArgTransformer("state", value -> AddonSystemState.valueOf(value.toUpperCase()));
-        setArgTransformer("in_memory", AbstractCraftsNetBuilder.notAllowedTransformer(
-                "The in memory addons can't be set via the cli"
-        ));
+        this.addKnownArgument("state", ArgumentTransformer.enumType(AddonSystemState.class));
+        this.addKnownArgument("in_memory", ArgumentTransformer.notAllowed("In memory addons can't be set via the cli"));
 
-        state(state).set("in_memory", Collections.synchronizedList(new ArrayList<>()));
+        this.state(state);
+        this.set("in_memory", Collections.synchronizedList(new ArrayList<>()));
     }
 
     @Override
-    public @NotNull AddonSystemBuilder set(@NotNull String arg, @NotNull Object value) {
+    protected @NotNull AddonSystemBuilder set(@NotNull String arg, @NotNull Object value) {
         Objects.requireNonNull(arg, "arg");
 
         if (!arg.contains(":")) {
@@ -59,8 +58,7 @@ public class AddonSystemBuilder extends NamespacedBuilder<AddonSystemBuilder> {
     }
 
     public @NotNull AddonSystemBuilder state(@NotNull AddonSystemState state) {
-        set("state", state);
-        return this;
+        return this.set("state", state);
     }
 
     public @NotNull AddonSystemState state() {
@@ -83,12 +81,11 @@ public class AddonSystemBuilder extends NamespacedBuilder<AddonSystemBuilder> {
                 );
     }
 
-    public @NotNull AddonSystemBuilder add(@NotNull Class<? extends Addon> addonType) {
-        getInMemoryAddons().add(addonType);
-        return this;
+    public @NotNull AddonSystemBuilder addInMemoryAddon(@NotNull Class<? extends Addon>... addonTypes) {
+        return this.addInMemoryAddon(Arrays.asList(addonTypes));
     }
 
-    public @NotNull AddonSystemBuilder add(@NotNull Collection<Class<? extends Addon>> addonTypes) {
+    public @NotNull AddonSystemBuilder addInMemoryAddon(@NotNull Collection<Class<? extends Addon>> addonTypes) {
         getInMemoryAddons().addAll(addonTypes);
         return this;
     }

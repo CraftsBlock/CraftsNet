@@ -5,7 +5,6 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.*;
-import java.util.function.Function;
 
 public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilder<T>> {
 
@@ -13,17 +12,23 @@ public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilde
     private boolean frozen = false;
 
     private final Map<String, Object> args = new HashMap<>();
-    private final Map<String, Function<String, Object>> argTransformers = new HashMap<>();
+    private final Map<String, ArgumentTransformer> argTransformers = new HashMap<>();
 
-    public AbstractCraftsNetBuilder() {
-        this(Map.of());
+    private final boolean allowUnknownArgs;
+
+    protected AbstractCraftsNetBuilder() {
+        this(false);
     }
 
-    public AbstractCraftsNetBuilder(@NotNull Map<String, Function<String, Object>> argTransformers) {
-        Objects.requireNonNull(argTransformers, "argTransformers").forEach(this::setArgTransformer);
+    protected AbstractCraftsNetBuilder(boolean allowUnknownArgs) {
+        this.allowUnknownArgs = allowUnknownArgs;
     }
 
-    protected void setArgTransformer(@NotNull String arg, @NotNull Function<String, Object> transformer) {
+    protected void addKnownArgument(@NotNull String arg) {
+        this.addKnownArgument(arg, ArgumentTransformer.identity());
+    }
+
+    protected void addKnownArgument(@NotNull String arg, @NotNull ArgumentTransformer transformer) {
         Objects.requireNonNull(arg, "arg");
         Objects.requireNonNull(transformer, "transformer");
 
@@ -41,19 +46,28 @@ public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilde
         this.owner = Objects.requireNonNull(owner, "owner");
     }
 
-    public @NotNull T set(@NotNull String arg) {
+    protected @NotNull T set(@NotNull String arg) {
         return this.set(arg, "");
     }
 
-    public @NotNull T set(@NotNull String arg, @NotNull Object value) {
+    protected @NotNull T set(@NotNull String arg, @NotNull Object value) {
         Objects.requireNonNull(arg, "arg");
         Objects.requireNonNull(value, "value");
 
         ensureNotFrozen();
 
+        if (!argTransformers.containsKey(arg.toLowerCase()) && !allowUnknownArgs) {
+            throw new IllegalArgumentException("Can not handle unknown argument: " + arg);
+        }
+
+        ArgumentTransformer argumentTransformer = this.argTransformers.getOrDefault(
+                arg.toLowerCase(),
+                ArgumentTransformer.identity()
+        );
+
         Object transformed;
-        if (value instanceof String string) {
-            transformed = this.argTransformers.getOrDefault(arg.toLowerCase(), s -> s).apply(string);
+        if (value instanceof String string && !argumentTransformer.equals(ArgumentTransformer.identity())) {
+            transformed = argumentTransformer.apply(string);
         } else {
             transformed = value;
         }
@@ -65,7 +79,7 @@ public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilde
     public @Nullable Object get(@NotNull String arg) {
         Objects.requireNonNull(arg, "arg");
 
-        return this.args.get(arg);
+        return this.args.get(arg.toLowerCase());
     }
 
     @SuppressWarnings("unchecked")
@@ -158,6 +172,10 @@ public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilde
         return Collections.unmodifiableMap(args);
     }
 
+    public boolean isAllowUnknownArgs() {
+        return allowUnknownArgs;
+    }
+
     public final void freeze() {
         ensureNotFrozen();
         this.frozen = true;
@@ -171,20 +189,6 @@ public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilde
 
     public final boolean isFrozen() {
         return frozen;
-    }
-
-    protected static Function<String, Object> flagArgTransformer() {
-        return value -> value.isBlank() || Boolean.parseBoolean(value) || value.equalsIgnoreCase("1");
-    }
-
-    protected static <E extends Enum<E>> Function<String, Object> enumArgTransformer(Class<E> type) {
-        return value -> Enum.valueOf(type, value.toUpperCase());
-    }
-
-    protected static Function<String, Object> notAllowedTransformer(String message) {
-        return value -> {
-            throw new IllegalArgumentException(message == null ? "Not allowed to set this via the cli" : message);
-        };
     }
 
 }

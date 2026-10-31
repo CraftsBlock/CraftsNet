@@ -89,7 +89,7 @@ public class WebHandler implements HttpHandler {
 
             StreamEncoderRegistry streamEncoderRegistry = craftsNet.getStreamEncoderRegistry();
             AtomicReference<StreamEncoder> streamEncoder = new AtomicReference<>(streamEncoderRegistry.retrieveEncoder(IdentityStreamEncoder.class));
-            if (craftsNet.getBuilder().responseEncodingAllowed() && headers.containsKey("Accept-Encoding")) {
+            if (craftsNet.getBuilder().webServer().responseEncoding() && headers.containsKey("Accept-Encoding")) {
                 var requestedEncodings = AcceptEncodingHelper.parseHeader(headers.getFirst("Accept-Encoding"));
 
                 for (String requested : requestedEncodings) {
@@ -107,7 +107,7 @@ public class WebHandler implements HttpHandler {
 
                 // FixMe: Below is just a hotfix. A more stable variant will be added!
                 String ip;
-                Collection<String> trustedProxyHeaders = this.craftsNet.getBuilder().getTrustedProxyHeaders();
+                Collection<String> trustedProxyHeaders = this.craftsNet.getBuilder().webServer().trustedProxyHeader();
                 String headerName = trustedProxyHeaders.stream().filter(headers::containsKey).findFirst().orElse(null);
                 if (headerName != null) {
                     ip = headers.getFirst(headerName).split(",\\s+")[0];

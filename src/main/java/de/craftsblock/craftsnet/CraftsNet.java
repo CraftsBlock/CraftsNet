@@ -20,13 +20,14 @@ import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeEncoder;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterRegistry;
 import de.craftsblock.craftsnet.autoregister.loaders.AutoRegisterLoader;
-import de.craftsblock.craftsnet.builder.ActivateType;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.builder.addon.AddonSystemBuilder;
 import de.craftsblock.craftsnet.builder.addon.AddonSystemState;
+import de.craftsblock.craftsnet.builder.logging.LoggingBuilder;
 import de.craftsblock.craftsnet.builder.server.ServerBuilder;
 import de.craftsblock.craftsnet.builder.server.ServerState;
 import de.craftsblock.craftsnet.logging.Logger;
+import de.craftsblock.craftsnet.logging.impl.LoggerImpl;
 import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.utils.FileHelper;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
@@ -99,7 +100,7 @@ public class CraftsNet {
      */
     public static void main(String[] args) throws IOException {
         Thread.currentThread().setName("CraftsNet Main");
-        CraftsNet.create().setAll(args).build();
+        CraftsNet.create().setFromCli(args).build();
     }
 
     /**
@@ -108,19 +109,16 @@ public class CraftsNet {
      * @param builder The builder instance containing the configuration for starting CraftsNet.
      * @throws IOException If an I/O error occurs during the startup process.
      */
-    public void start(CraftsNetBuilder builder) throws IOException {
+    public void start(CraftsNetBuilder builder) {
         if (started) {
             throw new RuntimeException("The instance of CraftsNet has already been started!");
         }
         this.builder = builder;
+        this.builder.freeze();
 
         // Start measuring the startup time
         long start = System.currentTimeMillis();
-
-        logger = builder.getCustomLogger();
-
-        logStream = new LogStream(this, builder.isFileLogger(ActivateType.ENABLED), builder.getLogRotate());
-        logStream.start();
+        builder.logging(this.setupLogging());
 
         if (instance != null) {
             for (Logger log : new Logger[]{logger, instance.logger}) {
@@ -128,7 +126,6 @@ public class CraftsNet {
                 log.warning("This may cause some errors.");
             }
         }
-
         instance = this;
 
         logger.info("CraftsNet v%s boots up", version);
@@ -136,7 +133,7 @@ public class CraftsNet {
         logger.debug("JVM Version: %s; Max recognizable class file version: %s.%s",
                 jvmVersion.toString(), jvmVersion.feature() + 44, jvmVersion.interim());
 
-        if (!builder.shouldSkipVersionCheck() && version.matches("^\\d+(?:[.-]\\d+)*$")) {
+        if (!builder.skipVersionCheck() && version.matches("^\\d+(?:[.-]\\d+)*$")) {
             Versions.verbalCheckCraftsNet(this);
         }
 
@@ -155,10 +152,10 @@ public class CraftsNet {
             logger.error(e);
         });
 
-        this.fileHelper = new FileHelper(this, builder.shouldPlaceTempFilesOnNormalFileSystem());
+        this.fileHelper = new FileHelper(this, builder.tempFilesInPwd());
 
         logger.debug("Creating the session cache");
-        this.sessionCache = new SessionCache(builder.getSessionCacheSize());
+        this.sessionCache = new SessionCache(builder.sessionCacheSize());
 
         logger.debug("Creating the stream encoder registry");
         streamEncoderRegistry = new StreamEncoderRegistry();
@@ -198,9 +195,9 @@ public class CraftsNet {
         logger.debug("Creating the auto register registry");
         autoRegisterRegistry = new AutoRegisterRegistry(this);
 
-        builder.addonSystem(setupAddonSystem())
-                .webServer(setupWebServer())
-                .webSocketServer(setupWebSocketServer());
+        builder.addonSystem(this.setupAddonSystem());
+        builder.webServer(this.setupWebServer());
+        builder.webSocketServer(this.setupWebSocketServer());
 
         this.shutdownThread = new Thread(this::stop, "CraftsNet Shutdown");
         Runtime.getRuntime().addShutdownHook(this.shutdownThread);
@@ -211,6 +208,20 @@ public class CraftsNet {
         // Log successful startup message with elapsed time
         logger.info("CraftsNet successfully started after %sms", System.currentTimeMillis() - start);
         started = true;
+    }
+
+    private Consumer<LoggingBuilder> setupLogging() {
+        return builder -> {
+            builder.freeze();
+
+            this.logger = builder.logger();
+            if (this.logger == null) {
+                this.logger = new LoggerImpl(builder.getRoot().debug());
+            }
+
+            this.logStream = new LogStream(this, builder.file(), builder.rotate());
+            this.logStream.start();
+        };
     }
 
     private Consumer<AddonSystemBuilder> setupAddonSystem() {
@@ -378,11 +389,7 @@ public class CraftsNet {
                 executeBetween.run();
             }
 
-            try {
-                start(builder);
-            } catch (IOException e) {
-                throw new RuntimeException("Could not restart CraftsNet properly!", e);
-            }
+            start(builder);
         }, "CraftsNet Main");
         restart.start();
 
@@ -618,7 +625,7 @@ public class CraftsNet {
      */
     private static CraftsNetBuilder create(Class<?> caller, Collection<Class<? extends Addon>> addons) {
         return new CraftsNetBuilder()
-                .addonSystem(builder -> builder.add(addons))
+                .addonSystem(builder -> builder.addInMemoryAddon(addons))
                 .addCodeSource(caller.getProtectionDomain().getCodeSource());
     }
 
