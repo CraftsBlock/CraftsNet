@@ -2,7 +2,7 @@ package de.craftsblock.craftsnet.api.transformers;
 
 import de.craftsblock.craftscore.cache.DoubleKeyedLruCache;
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.api.Handler;
+import de.craftsblock.craftsnet.api.EndpointHandler;
 import de.craftsblock.craftsnet.api.transformers.annotations.Transformer;
 import de.craftsblock.craftsnet.api.transformers.exceptions.TransformerException;
 import de.craftsblock.craftsnet.logging.Logger;
@@ -11,8 +11,6 @@ import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
@@ -91,7 +89,7 @@ public class TransformerPerformer {
      * @param args    The arguments containing the transform targets.
      * @return An array of transformed arguments.
      */
-    public boolean perform(Handler handler, Method method, Object[] args) {
+    public boolean perform(EndpointHandler handler, Method method, Object[] args) {
         if (hasNoTransformers(handler) && hasNoTransformers(method))
             return true;
 

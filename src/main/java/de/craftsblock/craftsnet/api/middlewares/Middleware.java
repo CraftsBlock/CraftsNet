@@ -1,11 +1,11 @@
 package de.craftsblock.craftsnet.api.middlewares;
 
-import de.craftsblock.craftsnet.api.BaseExchange;
+import de.craftsblock.craftsnet.api.Exchange;
 import de.craftsblock.craftsnet.api.Server;
 
 /**
  * Represents a basic {@link Middleware middleware} that can be used in context with
- * {@link BaseExchange exchanges} to manipulate the behaviour of the application
+ * {@link Exchange exchanges} to manipulate the behaviour of the application
  * without interacting with the built-in listener system.
  *
  * @author Philipp Maywald
@@ -20,19 +20,19 @@ public interface Middleware {
      *
      * @param callbackInfo The {@link MiddlewareCallbackInfo callback info} that is used
      *                     to store data between middlewares.
-     * @param exchange     The {@link BaseExchange exchange} that holds the data of the request.
+     * @param exchange     The {@link Exchange exchange} that holds the data of the request.
      */
-    void handle(MiddlewareCallbackInfo callbackInfo, BaseExchange exchange);
+    void handle(MiddlewareCallbackInfo callbackInfo, Exchange exchange);
 
     /**
      * Checks if the {@link Middleware middleware} is applicable of handling the
-     * specific {@link BaseExchange exchange}.
+     * specific {@link Exchange exchange}.
      *
-     * @param exchange The {@link BaseExchange exchange} to check.
+     * @param exchange The {@link Exchange exchange} to check.
      * @return {@code true} if the middleware can handle the exchange, {@code false}
      * otherwise.
      */
-    default boolean isApplicable(BaseExchange exchange) {
+    default boolean isApplicable(Exchange exchange) {
         return isApplicable(exchange.scheme().getServerRaw());
     }
 

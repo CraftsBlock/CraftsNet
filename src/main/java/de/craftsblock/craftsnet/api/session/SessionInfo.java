@@ -1,17 +1,16 @@
 package de.craftsblock.craftsnet.api.session;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.api.BaseExchange;
-import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.api.Exchange;
+import de.craftsblock.craftsnet.api.http.HttpExchange;
 import de.craftsblock.craftsnet.api.http.Request;
 import de.craftsblock.craftsnet.api.http.cookies.Cookie;
 import de.craftsblock.craftsnet.api.http.cookies.SameSite;
-import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import de.craftsblock.craftsnet.api.websocket.WebSocketExchange;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.PassphraseUtils;
 import org.jetbrains.annotations.Nullable;
 
-import java.sql.SQLOutput;
 import java.util.Objects;
 
 /**
@@ -25,7 +24,7 @@ import java.util.Objects;
  * @author Philipp Maywald
  * @author CraftsBlock
  * @see Session
- * @see BaseExchange
+ * @see Exchange
  * @since 3.0.6-SNAPSHOT
  */
 public class SessionInfo {
@@ -73,12 +72,12 @@ public class SessionInfo {
      * The session is marked as persistent if a session ID is found.
      */
     protected void load() {
-        BaseExchange exchange = session.getExchange();
+        Exchange exchange = session.getExchange();
 
-        if (exchange instanceof Exchange http) {
+        if (exchange instanceof HttpExchange http) {
             this.craftsNet = http.response().getCraftsNet();
             this.sessionID = extractSession(http.request());
-        } else if (exchange instanceof SocketExchange ws) {
+        } else if (exchange instanceof WebSocketExchange ws) {
             this.craftsNet = ws.server().getCraftsNet();
 
             // Currently not implemented / supported
@@ -136,7 +135,7 @@ public class SessionInfo {
         if (craftsNet != null)
             craftsNet.getSessionCache().put(this.sessionID, this.session);
 
-        if (this.session.getExchange() instanceof Exchange http)
+        if (this.session.getExchange() instanceof HttpExchange http)
             http.response().setCookie(SID_COOKIE_NAME)
                     .override(REFERENCE_COOKIE).setValue(this.sessionID);
     }
@@ -152,7 +151,7 @@ public class SessionInfo {
         if (craftsNet != null) craftsNet.getSessionCache().remove(this.sessionID);
         this.session.getSessionStorage().destroy();
 
-        if (this.session.getExchange() instanceof Exchange http)
+        if (this.session.getExchange() instanceof HttpExchange http)
             http.response().deleteCookie(SID_COOKIE_NAME)
                     .override(REFERENCE_COOKIE).markDeleted();
 
@@ -168,7 +167,7 @@ public class SessionInfo {
      */
     private void compatibleOrThrow() {
         if (this.session.getExchange() == null) return;
-        if (this.session.getExchange() instanceof Exchange http) {
+        if (this.session.getExchange() instanceof HttpExchange http) {
             if (http.response().headersSent())
                 throw new IllegalStateException("The response headers have already been sent!");
             return;

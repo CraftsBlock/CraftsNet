@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.api;
 
+import de.craftsblock.craftsnet.api.routing.RouteInfo;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
@@ -12,7 +13,7 @@ import de.craftsblock.craftsnet.api.utils.Scheme;
  * @author CraftsBlock
  * @since 1.0.0-SNAPSHOT
  */
-public interface BaseExchange extends AutoCloseable {
+public interface Exchange extends AutoCloseable {
 
     /**
      * Performs last actions before the exchange is closed.
@@ -22,6 +23,8 @@ public interface BaseExchange extends AutoCloseable {
         Context context = context();
         if (context != null) context.clear();
     }
+
+    RouteInfo<Exchange> routeInfo();
 
     /**
      * Get the {@link Context} of the exchange.

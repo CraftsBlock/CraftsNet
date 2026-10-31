@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.events.requests;
 
 import de.craftsblock.craftscore.event.Event;
-import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.api.http.HttpExchange;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -16,18 +16,18 @@ import org.jetbrains.annotations.NotNull;
  */
 public class PostRequestEvent extends Event implements GenericRequestEventBase {
 
-    private final Exchange exchange;
+    private final HttpExchange httpExchange;
     private final boolean found, shared;
 
     /**
      * Constructs a new {@code PostRequestEvent}.
      *
-     * @param exchange The {@link Exchange} object containing the details of the HTTP request and response.
+     * @param httpExchange The {@link HttpExchange} object containing the details of the HTTP request and response.
      * @param found    A boolean flag indicating whether the requested resource was found.
      * @param shared   A boolean flag indicating whether the resource was shared successfully.
      */
-    public PostRequestEvent(Exchange exchange, boolean found, boolean shared) {
-        this.exchange = exchange;
+    public PostRequestEvent(HttpExchange httpExchange, boolean found, boolean shared) {
+        this.httpExchange = httpExchange;
         this.found = found;
         this.shared = shared;
     }
@@ -48,8 +48,8 @@ public class PostRequestEvent extends Event implements GenericRequestEventBase {
      * @return {@inheritDoc}
      */
     @Override
-    public @NotNull Exchange getExchange() {
-        return exchange;
+    public @NotNull HttpExchange getExchange() {
+        return httpExchange;
     }
 
     /**

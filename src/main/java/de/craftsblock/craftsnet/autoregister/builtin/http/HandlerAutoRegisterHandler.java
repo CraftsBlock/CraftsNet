@@ -1,21 +1,21 @@
 package de.craftsblock.craftsnet.autoregister.builtin.http;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.api.Handler;
+import de.craftsblock.craftsnet.api.EndpointHandler;
 import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterHandler;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
 
 /**
- * A handler for automatically registering {@link Handler} implementations. This class extends
+ * A handler for automatically registering {@link EndpointHandler} implementations. This class extends
  * {@link AutoRegisterHandler} and provides a concrete implementation for handling the registration of
- * {@link Handler} instances into the route registry of {@link CraftsNet}.
+ * {@link EndpointHandler} instances into the route registry of {@link CraftsNet}.
  *
  * @author Philipp Maywald
  * @author CraftsBlock
  * @since 3.2.0-SNAPSHOT
  */
-public class HandlerAutoRegisterHandler extends AutoRegisterHandler<Handler> {
+public class HandlerAutoRegisterHandler extends AutoRegisterHandler<EndpointHandler> {
 
     private final RouteRegistry routeRegistry;
 
@@ -30,18 +30,18 @@ public class HandlerAutoRegisterHandler extends AutoRegisterHandler<Handler> {
     }
 
     /**
-     * Handles the registration of the provided {@link Handler}.
+     * Handles the registration of the provided {@link EndpointHandler}.
      *
-     * <p>This method attempts to register the given {@link Handler} with the {@link CraftsNet#getRouteRegistry()}
+     * <p>This method attempts to register the given {@link EndpointHandler} with the {@link CraftsNet#getRouteRegistry()}
      * of the associated {@link CraftsNet} instance. If registration is successful, the method
      * returns {@code true}.</p>
      *
-     * @param handler The {@link Handler} to be registered.
+     * @param handler The {@link EndpointHandler} to be registered.
      * @param args    Additional arguments (not used in this implementation but provided for extensibility).
      * @return {@code true} if the registration was successful, {@code false} otherwise.
      */
     @Override
-    protected boolean handle(Handler handler, AutoRegisterInfo info, Object... args) {
+    protected boolean handle(EndpointHandler handler, AutoRegisterInfo info, Object... args) {
         if (routeRegistry.isRegistered(handler)) return false;
 
         routeRegistry.register(handler);

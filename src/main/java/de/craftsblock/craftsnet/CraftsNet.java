@@ -13,6 +13,7 @@ import de.craftsblock.craftsnet.api.http.builtin.DefaultRoute;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoderRegistry;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareRegistry;
 import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
+import de.craftsblock.craftsnet.api.routing.Router;
 import de.craftsblock.craftsnet.api.session.SessionCache;
 import de.craftsblock.craftsnet.api.websocket.DefaultPingResponder;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
@@ -65,6 +66,8 @@ public class CraftsNet {
     // Threads
     private Thread shutdownThread;
     private Thread.UncaughtExceptionHandler oldDefaultUncaughtExceptionHandler;
+
+    private Router router;
 
     // Manager instances
     private AddonManager addonManager;
@@ -166,6 +169,9 @@ public class CraftsNet {
         logger.debug("Initialization of the middleware registry");
         middlewareRegistry = new MiddlewareRegistry();
 
+        logger.debug("Initialization of the router");
+        this.router = Router.newRouter(this);
+
         logger.debug("Initialization of the route registry");
         routeRegistry = new RouteRegistry(this);
 
@@ -206,7 +212,7 @@ public class CraftsNet {
         if (builder.isWebServer(ActivateType.ENABLED) || builder.isWebServer(ActivateType.DYNAMIC)) {
             if (!builder.shouldSkipDefaultRoute() && !routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
                 logger.debug("No routes and sockets found, creating the default route");
-                getRouteRegistry().register(DefaultRoute.getInstance());
+                DefaultRoute.register(this.router);
             }
 
             if (routeRegistry.hasRoutes() || builder.isWebServer(ActivateType.ENABLED)) {
@@ -403,6 +409,15 @@ public class CraftsNet {
      */
     public RequirementRegistry getRequirementRegistry() {
         return requirementRegistry;
+    }
+
+    /**
+     * Retrieves the {@link Router} instance for managing routes.
+     *
+     * @return The {@link Router} instance.
+     */
+    public Router getRouter() {
+        return router;
     }
 
     /**

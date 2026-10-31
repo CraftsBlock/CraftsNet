@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.events.sockets;
 
-import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import de.craftsblock.craftsnet.api.websocket.WebSocketExchange;
 import de.craftsblock.craftsnet.api.websocket.WebSocketClient;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import org.jetbrains.annotations.NotNull;
@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
  *
  * @author Philipp Maywald
  * @author CraftsBlock
- * @see SocketExchange
+ * @see WebSocketExchange
  * @see WebSocketClient
  * @see WebSocketServer
  * @since 3.4.0-SNAPSHOT
@@ -18,12 +18,12 @@ import org.jetbrains.annotations.NotNull;
 public interface GenericSocketEventBase {
 
     /**
-     * Gets the {@link SocketExchange} which stores the involved client, server and some other data.
+     * Gets the {@link WebSocketExchange} which stores the involved client, server and some other data.
      *
-     * @return The {@link SocketExchange}.
+     * @return The {@link WebSocketExchange}.
      */
     @NotNull
-    SocketExchange getExchange();
+    WebSocketExchange getExchange();
 
     /**
      * Gets the {@link WebSocketClient} which is involved in this event.

@@ -1,9 +1,6 @@
 package de.craftsblock.craftsnet.api.http.cors;
 
-import de.craftsblock.craftsnet.api.http.Exchange;
-import de.craftsblock.craftsnet.api.http.HttpMethod;
-import de.craftsblock.craftsnet.api.http.Request;
-import de.craftsblock.craftsnet.api.http.Response;
+import de.craftsblock.craftsnet.api.http.*;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.Range;
 import org.jetbrains.annotations.Unmodifiable;
@@ -374,41 +371,52 @@ public class CorsPolicy {
     }
 
     /**
-     * Applies the current CORS policy to an {@link Exchange} object by adding appropriate
+     * Applies the current CORS policy to an {@link HttpExchange} object by adding appropriate
      * headers to the response based on the allowed origins, methods, headers, and credentials.
      *
-     * @param exchange The exchange on which to apply the CORS policy.
+     * @param httpExchange The httpExchange on which to apply the CORS policy.
      */
     @ApiStatus.Internal
-    public void apply(Exchange exchange) {
-        Request request = exchange.request();
-        Response response = exchange.response();
+    public void apply(HttpExchange httpExchange) {
+        Request request = httpExchange.request();
+        Response response = httpExchange.response();
 
         String origin = getOrigin(request, false);
-        if (allowAllOrigins) response.setHeader(ALLOW_ORIGIN_HEADER, origin);
-        else if (!allowedOrigins.isEmpty() && allowedOrigins.contains(origin.replaceFirst(".*://", "")))
+        if (allowAllOrigins) {
             response.setHeader(ALLOW_ORIGIN_HEADER, origin);
-        else if (!allowedOrigins.isEmpty())
-            response.setHeader(ALLOW_ORIGIN_HEADER, allowedOrigins.get(0));
+        } else if (!allowedOrigins.isEmpty() && allowedOrigins.contains(origin.replaceFirst(".*://", ""))) {
+            response.setHeader(ALLOW_ORIGIN_HEADER, origin);
+        }
 
-        if (allowAllMethods) response.setHeader(ALLOW_METHODS_HEADER, HttpMethod.join(", ", HttpMethod.ALL_RAW));
-        else if (!allowedMethods.isEmpty())
+        if (allowAllMethods) {
+            response.setHeader(ALLOW_METHODS_HEADER, HttpMethod.join(", ", HttpMethod.ALL_RAW));
+        } else if (!allowedMethods.isEmpty()) {
             response.setHeader(ALLOW_METHODS_HEADER, HttpMethod.join(", ", allowedMethods.toArray(HttpMethod[]::new)));
+        }
 
         if (allowAllHeaders) {
 
-            if (request.hasHeader(REQUEST_HEADERS_HEADER))
+            if (request.hasHeader(REQUEST_HEADERS_HEADER)) {
                 response.setHeader(ALLOW_HEADERS_HEADER, String.join(", ", request.getHeaders().get(REQUEST_HEADERS_HEADER)));
-            else response.setHeader(ALLOW_HEADERS_HEADER, "*");
+            } else {
+                response.setHeader(ALLOW_HEADERS_HEADER, "*");
+            }
 
-        } else if (!allowedHeaders.isEmpty())
+        } else if (!allowedHeaders.isEmpty()) {
             response.setHeader(ALLOW_HEADERS_HEADER, String.join(", ", allowedHeaders));
+        }
 
-        if (!exposedHeaders.isEmpty())
+        if (!exposedHeaders.isEmpty()) {
             response.setHeader(EXPOSE_HEADERS_HEADER, String.join(", ", exposedHeaders));
+        }
 
-        if (overrideCredentials) response.setHeader(ALLOW_CREDENTIALS_HEADER, "" + allowCredentials);
-        if (controlMaxAge >= 0) response.setHeader(MAX_AGE_HEADER, "" + controlMaxAge);
+        if (overrideCredentials) {
+            response.setHeader(ALLOW_CREDENTIALS_HEADER, "true");
+        }
+
+        if (controlMaxAge >= 0) {
+            response.setHeader(MAX_AGE_HEADER, "" + controlMaxAge);
+        }
     }
 
     /**

@@ -1,14 +1,12 @@
 package de.craftsblock.craftsnet.api.http.builtin;
 
 import de.craftsblock.craftsnet.CraftsNet;
-import de.craftsblock.craftsnet.api.http.Exchange;
-import de.craftsblock.craftsnet.api.http.HttpMethod;
-import de.craftsblock.craftsnet.api.http.RequestHandler;
-import de.craftsblock.craftsnet.api.http.Response;
-import de.craftsblock.craftsnet.api.http.annotations.RequestMethod;
-import de.craftsblock.craftsnet.api.http.annotations.Route;
-
-import java.io.IOException;
+import de.craftsblock.craftsnet.api.EndpointHandler;
+import de.craftsblock.craftsnet.api.http.HttpExchange;
+import de.craftsblock.craftsnet.api.http.entities.ResponseEntity;
+import de.craftsblock.craftsnet.api.routing.RouteRegistration;
+import de.craftsblock.craftsnet.api.routing.Router;
+import de.craftsblock.craftsnet.api.routing.filter.http.HttpMethodFilter;
 
 /**
  * Represents a default route handler implementation.
@@ -18,13 +16,15 @@ import java.io.IOException;
  * @author CraftsBlock
  * @since 3.0.3-SNAPSHOT
  */
-public class DefaultRoute implements RequestHandler {
+public class DefaultRoute implements EndpointHandler {
 
     private static final DefaultRoute instance;
 
     static {
         instance = new DefaultRoute();
     }
+
+    private RouteRegistration registration;
 
     /**
      * Private constructor to prevent external instantiation.
@@ -37,29 +37,27 @@ public class DefaultRoute implements RequestHandler {
     /**
      * Handles the default GET request.
      *
-     * @param exchange The exchange object representing the HTTP request and response.
-     * @throws IOException If an I/O error occurs while handling the request.
+     * @param httpExchange The httpExchange object representing the HTTP request and response.
      */
-    @Route
-    @RequestMethod(HttpMethod.ALL)
-    public void handleDefault(Exchange exchange) throws Exception {
-        Response response = exchange.response();
-        if (!response.isBodyAble() || response.headersSent()) return;
-
-        response.setContentType("text/text");
-        response.println("Your running on CraftsNet v" + CraftsNet.version);
-        response.println("If you can see this message CraftsNet is up and running!");
-        response.println("This route has been registered to provide you with an convenient way of check if CraftsNet's core is working. This route will disappear if you register own routes!");
+    public ResponseEntity handleDefault(HttpExchange httpExchange) {
+        return ResponseEntity.simple("Your running on CraftsNet v" + CraftsNet.version)
+                .transform(response -> response.setContentType("text/text"));
     }
 
-    /**
-     * Returns the singleton instance of {@link DefaultRoute}.
-     *
-     * @return The single instance of {@link DefaultRoute}.
-     * @since 3.3.3-SNAPSHOT
-     */
-    public static synchronized DefaultRoute getInstance() {
-        return instance;
+    public static void register(Router router) {
+        unregister();
+        instance.registration = router.http(
+                "/",
+                builder -> builder
+                        .appendFilter(HttpMethodFilter.get())
+                        .handle(instance::handleDefault)
+        );
+    }
+
+    public static void unregister() {
+        if (instance.registration != null) {
+            instance.registration.unregister();
+        }
     }
 
 }

@@ -1,9 +1,9 @@
 package de.craftsblock.craftsnet.api.middlewares;
 
-import de.craftsblock.craftsnet.api.BaseExchange;
+import de.craftsblock.craftsnet.api.Exchange;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.api.websocket.Frame;
-import de.craftsblock.craftsnet.api.websocket.SocketExchange;
+import de.craftsblock.craftsnet.api.websocket.WebSocketExchange;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.events.sockets.ClientConnectEvent;
 import de.craftsblock.craftsnet.events.sockets.ClientDisconnectEvent;
@@ -32,7 +32,7 @@ public interface WebsocketMiddleware extends Middleware {
      *                     to store data between middlewares.
      * @param exchange     The exchange holding the data of the websocket session.
      */
-    default void handleConnect(MiddlewareCallbackInfo callbackInfo, SocketExchange exchange) {
+    default void handleConnect(MiddlewareCallbackInfo callbackInfo, WebSocketExchange exchange) {
         handle(callbackInfo, exchange);
     }
 
@@ -49,7 +49,7 @@ public interface WebsocketMiddleware extends Middleware {
      *                     to store data between middlewares.
      * @param exchange     The exchange holding the data of the websocket session.
      */
-    default void handleDisconnect(MiddlewareCallbackInfo callbackInfo, SocketExchange exchange) {
+    default void handleDisconnect(MiddlewareCallbackInfo callbackInfo, WebSocketExchange exchange) {
         handle(callbackInfo, exchange);
     }
 
@@ -65,7 +65,7 @@ public interface WebsocketMiddleware extends Middleware {
      * @param exchange     The exchange holding the data of the websocket session.
      * @param frame        The frame which was received.
      */
-    default void handleMessageReceived(MiddlewareCallbackInfo callbackInfo, SocketExchange exchange, Frame frame) {
+    default void handleMessageReceived(MiddlewareCallbackInfo callbackInfo, WebSocketExchange exchange, Frame frame) {
         handle(callbackInfo, exchange);
     }
 
@@ -81,7 +81,7 @@ public interface WebsocketMiddleware extends Middleware {
      * @param exchange     The exchange holding the data of the websocket session.
      * @param frame        The frame which was sent.
      */
-    default void handleMessageSent(MiddlewareCallbackInfo callbackInfo, SocketExchange exchange, Frame frame) {
+    default void handleMessageSent(MiddlewareCallbackInfo callbackInfo, WebSocketExchange exchange, Frame frame) {
         handle(callbackInfo, exchange);
     }
 
@@ -92,7 +92,7 @@ public interface WebsocketMiddleware extends Middleware {
      * @param exchange     {@inheritDoc}
      */
     @Override
-    default void handle(MiddlewareCallbackInfo callbackInfo, BaseExchange exchange) {
+    default void handle(MiddlewareCallbackInfo callbackInfo, Exchange exchange) {
     }
 
     /**

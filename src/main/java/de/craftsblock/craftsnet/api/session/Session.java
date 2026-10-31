@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.api.session;
 
-import de.craftsblock.craftsnet.api.BaseExchange;
+import de.craftsblock.craftsnet.api.Exchange;
 import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
@@ -22,7 +22,7 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
     private final SessionInfo sessionInfo;
     private final SessionStorage sessionStorage;
 
-    protected BaseExchange exchange;
+    protected Exchange exchange;
 
     /**
      * Creates a new instance of {@code Session} without an active session.
@@ -33,12 +33,12 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
     }
 
     /**
-     * Sets the {@link BaseExchange} instance for this session storage.
+     * Sets the {@link Exchange} instance for this session storage.
      *
      * @param exchange The exchange used to load the session.
      * @throws IllegalStateException if the session file does not exist.
      */
-    public void setExchange(@NotNull BaseExchange exchange) {
+    public void setExchange(@NotNull Exchange exchange) {
         boolean loaded = this.exchange != null;
         this.exchange = exchange;
 
@@ -122,11 +122,11 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
     }
 
     /**
-     * Retrieves the {@link BaseExchange} instance associated with this session.
+     * Retrieves the {@link Exchange} instance associated with this session.
      *
-     * @return the associated {@code BaseExchange} instance, or {@code null} if none is set.
+     * @return the associated {@code Exchange} instance, or {@code null} if none is set.
      */
-    public BaseExchange getExchange() {
+    public Exchange getExchange() {
         return exchange;
     }
 

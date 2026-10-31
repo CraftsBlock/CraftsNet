@@ -1,7 +1,7 @@
 package de.craftsblock.craftsnet.events.requests.shares;
 
 import de.craftsblock.craftscore.event.CancellableEvent;
-import de.craftsblock.craftsnet.api.http.Exchange;
+import de.craftsblock.craftsnet.api.http.HttpExchange;
 import de.craftsblock.craftsnet.events.requests.GenericRequestEventBase;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -26,18 +26,18 @@ public class ShareFileLoadedEvent extends CancellableEvent implements GenericReq
 
     private static final FileNameMap contentTypes = URLConnection.getFileNameMap();
 
-    private final Exchange exchange;
+    private final HttpExchange httpExchange;
     private Path path;
     private String contentType;
 
     /**
      * Creates a new ShareFileLoadedEvent with the specified loaded file.
      *
-     * @param exchange The exchange used by the share to handle its connection
+     * @param httpExchange The httpExchange used by the share to handle its connection
      * @param path     The loaded file path associated with this event.
      */
-    public ShareFileLoadedEvent(@NotNull Exchange exchange, @NotNull Path path) {
-        this.exchange = exchange;
+    public ShareFileLoadedEvent(@NotNull HttpExchange httpExchange, @NotNull Path path) {
+        this.httpExchange = httpExchange;
         this.path = path;
     }
 
@@ -57,8 +57,8 @@ public class ShareFileLoadedEvent extends CancellableEvent implements GenericReq
      * @return {@inheritDoc}
      */
     @Override
-    public @NotNull Exchange getExchange() {
-        return exchange;
+    public @NotNull HttpExchange getExchange() {
+        return httpExchange;
     }
 
     /**
