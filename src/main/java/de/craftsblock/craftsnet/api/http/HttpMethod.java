@@ -36,6 +36,11 @@ public enum HttpMethod {
     GET(false, true),
 
     /**
+     * Represents the QUERY request method
+     */
+    QUERY(true, true),
+
+    /**
      * Represents the PUT request method
      */
     PUT(true, true),
