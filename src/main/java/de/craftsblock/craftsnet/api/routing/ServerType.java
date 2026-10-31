@@ -56,6 +56,13 @@ public enum ServerType {
         return pathAnnotation;
     }
 
+    public void canHandleOrThrow(Exchange exchange) {
+        if (!TypeUtils.isInstance(exchangeClass, exchange)) {
+            throw new IllegalStateException("The server type " + serverClass
+                    + " can't handle " + exchange.getClass().getSimpleName());
+        }
+    }
+
     public String extractPath(AnnotatedElement element) {
         Annotation annotation = element.getAnnotation(this.pathAnnotation);
         return annotation != null ? annotationPathExtractor.apply(annotation) : null;

@@ -40,6 +40,10 @@ public record RouteInfo<E extends Exchange>(
         return FilterChain.newFilterChain(this.filters, this);
     }
 
+    public boolean parameterized() {
+        return !direct;
+    }
+
     public static String normalizePath(String path) {
         return "/" + path.replaceAll("^/+|/+$", "")
                 .replaceAll("//+", "/");

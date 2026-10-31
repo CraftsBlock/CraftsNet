@@ -6,6 +6,7 @@ import de.craftsblock.craftsnet.api.routing.RouteInfo;
 import de.craftsblock.craftsnet.api.routing.Router;
 import de.craftsblock.craftsnet.api.routing.ServerType;
 import de.craftsblock.craftsnet.api.routing.filter.Filter;
+import de.craftsblock.craftsnet.api.routing.filter.ReflectionFilterCollector;
 import org.jetbrains.annotations.NotNull;
 
 import java.lang.reflect.AnnotatedElement;
@@ -14,6 +15,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -21,12 +24,14 @@ public final class ReflectionRouteBuilder implements RouteBuilder<Exchange> {
 
     private final Router router;
 
-    private final List<Filter<Exchange>> filters;
+    private final BiConsumer<ServerType, List<Filter<?>>> filterMutator;
+    private final List<Filter<?>> filters;
 
     private EndpointHandler handler;
 
-    public ReflectionRouteBuilder(Router router) {
+    public ReflectionRouteBuilder(Router router, BiConsumer<ServerType, List<Filter<?>>> filterMutator) {
         this.router = router;
+        this.filterMutator = filterMutator;
         this.filters = new ArrayList<>();
     }
 
@@ -35,17 +40,18 @@ public final class ReflectionRouteBuilder implements RouteBuilder<Exchange> {
         return this;
     }
 
-    public ReflectionRouteBuilder appendGlobalFilter(Filter<Exchange> filter) {
+    public ReflectionRouteBuilder appendGlobalFilter(Filter<?> filter) {
         this.filters.add(filter);
         return this;
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public @NotNull List<@NotNull RouteInfo<Exchange>> build() {
         var handlerType = handler.getClass();
 
         var basePaths = collectBasePaths();
-        var baseFilters = this.collectFilters(handlerType, this.filters);
+        var baseFilters = ReflectionFilterCollector.collect(handlerType, this.filters);
 
         var methods = Arrays.stream(handlerType.getDeclaredMethods())
                 .filter(method -> !method.isBridge() && !method.isSynthetic())
@@ -59,13 +65,22 @@ public final class ReflectionRouteBuilder implements RouteBuilder<Exchange> {
             }
 
             String path = getEndpointPath(serverType, method, basePaths);
-            List<Filter<Exchange>> filters = collectFilters(method, baseFilters);
+
+            List<Filter<?>> filters = ReflectionFilterCollector.collect(method, baseFilters);
+            this.filterMutator.accept(serverType, filters);
+
+            ReflectionRouteHandler routeHandler = new ReflectionRouteHandler(
+                    serverType,
+                    this.handler,
+                    method,
+                    path
+            );
 
             routeInfos.add(new RouteInfo<>(
                     serverType,
                     path,
-                    buildHandler(),
-                    filters,
+                    routeHandler,
+                    filters.stream().map(filter -> (Filter<Exchange>) filter).toList(),
                     !path.contains("{") && !path.contains("}")
             ));
         }
@@ -83,18 +98,6 @@ public final class ReflectionRouteBuilder implements RouteBuilder<Exchange> {
         return basePaths;
     }
 
-    private List<Filter<Exchange>> collectFilters(AnnotatedElement element, List<Filter<Exchange>> base) {
-        List<Filter<Exchange>> filters = new ArrayList<>(base);
-
-        // TODO: Implement
-
-        return filters;
-    }
-
-    private @NotNull Function<Exchange, Object> buildHandler() {
-        return exchange -> null;
-    }
-
     private ServerType determineServerType(Method method) {
         ServerType serverType = null;
 
@@ -104,7 +107,8 @@ public final class ReflectionRouteBuilder implements RouteBuilder<Exchange> {
             }
 
             if (serverType != null) {
-                throw new IllegalStateException("A endpoint handler can not handle multiple server types");
+                throw new IllegalStateException("A endpoint handler can not handle multiple server types\n" +
+                        "  Handler: " + method.getDeclaringClass().getName() + "#" + method.getName());
             }
 
             serverType = current;

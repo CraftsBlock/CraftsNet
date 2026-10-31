@@ -10,7 +10,7 @@ public record RouteSearchResult<E extends Exchange>(@NotNull RouteInfo<E> routeI
     public static final @NotNull Map<String, String> EMPTY_PARAMS = Collections.emptyMap();
 
     public boolean isParameterized() {
-        return !EMPTY_PARAMS.equals(params);
+        return routeInfo.parameterized();
     }
 
     public static <T extends Exchange> @NotNull RouteSearchResult<T> of(@NotNull RouteInfo<T> routeInfo) {
