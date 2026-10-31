@@ -212,7 +212,7 @@ public class CraftsNet {
         if (builder.isWebServer(ActivateType.ENABLED) || builder.isWebServer(ActivateType.DYNAMIC)) {
             if (!builder.shouldSkipDefaultRoute() && !routeRegistry.hasRoutes() && !routeRegistry.hasWebsockets()) {
                 logger.debug("No routes and sockets found, creating the default route");
-                getRouteRegistry().register(DefaultRoute.getInstance());
+                DefaultRoute.register(this.router);
             }
 
             if (routeRegistry.hasRoutes() || builder.isWebServer(ActivateType.ENABLED)) {

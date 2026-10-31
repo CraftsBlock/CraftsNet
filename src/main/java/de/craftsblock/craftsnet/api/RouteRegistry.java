@@ -158,8 +158,9 @@ public class RouteRegistry {
             }
 
         // Unregister the DefaultRoute
-        if (!(handler instanceof DefaultRoute) && (hasRoutes() || hasShares() || hasWebsockets()))
-            this.unregister(DefaultRoute.getInstance());
+        if (!(handler instanceof DefaultRoute) && (hasRoutes() || hasShares() || hasWebsockets())) {
+            DefaultRoute.unregister();
+        }
 
         // Loop through all active servers and turn them on as they are now needed.
         for (ServerMapping mapping : annotations.values()) {
