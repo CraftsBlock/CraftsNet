@@ -16,7 +16,7 @@ public class LoggingBuilder extends NamespacedBuilder<LoggingBuilder> {
         this.acquire(this);
 
         this.addKnownArgument("logger", ArgumentTransformer.classInstance(Logger.class));
-        this.addKnownArgument("rotate", ArgumentTransformer.number(-1, Integer.MAX_VALUE));
+        this.addKnownArgument("rotate", ArgumentTransformer.integerNumber(-1, Integer.MAX_VALUE));
         this.addKnownArgument("file", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("hideIps", ArgumentTransformer.booleanFlag());
 

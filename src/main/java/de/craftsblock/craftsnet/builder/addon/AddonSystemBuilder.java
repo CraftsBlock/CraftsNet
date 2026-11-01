@@ -81,7 +81,8 @@ public class AddonSystemBuilder extends NamespacedBuilder<AddonSystemBuilder> {
                 );
     }
 
-    public @NotNull AddonSystemBuilder addInMemoryAddon(@NotNull Class<? extends Addon>... addonTypes) {
+    @SafeVarargs
+    public final @NotNull AddonSystemBuilder addInMemoryAddon(@NotNull Class<? extends Addon>... addonTypes) {
         return this.addInMemoryAddon(Arrays.asList(addonTypes));
     }
 

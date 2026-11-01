@@ -7,6 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
@@ -16,7 +17,7 @@ public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
         super(root, namespace);
         this.acquire(this);
 
-        this.addKnownArgument("port", Short::parseShort);
+        this.addKnownArgument("port", ArgumentTransformer.integerNumber(0, 65365));
         this.addKnownArgument("responseEncoding", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("skipDefaultRoute", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("ssl", ArgumentTransformer.booleanFlag());
@@ -30,18 +31,18 @@ public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
         this.state(state);
     }
 
-    public @NotNull ServerBuilder port(short port) {
+    public @NotNull ServerBuilder port(int port) {
         return this.set("port", port);
     }
 
-    public short port() {
+    public int port() {
         return Objects.requireNonNull(
-                this.getShort("port"),
+                this.getInt("port"),
                 "No port found for the " + getNamespace()
         );
     }
 
-    public boolean isPort(short port) {
+    public boolean isPort(int port) {
         return this.port() == port;
     }
 
@@ -91,6 +92,10 @@ public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
 
     public boolean isState(@NotNull ServerState state) {
         return this.state() == state;
+    }
+
+    public @NotNull ServerBuilder trustedProxyHeader(@NotNull String... trustedProxyHeader) {
+        return this.trustedProxyHeader(List.of(trustedProxyHeader));
     }
 
     public @NotNull ServerBuilder trustedProxyHeader(@NotNull Collection<String> trustedProxyHeader) {

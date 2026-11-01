@@ -7,13 +7,8 @@ import de.craftsblock.craftsnet.builder.addon.AddonSystemState;
 import de.craftsblock.craftsnet.builder.logging.LoggingBuilder;
 import de.craftsblock.craftsnet.builder.server.ServerBuilder;
 import de.craftsblock.craftsnet.builder.server.ServerState;
-import de.craftsblock.craftsnet.logging.Logger;
-import de.craftsblock.craftsnet.logging.impl.LoggerImpl;
-import de.craftsblock.craftsnet.logging.impl.PlainLogger;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Range;
 
-import java.io.IOException;
 import java.security.CodeSource;
 import java.util.*;
 import java.util.function.Consumer;
@@ -33,7 +28,7 @@ public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder>
         this.internalBuilders = new HashMap<>();
         this.addKnownArgument("debug", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("codeSources", ArgumentTransformer.notAllowed("Can't add code sources via the cli"));
-        this.addKnownArgument("sessionCacheSize", ArgumentTransformer.number(0, Integer.MAX_VALUE));
+        this.addKnownArgument("sessionCacheSize", ArgumentTransformer.integerNumber(0, Integer.MAX_VALUE));
         this.addKnownArgument("skipVersionCheck", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("tempFilesInPwd", ArgumentTransformer.booleanFlag());
 
