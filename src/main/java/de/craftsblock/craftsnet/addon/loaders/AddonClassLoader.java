@@ -73,6 +73,10 @@ public final class AddonClassLoader extends CraftsNetUrlClassLoader<AddonClassLo
         }
 
         for (AddonClassLoader loader : addonLoaders) {
+            if (this.equals(loader)) {
+                continue;
+            }
+
             try {
                 Class<?> result = loader.loadClass0(name, resolve, false);
 

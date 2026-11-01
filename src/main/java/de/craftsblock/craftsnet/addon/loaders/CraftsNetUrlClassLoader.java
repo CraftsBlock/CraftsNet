@@ -3,8 +3,10 @@ package de.craftsblock.craftsnet.addon.loaders;
 import de.craftsblock.craftsnet.CraftsNet;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.*;
@@ -105,8 +107,8 @@ public sealed abstract class CraftsNetUrlClassLoader<T extends CraftsNetUrlClass
      * @since 3.7.0
      */
     @Override
-    public final Enumeration<URL> getResources(String name) throws IOException {
-        return this.getResources0(name, name.matches("^/?META-INF/services/.*$"));
+    public final Enumeration<URL> findResources(String name) throws IOException {
+        return this.findResources0(name, name.matches("^/?META-INF/services/.*$"));
     }
 
     /**
@@ -120,15 +122,20 @@ public sealed abstract class CraftsNetUrlClassLoader<T extends CraftsNetUrlClass
      * @return An {@link Enumeration} of all matching resources
      * @throws IOException If an I/O error occurs
      */
-    final Enumeration<URL> getResources0(String name, boolean lookup) throws IOException {
-        Enumeration<URL> enumeration = super.getResources(name);
+    final Enumeration<URL> findResources0(String name, boolean lookup) throws IOException {
+        Enumeration<URL> enumeration = super.findResources(name);
         if (!lookup) {
             return enumeration;
         }
 
         List<URL> resources = new ArrayList<>();
+        enumeration.asIterator().forEachRemaining(resources::add);
         for (T loader : getSiblings()) {
-            Enumeration<URL> sub = loader.getResources0(name, false);
+            if (this.equals(loader)) {
+                continue;
+            }
+
+            Enumeration<URL> sub = loader.findResources0(name, false);
 
             while (sub.hasMoreElements()) {
                 resources.add(sub.nextElement());

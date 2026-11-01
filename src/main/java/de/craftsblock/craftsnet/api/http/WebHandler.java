@@ -157,13 +157,13 @@ public class WebHandler implements HttpHandler {
      * @since 3.7.1
      */
     private void handleThrowable(Response response, String url, HttpMethod httpMethod, Throwable t) {
-        BiConsumer<String, Integer> responder = (json, code) -> {
+        BiConsumer<String, Integer> responder = (message, code) -> {
             if (!response.headersSent()) {
                 response.setStatus(code);
             }
 
-            if (!response.sendingFile() && !httpMethod.equals(HttpMethod.HEAD) && !httpMethod.equals(HttpMethod.UNKNOWN)) {
-                response.print(json);
+            if (!response.sendingFile() && !httpMethod.isResponseBodyAble()) {
+                response.print(message);
             }
         };
 
@@ -419,27 +419,51 @@ public class WebHandler implements HttpHandler {
         String path = event.getFilePath();
         logger.info(MESSAGE_FORMAT_REQUEST + " \u001b[38;5;205m[SHARED]", httpMethod, url, ip);
 
-        ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(exchange, folder.resolve((path.isBlank() ? "index.html" : path)));
-        craftsNet.getListenerRegistry().call(fileLoadedEvent);
-        if (fileLoadedEvent.isCancelled()) {
-            return;
-        }
-        Path share = fileLoadedEvent.getPath().toAbsolutePath();
+        try {
+            Path root = folder.toRealPath();
+            Path target = root.resolve(path.isBlank() ? "index.html" : path).normalize();
 
-        if (!share.startsWith(folder) || Files.isDirectory(share)) {
-            response.setStatus(403);
-            response.setContentType("text/html; charset=utf-8");
-            response.print(DefaultPages.notallowed(domain, request.unsafe().getLocalAddress().getPort()));
-            return;
-        } else if (Files.notExists(share)) {
-            response.setStatus(404);
-            response.setContentType("text/html; charset=utf-8");
-            response.print(DefaultPages.notfound(domain, request.unsafe().getLocalAddress().getPort()));
-            return;
-        }
+            if (!target.startsWith(root)) {
+                response.setStatus(403);
+                response.setContentType("text/html; charset=utf-8");
+                response.print(DefaultPages.notallowed(domain, request.unsafe().getLocalAddress().getPort()));
+                return;
+            }
 
-        response.setContentType(fileLoadedEvent.getContentType(), "text/plain");
-        response.print(share);
+            ShareFileLoadedEvent fileLoadedEvent = new ShareFileLoadedEvent(exchange, target);
+            craftsNet.getListenerRegistry().call(fileLoadedEvent);
+            if (fileLoadedEvent.isCancelled()) {
+                return;
+            }
+
+            Path share = fileLoadedEvent.getPath().toAbsolutePath().normalize();
+            if (!share.startsWith(root)) {
+                response.setStatus(403);
+                response.setContentType("text/html; charset=utf-8");
+                response.print(DefaultPages.notallowed(domain, request.unsafe().getLocalAddress().getPort()));
+                return;
+            }
+
+            if (Files.notExists(share)) {
+                response.setStatus(404);
+                response.setContentType("text/html; charset=utf-8");
+                response.print(DefaultPages.notfound(domain, request.unsafe().getLocalAddress().getPort()));
+                return;
+            }
+
+            Path real = share.toRealPath();
+            if (!real.startsWith(root) || Files.isDirectory(real)) {
+                response.setStatus(403);
+                response.setContentType("text/html; charset=utf-8");
+                response.print(DefaultPages.notallowed(domain, request.unsafe().getLocalAddress().getPort()));
+                return;
+            }
+
+            response.setContentType(fileLoadedEvent.getContentType(), "text/plain");
+            response.print(real);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to resolve shared path: " + path, e);
+        }
     }
 
     /**

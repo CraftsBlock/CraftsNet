@@ -67,7 +67,7 @@ public enum HttpMethod {
     /**
      * Represents an unrecognized request method
      */
-    UNKNOWN(false, true),
+    UNKNOWN(false, false),
 
     /**
      * Represents all request methods
