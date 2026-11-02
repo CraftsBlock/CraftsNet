@@ -22,6 +22,7 @@ import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.api.websocket.annotations.ApplyDecoder;
 import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeDecoder;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
+import de.craftsblock.craftsnet.builder.server.WebSocketServerBuilder;
 import de.craftsblock.craftsnet.events.sockets.ClientConnectEvent;
 import de.craftsblock.craftsnet.events.sockets.ClientDisconnectEvent;
 import de.craftsblock.craftsnet.events.sockets.message.IncomingSocketMessageEvent;
@@ -90,6 +91,8 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final TransformerPerformer transformerPerformer;
     private final Map<String, Matcher> matchers;
 
+    private final int MAX_URI_LENGTH;
+
     private SocketExchange exchange;
     private ProtocolVersion protocolVersion;
     private Headers headers;
@@ -109,8 +112,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private boolean active = false;
     private boolean connected = false;
 
-    private boolean shouldMaskOutgoing = false;
-    private boolean shouldFragment;
+    private boolean fragment;
     private int fragmentSize;
 
     private int closeCode = -1;
@@ -131,8 +133,11 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.scheme = Scheme.WS.getSsl(server.isSSL());
         this.extensions = new ArrayList<>();
 
-        this.shouldFragment = server.shouldFragment();
-        this.fragmentSize = -1;
+        WebSocketServerBuilder builder = server.getBuilder();
+        this.MAX_URI_LENGTH = builder.maxUriLength();
+        this.fragment = builder.fragment();
+        this.fragmentSize = builder.fragmentSize();
+
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.getLogger();
 
@@ -177,12 +182,29 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
+            if (path.length() >= MAX_URI_LENGTH) {
+                HttpStatus status = HttpStatus.ClientError.URI_TOO_LONG;
+                byte[] body = status.getReason().getBytes(StandardCharsets.UTF_8);
+                String headers = status.getStatusLine("HTTP/1.1") +
+                        "Content-Type: text/plain; charset=UTF-8\r\n" +
+                        "Content-Length: " + body.length + "\r\n" +
+                        "Connection: close\r\n" +
+                        "\r\n";
+
+                writer.write(headers.getBytes(StandardCharsets.UTF_8));
+                writer.write(body);
+                writer.flush();
+
+                disconnect();
+                return;
+            }
+
             AtomicReference<String> host = new AtomicReference<>();
             if (headers.containsKey("X-Forwarded-Host")) host.set(headers.getFirst("X-forwarded-Host").split(":")[0]);
             else host.set(headers.getFirst("Host").split(":")[0]);
             this.domain = host.get();
 
-            Collection<String> trustedProxyHeaders = this.craftsNet.getBuilder().getTrustedProxyHeaders();
+            Collection<String> trustedProxyHeaders = this.craftsNet.getBuilder().webSocketServer().trustedProxyHeader();
             String headerName = trustedProxyHeaders.stream().filter(headers::containsKey).findFirst().orElse(null);
             if (headerName != null) {
                 ip = headers.getFirst(headerName).split(",\\s+")[0];
@@ -751,47 +773,23 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
-     * Returns whether the outgoing messages should be masked or not.
-     *
-     * @return {@code true} if the outgoing messages should be masked, {@code false} otherwise.
-     * @deprecated Outgoing frames should never be masked. There will be no replacement.
-     */
-    @Deprecated(since = "3.7.3", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    public boolean shouldMaskOutgoing() {
-        return shouldMaskOutgoing;
-    }
-
-    /**
-     * Sets whether the outgoing message should be masked or not.
-     *
-     * @param shouldMaskOutgoing {@code true} if the outgoing messages should be masked, {@code false} otherwise.
-     * @deprecated Outgoing frames should never be masked. There will be no replacement.
-     */
-    @Deprecated(since = "3.7.3", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    public void setMaskingOutgoing(boolean shouldMaskOutgoing) {
-        this.shouldMaskOutgoing = shouldMaskOutgoing;
-    }
-
-    /**
      * Returns whether fragmentation is enabled or not.
      *
      * @return true if fragmentation is enabled, false otherwise
      */
     @ApiStatus.Experimental
-    public boolean shouldFragment() {
-        return server.shouldFragment() || shouldFragment;
+    public boolean fragment() {
+        return fragment || craftsNet.getBuilder().webSocketServer().fragment();
     }
 
     /**
      * Enable or disable fragmentation of messages send by the server.
      *
-     * @param shouldFragment true if fragmentation should be enabled, false otherwise.
+     * @param fragment true if fragmentation should be enabled, false otherwise.
      */
     @ApiStatus.Experimental
-    public void setFragmentationEnabled(boolean shouldFragment) {
-        this.shouldFragment = shouldFragment;
+    public void setFragment(boolean fragment) {
+        this.fragment = fragment;
     }
 
     /**
@@ -801,17 +799,25 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     @ApiStatus.Experimental
     public int getFragmentSize() {
-        if (fragmentSize <= 0) return server.getFragmentSize();
+        if (fragmentSize <= 0) {
+            return craftsNet.getBuilder().webSocketServer().fragmentSize();
+        }
+
         return fragmentSize;
     }
 
     /**
      * Sets the maximum size of each fragment of a frame.
+     * Set to {@code -1} to use the servers fragment size.
      *
      * @param fragmentSize The max size of the fragments.
      */
     @ApiStatus.Experimental
-    public void setFragmentSize(int fragmentSize) {
+    public void setFragmentSize(@Range(from = -1, to = Integer.MAX_VALUE) int fragmentSize) {
+        if (fragmentSize < -1) {
+            throw new IllegalArgumentException("The fragment size can not be lower than -1");
+        }
+
         this.fragmentSize = fragmentSize;
     }
 
@@ -1173,7 +1179,6 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
 
             Frame frame = new Frame(true, false, false, false, false, opcode, data);
-            frame.setMasked(this.shouldMaskOutgoing);
 
             OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(exchange, frame);
             if (!opcode.equals(Opcode.CLOSE) && !opcode.equals(Opcode.CONTINUATION)) {
@@ -1191,7 +1196,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
 
             Frame subject = event.getFrame();
-            if (shouldFragment()) {
+            if (fragment()) {
                 Collection<Frame> frames = subject.fragmentFrame(getFragmentSize());
                 this.sendMessageFrames(frames.toArray(Frame[]::new));
                 return;

@@ -8,8 +8,8 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.api.ssl.SSL;
-import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
-import de.craftsblock.craftsnet.builder.ActivateType;
+import de.craftsblock.craftsnet.builder.server.ServerState;
+import de.craftsblock.craftsnet.builder.server.WebServerBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import javax.net.ssl.SSLContext;
@@ -22,7 +22,8 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Objects;
-import java.util.concurrent.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 /**
@@ -37,9 +38,11 @@ import java.util.function.Supplier;
  * @see WebHandler
  * @since 1.0.0-SNAPSHOT
  */
-public class WebServer extends Server {
+public class WebServer extends Server<WebServerBuilder> {
 
-    private Supplier<Executor> executorFactory = Executors::newVirtualThreadPerTaskExecutor;
+    private Supplier<Executor> executorFactory = () -> Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("RequestHandler-", 1).factory()
+    );
     private Executor executor;
 
     private HttpServer server;
@@ -48,23 +51,10 @@ public class WebServer extends Server {
      * Constructs a {@link WebServer} with the specified port and SSL settings.
      *
      * @param craftsNet The CraftsNet instance which instantiates this webserver.
-     * @param port      The port number to listen on.
-     * @param ssl       A boolean flag indicating whether SSL encryption should be used (true for HTTPS, false for HTTP).
+     * @param builder   The {@link WebServerBuilder} which should build this web server.
      */
-    public WebServer(CraftsNet craftsNet, int port, boolean ssl) {
-        this(craftsNet, port, 0, ssl);
-    }
-
-    /**
-     * Constructs a {@link WebServer} instance with the specified port number and backlog size.
-     *
-     * @param craftsNet The CraftsNet instance which instantiates this webserver.
-     * @param port      The port number on which the server will listen for incoming connections.
-     * @param backlog   The size of the backlog for the webserver.
-     * @param ssl       A boolean flag indicating whether SSL encryption should be used.
-     */
-    public WebServer(CraftsNet craftsNet, int port, int backlog, boolean ssl) {
-        super(craftsNet, port, backlog, ssl);
+    public WebServer(CraftsNet craftsNet, WebServerBuilder builder) {
+        super(craftsNet, builder);
     }
 
     /**
@@ -76,10 +66,7 @@ public class WebServer extends Server {
     @Override
     public synchronized void bind(int port, int backlog) {
         super.bind(port, backlog);
-
-        if (logger != null) {
-            logger.info("Web server bound to port %s", port);
-        }
+        this.getLogger().info("Web server bound to port %s", port);
     }
 
     /**
@@ -91,11 +78,11 @@ public class WebServer extends Server {
             return;
         }
 
-        logger.info("Starting web server on port %s", port);
+        getLogger().info("Starting web server on port %s", port);
         try {
             // Create the HttpServer or HttpsServer based on the SSL flag.
             if (ssl) {
-                SSLContext sslContext = SSL.load(this.craftsNet);
+                SSLContext sslContext = SSL.load(this.getCraftsNet());
                 if (sslContext == null) {
                     throw new IllegalStateException("Failed to initialize SSL context");
                 }
@@ -116,11 +103,11 @@ public class WebServer extends Server {
             throw new IllegalStateException("Failed to initialize SSL context");
         }
 
-        logger.debug("Creating the API handler");
+        this.getLogger().debug("Creating the API handler");
         HttpContext context = server.createContext("/");
-        context.setHandler(new WebHandler(this.craftsNet));
+        context.setHandler(new WebHandler(this.getCraftsNet(), this));
 
-        logger.debug("Setting up the executor and starting the web server");
+        this.getLogger().debug("Setting up the executor and starting the web server");
         executor = Objects.requireNonNull(
                 executorFactory.get(),
                 "Executor factory returned null"
@@ -129,7 +116,7 @@ public class WebServer extends Server {
 
         server.start();
         super.start();
-        logger.debug("Web server has been started");
+        this.getLogger().debug("Web server has been started");
     }
 
     /**
@@ -141,7 +128,7 @@ public class WebServer extends Server {
             return;
         }
 
-        logger.debug("Web server will be stopped");
+        this.getLogger().debug("Web server will be stopped");
 
         try {
             server.stop(0);
@@ -163,31 +150,24 @@ public class WebServer extends Server {
      */
     @Override
     public synchronized void awakeOrWarn() {
-        if (!isRunning() && isEnabled())
+        if (!isRunning() && isEnabled()) {
             // Start the web server as it is needed and currently not running
-            this.craftsNet.getWebServer().start();
-        else if (!isEnabled())
+            this.getCraftsNet().getWebServer().start();
+        } else if (!isEnabled()) {
             // Print a warning if the web server is disabled and routes has been registered
-            logger.warning("A route has been registered, but the web server is disabled!");
+            this.getLogger().warning("A route has been registered, but the web server is disabled!");
+        }
     }
 
     /**
      * {@inheritDoc}
      */
     @Override
-    public synchronized void sleepIfNotNeeded() {
-        if (isRunning() && !craftsNet.getRouteRegistry().hasRoutes() && isStatus(ActivateType.DYNAMIC))
+    public void sleepIfNotNeeded() {
+        if (isRunning() && !this.getCraftsNet().getRouteRegistry().hasRoutes()
+                && this.isStatus(ServerState.DYNAMIC)) {
             stop();
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @return {@inheritDoc}
-     */
-    @Override
-    public boolean isEnabled() {
-        return !isStatus(ActivateType.DISABLED);
+        }
     }
 
     /**
@@ -198,25 +178,6 @@ public class WebServer extends Server {
     @Override
     public boolean isSSL() {
         return this.server instanceof HttpsServer;
-    }
-
-    /**
-     * Checks if SSL should be enabled for the server.
-     *
-     * @return {@code true} if SSL should be enabled, {@code false} otherwise.
-     */
-    public boolean shouldUseSSL() {
-        return super.isSSL();
-    }
-
-    /**
-     * Checks if the webserver has a certain activation status in the builder.
-     *
-     * @param type The activation which should be present.
-     * @return true if the activation status is equals, false otherwise.
-     */
-    private boolean isStatus(ActivateType type) {
-        return craftsNet.getBuilder().isWebServer(type);
     }
 
     /**

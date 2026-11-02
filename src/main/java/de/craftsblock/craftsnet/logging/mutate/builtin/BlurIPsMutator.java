@@ -1,6 +1,6 @@
 package de.craftsblock.craftsnet.logging.mutate.builtin;
 
-import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
+import de.craftsblock.craftsnet.builder.logging.LoggingBuilder;
 import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.logging.mutate.LogStreamMutator;
 import de.craftsblock.craftsnet.utils.Utils;
@@ -9,7 +9,7 @@ import org.jetbrains.annotations.NotNull;
 /**
  * A built-in {@link LogStreamMutator} that blurs or censors IP addresses in log lines.
  * <p>
- * This mutator checks the {@link CraftsNetBuilder#shouldHideIps()} setting in the
+ * This mutator checks the {@link LoggingBuilder#hideIps()} ()} setting in the
  * {@link de.craftsblock.craftsnet.CraftsNet} builder and, if enabled, replaces all
  * IP addresses in the output with a masked version.
  * <p>
@@ -31,7 +31,10 @@ public class BlurIPsMutator implements LogStreamMutator {
      */
     @Override
     public @NotNull String mutate(@NotNull LogStream logStream, @NotNull String line) {
-        if (!logStream.getCraftsNet().getBuilder().shouldHideIps()) return line;
+        if (!logStream.getCraftsNet().getBuilder().logging().hideIps()) {
+            return line;
+        }
+
         return Utils.blurIPs(line);
     }
 

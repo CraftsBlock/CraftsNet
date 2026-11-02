@@ -22,6 +22,8 @@ import java.lang.reflect.Method;
 public record CodecMethodLink<C extends Codec<?, ?>, T extends CodecPair<?, ?>>(@NotNull T codecPair, @NotNull Method method) {
 
     /**
+     * Returns the {@link C Codec} type of the {@link T CodecPair}.
+     *
      * @return the codec instance of this link.
      */
     @SuppressWarnings("unchecked")

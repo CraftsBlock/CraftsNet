@@ -12,6 +12,7 @@ import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
  * the auto register process should interact with the specific type {@link T}. The handler also has access to
  * the {@link CraftsNet} instance, which can be used to interact with the main application context.</p>
  *
+ * @param <T> The type that this auto register handlers can handle.
  * @author Philipp Maywald
  * @author CraftsBlock
  * @since 3.2.0-SNAPSHOT

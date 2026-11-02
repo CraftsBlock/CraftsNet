@@ -127,6 +127,13 @@ public enum ClosureCode {
         return internal;
     }
 
+    /**
+     * Checks whether this closure code represents a graceful connection closure.
+     * <p>
+     * Only {@link #NORMAL} is considered graceful by this implementation.
+     *
+     * @return {@code true} if this closure code is {@link #NORMAL}, otherwise {@code false}.
+     */
     public boolean isGraceful() {
         return this.equals(NORMAL);
     }
@@ -158,6 +165,14 @@ public enum ClosureCode {
         return fromInt(code).isInternal();
     }
 
+    /**
+     * Checks whether the specified integer represents a graceful closure code.
+     * <p>
+     * Values that do not correspond to a predefined enum constant are considered non-graceful.
+     *
+     * @param code The integer value of the closure code to check.
+     * @return {@code true} if the code exists and represents a graceful closure, {@code false} otherwise.
+     */
     public static boolean isGraceful(int code) {
         if (!exists(code)) {
             return false;
