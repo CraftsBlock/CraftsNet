@@ -5,6 +5,7 @@ import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.UnmodifiableView;
 
 import java.util.*;
+import java.util.function.Function;
 
 public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilder<T>> {
 
@@ -12,7 +13,7 @@ public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilde
     private boolean frozen = false;
 
     private final Map<String, Object> args = new HashMap<>();
-    private final Map<String, ArgumentTransformer> argTransformers = new HashMap<>();
+    private final Map<String, Function<String, Object>> argTransformers = new HashMap<>();
 
     private final boolean allowUnknownArgs;
 
@@ -28,7 +29,7 @@ public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilde
         this.addKnownArgument(arg, ArgumentTransformer.identity());
     }
 
-    protected void addKnownArgument(@NotNull String arg, @NotNull ArgumentTransformer transformer) {
+    protected void addKnownArgument(@NotNull String arg, @NotNull Function<String, Object> transformer) {
         Objects.requireNonNull(arg, "arg");
         Objects.requireNonNull(transformer, "transformer");
 
@@ -60,7 +61,7 @@ public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilde
             throw new IllegalArgumentException("Can not handle unknown argument: " + arg);
         }
 
-        ArgumentTransformer argumentTransformer = this.argTransformers.getOrDefault(
+        Function<String, Object> argumentTransformer = this.argTransformers.getOrDefault(
                 arg.toLowerCase(),
                 ArgumentTransformer.identity()
         );

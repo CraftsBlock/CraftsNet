@@ -1,6 +1,5 @@
 package de.craftsblock.craftsnet.builder.addon;
 
-import de.craftsblock.craftsnet.builder.ArgumentTransformer;
 import de.craftsblock.craftsnet.builder.NamespacedBuilder;
 import org.jetbrains.annotations.NotNull;
 
@@ -13,12 +12,8 @@ public class AddonBuilder extends NamespacedBuilder<AddonBuilder> {
         this.acquire(this);
     }
 
-    public void addKnownArgument(@NotNull String arg, @NotNull Function<String, Integer> transformer) {
-        this.addKnownArgument(arg, (ArgumentTransformer) transformer::apply);
-    }
-
     @Override
-    public void addKnownArgument(@NotNull String arg, @NotNull ArgumentTransformer transformer) {
+    public void addKnownArgument(@NotNull String arg, @NotNull Function<String, Object> transformer) {
         Object value = this.get(arg);
         if (value == null) {
             return;

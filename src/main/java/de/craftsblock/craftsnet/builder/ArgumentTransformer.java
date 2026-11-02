@@ -9,23 +9,23 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public interface ArgumentTransformer extends Function<String, Object> {
+public interface ArgumentTransformer {
 
-    ArgumentTransformer IDENTITY = t -> t;
+    Function<String, Object> IDENTITY = t -> t;
 
-    static ArgumentTransformer identity() {
+    static Function<String, Object> identity() {
         return IDENTITY;
     }
 
-    static ArgumentTransformer booleanFlag() {
+    static Function<String, Object> booleanFlag() {
         return value -> value.isBlank() || Boolean.parseBoolean(value) || value.equalsIgnoreCase("1");
     }
 
-    static ArgumentTransformer classInstance() {
+    static Function<String, Object> classInstance() {
         return classInstance(Object.class);
     }
 
-    static ArgumentTransformer classInstance(@NotNull Class<?> guard) {
+    static Function<String, Object> classInstance(@NotNull Class<?> guard) {
         Objects.requireNonNull(guard, "guard");
 
         return value -> {
@@ -45,11 +45,11 @@ public interface ArgumentTransformer extends Function<String, Object> {
         };
     }
 
-    static ArgumentTransformer list() {
+    static Function<String, Object> list() {
         return value -> List.of(value.split(","));
     }
 
-    static ArgumentTransformer list(@NotNull ArgumentTransformer entryTransformer) {
+    static Function<String, Object> list(@NotNull Function<String, Object> entryTransformer) {
         Objects.requireNonNull(entryTransformer, "entryTransformer");
 
         return value -> Arrays.stream(value.split(","))
@@ -57,51 +57,51 @@ public interface ArgumentTransformer extends Function<String, Object> {
                 .toList();
     }
 
-    static ArgumentTransformer byteNumber() {
+    static Function<String, Object> byteNumber() {
         return Byte::parseByte;
     }
 
-    static ArgumentTransformer byteNumber(byte min, byte max) {
+    static Function<String, Object> byteNumber(byte min, byte max) {
         return value -> validatedNumber(Byte.parseByte(value), min, max);
     }
 
-    static ArgumentTransformer shortNumber() {
+    static Function<String, Object> shortNumber() {
         return Short::parseShort;
     }
 
-    static ArgumentTransformer shortNumber(short min, short max) {
+    static Function<String, Object> shortNumber(short min, short max) {
         return value -> validatedNumber(Short.parseShort(value), min, max);
     }
 
-    static ArgumentTransformer integerNumber() {
+    static Function<String, Object> integerNumber() {
         return Integer::parseInt;
     }
 
-    static ArgumentTransformer integerNumber(int min, int max) {
+    static Function<String, Object> integerNumber(int min, int max) {
         return value -> validatedNumber(Integer.parseInt(value), min, max);
     }
 
-    static ArgumentTransformer longNumber() {
+    static Function<String, Object> longNumber() {
         return Long::parseLong;
     }
 
-    static ArgumentTransformer longNumber(long min, long max) {
+    static Function<String, Object> longNumber(long min, long max) {
         return value -> validatedNumber(Long.parseLong(value), min, max);
     }
 
-    static ArgumentTransformer floatNumber() {
+    static Function<String, Object> floatNumber() {
         return Float::parseFloat;
     }
 
-    static ArgumentTransformer floatNumber(float min, float max) {
+    static Function<String, Object> floatNumber(float min, float max) {
         return value -> validatedNumber(Float.parseFloat(value), min, max);
     }
 
-    static ArgumentTransformer decimalNumber() {
+    static Function<String, Object> decimalNumber() {
         return Double::parseDouble;
     }
 
-    static ArgumentTransformer decimalNumber(double min, double max) {
+    static Function<String, Object> decimalNumber(double min, double max) {
         return value -> validatedNumber(Double.parseDouble(value), min, max);
     }
 
@@ -127,7 +127,7 @@ public interface ArgumentTransformer extends Function<String, Object> {
         return value;
     }
 
-    static <E extends Enum<E>> ArgumentTransformer enumType(@NotNull Class<E> type) {
+    static <E extends Enum<E>> Function<String, Object> enumType(@NotNull Class<E> type) {
         Objects.requireNonNull(type, "type");
 
         return v -> {
@@ -140,18 +140,18 @@ public interface ArgumentTransformer extends Function<String, Object> {
         };
     }
 
-    static <E extends Enum<E>> ArgumentTransformer enumType(@NotNull Class<E> type, @NotNull Function<E, E> mapper) {
+    static <E extends Enum<E>> Function<String, Object> enumType(@NotNull Class<E> type, @NotNull Function<E, E> mapper) {
         Objects.requireNonNull(type, "type");
         Objects.requireNonNull(mapper, "mapper");
 
         return value -> mapper.apply(Enum.valueOf(type, value.toUpperCase()));
     }
 
-    static ArgumentTransformer notAllowed() {
+    static Function<String, Object> notAllowed() {
         return notAllowed(null);
     }
 
-    static ArgumentTransformer notAllowed(String message) {
+    static Function<String, Object> notAllowed(String message) {
         return value -> {
             throw new IllegalArgumentException(message == null ? "Not allowed to set this via the cli" : message);
         };
