@@ -51,9 +51,6 @@ public class WebSocketServer extends Server {
     private Thread connector;
     private ServerSocket serverSocket;
 
-    private boolean shouldFragment = false;
-    private int fragmentSize = 1024;
-
     /**
      * Constructs a WebSocketServer instance with the specified port number.
      *
@@ -311,50 +308,6 @@ public class WebSocketServer extends Server {
      */
     public TypeEncoderRegistry<WebSocketSafeTypeEncoder<?, ?>> getTypeEncoderRegistry() {
         return typeEncoderRegistry;
-    }
-
-    /**
-     * Returns whether fragmentation is enabled or not.
-     *
-     * @return true if fragmentation is enabled, false otherwise
-     */
-    @ApiStatus.Experimental
-    public synchronized boolean shouldFragment() {
-        return shouldFragment;
-    }
-
-    /**
-     * Enable or disable fragmentation of messages send by the server.
-     *
-     * @param shouldFragment true if fragmentation should be enabled, false otherwise.
-     */
-    @ApiStatus.Experimental
-    public synchronized void setFragmentationEnabled(boolean shouldFragment) {
-        this.shouldFragment = shouldFragment;
-    }
-
-    /**
-     * Returns the size which should every fragment of a frame should have.
-     *
-     * @return The max size of each frame.
-     */
-    @ApiStatus.Experimental
-    public synchronized int getFragmentSize() {
-        return fragmentSize;
-    }
-
-    /**
-     * Sets the maximum size of each fragment of a frame.
-     *
-     * @param fragmentSize The max size of the fragments.
-     */
-    @ApiStatus.Experimental
-    public synchronized void setFragmentSize(int fragmentSize) {
-        if (fragmentSize <= 0) {
-            return;
-        }
-
-        this.fragmentSize = fragmentSize;
     }
 
     /**

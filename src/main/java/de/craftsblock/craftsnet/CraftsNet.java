@@ -26,6 +26,8 @@ import de.craftsblock.craftsnet.builder.addon.AddonSystemState;
 import de.craftsblock.craftsnet.builder.logging.LoggingBuilder;
 import de.craftsblock.craftsnet.builder.server.ServerBuilder;
 import de.craftsblock.craftsnet.builder.server.ServerState;
+import de.craftsblock.craftsnet.builder.server.WebServerBuilder;
+import de.craftsblock.craftsnet.builder.server.WebSocketServerBuilder;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.impl.LoggerImpl;
 import de.craftsblock.craftsnet.logging.mutate.LogStream;
@@ -185,11 +187,11 @@ public class CraftsNet {
         addonManager = new AddonManager(this);
 
         logger.info("Preparing the webserver");
-        ServerBuilder webServerBuilder = builder.webServer();
+        WebServerBuilder webServerBuilder = builder.webServer();
         webServer = new WebServer(this, webServerBuilder.port(), 25, webServerBuilder.ssl());
 
         logger.info("Preparing the websocket server");
-        ServerBuilder webSocketServerBuilder = builder.webSocketServer();
+        WebSocketServerBuilder webSocketServerBuilder = builder.webSocketServer();
         webSocketServer = new WebSocketServer(this, webSocketServerBuilder.port(), 25, webSocketServerBuilder.ssl());
 
         logger.debug("Creating the auto register registry");
@@ -247,7 +249,7 @@ public class CraftsNet {
         };
     }
 
-    private Consumer<ServerBuilder> setupWebServer() {
+    private Consumer<WebServerBuilder> setupWebServer() {
         return builder -> {
             builder.freeze();
 
@@ -270,7 +272,7 @@ public class CraftsNet {
         };
     }
 
-    private Consumer<ServerBuilder> setupWebSocketServer() {
+    private Consumer<WebSocketServerBuilder> setupWebSocketServer() {
         return builder -> {
             builder.freeze();
 

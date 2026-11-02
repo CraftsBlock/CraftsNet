@@ -7,6 +7,8 @@ import de.craftsblock.craftsnet.builder.addon.AddonSystemState;
 import de.craftsblock.craftsnet.builder.logging.LoggingBuilder;
 import de.craftsblock.craftsnet.builder.server.ServerBuilder;
 import de.craftsblock.craftsnet.builder.server.ServerState;
+import de.craftsblock.craftsnet.builder.server.WebServerBuilder;
+import de.craftsblock.craftsnet.builder.server.WebSocketServerBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import java.security.CodeSource;
@@ -19,8 +21,8 @@ public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder>
 
     private final AddonSystemBuilder addonSystemBuilder;
     private final LoggingBuilder loggingBuilder;
-    private final ServerBuilder webServerBuilder;
-    private final ServerBuilder webSocketServerBuilder;
+    private final WebServerBuilder webServerBuilder;
+    private final WebSocketServerBuilder webSocketServerBuilder;
 
     public CraftsNetBuilder() {
         acquire(this);
@@ -35,8 +37,8 @@ public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder>
         this.addonSystemBuilder = new AddonSystemBuilder(this, AddonSystemState.FULL);
         this.loggingBuilder = new LoggingBuilder(this, -1, true, false);
 
-        this.webServerBuilder = new ServerBuilder(this, "http", ServerState.DYNAMIC, (short) 5000, false, false, false);
-        this.webSocketServerBuilder = new ServerBuilder(this, "websocket", ServerState.DYNAMIC, (short) 5001, false, false, false);
+        this.webServerBuilder = new WebServerBuilder(this, "http", 5000);
+        this.webSocketServerBuilder = new WebSocketServerBuilder(this, "websocket", 5001);
 
         this.debug(false);
         this.sessionCacheSize(5);
@@ -121,33 +123,33 @@ public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder>
         return this.loggingBuilder;
     }
 
-    public Collection<ServerBuilder> allServer() {
-        return this.internalBuilders.entrySet().stream()
-                .filter(builder -> builder instanceof ServerBuilder)
-                .map(entry -> (ServerBuilder) entry.getValue())
-                .toList();
-    }
-
-    public CraftsNetBuilder allServer(Consumer<ServerBuilder> builderConsumer) {
+    public CraftsNetBuilder allServer(Consumer<ServerBuilder<?>> builderConsumer) {
         this.allServer().forEach(builderConsumer);
         return this;
     }
 
-    public CraftsNetBuilder webServer(Consumer<ServerBuilder> builderConsumer) {
+    public Collection<ServerBuilder<?>> allServer() {
+        return this.internalBuilders.entrySet().stream()
+                .filter(builder -> builder instanceof ServerBuilder)
+                .<ServerBuilder<?>>map(entry -> (ServerBuilder<?>) entry.getValue())
+                .toList();
+    }
+
+    public CraftsNetBuilder webServer(Consumer<WebServerBuilder> builderConsumer) {
         builderConsumer.accept(this.webServerBuilder);
         return this;
     }
 
-    public ServerBuilder webServer() {
+    public WebServerBuilder webServer() {
         return this.webServerBuilder;
     }
 
-    public CraftsNetBuilder webSocketServer(Consumer<ServerBuilder> builderConsumer) {
+    public CraftsNetBuilder webSocketServer(Consumer<WebSocketServerBuilder> builderConsumer) {
         builderConsumer.accept(this.webSocketServerBuilder);
         return this;
     }
 
-    public ServerBuilder webSocketServer() {
+    public WebSocketServerBuilder webSocketServer() {
         return this.webSocketServerBuilder;
     }
 

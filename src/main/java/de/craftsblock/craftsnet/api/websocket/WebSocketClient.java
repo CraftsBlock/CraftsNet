@@ -109,8 +109,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private boolean active = false;
     private boolean connected = false;
 
-    private boolean shouldMaskOutgoing = false;
-    private boolean shouldFragment;
+    private boolean fragment;
     private int fragmentSize;
 
     private int closeCode = -1;
@@ -131,8 +130,11 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.scheme = Scheme.WS.getSsl(server.isSSL());
         this.extensions = new ArrayList<>();
 
-        this.shouldFragment = server.shouldFragment();
-        this.fragmentSize = -1;
+        craftsNet.getBuilder().webSocketServer(builder -> {
+            this.fragment = builder.fragment();
+            this.fragmentSize = builder.fragmentSize();
+        });
+
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.getLogger();
 
@@ -751,47 +753,23 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
-     * Returns whether the outgoing messages should be masked or not.
-     *
-     * @return {@code true} if the outgoing messages should be masked, {@code false} otherwise.
-     * @deprecated Outgoing frames should never be masked. There will be no replacement.
-     */
-    @Deprecated(since = "3.7.3", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    public boolean shouldMaskOutgoing() {
-        return shouldMaskOutgoing;
-    }
-
-    /**
-     * Sets whether the outgoing message should be masked or not.
-     *
-     * @param shouldMaskOutgoing {@code true} if the outgoing messages should be masked, {@code false} otherwise.
-     * @deprecated Outgoing frames should never be masked. There will be no replacement.
-     */
-    @Deprecated(since = "3.7.3", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    public void setMaskingOutgoing(boolean shouldMaskOutgoing) {
-        this.shouldMaskOutgoing = shouldMaskOutgoing;
-    }
-
-    /**
      * Returns whether fragmentation is enabled or not.
      *
      * @return true if fragmentation is enabled, false otherwise
      */
     @ApiStatus.Experimental
-    public boolean shouldFragment() {
-        return server.shouldFragment() || shouldFragment;
+    public boolean fragment() {
+        return fragment || craftsNet.getBuilder().webSocketServer().fragment();
     }
 
     /**
      * Enable or disable fragmentation of messages send by the server.
      *
-     * @param shouldFragment true if fragmentation should be enabled, false otherwise.
+     * @param fragment true if fragmentation should be enabled, false otherwise.
      */
     @ApiStatus.Experimental
-    public void setFragmentationEnabled(boolean shouldFragment) {
-        this.shouldFragment = shouldFragment;
+    public void setFragment(boolean fragment) {
+        this.fragment = fragment;
     }
 
     /**
@@ -801,17 +779,25 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     @ApiStatus.Experimental
     public int getFragmentSize() {
-        if (fragmentSize <= 0) return server.getFragmentSize();
+        if (fragmentSize <= 0) {
+            return craftsNet.getBuilder().webSocketServer().fragmentSize();
+        }
+
         return fragmentSize;
     }
 
     /**
      * Sets the maximum size of each fragment of a frame.
+     * Set to {@code -1} to use the servers fragment size.
      *
      * @param fragmentSize The max size of the fragments.
      */
     @ApiStatus.Experimental
-    public void setFragmentSize(int fragmentSize) {
+    public void setFragmentSize(@Range(from = -1, to = Integer.MAX_VALUE) int fragmentSize) {
+        if (fragmentSize < -1) {
+            throw new IllegalArgumentException("The fragment size can not be lower than -1");
+        }
+
         this.fragmentSize = fragmentSize;
     }
 
@@ -1173,7 +1159,6 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
 
             Frame frame = new Frame(true, false, false, false, false, opcode, data);
-            frame.setMasked(this.shouldMaskOutgoing);
 
             OutgoingSocketMessageEvent event = new OutgoingSocketMessageEvent(exchange, frame);
             if (!opcode.equals(Opcode.CLOSE) && !opcode.equals(Opcode.CONTINUATION)) {
@@ -1191,7 +1176,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
 
             Frame subject = event.getFrame();
-            if (shouldFragment()) {
+            if (fragment()) {
                 Collection<Frame> frames = subject.fragmentFrame(getFragmentSize());
                 this.sendMessageFrames(frames.toArray(Frame[]::new));
                 return;

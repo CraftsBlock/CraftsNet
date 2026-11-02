@@ -10,12 +10,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
+public class ServerBuilder<T extends ServerBuilder<T>> extends NamespacedBuilder<T> {
 
-    public ServerBuilder(@NotNull CraftsNetBuilder root, String namespace, @NotNull ServerState state,
-                         short port, boolean ssl, boolean skipDefaultRoute, boolean responseEncoding) {
+    public ServerBuilder(@NotNull CraftsNetBuilder root, String namespace, int port) {
         super(root, namespace);
-        this.acquire(this);
 
         this.addKnownArgument("port", ArgumentTransformer.integerNumber(0, 65365));
         this.addKnownArgument("responseEncoding", ArgumentTransformer.booleanFlag());
@@ -25,13 +23,13 @@ public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
         this.addKnownArgument("trustedProxyHeader", ArgumentTransformer.list());
 
         this.port(port);
-        this.responseEncoding(responseEncoding);
-        this.skipDefaultRoute(skipDefaultRoute);
-        this.ssl(ssl);
-        this.state(state);
+        this.responseEncoding(false);
+        this.skipDefaultRoute(false);
+        this.ssl(false);
+        this.state(ServerState.DYNAMIC);
     }
 
-    public @NotNull ServerBuilder port(int port) {
+    public @NotNull T port(int port) {
         return this.set("port", port);
     }
 
@@ -46,7 +44,7 @@ public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
         return this.port() == port;
     }
 
-    public @NotNull ServerBuilder responseEncoding(boolean responseEncoding) {
+    public @NotNull T responseEncoding(boolean responseEncoding) {
         return this.set("responseEncoding", responseEncoding);
     }
 
@@ -57,7 +55,7 @@ public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
         );
     }
 
-    public @NotNull ServerBuilder skipDefaultRoute(boolean skipDefaultRoute) {
+    public @NotNull T skipDefaultRoute(boolean skipDefaultRoute) {
         return this.set("skipDefaultRoute", skipDefaultRoute);
     }
 
@@ -68,7 +66,7 @@ public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
         );
     }
 
-    public @NotNull ServerBuilder ssl(boolean ssl) {
+    public @NotNull T ssl(boolean ssl) {
         return this.set("ssl", ssl);
     }
 
@@ -79,7 +77,7 @@ public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
         );
     }
 
-    public @NotNull ServerBuilder state(@NotNull ServerState state) {
+    public @NotNull T state(@NotNull ServerState state) {
         return this.set("state", state);
     }
 
@@ -94,11 +92,11 @@ public class ServerBuilder extends NamespacedBuilder<ServerBuilder> {
         return this.state() == state;
     }
 
-    public @NotNull ServerBuilder trustedProxyHeader(@NotNull String... trustedProxyHeader) {
+    public @NotNull T trustedProxyHeader(@NotNull String... trustedProxyHeader) {
         return this.trustedProxyHeader(List.of(trustedProxyHeader));
     }
 
-    public @NotNull ServerBuilder trustedProxyHeader(@NotNull Collection<String> trustedProxyHeader) {
+    public @NotNull T trustedProxyHeader(@NotNull Collection<String> trustedProxyHeader) {
         return this.set("trustedProxyHeader", trustedProxyHeader);
     }
 
