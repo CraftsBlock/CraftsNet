@@ -37,6 +37,7 @@ import org.jetbrains.annotations.ApiStatus;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.net.http.HttpClient;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.CodeSource;
@@ -101,7 +102,7 @@ public class CraftsNet {
      */
     public static void main(String[] args) throws IOException {
         Thread.currentThread().setName("CraftsNet Main");
-        CraftsNet.create().setFromCli(args).build();
+        CraftsNet.newBuilder().setFromCli(args).build();
     }
 
     /**
@@ -580,7 +581,7 @@ public class CraftsNet {
      *
      * @return A new builder instance.
      */
-    public static CraftsNetBuilder create() {
+    public static CraftsNetBuilder newBuilder() {
         return new CraftsNetBuilder()
                 .addCodeSource(ReflectionUtils.getCallerClass().getProtectionDomain().getCodeSource());
     }
@@ -595,8 +596,8 @@ public class CraftsNet {
      * @return A new {@link CraftsNetBuilder} instance initialized with the specified addons.
      */
     @SafeVarargs
-    public static CraftsNetBuilder create(Class<? extends Addon>... addons) {
-        return create(ReflectionUtils.getCallerClass(), List.of(addons));
+    public static CraftsNetBuilder newBuilder(Class<? extends Addon>... addons) {
+        return newBuilder(ReflectionUtils.getCallerClass(), List.of(addons));
     }
 
     /**
@@ -608,8 +609,8 @@ public class CraftsNet {
      * @param addons A {@link Collection} of {@link Addon} classes to include in the configuration.
      * @return A new {@link CraftsNetBuilder} instance initialized with the specified addons.
      */
-    public static CraftsNetBuilder create(Collection<Class<? extends Addon>> addons) {
-        return create(ReflectionUtils.getCallerClass(), addons);
+    public static CraftsNetBuilder newBuilder(Collection<Class<? extends Addon>> addons) {
+        return newBuilder(ReflectionUtils.getCallerClass(), addons);
     }
 
     /**
@@ -621,7 +622,7 @@ public class CraftsNet {
      * @return A new {@link CraftsNetBuilder} instance initialized with the specified addons.
      * @since 3.8.14
      */
-    private static CraftsNetBuilder create(Class<?> caller, Collection<Class<? extends Addon>> addons) {
+    private static CraftsNetBuilder newBuilder(Class<?> caller, Collection<Class<? extends Addon>> addons) {
         return new CraftsNetBuilder()
                 .addonSystem(builder -> builder.addInMemoryAddon(addons))
                 .addCodeSource(caller.getProtectionDomain().getCodeSource());
