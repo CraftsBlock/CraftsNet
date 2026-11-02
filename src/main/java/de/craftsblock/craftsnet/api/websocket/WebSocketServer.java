@@ -7,6 +7,7 @@ import de.craftsblock.craftsnet.api.ssl.SSL;
 import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeEncoder;
 import de.craftsblock.craftsnet.builder.ActivateType;
 import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocket;
@@ -24,7 +25,9 @@ import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.*;
+import java.util.function.Supplier;
 
 /**
  * The WebSocketServer class represents a simple WebSocket server implementation. It allows WebSocket clients to connect,
@@ -39,11 +42,11 @@ import java.util.concurrent.*;
  */
 public class WebSocketServer extends Server {
 
-    private final ThreadFactory threadFactory = Executors.defaultThreadFactory();
-    private final ThreadPoolExecutor executor;
-    private ConcurrentHashMap<String, ConcurrentLinkedQueue<WebSocketClient>> connected;
-
     private final TypeEncoderRegistry<WebSocketSafeTypeEncoder<?, ?>> typeEncoderRegistry = new TypeEncoderRegistry<>();
+    private final ConcurrentHashMap<String, ConcurrentLinkedQueue<WebSocketClient>> connected = new ConcurrentHashMap<>();
+
+    private Supplier<Executor> executorFactory = Executors::newVirtualThreadPerTaskExecutor;
+    private Executor executor;
 
     private Thread connector;
     private ServerSocket serverSocket;
@@ -72,12 +75,6 @@ public class WebSocketServer extends Server {
      */
     public WebSocketServer(CraftsNet craftsNet, int port, int backlog, boolean ssl) {
         super(craftsNet, port, backlog, ssl);
-        this.executor = (ThreadPoolExecutor) Executors.newCachedThreadPool(r -> {
-            Thread thread = threadFactory.newThread(r);
-            String oldName = thread.getName();
-            thread.setName("CraftsNet WebSocket-" + oldName.substring(oldName.lastIndexOf('-') + 1));
-            return thread;
-        });
     }
 
     /**
@@ -89,7 +86,9 @@ public class WebSocketServer extends Server {
     @Override
     public synchronized void bind(int port, int backlog) {
         super.bind(port, backlog);
-        if (logger != null) logger.info("Web socket server bound to port %s", port);
+        if (logger != null) {
+            logger.info("Web socket server bound to port %s", port);
+        }
     }
 
     /**
@@ -97,83 +96,70 @@ public class WebSocketServer extends Server {
      */
     @Override
     public synchronized void start() {
-        if (running) return;
-
-        try {
-            logger.info("Starting websocket server on port %s", port);
-            if (ssl) {
-                SSLContext sslContext = SSL.load(this.craftsNet);
-                if (sslContext != null) {
-                    SSLServerSocket sslServerSocket = (SSLServerSocket) sslContext.getServerSocketFactory().createServerSocket(port, backlog);
-                    sslServerSocket.setSSLParameters(sslContext.getDefaultSSLParameters());
-                    sslServerSocket.setEnabledProtocols(new String[]{"TLSv1.2"});
-                    serverSocket = sslServerSocket;
-                }
-            }
-        } catch (UnrecoverableKeyException | KeyManagementException | KeyStoreException |
-                 NoSuchAlgorithmException | CertificateException | IOException |
-                 InvalidKeySpecException e) {
-            logger.error("Failed to load ssl certificate", e);
-        } finally {
-            if (serverSocket == null) {
-                if (ssl) {
-                    logger.warning("SSl was not activated properly, using an socket server as fallback!");
-                }
-
-                try {
-                    serverSocket = new ServerSocket(port, backlog);
-                } catch (IOException e) {
-                    logger.error("Error while creating the %s socket server.", ssl ? "fallback" : "");
-                    logger.error(e);
-                }
-            }
-        }
-
-        if (serverSocket == null) {
+        if (running) {
             return;
         }
 
         try {
-            serverSocket.setSoTimeout(0);
-        } catch (SocketException e) {
-            throw new RuntimeException(e);
-        }
-        connected = new ConcurrentHashMap<>();
+            logger.info("Starting websocket server on port %s", port);
 
-        connector = new Thread(() -> {
-            while (!Thread.currentThread().isInterrupted() && running) {
-                try {
-                    Socket socket = serverSocket.accept();
-
-                    socket.setSoTimeout(1000 * 60 * 5);
-                    socket.setKeepAlive(true);
-                    socket.setTcpNoDelay(true);
-
-                    if (socket instanceof SSLSocket sslSocket) {
-                        sslSocket.addHandshakeCompletedListener(event -> connectClient(event.getSocket()));
-                        sslSocket.startHandshake();
-                    } else {
-                        connectClient(socket);
-                    }
-                } catch (SocketException | SocketTimeoutException socketException) {
-                    try {
-                        if (Thread.currentThread().isInterrupted()) {
-                            return;
-                        }
-
-                        Thread.sleep(15);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                } catch (IOException e) {
-                    logger.error(e);
+            if (ssl) {
+                SSLContext sslContext = SSL.load(craftsNet);
+                if (sslContext == null) {
+                    throw new IllegalStateException(
+                            "SSL context could not be initialized"
+                    );
                 }
+
+                serverSocket = sslContext.getServerSocketFactory()
+                        .createServerSocket(port, backlog);
+            } else {
+                serverSocket = new ServerSocket(port, backlog);
             }
-        });
-        connector.setName("CraftsNet WS Acceptor");
-        connector.start();
+        } catch (UnrecoverableKeyException | KeyManagementException | KeyStoreException |
+                 NoSuchAlgorithmException | CertificateException | IOException |
+                 InvalidKeySpecException e) {
+            throw new IllegalStateException("Failed to initialize SSL context");
+        }
+
+        executor = Objects.requireNonNull(
+                executorFactory.get(),
+                "Executor factory returned null"
+        );
+
+        connector = Thread.ofVirtual()
+                .name("CraftsNet WS Acceptor")
+                .start(this::acceptConnections);
 
         super.start();
+    }
+
+    /**
+     * Accepts incoming client connections and delegates them to the configured executor.
+     * The method runs in a dedicated virtual thread until the server socket is closed
+     * or the thread is interrupted.
+     */
+    private void acceptConnections() {
+        while (!Thread.currentThread().isInterrupted()
+                && !serverSocket.isClosed()) {
+
+            try {
+                Socket socket = serverSocket.accept();
+
+                socket.setKeepAlive(true);
+                socket.setTcpNoDelay(true);
+
+                connectClient(socket);
+            } catch (SocketException e) {
+                if (serverSocket.isClosed()) {
+                    return;
+                }
+
+                logger.error("Websocket accept failed", e);
+            } catch (IOException e) {
+                logger.error("Failed to accept websocket connection", e);
+            }
+        }
     }
 
     /**
@@ -182,7 +168,35 @@ public class WebSocketServer extends Server {
      * @param socket The socket used to connect.
      */
     private void connectClient(Socket socket) {
-        executor.execute(new WebSocketClient(this.craftsNet, socket, this));
+        try {
+            executor.execute(() -> {
+                try {
+                    if (socket instanceof SSLSocket sslSocket) {
+                        sslSocket.startHandshake();
+                    }
+
+                    new WebSocketClient(
+                            craftsNet,
+                            socket,
+                            this
+                    ).run();
+                } catch (Exception e) {
+                    try {
+                        socket.close();
+                    } catch (IOException ignored) {
+                    }
+
+                    logger.error("Failed to handle websocket connection", e);
+                }
+            });
+        } catch (RejectedExecutionException e) {
+            try {
+                socket.close();
+            } catch (IOException ignored) {
+            }
+
+            logger.warning("Websocket connection rejected");
+        }
     }
 
     /**
@@ -213,9 +227,13 @@ public class WebSocketServer extends Server {
                 connector.interrupt();
             }
 
+            if (executor instanceof AutoCloseable closeable) {
+                closeable.close();
+            }
+
             serverSocket = null;
-        } catch (IOException e) {
-            logger.error(e);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to stop the web socket server properly", e);
         } finally {
             super.stop();
         }
@@ -399,6 +417,25 @@ public class WebSocketServer extends Server {
      */
     public List<WebSocketClient> getClients() {
         return connected.values().stream().flatMap(Collection::stream).distinct().toList();
+    }
+
+    /**
+     * Sets the factory used to create the executor responsible for handling WebSocket connections.
+     *
+     * @param executorFactory The supplier providing the executor instance.
+     */
+    public void setExecutorFactory(@NotNull Supplier<Executor> executorFactory) {
+        Objects.requireNonNull(executorFactory, "executorFactory");
+        this.executorFactory = executorFactory;
+    }
+
+    /**
+     * Retrieves the factory used to create the executor responsible for handling WebSocket connections.
+     *
+     * @return The supplier providing the executor instance.
+     */
+    public @NotNull Supplier<Executor> getExecutorFactory() {
+        return executorFactory;
     }
 
 }

@@ -8,7 +8,9 @@ import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.Server;
 import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.api.ssl.SSL;
+import de.craftsblock.craftsnet.autoregister.meta.AutoRegister;
 import de.craftsblock.craftsnet.builder.ActivateType;
+import org.jetbrains.annotations.NotNull;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -19,9 +21,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.Objects;
+import java.util.concurrent.*;
+import java.util.function.Supplier;
 
 /**
  * The WebServer class represents a simple HTTP or HTTPS server that listens for incoming requests and handles
@@ -37,8 +39,9 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 public class WebServer extends Server {
 
-    private final ThreadFactory threadFactory = Executors.defaultThreadFactory();
-    private final ThreadPoolExecutor executor;
+    private Supplier<Executor> executorFactory = Executors::newVirtualThreadPerTaskExecutor;
+    private Executor executor;
+
     private HttpServer server;
 
     /**
@@ -62,13 +65,6 @@ public class WebServer extends Server {
      */
     public WebServer(CraftsNet craftsNet, int port, int backlog, boolean ssl) {
         super(craftsNet, port, backlog, ssl);
-
-        this.executor = (ThreadPoolExecutor) Executors.newCachedThreadPool(r -> {
-            Thread thread = threadFactory.newThread(r);
-            String oldName = thread.getName();
-            thread.setName("CraftsNet RequestHandler-" + oldName.substring(oldName.lastIndexOf('-') + 1));
-            return thread;
-        });
     }
 
     /**
@@ -80,7 +76,10 @@ public class WebServer extends Server {
     @Override
     public synchronized void bind(int port, int backlog) {
         super.bind(port, backlog);
-        if (logger != null) logger.info("Web server bound to port %s", port);
+
+        if (logger != null) {
+            logger.info("Web server bound to port %s", port);
+        }
     }
 
     /**
@@ -88,48 +87,46 @@ public class WebServer extends Server {
      */
     @Override
     public synchronized void start() {
-        if (running) return;
+        if (running) {
+            return;
+        }
 
         logger.info("Starting web server on port %s", port);
         try {
             // Create the HttpServer or HttpsServer based on the SSL flag.
             if (ssl) {
-                // Load the SSL context using the provided SSL key files.
                 SSLContext sslContext = SSL.load(this.craftsNet);
-                if (sslContext != null) {
-                    // Configure the HttpsServer with the SSL context.
-                    HttpsServer httpsServer = HttpsServer.create(new InetSocketAddress(port), backlog);
-                    httpsServer.setHttpsConfigurator(new HttpsConfigurator(sslContext));
-                    server = httpsServer;
+                if (sslContext == null) {
+                    throw new IllegalStateException("Failed to initialize SSL context");
                 }
+
+                HttpsServer httpsServer = HttpsServer.create(
+                        new InetSocketAddress(port),
+                        backlog
+                );
+
+                httpsServer.setHttpsConfigurator(new HttpsConfigurator(sslContext));
+                server = httpsServer;
+            } else {
+                server = HttpServer.create(new InetSocketAddress(port), backlog);
             }
         } catch (UnrecoverableKeyException | KeyManagementException | KeyStoreException |
                  NoSuchAlgorithmException | CertificateException | IOException |
                  InvalidKeySpecException e) {
-            logger.error("Failed to load ssl certificate", e);
-        } finally {
-            if (server == null) {
-                if (ssl)
-                    logger.warning("SSl was not activated properly, using an http server as fallback!");
-
-                try {
-                    server = HttpServer.create(new InetSocketAddress(port), backlog);
-                } catch (IOException e) {
-                    logger.error("Error while creating the %s http server.", ssl ? "fallback" : "");
-                    logger.error(e);
-                }
-            }
+            throw new IllegalStateException("Failed to initialize SSL context");
         }
-
-        // Create a context for the root path ("/") and set its handler to process incoming requests.
-        if (server == null) return;
 
         logger.debug("Creating the API handler");
         HttpContext context = server.createContext("/");
         context.setHandler(new WebHandler(this.craftsNet));
 
         logger.debug("Setting up the executor and starting the web server");
+        executor = Objects.requireNonNull(
+                executorFactory.get(),
+                "Executor factory returned null"
+        );
         server.setExecutor(executor);
+
         server.start();
         super.start();
         logger.debug("Web server has been started");
@@ -140,12 +137,25 @@ public class WebServer extends Server {
      */
     @Override
     public synchronized void stop() {
-        if (!running) return;
+        if (!running) {
+            return;
+        }
+
         logger.debug("Web server will be stopped");
-        server.stop(0);
-        super.stop();
+
+        try {
+            server.stop(0);
+
+            if (executor instanceof AutoCloseable closeable) {
+                closeable.close();
+            }
+            executor = null;
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to stop the webserver properly", e);
+        }
 
         server = null;
+        super.stop();
     }
 
     /**
@@ -207,6 +217,25 @@ public class WebServer extends Server {
      */
     private boolean isStatus(ActivateType type) {
         return craftsNet.getBuilder().isWebServer(type);
+    }
+
+    /**
+     * Sets the factory used to create the executor responsible for handling HTTP requests.
+     *
+     * @param executorFactory The factory used to create the executor.
+     */
+    public void setExecutorFactory(@NotNull Supplier<Executor> executorFactory) {
+        Objects.requireNonNull(executorFactory, "executorFactory");
+        this.executorFactory = executorFactory;
+    }
+
+    /**
+     * Retrieves the factory used to create the executor responsible for handling HTTP requests.
+     *
+     * @return The factory used to create the executor.
+     */
+    public @NotNull Supplier<Executor> getExecutorFactory() {
+        return executorFactory;
     }
 
 }
