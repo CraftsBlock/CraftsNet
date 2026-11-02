@@ -13,6 +13,7 @@ import java.util.List;
 /**
  * Abstract class representing a server in the CraftsNet framework.
  *
+ * @param <B> The type of {@link ServerBuilder} used to configure and build this server.
  * @author Philipp Maywald
  * @author CraftsBlock
  * @since 3.0.3-SNAPSHOT
@@ -161,7 +162,7 @@ public abstract class Server<B extends ServerBuilder<B>> {
     }
 
     /**
-     * Retrieves the instance of {@link CraftsNet} bound to the server.
+     * Returns the instance of {@link CraftsNet} bound to the server.
      *
      * @return The instance of {@link CraftsNet} bound to the server.
      */
@@ -169,10 +170,20 @@ public abstract class Server<B extends ServerBuilder<B>> {
         return craftsNet;
     }
 
+    /**
+     * Returns the logger provided by the associated CraftsNet instance.
+     *
+     * @return The {@link Logger} used by the owning CraftsNet instance.
+     */
     public Logger getLogger() {
         return this.craftsNet.getLogger();
     }
 
+    /**
+     * Returns the builder associated with this server.
+     *
+     * @return The {@link B} instance containing this server's configuration.
+     */
     public B getBuilder() {
         return builder;
     }

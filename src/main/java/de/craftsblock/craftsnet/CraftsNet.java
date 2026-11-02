@@ -108,7 +108,6 @@ public class CraftsNet {
      * Starts the CraftsNet framework with the provided builder configuration.
      *
      * @param builder The builder instance containing the configuration for starting CraftsNet.
-     * @throws IOException If an I/O error occurs during the startup process.
      */
     public void start(CraftsNetBuilder builder) {
         if (started) {

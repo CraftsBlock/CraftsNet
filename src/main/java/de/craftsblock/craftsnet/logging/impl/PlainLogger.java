@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
  * in the {@link System#out} or the {@link System#err} stream, without any
  * further formating.
  *
+ * @param previous The previous {@link Logger} implementation.
  * @author Philipp Maywald
  * @author CraftsBlock
  * @since 3.1.0-SNAPSHOT
@@ -76,7 +77,7 @@ public record PlainLogger(Logger previous) implements Logger {
     /**
      * {@inheritDoc}
      *
-     * @param message {@inheritDoc}
+     * @param message   {@inheritDoc}
      * @param throwable {@inheritDoc}
      * @since 3.5.2
      */

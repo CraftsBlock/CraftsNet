@@ -9,6 +9,7 @@ import org.jetbrains.annotations.Nullable;
  * The {@link NoOpLogger} simply accepts log messages and errors but does not process
  * them in any way.
  *
+ * @param previous The previous {@link Logger} implementation.
  * @author Philipp Maywald
  * @author CraftsBlock
  * @since 3.4.0-SNAPSHOT

@@ -70,6 +70,7 @@ public class WebHandler implements HttpHandler {
      * Constructs a new instance of the WebHandler
      *
      * @param craftsNet The CraftsNet instance which instantiates this web handler.
+     * @param webServer The web server associated with this handler.
      */
     public WebHandler(CraftsNet craftsNet, WebServer webServer) {
         this.webServer = webServer;
@@ -517,10 +518,21 @@ public class WebHandler implements HttpHandler {
         response.print(Json.empty().set("status", "" + code).set("message", message));
     }
 
+    /**
+     * Returns the web server associated with this handler.
+     *
+     * @return The {@link WebServer} instance that this handler processes requests for.
+     */
     public WebServer getWebServer() {
         return webServer;
     }
 
+    /**
+     * Returns the CraftsNet instance that owns this handler.
+     *
+     * @return The {@link CraftsNet} instance providing this handler's registries,
+     * configuration, session cache, event system, and logging services.
+     */
     public CraftsNet getCraftsNet() {
         return craftsNet;
     }
