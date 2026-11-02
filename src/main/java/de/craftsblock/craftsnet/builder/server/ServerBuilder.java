@@ -4,6 +4,7 @@ import de.craftsblock.craftsnet.builder.ArgumentTransformer;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.builder.NamespacedBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Range;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -12,24 +13,45 @@ import java.util.Objects;
 
 public class ServerBuilder<T extends ServerBuilder<T>> extends NamespacedBuilder<T> {
 
-    public ServerBuilder(@NotNull CraftsNetBuilder root, String namespace, int port) {
+    public ServerBuilder(@NotNull CraftsNetBuilder root, String namespace) {
         super(root, namespace);
 
+        this.addKnownArgument("backlog", ArgumentTransformer.integerNumber(0, Integer.MAX_VALUE));
+        this.addKnownArgument("maxUriLength", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
         this.addKnownArgument("port", ArgumentTransformer.integerNumber(0, 65365));
         this.addKnownArgument("responseEncoding", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("skipDefaultRoute", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("ssl", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("state", ArgumentTransformer.enumType(ServerState.class));
         this.addKnownArgument("trustedProxyHeader", ArgumentTransformer.list());
+    }
 
-        this.port(port);
-        this.responseEncoding(false);
-        this.skipDefaultRoute(false);
-        this.ssl(false);
-        this.state(ServerState.DYNAMIC);
+    public @NotNull T backlog(@Range(from = 0, to = Integer.MAX_VALUE) int backlog) {
+        ArgumentTransformer.validatedNumber(backlog, 0, Integer.MAX_VALUE);
+        return this.set("backlog", backlog);
+    }
+
+    public int backlog() {
+        return Objects.requireNonNull(
+                this.getInt("backlog"),
+                "No backlog found for the " + getNamespace()
+        );
+    }
+
+    public @NotNull T maxUriLength(@Range(from = 1, to = Integer.MAX_VALUE) int maxUriLength) {
+        ArgumentTransformer.validatedNumber(maxUriLength, 1, Integer.MAX_VALUE);
+        return this.set("maxUriLength", maxUriLength);
+    }
+
+    public int maxUriLength() {
+        return Objects.requireNonNull(
+                this.getInt("maxUriLength"),
+                "No max uri length found for the " + getNamespace()
+        );
     }
 
     public @NotNull T port(int port) {
+        ArgumentTransformer.validatedNumber(port, 0, 65365);
         return this.set("port", port);
     }
 

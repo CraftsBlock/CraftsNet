@@ -3,6 +3,8 @@ package de.craftsblock.craftsnet.api;
 import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.http.WebServer;
 import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
+import de.craftsblock.craftsnet.builder.server.ServerBuilder;
+import de.craftsblock.craftsnet.builder.server.ServerState;
 import de.craftsblock.craftsnet.logging.Logger;
 
 import java.util.Collection;
@@ -15,19 +17,19 @@ import java.util.List;
  * @author CraftsBlock
  * @since 3.0.3-SNAPSHOT
  */
-public abstract class Server {
+public abstract class Server<B extends ServerBuilder<B>> {
 
     /**
      * All known server types.
      *
      * @since 3.5.3
      */
-    public static final Collection<Class<? extends Server>> SERVER_TYPES = List.of(
+    public static final Collection<Class<? extends Server<?>>> SERVER_TYPES = List.of(
             WebServer.class, WebSocketServer.class
     );
 
-    protected final CraftsNet craftsNet;
-    protected final Logger logger;
+    private final B builder;
+    private final CraftsNet craftsNet;
 
     protected int port;
     protected int backlog;
@@ -36,30 +38,17 @@ public abstract class Server {
     protected boolean running;
 
     /**
-     * Constructs a server with the specified port and SSL configuration.
-     *
-     * @param craftsNet The {@link CraftsNet} instance which instantiates this server.
-     * @param port      The port number for the server.
-     * @param ssl       true if SSL should be used, false otherwise.
-     */
-    public Server(CraftsNet craftsNet, int port, boolean ssl) {
-        this(craftsNet, port, 0, ssl);
-    }
-
-    /**
      * Constructs a server with the specified port, backlog, and SSL configuration.
      *
      * @param craftsNet The {@link CraftsNet} instance which instantiates this server.
-     * @param port      The port number for the server.
-     * @param backlog   The maximum number of pending connections the server's socket may have in the queue.
-     * @param ssl       true if SSL should be used, false otherwise.
+     * @param builder   The {@link B Builder} which should build this server.
      */
-    public Server(CraftsNet craftsNet, int port, int backlog, boolean ssl) {
+    public Server(CraftsNet craftsNet, B builder) {
         this.craftsNet = craftsNet;
-        this.logger = this.craftsNet.getLogger();
+        this.builder = builder;
 
-        this.bind(port, backlog);
-        this.ssl = ssl;
+        this.bind(builder.port(), builder.backlog());
+        this.ssl = builder.ssl();
         this.running = false;
     }
 
@@ -122,7 +111,7 @@ public abstract class Server {
      * @return true if the server is enabled, false otherwise.
      */
     public boolean isEnabled() {
-        return true;
+        return this.getBuilder().state().isEnabled();
     }
 
     /**
@@ -162,12 +151,30 @@ public abstract class Server {
     }
 
     /**
+     * Checks if the webserver has a certain activation status in the builder.
+     *
+     * @param type The activation which should be present.
+     * @return true if the activation status is equals, false otherwise.
+     */
+    public boolean isStatus(ServerState type) {
+        return this.builder.isState(type);
+    }
+
+    /**
      * Retrieves the instance of {@link CraftsNet} bound to the server.
      *
      * @return The instance of {@link CraftsNet} bound to the server.
      */
     public CraftsNet getCraftsNet() {
         return craftsNet;
+    }
+
+    public Logger getLogger() {
+        return this.craftsNet.getLogger();
+    }
+
+    public B getBuilder() {
+        return builder;
     }
 
 }

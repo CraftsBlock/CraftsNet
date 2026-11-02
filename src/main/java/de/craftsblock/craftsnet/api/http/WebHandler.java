@@ -21,6 +21,7 @@ import de.craftsblock.craftsnet.api.transformers.TransformerPerformer;
 import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
+import de.craftsblock.craftsnet.builder.server.WebServerBuilder;
 import de.craftsblock.craftsnet.events.requests.PostRequestEvent;
 import de.craftsblock.craftsnet.events.requests.PreRequestEvent;
 import de.craftsblock.craftsnet.events.requests.routes.RouteRequestEvent;
@@ -30,8 +31,10 @@ import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
@@ -53,22 +56,32 @@ public class WebHandler implements HttpHandler {
     private static final String MESSAGE_FORMAT_REQUEST = "%s %s from %s";
     private static final String MESSAGE_FORMAT_REQUEST_ERROR = MESSAGE_FORMAT_REQUEST + " \u001b[38;5;9m[%s]";
 
+    private final WebServer webServer;
     private final CraftsNet craftsNet;
+
     private final Logger logger;
     private final RouteRegistry registry;
 
     private final Scheme scheme;
+
+    private final int MAX_URI_LENGTH;
 
     /**
      * Constructs a new instance of the WebHandler
      *
      * @param craftsNet The CraftsNet instance which instantiates this web handler.
      */
-    public WebHandler(CraftsNet craftsNet) {
+    public WebHandler(CraftsNet craftsNet, WebServer webServer) {
+        this.webServer = webServer;
         this.craftsNet = craftsNet;
+
         this.logger = this.craftsNet.getLogger();
         this.registry = this.craftsNet.getRouteRegistry();
+
         this.scheme = Scheme.HTTP.getSsl(Scheme.HTTP.getServer(craftsNet).isSSL());
+
+        WebServerBuilder builder = webServer.getBuilder();
+        this.MAX_URI_LENGTH = builder.maxUriLength();
     }
 
     /**
@@ -80,6 +93,18 @@ public class WebHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
         try (httpExchange) {
+            if (httpExchange.getRequestURI().toString().length() >= MAX_URI_LENGTH) {
+                HttpStatus status = HttpStatus.ClientError.URI_TOO_LONG;
+                byte[] body = status.getReason().getBytes(StandardCharsets.UTF_8);
+
+                httpExchange.sendResponseHeaders(status.getCode(), body.length);
+
+                OutputStream responseBodyStream = httpExchange.getResponseBody();
+                responseBodyStream.write(body);
+                responseBodyStream.flush();
+                return;
+            }
+
             // Extract relevant information from the incoming request.
             String requestMethod = httpExchange.getRequestMethod();
             HttpMethod httpMethod = HttpMethod.parse(requestMethod);
@@ -118,14 +143,22 @@ public class WebHandler implements HttpHandler {
                 String domain;
                 if (headers.containsKey("X-Forwarded-Host")) {
                     domain = headers.getFirst("X-forwarded-Host").split(":")[0];
-                } else {
+                } else if (headers.containsKey("Host")) {
                     domain = headers.getFirst("Host").split(":")[0];
+                } else {
+                    domain = null;
                 }
 
                 // Create a Request object to encapsulate the incoming request information.
                 try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, connectingIp, domain, httpMethod);
                      Session session = craftsNet.getSessionCache().getOrNew(SessionInfo.extractSession(request));
                      Exchange exchange = new Exchange(new Context(), protocolVersion, request, response, session)) {
+                    if (domain == null) {
+                        response.setStatus(HttpStatus.ClientError.BAD_REQUEST);
+
+                        return;
+                    }
+
                     exchange.session().setExchange(exchange);
 
                     PreRequestEvent event = new PreRequestEvent(exchange);
@@ -482,6 +515,14 @@ public class WebHandler implements HttpHandler {
         }
 
         response.print(Json.empty().set("status", "" + code).set("message", message));
+    }
+
+    public WebServer getWebServer() {
+        return webServer;
+    }
+
+    public CraftsNet getCraftsNet() {
+        return craftsNet;
     }
 
 }

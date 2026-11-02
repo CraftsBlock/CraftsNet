@@ -9,7 +9,7 @@ import java.util.Objects;
 public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder> {
 
     public WebSocketServerBuilder(@NotNull CraftsNetBuilder root) {
-        super(root, "websocket", 5001);
+        super(root, "websocket");
         this.acquire(this);
 
         this.addKnownArgument("fragment", ArgumentTransformer.booleanFlag());
@@ -17,6 +17,14 @@ public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder
 
         this.fragment(false);
         this.fragmentSize(1024);
+
+        this.backlog(0);
+        this.maxUriLength(4096);
+        this.port(5001);
+        this.responseEncoding(false);
+        this.skipDefaultRoute(false);
+        this.ssl(false);
+        this.state(ServerState.DYNAMIC);
     }
 
     public WebSocketServerBuilder fragment(boolean fragment) {

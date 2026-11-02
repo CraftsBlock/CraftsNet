@@ -22,6 +22,7 @@ import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.api.websocket.annotations.ApplyDecoder;
 import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeDecoder;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
+import de.craftsblock.craftsnet.builder.server.WebSocketServerBuilder;
 import de.craftsblock.craftsnet.events.sockets.ClientConnectEvent;
 import de.craftsblock.craftsnet.events.sockets.ClientDisconnectEvent;
 import de.craftsblock.craftsnet.events.sockets.message.IncomingSocketMessageEvent;
@@ -90,6 +91,8 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final TransformerPerformer transformerPerformer;
     private final Map<String, Matcher> matchers;
 
+    private final int MAX_URI_LENGTH;
+
     private SocketExchange exchange;
     private ProtocolVersion protocolVersion;
     private Headers headers;
@@ -130,10 +133,10 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.scheme = Scheme.WS.getSsl(server.isSSL());
         this.extensions = new ArrayList<>();
 
-        craftsNet.getBuilder().webSocketServer(builder -> {
-            this.fragment = builder.fragment();
-            this.fragmentSize = builder.fragmentSize();
-        });
+        WebSocketServerBuilder builder = server.getBuilder();
+        this.MAX_URI_LENGTH = builder.maxUriLength();
+        this.fragment = builder.fragment();
+        this.fragmentSize = builder.fragmentSize();
 
         this.craftsNet = craftsNet;
         this.logger = this.craftsNet.getLogger();
@@ -175,6 +178,23 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             if (path == null) {
                 logger.warning("The path could not be loaded. (Maybe an unsupported request method?)");
+                disconnect();
+                return;
+            }
+
+            if (path.length() >= MAX_URI_LENGTH) {
+                HttpStatus status = HttpStatus.ClientError.URI_TOO_LONG;
+                byte[] body = status.getReason().getBytes(StandardCharsets.UTF_8);
+                String headers = status.getStatusLine("HTTP/1.1") +
+                        "Content-Type: text/plain; charset=UTF-8\r\n" +
+                        "Content-Length: " + body.length + "\r\n" +
+                        "Connection: close\r\n" +
+                        "\r\n";
+
+                writer.write(headers.getBytes(StandardCharsets.UTF_8));
+                writer.write(body);
+                writer.flush();
+
                 disconnect();
                 return;
             }

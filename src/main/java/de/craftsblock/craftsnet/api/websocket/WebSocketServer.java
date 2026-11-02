@@ -6,7 +6,8 @@ import de.craftsblock.craftsnet.api.codec.registry.TypeEncoderRegistry;
 import de.craftsblock.craftsnet.api.ssl.SSL;
 import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeEncoder;
 import de.craftsblock.craftsnet.builder.server.ServerState;
-import org.jetbrains.annotations.ApiStatus;
+import de.craftsblock.craftsnet.builder.server.WebServerBuilder;
+import de.craftsblock.craftsnet.builder.server.WebSocketServerBuilder;
 import org.jetbrains.annotations.NotNull;
 
 import javax.net.ssl.SSLContext;
@@ -16,7 +17,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
-import java.net.SocketTimeoutException;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -40,12 +40,14 @@ import java.util.function.Supplier;
  * @see WebSocketClient
  * @since 2.1.1-SNAPSHOT
  */
-public class WebSocketServer extends Server {
+public class WebSocketServer extends Server<WebSocketServerBuilder> {
 
     private final TypeEncoderRegistry<WebSocketSafeTypeEncoder<?, ?>> typeEncoderRegistry = new TypeEncoderRegistry<>();
     private final ConcurrentHashMap<String, ConcurrentLinkedQueue<WebSocketClient>> connected = new ConcurrentHashMap<>();
 
-    private Supplier<Executor> executorFactory = Executors::newVirtualThreadPerTaskExecutor;
+    private Supplier<Executor> executorFactory = () -> Executors.newThreadPerTaskExecutor(
+            Thread.ofVirtual().name("WebSocket-", 1).factory()
+    );
     private Executor executor;
 
     private Thread connector;
@@ -55,23 +57,10 @@ public class WebSocketServer extends Server {
      * Constructs a WebSocketServer instance with the specified port number.
      *
      * @param craftsNet The CraftsNet instance which instantiates this websocket server.
-     * @param port      The port number on which the server will listen for incoming connections.
-     * @param ssl       A boolean flag indicating whether SSL encryption should be used (true for HTTPS, false for HTTP).
+     * @param builder   The {@link WebServerBuilder} which should build this web server.
      */
-    public WebSocketServer(CraftsNet craftsNet, int port, boolean ssl) {
-        this(craftsNet, port, 0, ssl);
-    }
-
-    /**
-     * Constructs a WebSocketServer instance with the specified port number and backlog size.
-     *
-     * @param craftsNet The CraftsNet instance which instantiates this websocket server.
-     * @param port      The port number on which the server will listen for incoming connections.
-     * @param backlog   The size of the backlog for the server socket.
-     * @param ssl       A boolean flag indicating whether SSL encryption should be used.
-     */
-    public WebSocketServer(CraftsNet craftsNet, int port, int backlog, boolean ssl) {
-        super(craftsNet, port, backlog, ssl);
+    public WebSocketServer(CraftsNet craftsNet, WebSocketServerBuilder builder) {
+        super(craftsNet, builder);
     }
 
     /**
@@ -83,9 +72,7 @@ public class WebSocketServer extends Server {
     @Override
     public synchronized void bind(int port, int backlog) {
         super.bind(port, backlog);
-        if (logger != null) {
-            logger.info("Web socket server bound to port %s", port);
-        }
+        this.getLogger().info("Web socket server bound to port %s", port);
     }
 
     /**
@@ -98,10 +85,10 @@ public class WebSocketServer extends Server {
         }
 
         try {
-            logger.info("Starting websocket server on port %s", port);
+            this.getLogger().info("Starting websocket server on port %s", port);
 
             if (ssl) {
-                SSLContext sslContext = SSL.load(craftsNet);
+                SSLContext sslContext = SSL.load(this.getCraftsNet());
                 if (sslContext == null) {
                     throw new IllegalStateException(
                             "SSL context could not be initialized"
@@ -152,9 +139,9 @@ public class WebSocketServer extends Server {
                     return;
                 }
 
-                logger.error("Websocket accept failed", e);
+                this.getLogger().error("Websocket accept failed", e);
             } catch (IOException e) {
-                logger.error("Failed to accept websocket connection", e);
+                this.getLogger().error("Failed to accept websocket connection", e);
             }
         }
     }
@@ -172,18 +159,15 @@ public class WebSocketServer extends Server {
                         sslSocket.startHandshake();
                     }
 
-                    new WebSocketClient(
-                            craftsNet,
-                            socket,
-                            this
-                    ).run();
+                    new WebSocketClient(this.getCraftsNet(), socket, this)
+                            .run();
                 } catch (Exception e) {
                     try {
                         socket.close();
                     } catch (IOException ignored) {
                     }
 
-                    logger.error("Failed to handle websocket connection", e);
+                    this.getLogger().error("Failed to handle websocket connection", e);
                 }
             });
         } catch (RejectedExecutionException e) {
@@ -192,7 +176,7 @@ public class WebSocketServer extends Server {
             } catch (IOException ignored) {
             }
 
-            logger.warning("Websocket connection rejected");
+            this.getLogger().warning("Websocket connection rejected");
         }
     }
 
@@ -243,10 +227,10 @@ public class WebSocketServer extends Server {
     public synchronized void awakeOrWarn() {
         if (!isRunning() && isEnabled()) {
             // Start the web socket server as it is needed and currently not running
-            this.craftsNet.getWebSocketServer().start();
+            this.getCraftsNet().getWebSocketServer().start();
         } else if (!isEnabled()) {
             // Print a warning if the web socket server is disabled and socket endpoints has been registered
-            logger.warning("A socket endpoint has been registered, but the web socket server is disabled!");
+            this.getLogger().warning("A socket endpoint has been registered, but the web socket server is disabled!");
         }
     }
 
@@ -255,7 +239,8 @@ public class WebSocketServer extends Server {
      */
     @Override
     public synchronized void sleepIfNotNeeded() {
-        if (isRunning() && !craftsNet.getRouteRegistry().hasWebsockets() && isStatus(ServerState.DYNAMIC)) {
+        if (this.isRunning() && !this.getCraftsNet().getRouteRegistry().hasWebsockets()
+                && this.isStatus(ServerState.DYNAMIC)) {
             stop();
         }
     }
@@ -266,37 +251,8 @@ public class WebSocketServer extends Server {
      * @return {@inheritDoc}
      */
     @Override
-    public boolean isEnabled() {
-        return !isStatus(ServerState.DISABLED);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @return {@inheritDoc}
-     */
-    @Override
     public boolean isSSL() {
         return this.serverSocket instanceof SSLServerSocket;
-    }
-
-    /**
-     * Checks if SSL should be enabled for the server.
-     *
-     * @return {@code true} if SSL should be enabled, {@code false} otherwise.
-     */
-    public boolean shouldUseSSL() {
-        return super.isSSL();
-    }
-
-    /**
-     * Checks if the websocket server has a certain activation status in the builder.
-     *
-     * @param state The activation which should be present.
-     * @return true if the activation status is equals, false otherwise.
-     */
-    private boolean isStatus(ServerState state) {
-        return craftsNet.getBuilder().webSocketServer().isState(state);
     }
 
     /**
