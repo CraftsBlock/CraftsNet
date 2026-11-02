@@ -8,8 +8,8 @@ import java.util.Objects;
 
 public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder> {
 
-    public WebSocketServerBuilder(@NotNull CraftsNetBuilder root, String namespace, int port) {
-        super(root, namespace, port);
+    public WebSocketServerBuilder(@NotNull CraftsNetBuilder root) {
+        super(root, "websocket", 5001);
         this.acquire(this);
 
         this.addKnownArgument("fragment", ArgumentTransformer.booleanFlag());

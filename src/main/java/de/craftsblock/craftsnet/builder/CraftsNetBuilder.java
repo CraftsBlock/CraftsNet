@@ -34,11 +34,16 @@ public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder>
         this.addKnownArgument("skipVersionCheck", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("tempFilesInPwd", ArgumentTransformer.booleanFlag());
 
-        this.addonSystemBuilder = new AddonSystemBuilder(this, AddonSystemState.FULL);
-        this.loggingBuilder = new LoggingBuilder(this, -1, true, false);
+        this.addonSystemBuilder = new AddonSystemBuilder(this);
 
-        this.webServerBuilder = new WebServerBuilder(this, "http", 5000);
-        this.webSocketServerBuilder = new WebSocketServerBuilder(this, "websocket", 5001);
+        this.loggingBuilder = new LoggingBuilder(this);
+        this.registerInternalNamespaceAlias("log", this.loggingBuilder);
+
+        this.webServerBuilder = new WebServerBuilder(this);
+        this.registerInternalNamespaceAlias("http", this.webServerBuilder);
+
+        this.webSocketServerBuilder = new WebSocketServerBuilder(this);
+        this.registerInternalNamespaceAlias("ws", this.webSocketServerBuilder);
 
         this.debug(false);
         this.sessionCacheSize(5);
@@ -47,6 +52,14 @@ public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder>
 
         this.set("codeSources", new HashSet<>());
         this.addCodeSource(this.getClass().getProtectionDomain().getCodeSource());
+    }
+
+    void registerInternalNamespaceAlias(String alias, NamespacedBuilder<?> builder) {
+        NamespacedBuilder<?> previous = this.internalBuilders.put(alias.toLowerCase(), builder);
+        if (previous != null) {
+            throw new IllegalArgumentException("The alias " + alias +
+                    " clashes with the namespace " + previous.getNamespace());
+        }
     }
 
     void registerInternalNamespace(NamespacedBuilder<?> builder) {

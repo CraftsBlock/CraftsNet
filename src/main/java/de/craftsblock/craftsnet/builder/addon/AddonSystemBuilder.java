@@ -18,7 +18,7 @@ public class AddonSystemBuilder extends NamespacedBuilder<AddonSystemBuilder> {
 
     private final Map<String, AddonBuilder> addonBuilders;
 
-    public AddonSystemBuilder(@NotNull CraftsNetBuilder root, AddonSystemState state) {
+    public AddonSystemBuilder(@NotNull CraftsNetBuilder root) {
         super(root, "addons");
         this.acquire(this);
         this.addonBuilders = new HashMap<>();
@@ -26,7 +26,7 @@ public class AddonSystemBuilder extends NamespacedBuilder<AddonSystemBuilder> {
         this.addKnownArgument("state", ArgumentTransformer.enumType(AddonSystemState.class));
         this.addKnownArgument("in_memory", ArgumentTransformer.notAllowed("In memory addons can't be set via the cli"));
 
-        this.state(state);
+        this.state(AddonSystemState.FULL);
         this.set("in_memory", Collections.synchronizedList(new ArrayList<>()));
     }
 

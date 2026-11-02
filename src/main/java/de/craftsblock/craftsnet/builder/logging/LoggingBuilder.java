@@ -11,8 +11,8 @@ import java.util.Objects;
 
 public class LoggingBuilder extends NamespacedBuilder<LoggingBuilder> {
 
-    public LoggingBuilder(@NotNull CraftsNetBuilder root, int rotate, boolean file, boolean hideIps) {
-        super(root, "log");
+    public LoggingBuilder(@NotNull CraftsNetBuilder root) {
+        super(root, "logging");
         this.acquire(this);
 
         this.addKnownArgument("logger", ArgumentTransformer.classInstance(Logger.class));
@@ -20,9 +20,9 @@ public class LoggingBuilder extends NamespacedBuilder<LoggingBuilder> {
         this.addKnownArgument("file", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("hideIps", ArgumentTransformer.booleanFlag());
 
-        this.rotate(rotate);
-        this.file(file);
-        this.hideIps(hideIps);
+        this.rotate(-1);
+        this.file(true);
+        this.hideIps(false);
     }
 
     public LoggingBuilder logger(@NotNull Logger logger) {
