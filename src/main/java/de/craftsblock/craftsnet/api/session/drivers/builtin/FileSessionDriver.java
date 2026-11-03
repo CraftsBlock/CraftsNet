@@ -2,8 +2,10 @@ package de.craftsblock.craftsnet.api.session.drivers.builtin;
 
 import de.craftsblock.craftscore.buffer.BufferUtil;
 import de.craftsblock.craftscore.buffer.ObjectSerializer;
+import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.api.session.Session;
 import de.craftsblock.craftsnet.api.session.drivers.SessionDriver;
+import de.craftsblock.craftsnet.utils.FileHelper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,9 +16,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 
 /**
  * A file based implementation of {@link SessionDriver} that persists session data to disk.
@@ -89,8 +89,7 @@ public class FileSessionDriver implements SessionDriver {
         }
 
         try (FileChannel channel = FileChannel.open(path);
-             InputStream stream = Channels.newInputStream(channel);
-             FileLock ignored = channel.lock(0, Long.MAX_VALUE, true)) {
+             InputStream stream = Channels.newInputStream(channel)) {
 
             BufferUtil readBuffer = BufferUtil.wrap(stream.readAllBytes());
 
@@ -126,40 +125,34 @@ public class FileSessionDriver implements SessionDriver {
         });
 
         Path path = Path.of(STORAGE_LOCATION, session.getSessionInfo().getSessionID() + STORAGE_EXTENSION);
-        if (path.getParent() != null && !Files.exists(path.getParent())) {
-            Files.createDirectories(path.getParent());
-        }
+        Path parent = path.toAbsolutePath().getParent();
+        Files.createDirectories(parent);
 
-        if (!Files.exists(path)) {
-            Files.createFile(path);
-        }
+        Path tempFile = Files.createTempFile(parent, "session-", ".tmp");
 
-        try (FileChannel channel = FileChannel.open(path, StandardOpenOption.WRITE);
-             OutputStream stream = Channels.newOutputStream(channel)) {
-            FileLock lock;
-            if (!Thread.currentThread().isInterrupted()) {
-                lock = channel.lock();
-            } else {
-                lock = null;
-            }
+        try {
+            try (FileChannel channel = FileChannel.open(tempFile, StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING);
+                 OutputStream stream = Channels.newOutputStream(channel)) {
 
-            try {
                 int bufferSize = 1024;
                 saveBuffer.trim().with(ByteBuffer::flip);
+
                 while (saveBuffer.hasRemainingBytes(bufferSize)) {
                     stream.write(saveBuffer.getNBytes(bufferSize));
                 }
 
                 stream.write(saveBuffer.getRemainingBytes());
-            } finally {
-                if (lock != null) {
-                    lock.release();
-                }
+                stream.flush();
+
+                channel.force(true);
             }
-        } catch (OverlappingFileLockException e) {
-            throw new RuntimeException("Could not lock session file!", e);
+
+            Files.move(tempFile, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
+        } finally {
+            Files.deleteIfExists(tempFile);
         }
     }
+
 
     /**
      * Deletes the session file corresponding to the given session ID.
