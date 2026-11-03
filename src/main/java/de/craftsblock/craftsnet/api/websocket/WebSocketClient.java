@@ -1344,14 +1344,16 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
         });
 
-        this.mappings.values().forEach(mappingList -> mappingList.forEach(
-                mapping -> mapping.middlewares().forEach(
-                        middleware -> {
-                            if (middleware instanceof WebsocketMiddleware websocketMiddleware) {
-                                consumer.accept(callbackInfo, websocketMiddleware);
-                            }
-                        })
-        ));
+        if (this.mappings != null) {
+            this.mappings.values().forEach(mappingList -> mappingList.forEach(
+                    mapping -> mapping.middlewares().forEach(
+                            middleware -> {
+                                if (middleware instanceof WebsocketMiddleware websocketMiddleware) {
+                                    consumer.accept(callbackInfo, websocketMiddleware);
+                                }
+                            })
+            ));
+        }
 
         return callbackInfo;
     }
