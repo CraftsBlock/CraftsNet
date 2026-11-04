@@ -3,17 +3,10 @@ package de.craftsblock.craftsnet.builder.server;
 import de.craftsblock.craftsnet.builder.ArgumentTransformer;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.builder.NamespacedBuilder;
-import de.craftsblock.craftsnet.builder.server.trust.ServerTrust;
-import de.craftsblock.craftsnet.builder.server.trust.ServerTrustBuilder;
-import org.apache.http.impl.ConnSupport;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.Consumer;
 
 /**
@@ -60,6 +53,30 @@ public class ServerBuilder<T extends ServerBuilder<T>> extends NamespacedBuilder
         this.addKnownArgument("ssl", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("state", ArgumentTransformer.enumType(ServerState.class));
         this.addKnownArgument("trustedProxyHeader", ArgumentTransformer.list());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param arg   {@inheritDoc}
+     * @param value {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    protected @NotNull T set(@NotNull String arg, @NotNull Object value) {
+        Objects.requireNonNull(arg, "arg");
+
+        if (!arg.contains(":")) {
+            return super.set(arg, value);
+        }
+
+        String[] parts = arg.split(":", 2);
+        if (parts[0].equalsIgnoreCase("trust")) {
+            this.trustBuilder.set(parts[1], value);
+            return getOwner();
+        }
+
+        throw new IllegalArgumentException("Unknown namespace " + parts[0] + " for argument " + arg);
     }
 
     /**

@@ -34,7 +34,7 @@ public class AddonBuilder extends NamespacedBuilder<AddonBuilder> {
      * @throws NullPointerException if {@code parent} is {@code null}
      */
     public AddonBuilder(@NotNull AddonSystemBuilder parent, String namespace) {
-        super(parent.getRoot(), namespace, true);
+        super(parent.getRoot(), namespace, false, true);
         this.acquire(this);
     }
 

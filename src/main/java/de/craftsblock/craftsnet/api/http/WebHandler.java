@@ -22,7 +22,7 @@ import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.builder.server.WebServerBuilder;
-import de.craftsblock.craftsnet.builder.server.trust.ServerTrust;
+import de.craftsblock.craftsnet.builder.server.ServerTrust;
 import de.craftsblock.craftsnet.events.requests.PostRequestEvent;
 import de.craftsblock.craftsnet.events.requests.PreRequestEvent;
 import de.craftsblock.craftsnet.events.requests.routes.RouteRequestEvent;

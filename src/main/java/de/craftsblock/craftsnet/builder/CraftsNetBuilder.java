@@ -130,7 +130,11 @@ public class CraftsNetBuilder extends AbstractCraftsNetBuilder<CraftsNetBuilder>
      * @param builder the internal builder to register
      */
     void registerInternalNamespace(NamespacedBuilder<?> builder) {
-        this.internalBuilders.put(builder.getNamespace().toLowerCase(), builder);
+        NamespacedBuilder<?> previous = this.internalBuilders.put(builder.getNamespace(), builder);
+        if (previous != null) {
+            throw new IllegalArgumentException("The namespace " + builder.getNamespace() +
+                    " clashes with the namespace " + previous.getNamespace());
+        }
     }
 
     /**

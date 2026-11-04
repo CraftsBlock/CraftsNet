@@ -2,6 +2,8 @@ package de.craftsblock.craftsnet.builder;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Locale;
+
 /**
  * Base implementation for builders that belong to a specific namespace
  * within the CraftsNet builder system.
@@ -38,7 +40,7 @@ public abstract class NamespacedBuilder<T extends NamespacedBuilder<T>> extends 
      * @param namespace The identifier of this builder's namespace
      */
     protected NamespacedBuilder(@NotNull CraftsNetBuilder root, @NotNull String namespace) {
-        this(root, namespace, false);
+        this(root, namespace, true, false);
     }
 
     /**
@@ -51,15 +53,19 @@ public abstract class NamespacedBuilder<T extends NamespacedBuilder<T>> extends 
      *
      * @param root             The root builder this namespace belongs to
      * @param namespace        The identifier of this builder's namespace
+     * @param registerInRoot   {@code true} to register this namespace in the
+     *                         root {@link CraftsNetBuilder}, {@code false} otherwise
      * @param allowUnknownArgs {@code true} to allow arguments that have not
      *                         been explicitly registered, {@code false} otherwise
      */
-    protected NamespacedBuilder(@NotNull CraftsNetBuilder root, @NotNull String namespace, boolean allowUnknownArgs) {
+    protected NamespacedBuilder(@NotNull CraftsNetBuilder root, @NotNull String namespace, boolean registerInRoot, boolean allowUnknownArgs) {
         super(allowUnknownArgs);
         this.root = root;
-        this.namespace = namespace;
+        this.namespace = namespace.toLowerCase();
 
-        root.registerInternalNamespace(this);
+        if (registerInRoot) {
+            root.registerInternalNamespace(this);
+        }
     }
 
     /**

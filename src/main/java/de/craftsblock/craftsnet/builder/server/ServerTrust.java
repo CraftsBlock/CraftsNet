@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.builder.server.trust;
+package de.craftsblock.craftsnet.builder.server;
 
 import com.sun.net.httpserver.Headers;
 import org.jetbrains.annotations.NotNull;

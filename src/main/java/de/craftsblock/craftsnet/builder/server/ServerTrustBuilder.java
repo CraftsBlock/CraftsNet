@@ -1,4 +1,4 @@
-package de.craftsblock.craftsnet.builder.server.trust;
+package de.craftsblock.craftsnet.builder.server;
 
 import de.craftsblock.craftsnet.builder.ArgumentTransformer;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
@@ -39,7 +39,7 @@ public class ServerTrustBuilder extends NamespacedBuilder<ServerTrustBuilder> {
      * @param root the root CraftsNet builder this builder belongs to
      */
     public ServerTrustBuilder(@NotNull CraftsNetBuilder root) {
-        super(root, "trust");
+        super(root, "trust", false, false);
         this.acquire(this);
 
         this.addKnownArgument("forwardedHostHeaders", ArgumentTransformer.list());
@@ -49,6 +49,20 @@ public class ServerTrustBuilder extends NamespacedBuilder<ServerTrustBuilder> {
         this.forwardedHostHeaders(Collections.emptyList());
         this.forwardedIpHeaders(Collections.emptyList());
         this.trustedProxies(Collections.emptyList());
+    }
+
+    /**
+     * {@inheritDoc}
+     * <p>
+     * Overwritten so {@link ServerBuilder} can access it.
+     *
+     * @param arg   {@inheritDoc}
+     * @param value {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    protected @NotNull ServerTrustBuilder set(@NotNull String arg, @NotNull Object value) {
+        return super.set(arg, value);
     }
 
     /**
