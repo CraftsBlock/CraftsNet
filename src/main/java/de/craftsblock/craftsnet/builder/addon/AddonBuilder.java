@@ -1,5 +1,6 @@
 package de.craftsblock.craftsnet.builder.addon;
 
+import de.craftsblock.craftsnet.CraftsNet;
 import de.craftsblock.craftsnet.builder.NamespacedBuilder;
 import org.jetbrains.annotations.NotNull;
 
@@ -58,13 +59,15 @@ public class AddonBuilder extends NamespacedBuilder<AddonBuilder> {
             return;
         }
 
-        if (value instanceof String string) {
-            this.set(arg, transformer.apply(string));
-            return;
+        if (isKnownArgument(arg)) {
+            throw new IllegalArgumentException("The addon argument " + arg + " of "
+                    + getNamespace() + " has already been transformed!");
         }
 
-        throw new IllegalArgumentException("The addon argument " + arg + " of "
-                + getNamespace() + " has already been transformed!");
+        super.addKnownArgument(arg, transformer);
+        if (value instanceof String string) {
+            this.set(arg, transformer.apply(string));
+        }
     }
 
     /**
@@ -91,6 +94,24 @@ public class AddonBuilder extends NamespacedBuilder<AddonBuilder> {
     @Override
     public @NotNull AddonBuilder set(@NotNull String arg, @NotNull Object value) {
         return super.set(arg, value);
+    }
+
+    /**
+     * Creates a new empty {@link AddonBuilder} instance and freezes it immediately.
+     * <p>
+     * The created builder is not registered as an internal namespace in the
+     * {@link AddonSystemBuilder}. It is intended to serve as a fallback builder
+     * when no arguments have been registered for an addon.
+     *
+     * @param root The root {@link CraftsNet} instance used to retrieve the
+     *             {@link AddonSystemBuilder}.
+     * @param name The name of the addon this builder belongs to.
+     * @return A new, empty and frozen {@link AddonBuilder} instance.
+     */
+    public static AddonBuilder newEmptyFrozen(CraftsNet root, String name) {
+        AddonBuilder builder = new AddonBuilder(root.getBuilder().addonSystem(), name);
+        builder.freeze();
+        return builder;
     }
 
 }

@@ -14,6 +14,7 @@ import de.craftsblock.craftsnet.addon.meta.Startup;
 import de.craftsblock.craftsnet.addon.services.ServiceManager;
 import de.craftsblock.craftsnet.autoregister.loaders.AutoRegisterLoader;
 import de.craftsblock.craftsnet.autoregister.meta.AutoRegisterInfo;
+import de.craftsblock.craftsnet.builder.addon.AddonBuilder;
 import de.craftsblock.craftsnet.events.addons.AllAddonsLoadedEvent;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
@@ -399,6 +400,10 @@ public final class AddonLoader {
             Class<? extends Addon> addonClass = clazz.asSubclass(Addon.class);
             Addon addon = ReflectionUtils.getNewInstance(addonClass);
             ReflectionUtils.setField("craftsNet", addon, craftsNet);
+            ReflectionUtils.setField("builder", addon, Objects.requireNonNullElse(
+                    craftsNet.getBuilder().addonSystem().addon(name),
+                    AddonBuilder.newEmptyFrozen(craftsNet, name)
+            ));
             ReflectionUtils.setField("meta", addon, meta);
             ReflectionUtils.setField("logger", addon, logger.cloneWithName(name));
             ReflectionUtils.setField("classLoader", addon, classLoader);

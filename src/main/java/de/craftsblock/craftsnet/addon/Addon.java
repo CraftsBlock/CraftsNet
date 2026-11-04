@@ -16,6 +16,7 @@ import de.craftsblock.craftsnet.api.requirements.RequirementRegistry;
 import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeEncoder;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtensionRegistry;
 import de.craftsblock.craftsnet.autoregister.AutoRegisterRegistry;
+import de.craftsblock.craftsnet.builder.addon.AddonBuilder;
 import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.utils.FileHelper;
@@ -52,11 +53,11 @@ import java.nio.file.Path;
 public abstract class Addon {
 
     private CraftsNet craftsNet;
-    private String name;
+
+    private AddonBuilder builder;
     private AddonMeta meta;
 
     private AddonClassLoader classLoader;
-
     private Logger logger;
 
     /**
@@ -99,6 +100,27 @@ public abstract class Addon {
      */
     public final String getName() {
         return meta.name();
+    }
+
+    /**
+     * Gets the {@link AddonBuilder} associated with this addon.
+     * <p>
+     * Addon builders are created lazily when needed. If no arguments
+     * have been registered for this addon, a new frozen instance is
+     * created via {@link AddonBuilder#newEmptyFrozen(CraftsNet, String)}.
+     * This instance is not registered as an internal namespace in the
+     * {@link de.craftsblock.craftsnet.builder.addon.AddonSystemBuilder AddonSystemBuilder}.
+     * <p>
+     * Otherwise, the builder is never frozen automatically by the system.
+     * Each addon is responsible for deciding when to freeze its builder
+     * instance by invoking {@link AddonBuilder#freeze()}.
+     * Before freezing the builder, an addon should check whether it is
+     * already frozen by invoking {@link AddonBuilder#isFrozen()}.
+     *
+     * @return The {@link AddonBuilder} instance associated with this addon.
+     */
+    public final AddonBuilder getBuilder() {
+        return builder;
     }
 
     /**

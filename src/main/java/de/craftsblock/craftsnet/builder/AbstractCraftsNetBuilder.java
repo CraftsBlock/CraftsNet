@@ -469,6 +469,16 @@ public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilde
     }
 
     /**
+     * Checks whether an argument is a known argument by this builder
+     *
+     * @param arg The argument to check
+     * @return {@code true} if the argument is a known argument, {@code false} otherwise
+     */
+    public boolean isKnownArgument(String arg) {
+        return this.argTransformers.containsKey(arg.toLowerCase());
+    }
+
+    /**
      * Checks whether this builder permits arguments that have not been
      * explicitly registered.
      *
