@@ -23,6 +23,7 @@ import de.craftsblock.craftsnet.api.websocket.annotations.ApplyDecoder;
 import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeDecoder;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
 import de.craftsblock.craftsnet.builder.server.WebSocketServerBuilder;
+import de.craftsblock.craftsnet.builder.server.trust.ServerTrust;
 import de.craftsblock.craftsnet.events.sockets.ClientConnectEvent;
 import de.craftsblock.craftsnet.events.sockets.ClientDisconnectEvent;
 import de.craftsblock.craftsnet.events.sockets.message.IncomingSocketMessageEvent;
@@ -92,6 +93,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final Map<String, Matcher> matchers;
 
     private final int MAX_URI_LENGTH;
+    private final ServerTrust SERVER_TRUST;
 
     private SocketExchange exchange;
     private ProtocolVersion protocolVersion;
@@ -135,6 +137,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         WebSocketServerBuilder builder = server.getBuilder();
         this.MAX_URI_LENGTH = builder.maxUriLength();
+        this.SERVER_TRUST = builder.trust().build();
         this.fragment = builder.fragment();
         this.fragmentSize = builder.fragmentSize();
 
@@ -171,6 +174,8 @@ public class WebSocketClient implements Runnable, RequireAble {
             writer = socket.getOutputStream();
             headers = readHeaders();
 
+            this.ip = SERVER_TRUST.extractIp(this.headers, this.connectingIp);
+
             int secWebsocketVersion = headers.containsKey("Sec-WebSocket-Version") ? Integer.parseInt(headers.getFirst("Sec-WebSocket-Version")) : 0;
             this.protocolVersion = new ProtocolVersion(this.scheme, secWebsocketVersion, 0);
 
@@ -192,17 +197,10 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
-            AtomicReference<String> host = new AtomicReference<>();
-            if (headers.containsKey("X-Forwarded-Host")) host.set(headers.getFirst("X-forwarded-Host").split(":")[0]);
-            else host.set(headers.getFirst("Host").split(":")[0]);
-            this.domain = host.get();
-
-            Collection<String> trustedProxyHeaders = this.craftsNet.getBuilder().webSocketServer().trustedProxyHeader();
-            String headerName = trustedProxyHeaders.stream().filter(headers::containsKey).findFirst().orElse(null);
-            if (headerName != null) {
-                ip = headers.getFirst(headerName).split(",\\s+")[0];
-            } else {
-                ip = connectingIp;
+            this.domain = SERVER_TRUST.extractHost(this.headers);
+            if (this.domain == null) {
+                disconnectHttp(HttpStatus.ClientError.BAD_REQUEST, "Missing header Host");
+                return;
             }
 
             if (getHeader("Sec-websocket-extensions") != null) {

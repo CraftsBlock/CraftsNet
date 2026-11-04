@@ -3,6 +3,9 @@ package de.craftsblock.craftsnet.builder.server;
 import de.craftsblock.craftsnet.builder.ArgumentTransformer;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.builder.NamespacedBuilder;
+import de.craftsblock.craftsnet.builder.server.trust.ServerTrust;
+import de.craftsblock.craftsnet.builder.server.trust.ServerTrustBuilder;
+import org.apache.http.impl.ConnSupport;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Range;
 
@@ -10,6 +13,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentSkipListMap;
+import java.util.function.Consumer;
 
 /**
  * Builder for configuring an individual server instance.
@@ -31,6 +36,8 @@ import java.util.Objects;
  */
 public class ServerBuilder<T extends ServerBuilder<T>> extends NamespacedBuilder<T> {
 
+    private final ServerTrustBuilder trustBuilder;
+
     /**
      * Creates a new server builder for the specified root builder and namespace.
      * <p>
@@ -42,6 +49,8 @@ public class ServerBuilder<T extends ServerBuilder<T>> extends NamespacedBuilder
      */
     public ServerBuilder(@NotNull CraftsNetBuilder root, String namespace) {
         super(root, namespace);
+
+        this.trustBuilder = new ServerTrustBuilder(root);
 
         this.addKnownArgument("backlog", ArgumentTransformer.integerNumber(0, Integer.MAX_VALUE));
         this.addKnownArgument("maxUriLength", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
@@ -235,41 +244,26 @@ public class ServerBuilder<T extends ServerBuilder<T>> extends NamespacedBuilder
     }
 
     /**
-     * Sets the trusted proxy headers using the supplied header names.
-     * <p>
-     * The provided array is converted to a list before being stored.
+     * Returns the server trust builder associated with this builder.
      *
-     * @param trustedProxyHeader the names of the headers to trust
-     * @return this builder instance for method chaining
-     * @throws NullPointerException if the array or any of its elements is {@code null}
+     * @return the server trust builder
      */
-    public @NotNull T trustedProxyHeader(@NotNull String... trustedProxyHeader) {
-        return this.trustedProxyHeader(List.of(trustedProxyHeader));
+    public @NotNull ServerTrustBuilder trust() {
+        return this.trustBuilder;
     }
 
     /**
-     * Sets the trusted proxy headers using the supplied collection.
-     *
-     * @param trustedProxyHeader the collection of header names to trust
-     * @return this builder instance for method chaining
-     * @throws NullPointerException if {@code trustedProxyHeader} is {@code null}
-     */
-    public @NotNull T trustedProxyHeader(@NotNull Collection<String> trustedProxyHeader) {
-        return this.set("trustedProxyHeader", trustedProxyHeader);
-    }
-
-    /**
-     * Retrieves the configured trusted proxy headers.
+     * Applies the given configuration consumer to the server trust builder.
      * <p>
-     * If no collection is configured, an empty collection is returned.
+     * This method allows configuring server trust settings directly within a
+     * consumer while retaining the fluent API of the owning builder.
      *
-     * @return the configured trusted proxy headers, or an empty collection if none are available
+     * @param builderConsumer the consumer used to configure the server trust builder
+     * @return the owner builder for method chaining
      */
-    public Collection<String> trustedProxyHeader() {
-        return Objects.requireNonNullElse(
-                this.getCollection("trustedProxyHeader", String.class),
-                Collections.emptyList()
-        );
+    public @NotNull T trust(Consumer<ServerTrustBuilder> builderConsumer) {
+        builderConsumer.accept(this.trustBuilder);
+        return this.getOwner();
     }
 
 }

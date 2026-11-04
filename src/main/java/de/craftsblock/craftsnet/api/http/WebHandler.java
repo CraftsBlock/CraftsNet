@@ -22,6 +22,7 @@ import de.craftsblock.craftsnet.api.utils.Context;
 import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.builder.server.WebServerBuilder;
+import de.craftsblock.craftsnet.builder.server.trust.ServerTrust;
 import de.craftsblock.craftsnet.events.requests.PostRequestEvent;
 import de.craftsblock.craftsnet.events.requests.PreRequestEvent;
 import de.craftsblock.craftsnet.events.requests.routes.RouteRequestEvent;
@@ -65,6 +66,7 @@ public class WebHandler implements HttpHandler {
     private final Scheme scheme;
 
     private final int MAX_URI_LENGTH;
+    private final ServerTrust SERVER_TRUST;
 
     /**
      * Constructs a new instance of the WebHandler
@@ -83,6 +85,7 @@ public class WebHandler implements HttpHandler {
 
         WebServerBuilder builder = webServer.getBuilder();
         this.MAX_URI_LENGTH = builder.maxUriLength();
+        this.SERVER_TRUST = builder.trust().build();
     }
 
     /**
@@ -131,24 +134,8 @@ public class WebHandler implements HttpHandler {
             try {
                 String connectingIp = httpExchange.getRemoteAddress().getAddress().getHostAddress();
 
-                // FixMe: Below is just a hotfix. A more stable variant will be added!
-                String ip;
-                Collection<String> trustedProxyHeaders = this.craftsNet.getBuilder().webServer().trustedProxyHeader();
-                String headerName = trustedProxyHeaders.stream().filter(headers::containsKey).findFirst().orElse(null);
-                if (headerName != null) {
-                    ip = headers.getFirst(headerName).split(",\\s+")[0];
-                } else {
-                    ip = connectingIp;
-                }
-
-                String domain;
-                if (headers.containsKey("X-Forwarded-Host")) {
-                    domain = headers.getFirst("X-forwarded-Host").split(":")[0];
-                } else if (headers.containsKey("Host")) {
-                    domain = headers.getFirst("Host").split(":")[0];
-                } else {
-                    domain = null;
-                }
+                String ip = SERVER_TRUST.extractIp(headers, connectingIp);
+                String domain = SERVER_TRUST.extractHost(headers);
 
                 // Create a Request object to encapsulate the incoming request information.
                 try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, connectingIp, domain, httpMethod);
@@ -156,7 +143,8 @@ public class WebHandler implements HttpHandler {
                      Exchange exchange = new Exchange(new Context(), protocolVersion, request, response, session)) {
                     if (domain == null) {
                         response.setStatus(HttpStatus.ClientError.BAD_REQUEST);
-
+                        response.setHeader("Content-Type", "text/plain");
+                        response.print("Missing header Host");
                         return;
                     }
 

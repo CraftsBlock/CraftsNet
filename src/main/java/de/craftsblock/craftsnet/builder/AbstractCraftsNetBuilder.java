@@ -515,4 +515,13 @@ public abstract class AbstractCraftsNetBuilder<T extends AbstractCraftsNetBuilde
         return frozen;
     }
 
+    /**
+     * Returns the builder that owns this builder instance.
+     *
+     * @return the owning builder
+     */
+    protected T getOwner() {
+        return owner;
+    }
+
 }
