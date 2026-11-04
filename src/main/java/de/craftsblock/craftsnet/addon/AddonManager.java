@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
 /**
@@ -35,8 +34,7 @@ public final class AddonManager {
 
     private final CraftsNet craftsNet;
     private final Logger logger;
-    private final Map<String, Addon> addons = new ConcurrentHashMap<>();
-    private final Map<String, Addon> addonsView = Collections.unmodifiableMap(addons);
+    private final Map<String, Addon> addons = new HashMap<>();
 
     private final AddonLoader addonLoader;
 
@@ -125,11 +123,10 @@ public final class AddonManager {
                 addon.onDisable();
             });
 
-            addons.values().forEach(addon -> addons.remove(addon.getName()));
+            addons.clear();
         }
 
         craftsNet.getListenerRegistry().call(new AllAddonsDisabledEvent());
-        addons.clear();
     }
 
     /**
@@ -139,7 +136,7 @@ public final class AddonManager {
      */
     public void register(@NotNull Addon addon) {
         synchronized (addons) {
-            addons.put(addon.getName(), addon);
+            addons.put(getComparableName(addon.getName()), addon);
         }
     }
 
@@ -151,7 +148,7 @@ public final class AddonManager {
     public void unregister(@NotNull Addon addon) {
         synchronized (addons) {
             addon.onDisable();
-            addons.remove(addon.getName());
+            addons.remove(getComparableName(addon.getName()));
         }
     }
 
@@ -161,7 +158,7 @@ public final class AddonManager {
      * @return A read-only ConcurrentHashMap containing the registered addons.
      */
     public @NotNull @UnmodifiableView Map<String, Addon> getAddons() {
-        return addonsView;
+        return Collections.unmodifiableMap(this.addons);
     }
 
     /**
@@ -196,10 +193,7 @@ public final class AddonManager {
     @SuppressWarnings("unchecked")
     public <T extends Addon> @Nullable T getAddon(String name) {
         synchronized (addons) {
-            return (T) addons.values().stream()
-                    .filter(addon -> addon.getName().equalsIgnoreCase(name))
-                    .findFirst()
-                    .orElse(null);
+            return (T) addons.get(getComparableName(name));
         }
     }
 
@@ -229,9 +223,18 @@ public final class AddonManager {
      */
     public boolean isRegistered(@NotNull String name) {
         synchronized (addons) {
-            return addons.values().stream()
-                    .anyMatch(addon -> addon.getName().equalsIgnoreCase(name));
+            return addons.containsKey(getComparableName(name));
         }
+    }
+
+    /**
+     * Converts the addon name to a comparable name for {@link #addons}.
+     *
+     * @param name The name to convert.
+     * @return The converted name.
+     */
+    private String getComparableName(String name) {
+        return name.toLowerCase();
     }
 
     /**
