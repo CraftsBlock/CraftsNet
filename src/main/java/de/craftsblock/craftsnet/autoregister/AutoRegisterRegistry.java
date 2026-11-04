@@ -120,7 +120,10 @@ public class AutoRegisterRegistry {
      * @param args  The args that should be applied to the {@link AutoRegisterHandler}.
      */
     public void handleAll(List<AutoRegisterInfo> infos, Object... args) {
-        if (infos.isEmpty()) return;
+        if (infos.isEmpty()) {
+            return;
+        }
+
         infos.forEach(info -> handle(info, args));
     }
 
@@ -133,14 +136,17 @@ public class AutoRegisterRegistry {
      */
     public boolean handle(AutoRegisterInfo info, Object... args) {
         // Cancel if no parent types are found
-        if (info.getParentTypes().isEmpty()) return false;
+        if (info.getParentTypes().isEmpty()) {
+            return false;
+        }
 
-        // Pre-check if the auto register info is from @AutoRegister
-        if (args.length >= 1)
-            if (info.getAnnotation() instanceof AutoRegister annotation && args[0] instanceof Startup startup)
-                // Cancel if it was called on the wrong startup.
-                if (startup != annotation.startup())
-                    return false;
+        //
+        if (args.length >= 1
+                && info.getAnnotation() instanceof AutoRegister annotation
+                && args[0] instanceof Startup startup
+                && startup != annotation.startup()) {
+            return false;
+        }
 
         List<? extends AutoRegisterHandler<?>> handlers = autoRegisterHandlers.entrySet().stream()
                 .filter(entry -> info.getParentTypes()
@@ -158,11 +164,13 @@ public class AutoRegisterRegistry {
             Object obj = info.getInstantiated(craftsNet);
             Method method = ReflectionUtils.findMethod(handler.getClass(), "handle",
                     ReflectionUtils.extractGeneric(handler.getClass(), AutoRegisterHandler.class, 0),
-                    AutoRegisterInfo.class, Object.class.arrayType());
+                    AutoRegisterInfo.class, Object.class.arrayType()
+            );
 
             boolean result = (boolean) ReflectionUtils.invokeMethod(handler, method, obj, info, args);
-            if (result)
+            if (result) {
                 craftsNet.getLogger().debug("Auto registered %s with %s", info.getClassName(), handler.getClass().getSimpleName());
+            }
         }
 
         return true;

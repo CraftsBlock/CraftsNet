@@ -95,6 +95,7 @@ public class AutoRegisterLoader implements Closeable {
                         executor
                 ))
                 .map(CompletableFuture::join)
+                .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toCollection(ArrayList::new));
     }
