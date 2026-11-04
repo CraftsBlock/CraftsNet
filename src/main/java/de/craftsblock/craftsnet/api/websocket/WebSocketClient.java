@@ -146,7 +146,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
-            sendMessage(Json.empty().set("error", "Could not process transformer: " + e.getMessage()).toString());
+            sendMessage("Could not process transformer: " + e.getMessage());
             disconnect();
         });
         this.matchers = new HashMap<>();
@@ -176,6 +176,11 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             this.exchange = new SocketExchange(new Context(), this.protocolVersion, this.server, this);
 
+            if (!"websocket".equalsIgnoreCase(headers.getFirst("Upgrade"))) {
+                disconnectHttp(HttpStatus.ClientError.UPGRADE_REQUIRED);
+                return;
+            }
+
             if (path == null) {
                 logger.warning("The path could not be loaded. (Maybe an unsupported request method?)");
                 disconnect();
@@ -183,19 +188,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
 
             if (path.length() >= MAX_URI_LENGTH) {
-                HttpStatus status = HttpStatus.ClientError.URI_TOO_LONG;
-                byte[] body = status.getReason().getBytes(StandardCharsets.UTF_8);
-                String headers = status.getStatusLine("HTTP/1.1") +
-                        "Content-Type: text/plain; charset=UTF-8\r\n" +
-                        "Content-Length: " + body.length + "\r\n" +
-                        "Connection: close\r\n" +
-                        "\r\n";
-
-                writer.write(headers.getBytes(StandardCharsets.UTF_8));
-                writer.write(body);
-                writer.flush();
-
-                disconnect();
+                disconnectHttp(HttpStatus.ClientError.URI_TOO_LONG);
                 return;
             }
 
@@ -560,15 +553,11 @@ public class WebSocketClient implements Runnable, RequireAble {
         Headers headers = new Headers();
         String line;
 
-        headerReader:
         while ((line = reader.readLine()) != null && !line.isEmpty()) {
-            if (path == null) {
-                for (HttpMethod method : HttpMethod.ALL.getMethods()) {
-                    if (line.startsWith(method.name())) {
-                        path = line.split(" ")[1].replaceAll("//+", "/");
-                        continue headerReader;
-                    }
-                }
+            if (path == null && line.startsWith(HttpMethod.GET.name())) {
+                String[] requestParts = line.split(" ");
+                path = requestParts[1].replaceAll("//+", "/");
+                continue;
             }
 
             int colonIndex = line.indexOf(':');
@@ -1265,6 +1254,43 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
+     * Disconnects the client with an http payload.
+     * Can only be used before invoking {@link #sendHandshake()}.
+     * The body is retrieved by invoking {@link HttpStatus#getReason()}.
+     *
+     * @param status The {@link HttpStatus} to send.
+     */
+    private void disconnectHttp(HttpStatus status) {
+        this.disconnectHttp(status, status.getReason());
+    }
+
+    /**
+     * Disconnects the client with an http payload.
+     * Can only be used before invoking {@link #sendHandshake()}.
+     *
+     * @param status The {@link HttpStatus} to send.
+     * @param body   The body to send.
+     */
+    private void disconnectHttp(HttpStatus status, String body) {
+        try {
+            byte[] bodyBytes = body.getBytes(StandardCharsets.UTF_8);
+            String headers = status.getStatusLine("HTTP/1.1") +
+                    "Content-Type: text/plain; charset=UTF-8\r\n" +
+                    "Content-Length: " + bodyBytes.length + "\r\n" +
+                    "Connection: close\r\n" +
+                    "\r\n";
+
+            writer.write(headers.getBytes(StandardCharsets.UTF_8));
+            writer.write(bodyBytes);
+            writer.flush();
+
+            disconnect();
+        } catch (IOException e) {
+            throw new RuntimeException("Could not disconnect http upgrade request", e);
+        }
+    }
+
+    /**
      * Disconnects the WebSocket client and performs necessary cleanup operations.
      * This method triggers the ClientDisconnectEvent before closing the socket and removing the client from the server.
      */
@@ -1287,10 +1313,12 @@ public class WebSocketClient implements Runnable, RequireAble {
                 socket.close();
             }
 
-            craftsNet.getListenerRegistry().call(new ClientDisconnectEvent(exchange, closeCode, closeReason, closeByServer));
+            if (exchange != null) {
+                craftsNet.getListenerRegistry().call(new ClientDisconnectEvent(exchange, closeCode, closeReason, closeByServer));
+            }
 
             if (!closeByServer && this.connected) {
-                logger.warning("%s disconnected abnormal: The underlying tcp connection has been killed!", ip);
+                logger.warning("%s disconnected abnormal: The underlying tcp connection has been killed", ip);
             } else if (!closeByServer && !ClosureCode.isGraceful(closeCode)) {
                 logger.warning(
                         "%s disconnected abnormal (Code: %s)%s",
@@ -1312,7 +1340,9 @@ public class WebSocketClient implements Runnable, RequireAble {
             session.clear();
             extensions.clear();
 
-            exchange.close();
+            if (this.exchange != null) {
+                exchange.close();
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         } finally {
