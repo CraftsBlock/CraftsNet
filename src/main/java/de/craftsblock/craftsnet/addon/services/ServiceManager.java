@@ -86,7 +86,15 @@ public class ServiceManager {
             return;
         }
 
-        providers.computeIfAbsent(generic, c -> new ConcurrentLinkedQueue<>()).remove(loader);
+        Queue<ServiceLoader<?>> provider = providers.get(generic);
+        if (provider == null) {
+            return;
+        }
+
+        provider.remove(loader);
+        if (provider.isEmpty()) {
+            providers.remove(generic);
+        }
     }
 
     /**
@@ -143,12 +151,14 @@ public class ServiceManager {
                 return false;
             }
 
-            AtomicBoolean success = new AtomicBoolean(load(spi.getSuperclass(), provider));
+            boolean success = load(spi.getSuperclass(), provider);
             for (Class<?> iface : spi.getInterfaces()) {
-                if (load(iface, provider)) success.set(true);
+                if (load(iface, provider)) {
+                    success = true;
+                }
             }
 
-            return success.get();
+            return success;
         }
 
         List<ServiceLoader<T>> loaders = providers.get(spi).stream()
