@@ -10,7 +10,9 @@ import java.io.Closeable;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Modifier;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
@@ -33,13 +35,12 @@ public class AutoRegisterLoader implements Closeable {
     /**
      * List of package names to skip when processing class files in the JAR.
      */
-    public static final List<String> SKIP_PACKAGES = new ArrayList<>(List.of(
-            "org/slf4j", "org/slf4j", "org/jetbrains", "org/intellij", "org/eclipse", "org/codehaus", "org/apache", "com/mysql",
+    public static final Set<String> SKIP_PACKAGES = Set.of(
+            "org/slf4j", "org/jetbrains", "org/intellij", "org/eclipse", "org/codehaus", "org/apache", "com/mysql",
             "com/google", "com/ctc"
-    ));
+    );
 
-    private final ExecutorService executor = Executors.newFixedThreadPool(
-            Runtime.getRuntime().availableProcessors(),
+    private final ExecutorService executor = Executors.newThreadPerTaskExecutor(
             Thread.ofVirtual()
                     .name("CraftsNet-AutoRegister", 0)
                     .factory()
@@ -81,29 +82,21 @@ public class AutoRegisterLoader implements Closeable {
      * @param type     The annotation type that classes should be annotated with.
      * @return A list of {@link AutoRegisterInfo} objects containing metadata about the classes.
      */
-    protected List<AutoRegisterInfo> loadFrom(@Nullable ClassLoader loader, @Nullable Collection<Addon> bounding, @NotNull JarFile file,
-                                              @NotNull Class<? extends Annotation> type) {
-        Set<AutoRegisterInfo> infos = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    public List<AutoRegisterInfo> loadFrom(@Nullable ClassLoader loader, @Nullable Collection<Addon> bounding, @NotNull JarFile file,
+                                           @NotNull Class<? extends Annotation> type) {
         ClassLoader classLoader = (loader != null ? loader : ClassLoader.getSystemClassLoader());
 
-        Collection<CompletableFuture<?>> futures = Collections.synchronizedCollection(new ArrayList<>());
-        StreamSupport.stream(file.stream().spliterator(), true)
+        return file.stream()
                 .filter(this::isValidClassEntry)
                 .map(JarEntry::getName)
                 .map(this::convertToJvmName)
-                .map(jvmName -> CompletableFuture.runAsync(
-                        () -> processEntry(jvmName, bounding, classLoader, type, infos),
+                .map(jvmName -> CompletableFuture.supplyAsync(
+                        () -> processEntry(jvmName, bounding, classLoader, type),
                         executor
-                )).forEach(futures::add);
-
-        try {
-            CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).get();
-        } catch (InterruptedException | ExecutionException e) {
-            throw new RuntimeException("Failed to await auto registration", e);
-        }
-
-        futures.clear();
-        return infos.stream().distinct().collect(Collectors.toCollection(ArrayList::new));
+                ))
+                .map(CompletableFuture::join)
+                .distinct()
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     /**
@@ -124,7 +117,9 @@ public class AutoRegisterLoader implements Closeable {
             }
         }
 
-        return name.endsWith(".class") && !entry.getName().endsWith("module-info.class");
+        return name.endsWith(".class")
+                && !entry.getName().endsWith("package-info.class")
+                && !entry.getName().endsWith("module-info.class");
     }
 
     /**
@@ -144,28 +139,34 @@ public class AutoRegisterLoader implements Closeable {
      * @param bounding    The list of addons that the auto register info is from. Nullable if the register info does not come from an addon.
      * @param classLoader The class loader to use.
      * @param type        The annotation type to look for.
-     * @param infos       A set to collect {@link AutoRegisterInfo} instances.
+     * @return Returns a {@link AutoRegisterInfo} for the entry or {@code null} if no info could be fetched.
      */
-    private void processEntry(@NotNull String jvmName, @Nullable Collection<Addon> bounding, @NotNull ClassLoader classLoader,
-                              @NotNull Class<? extends Annotation> type, @NotNull Set<AutoRegisterInfo> infos) {
+    private AutoRegisterInfo processEntry(@NotNull String jvmName, @Nullable Collection<Addon> bounding,
+                                          @NotNull ClassLoader classLoader, @NotNull Class<? extends Annotation> type) {
         try {
             Class<?> clazz = Class.forName(jvmName, false, classLoader);
-            if (clazz.isEnum() || !clazz.isAnnotationPresent(type)) {
-                return;
+            if (clazz.isEnum()) {
+                return null;
             }
 
             Annotation annotation = clazz.getDeclaredAnnotation(type);
+            if (annotation == null) {
+                return null;
+            }
+
             List<Class<?>> parentTypes = new ArrayList<>();
             parentTypes.addAll(loadSuperclasses(clazz));
             parentTypes.addAll(loadInterfaces(clazz));
             parentTypes.add(Object.class);
 
-            infos.add(AutoRegisterInfo.of(
+            return AutoRegisterInfo.of(
                     jvmName, clazz.isInterface() || Modifier.isAbstract(clazz.getModifiers()),
-                    bounding, annotation, classLoader, parentTypes.stream().distinct().toList())
+                    bounding, annotation, classLoader, parentTypes.stream().distinct().toList()
             );
         } catch (ClassNotFoundException | NoClassDefFoundError ignored) {
         }
+
+        return null;
     }
 
     /**
