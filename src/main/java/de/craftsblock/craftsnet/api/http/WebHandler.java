@@ -430,6 +430,18 @@ public class WebHandler implements HttpHandler {
             return;
         }
 
+        if (!response.hasHeader("X-Content-Type-Options")) {
+            response.setHeader("X-Content-Type-Options", "nosniff");
+        }
+
+        if (!response.hasHeader("X-Frame-Options")) {
+            response.setHeader("X-Frame-Options", "DENY");
+        }
+
+        if (!response.hasHeader("Content-Security-Policy")) {
+            response.setHeader("Content-Security-Policy", "default-src 'self'; frame-ancestors 'none'");
+        }
+
         ShareRequestEvent event = new ShareRequestEvent(url, matcher.group(1), exchange, registry.getShare(url));
         craftsNet.getListenerRegistry().call(event);
         if (event.isCancelled()) {
@@ -481,7 +493,7 @@ public class WebHandler implements HttpHandler {
                 return;
             }
 
-            response.setContentType(fileLoadedEvent.getContentType(), "text/plain");
+            response.setContentType(fileLoadedEvent.getContentType(), "application/octet-stream");
             response.print(real);
         } catch (IOException e) {
             throw new RuntimeException("Failed to resolve shared path: " + path, e);
