@@ -39,7 +39,10 @@ public class AutoRegisterLoader implements Closeable {
     ));
 
     private final ExecutorService executor = Executors.newFixedThreadPool(
-            Runtime.getRuntime().availableProcessors(), r -> new Thread(r, "CraftsNet autoregister performer")
+            Runtime.getRuntime().availableProcessors(),
+            Thread.ofVirtual()
+                    .name("CraftsNet-AutoRegister", 0)
+                    .factory()
     );
 
     /**
