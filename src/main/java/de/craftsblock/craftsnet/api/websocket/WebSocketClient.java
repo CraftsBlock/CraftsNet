@@ -288,6 +288,15 @@ public class WebSocketClient implements Runnable, RequireAble {
             return;
         }
 
+        if (!frame.isMasked()) {
+            closeInternally(
+                    ClosureCode.PROTOCOL_ERROR,
+                    "A client MUST mask all frames that it sends to the server",
+                    true
+            );
+            return;
+        }
+
         var opcode = frame.getOpcode();
         if (opcode.isUnknown()) {
             logger.warning("Received websocket frame with unknown opcode!");
@@ -629,7 +638,10 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             if (frame.get() == null) {
                 frame.set(read);
-                if (read.isFinalFrame()) break;
+                if (read.isFinalFrame()) {
+                    break;
+                }
+                
                 continue;
             }
 
