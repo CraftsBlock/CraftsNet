@@ -29,19 +29,6 @@ public interface GenericSocketMessageEventBase extends GenericSocketEventBase {
     Frame getFrame();
 
     /**
-     * Gets the incoming message as a {@link de.craftsblock.craftsnet.utils.ByteBuffer} object.
-     *
-     * @return The incoming message.
-     * @deprecated in favor of {@link #getByteBuffer()} and {@link #getBufferUtil()}
-     */
-    @SuppressWarnings("removal")
-    @Deprecated(since = "3.7.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    default de.craftsblock.craftsnet.utils.ByteBuffer getBuffer() {
-        return getFrame().getBuffer();
-    }
-
-    /**
      * Gets the message as a {@link BufferUtil} object.
      *
      * @return The message.

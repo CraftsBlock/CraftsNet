@@ -125,8 +125,7 @@ public class RouteRegistry {
                                 !byte[].class.isAssignableFrom(secondParameter) &&
                                 !Frame.class.isAssignableFrom(secondParameter) &&
                                 !BufferUtil.class.isAssignableFrom(secondParameter) &&
-                                !ByteBuffer.class.isAssignableFrom(secondParameter) &&
-                                !de.craftsblock.craftsnet.utils.ByteBuffer.class.isAssignableFrom(secondParameter))
+                                !ByteBuffer.class.isAssignableFrom(secondParameter))
                             throw new IllegalStateException(("The method %s has the annotation %s but does not require a Frame," +
                                     "ByteBuffer, String or byte[] as the second parameter!").formatted(
                                     method.getName(), annotation.getName()

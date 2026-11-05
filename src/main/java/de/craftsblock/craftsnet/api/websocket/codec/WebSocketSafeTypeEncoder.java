@@ -13,8 +13,7 @@ import java.nio.ByteBuffer;
  * <p>
  * Implementations of this interface convert application-level objects into various
  * WebSocket compatible formats such as byte arrays, strings, {@link ByteBuffer},
- * {@link BufferUtil}, {@link de.craftsblock.craftsnet.utils.ByteBuffer}, or
- * {@link Frame frame}.
+ * {@link BufferUtil}, or {@link Frame frame}.
  *
  * @param <R> The result type after encoding.
  * @param <T> The input type to be encoded.
@@ -23,15 +22,14 @@ import java.nio.ByteBuffer;
  * @see TypeToBufferUtilEncoder
  * @see TypeToByteArrayEncoder
  * @see TypeToByteBufferEncoder
- * @see TypeToCraftsByteBufferEncoder
  * @see TypeToJsonEncoder
  * @see TypeToStringEncoder
  * @since 3.5.0
  */
 public sealed interface WebSocketSafeTypeEncoder<R, T> extends Encoder<R, T>
         permits WebSocketSafeTypeEncoder.TypeToBufferUtilEncoder, WebSocketSafeTypeEncoder.TypeToByteArrayEncoder,
-        WebSocketSafeTypeEncoder.TypeToByteBufferEncoder, WebSocketSafeTypeEncoder.TypeToCraftsByteBufferEncoder,
-        WebSocketSafeTypeEncoder.TypeToJsonEncoder, WebSocketSafeTypeEncoder.TypeToStringEncoder {
+        WebSocketSafeTypeEncoder.TypeToByteBufferEncoder, WebSocketSafeTypeEncoder.TypeToJsonEncoder,
+        WebSocketSafeTypeEncoder.TypeToStringEncoder {
 
     /**
      * An encoder that transforms a specific input type into a {@code byte[]} representation
@@ -65,21 +63,6 @@ public sealed interface WebSocketSafeTypeEncoder<R, T> extends Encoder<R, T>
      * @since 3.7.0
      */
     non-sealed interface TypeToByteBufferEncoder<T> extends WebSocketSafeTypeEncoder<ByteBuffer, T> {
-    }
-
-    /**
-     * An encoder that transforms a specific input type into a {@link de.craftsblock.craftsnet.utils.ByteBuffer} representation.
-     *
-     * @param <T> The type of the object to encode.
-     * @author Philipp Maywald
-     * @author CraftsBlock
-     * @since 3.5.0
-     * @deprecated in favor of {@link TypeToBufferUtilEncoder}
-     */
-    @SuppressWarnings("removal")
-    @Deprecated(since = "3.7.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    non-sealed interface TypeToCraftsByteBufferEncoder<T> extends WebSocketSafeTypeEncoder<de.craftsblock.craftsnet.utils.ByteBuffer, T> {
     }
 
     /**

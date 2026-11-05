@@ -172,19 +172,6 @@ public class Frame implements RequireAble {
     }
 
     /**
-     * Gets the payload data of this frame a {@link de.craftsblock.craftsnet.utils.ByteBuffer}.
-     *
-     * @return The payload data as a {@link de.craftsblock.craftsnet.utils.ByteBuffer}
-     * @deprecated in favor of {@link #getBufferUtil()} and {@link #getByteBuffer()}.
-     */
-    @SuppressWarnings("removal")
-    @Deprecated(since = "3.7.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    public de.craftsblock.craftsnet.utils.ByteBuffer getBuffer() {
-        return new de.craftsblock.craftsnet.utils.ByteBuffer(data, true);
-    }
-
-    /**
      * Gets the raw payload data of this frame.
      *
      * @return The raw payload data.

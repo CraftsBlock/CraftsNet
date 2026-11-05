@@ -62,16 +62,4 @@ public class ReceivedPongMessageEvent extends Event implements GenericSocketMess
         return frame;
     }
 
-    /**
-     * Retrieves the message as a byte array that was sent with the ping message.
-     *
-     * @return The message as a byte array if present, otherwise null.
-     * @deprecated Use {@link #getData()} instead.
-     */
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    @Deprecated(forRemoval = true, since = "3.4.0-SNAPSHOT")
-    public byte @Nullable [] getMessage() {
-        return getData();
-    }
-
 }

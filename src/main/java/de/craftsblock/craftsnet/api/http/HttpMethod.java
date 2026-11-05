@@ -213,33 +213,4 @@ public enum HttpMethod {
         return String.join(delimiter, Arrays.stream(normalize(methods)).map(HttpMethod::name).toList());
     }
 
-    /**
-     * Convert an array of RequestMethod enum values to an array of strings representing the request methods.
-     * If the array contains the ALL value, it returns all methods as an array.
-     * It filters out UNKNOWN and ALL values from the array during conversion.
-     *
-     * @param methods The array of RequestMethod enum values.
-     * @return The array of strings representing the request methods.
-     * @deprecated in favor of {@link #normalize(HttpMethod...)}.
-     */
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    @Deprecated(since = "3.4.3-SNAPSHOT", forRemoval = true)
-    public static String[] convert(HttpMethod... methods) {
-        return Arrays.stream(normalize(methods)).map(HttpMethod::name).toArray(String[]::new);
-    }
-
-    /**
-     * Convert an array of RequestMethod enum values to a single string representation of request methods.
-     * The string contains the request methods separated by the "|" character.
-     *
-     * @param methods The array of RequestMethod enum values.
-     * @return The string representation of request methods separated by "|".
-     * @deprecated in favor of {@link #join(HttpMethod...)}.
-     */
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    @Deprecated(since = "3.4.3-SNAPSHOT", forRemoval = true)
-    public static String asString(HttpMethod... methods) {
-        return HttpMethod.join(methods);
-    }
-
 }

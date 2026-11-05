@@ -87,20 +87,6 @@ public interface Logger {
     void error(@NotNull Throwable throwable);
 
     /**
-     * Logs an error message along with the associated throwable and additional comment.
-     *
-     * @param throwable The {@code Throwable} object representing the error.
-     *                  Must not be {@code null}.
-     * @param comment   Additional comment or context for the error. It can be {@code null}.
-     * @deprecated Use {@link #error(String, Throwable)}
-     */
-    @Deprecated(since = "3.5.2", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    default void error(@NotNull Throwable throwable, @Nullable String comment) {
-        error(comment, throwable);
-    }
-
-    /**
      * Logs an error message along with the associated throwable.
      *
      * @param message   A descriptive message for the error. It can be {@code null}.

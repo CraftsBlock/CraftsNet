@@ -438,19 +438,6 @@ public class Response implements AutoCloseable {
      * Sets the HTTP status code for the response.
      *
      * @param code The HTTP status code to be set in the response.
-     * @throws IllegalStateException if the response headers have already been sent.
-     * @deprecated Use {{@link #setStatus(int)}} instead
-     */
-    @Deprecated(since = "3.7.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
-    public void setCode(int code) {
-        setStatus(code);
-    }
-
-    /**
-     * Sets the HTTP status code for the response.
-     *
-     * @param code The HTTP status code to be set in the response.
      * @throws IllegalArgumentException if the {@code code} is not a valid and known {@link HttpStatus} code.
      * @throws IllegalStateException    if the response headers have already been sent.
      * @since 3.7.0

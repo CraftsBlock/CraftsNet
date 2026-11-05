@@ -59,7 +59,7 @@ public class CraftsNet {
     /**
      * The current version of CraftsNet.
      */
-    public static final String version = "4.0.0-beta1";
+    public static final String version = "4.0.0-beta2";
 
     private static CraftsNet instance;
 
@@ -358,44 +358,6 @@ public class CraftsNet {
         logger.info("CraftsNet has been shutdown");
         started = false;
         instance = null;
-    }
-
-    /**
-     * Restarts the CraftsNet framework.
-     *
-     * @deprecated This method can create a mass amount of threads. There will be no replacement.
-     */
-    @Deprecated(since = "3.6.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    public void restart() {
-        restart(null);
-    }
-
-    /**
-     * Restarts the CraftsNet framework.
-     *
-     * @param executeBetween A {@link Runnable} which is before the new instance is started.
-     * @deprecated This method can create a mass amount of threads. There will be no replacement.
-     */
-    @Deprecated(since = "3.6.0", forRemoval = true)
-    public void restart(Runnable executeBetween) {
-        CraftsNetBuilder builder = this.builder;
-        this.builder = null;
-        Thread restart = new Thread(() -> {
-            stop();
-
-            if (executeBetween != null) {
-                executeBetween.run();
-            }
-
-            start(builder);
-        }, "CraftsNet Main");
-        restart.start();
-
-        try {
-            restart.join();
-        } catch (InterruptedException ignored) {
-        }
     }
 
     /**

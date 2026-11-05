@@ -512,7 +512,6 @@ public class WebSocketClient implements Runnable, RequireAble {
      *     <li>{@link Frame} -> Cloned {@link Frame} instance</li>
      *     <li>{@link ByteBuffer} -> Raw buffer from the frame</li>
      *     <li>{@link BufferUtil} -> The raw buffer wrapped inside a {@link BufferUtil}</li>
-     *     <li><s>{@link de.craftsblock.craftsnet.utils.ByteBuffer} -> Raw buffer from the frame</s> - Depreacted and marked for removal</li>
      * </ul>
      *
      * @param method The handler method whose parameters are being prepared.
@@ -538,7 +537,6 @@ public class WebSocketClient implements Runnable, RequireAble {
         args[1] = switch (method.getParameterTypes()[1]) {
             case Class<?> type when TypeUtils.isAssignable(String.class, type) -> new String(frame.getData(), StandardCharsets.UTF_8);
             case Class<?> type when TypeUtils.isAssignable(Frame.class, type) -> frame.clone();
-            case Class<?> type when TypeUtils.isAssignable(de.craftsblock.craftsnet.utils.ByteBuffer.class, type) -> frame.getBuffer();
             case Class<?> type when TypeUtils.isAssignable(BufferUtil.class, type) -> frame.getBufferUtil();
             case Class<?> type when TypeUtils.isAssignable(ByteBuffer.class, type) -> frame.getBufferUtil().getRaw();
             default -> args[1];
@@ -885,19 +883,6 @@ public class WebSocketClient implements Runnable, RequireAble {
     }
 
     /**
-     * Sends a message to the connected WebSocket client.
-     *
-     * @param data The message to be sent, as a bytebuffer.
-     * @deprecated in favor of {@link #sendMessage(BufferUtil)} and {@link #sendMessage(ByteBuffer)}
-     */
-    @SuppressWarnings("removal")
-    @Deprecated(since = "3.7.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    public void sendMessage(de.craftsblock.craftsnet.utils.ByteBuffer data) {
-        sendMessage(data.getSource(), Opcode.BINARY);
-    }
-
-    /**
      * Sends a {@link ByteBuffer} to the connected WebSocket client.
      *
      * @param data The {@link ByteBuffer} to be sent.
@@ -970,7 +955,6 @@ public class WebSocketClient implements Runnable, RequireAble {
      *     <li>{@link Json}</li>
      *     <li>{@link ByteBuffer}</li>
      *     <li>{@link BufferUtil}</li>
-     *     <li><s>{@link de.craftsblock.craftsnet.utils.ByteBuffer}</s> - Deprecated and marked for removal</li>
      * </ul>
      * If none of these types can be applied, the object is converted
      * into a string with {@link Object#toString()} and then sent.
@@ -986,7 +970,6 @@ public class WebSocketClient implements Runnable, RequireAble {
             case Json json -> this.sendMessage(json);
             case ByteBuffer buffer -> this.sendMessage(buffer);
             case BufferUtil bufferUtil -> this.sendMessage(bufferUtil);
-            case de.craftsblock.craftsnet.utils.ByteBuffer buffer -> this.sendMessage(buffer);
             default -> {
                 var encoders = server.getTypeEncoderRegistry();
                 Class<?> type = data.getClass();

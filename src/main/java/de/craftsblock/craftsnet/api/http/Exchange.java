@@ -89,18 +89,4 @@ public record Exchange(@NotNull Context context, @NotNull ProtocolVersion protoc
         return session;
     }
 
-    /**
-     * A wrapper method for {@link Request#getRawUrl()} retrieved from the {@link Exchange#request()}.
-     * <p>This method is used for backwards compatibility with older versions of CraftsNet.</p>
-     *
-     * @return The raw url.
-     * @since 3.3.2-SNAPSHOT
-     * @deprecated in favor of {@link Request#getRawUrl()}.
-     */
-    @ApiStatus.ScheduledForRemoval(inVersion = "4.0.0")
-    @Deprecated(since = "3.3.2-SNAPSHOT", forRemoval = true)
-    public String path() {
-        return request().getRawUrl();
-    }
-
 }
