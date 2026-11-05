@@ -14,6 +14,11 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.*;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -44,6 +49,9 @@ public class Request implements AutoCloseable, RequireAble {
     private final ConcurrentHashMap<String, Cookie> cookies = new ConcurrentHashMap<>();
     private final String ip;
     private final String connectingIp;
+    private final long maxBodySize;
+
+    private boolean bodyRetrieved = false;
 
     private Exchange exchange;
 
@@ -61,9 +69,11 @@ public class Request implements AutoCloseable, RequireAble {
      * @param ip           The ip address of the client sending the request.
      * @param domain       The domain used to make the http request.
      * @param httpMethod   The {@link HttpMethod} used to access the route.
+     * @param maxBodySize  The maximum size of the decompressed received body.
      */
     public Request(CraftsNet craftsNet, HttpExchange httpExchange,
-                   Headers headers, String url, String ip, String connectingIp, String domain, HttpMethod httpMethod) {
+                   Headers headers, String url, String ip, String connectingIp,
+                   String domain, HttpMethod httpMethod, long maxBodySize) {
         this.craftsNet = craftsNet;
         this.httpExchange = httpExchange;
         this.headers = headers;
@@ -72,6 +82,7 @@ public class Request implements AutoCloseable, RequireAble {
         this.connectingIp = connectingIp;
         this.domain = domain;
         this.httpMethod = httpMethod;
+        this.maxBodySize = maxBodySize;
 
         int queryIndex = url.indexOf("?");
         this.url = queryIndex >= 0 ? url.substring(0, queryIndex) : url;
@@ -86,45 +97,93 @@ public class Request implements AutoCloseable, RequireAble {
                     });
 
         parseCookies(headers).forEach(cookie -> this.cookies.put(cookie.getName(), cookie));
-        retrieveBody();
     }
 
     /**
      * Starts retrieving the request body.
+     *
+     * @throws RequestBodyTooLargeException if the request body exceeds the maximum body size.
      */
     private void retrieveBody() {
-        if (!httpMethod.isRequestBodyAble()) return;
+        if (!httpMethod.isRequestBodyAble() || bodyRetrieved) {
+            return;
+        }
 
         StreamEncoderRegistry streamEncoderRegistry = craftsNet.getStreamEncoderRegistry();
         String encoding = getHeaders().getFirst("Content-Encoding");
-        if (encoding != null) streamEncoder = streamEncoderRegistry.retrieveEncoder(encoding);
-        else streamEncoder = streamEncoderRegistry.retrieveEncoder(IdentityStreamEncoder.class);
-
-        if (streamEncoder == null)
-            throw new RuntimeException(new UnsupportedEncodingException("Unsupported request body encoding: " + encoding));
-
-        try (InputStream input = streamEncoder.encodeInputStream(new FilterInputStream(httpExchange.getRequestBody()) {
-            public void close() {
-            }
-        })) {
-            bodyLocation = craftsNet.getFileHelper().createTempFile("craftsnet_", ".body").toFile();
-            bodyLocation.deleteOnExit();
-            try (FileOutputStream destination = new FileOutputStream(bodyLocation, true)) {
-
-                byte[] buffer = new byte[2048];
-                int read;
-                while ((read = input.read(buffer)) != -1) destination.write(buffer, 0, read);
-                destination.flush();
-                Arrays.fill(buffer, (byte) 0);
-
-            } catch (FileNotFoundException e) {
-                throw new RuntimeException(e);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        if (encoding != null) {
+            streamEncoder = streamEncoderRegistry.retrieveEncoder(encoding);
+        } else {
+            streamEncoder = streamEncoderRegistry.retrieveEncoder(IdentityStreamEncoder.class);
         }
 
-        if (bodyLocation.length() <= 0) bodyLocation.delete();
+        if (streamEncoder == null) {
+            throw new RuntimeException(
+                    new UnsupportedEncodingException("Unsupported request body encoding: " + encoding)
+            );
+        }
+
+        Path tempFile = null;
+        try (InputStream input = streamEncoder.encodeInputStream(
+                new FilterInputStream(httpExchange.getRequestBody()) {
+                    @Override
+                    public void close() {
+                    }
+                }
+        )) {
+            tempFile = craftsNet.getFileHelper()
+                    .createTempFile("craftsnet_", ".body");
+
+            long totalRead = 0;
+            byte[] buffer = new byte[8192];
+
+            try (FileChannel destination = FileChannel.open(
+                    tempFile,
+                    StandardOpenOption.WRITE,
+                    StandardOpenOption.TRUNCATE_EXISTING
+            )) {
+                int read;
+
+                while ((read = input.read(buffer)) != -1) {
+                    if (read > maxBodySize - totalRead) {
+                        throw new RequestBodyTooLargeException(
+                                "Request body exceeds maximum allowed size of "
+                                        + maxBodySize + " bytes"
+                        );
+                    }
+
+                    totalRead += read;
+
+                    ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, read);
+                    while (byteBuffer.hasRemaining()) {
+                        destination.write(byteBuffer);
+                    }
+                }
+
+                destination.force(false);
+            } finally {
+                Arrays.fill(buffer, (byte) 0);
+            }
+
+            if (totalRead == 0) {
+                Files.deleteIfExists(tempFile);
+                tempFile = null;
+            }
+
+            bodyLocation = tempFile != null ? tempFile.toFile() : null;
+        } catch (IOException | RuntimeException e) {
+            if (tempFile != null) {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (IOException cleanupException) {
+                    e.addSuppressed(cleanupException);
+                }
+            }
+
+            throw new RuntimeException(e);
+        } finally {
+            bodyRetrieved = true;
+        }
     }
 
     /**
@@ -135,9 +194,15 @@ public class Request implements AutoCloseable, RequireAble {
      */
     @Override
     public void close() throws Exception {
-        if (bodyLocation != null && bodyLocation.exists()) bodyLocation.delete();
+        if (bodyLocation != null && bodyLocation.exists()) {
+            bodyLocation.delete();
+        }
+
         cookies.clear();
-        if (routes != null) routes.clear();
+        if (routes != null) {
+            routes.clear();
+        }
+
         Body.cleanUp(this);
         closed = true;
     }
@@ -327,7 +392,10 @@ public class Request implements AutoCloseable, RequireAble {
      * @return {@code true} if a request body exists, otherwise {@code false}.
      */
     public boolean hasBody() {
-        if (isClosed()) throw new IllegalStateException("Could not retrieve the body as this request is already closed!");
+        if (isClosed()) {
+            throw new IllegalStateException("Could not retrieve the body as this request is already closed!");
+        }
+
         return bodyLocation != null && bodyLocation.exists() && bodyLocation.length() >= 1;
     }
 
@@ -335,11 +403,14 @@ public class Request implements AutoCloseable, RequireAble {
      * Retrieves the HTTP request body, if it exists.
      *
      * @return The HTTP request body as a {@code Body} object, or {@code null} if no body exists or an error occurs.
+     * @throws RequestBodyTooLargeException if the request body exceeds the maximum body size.
      */
     public Body getBody() {
-        // Abort if request is closed or the body is not present.
-        if (!hasBody()) throw new IllegalStateException("Could not retrieve the body as it does not exists!");
-        // Returns a blank body with only the standard functionality.
+        retrieveBody();
+        if (!hasBody()) {
+            throw new IllegalStateException("Could not retrieve the body as it does not exists!");
+        }
+
         return new Body(this) {
         };
     }
@@ -348,10 +419,15 @@ public class Request implements AutoCloseable, RequireAble {
      * Retrieves a new instance of an input stream containing the request body.
      *
      * @return The input stream containing the body.
-     * @throws FileNotFoundException If the save file which contains the bytes of the body was not found.
+     * @throws FileNotFoundException        If the save file which contains the bytes of the body was not found.
+     * @throws RequestBodyTooLargeException if the request body exceeds the maximum body size.
      */
     public InputStream getRawBody() throws FileNotFoundException {
-        if (!hasBody()) throw new IllegalStateException("Could not retrieve the body as it does not exists!");
+        retrieveBody();
+        if (!hasBody()) {
+            throw new IllegalStateException("Could not retrieve the body as it does not exists!");
+        }
+
         return new FileInputStream(bodyLocation);
     }
 

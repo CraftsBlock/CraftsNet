@@ -1,8 +1,12 @@
 package de.craftsblock.craftsnet.builder.server;
 
 import de.craftsblock.craftsnet.builder.AbstractCraftsNetBuilder;
+import de.craftsblock.craftsnet.builder.ArgumentTransformer;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Range;
+
+import java.util.Objects;
 
 /**
  * Builder for configuring the default web server.
@@ -33,6 +37,10 @@ public class WebServerBuilder extends ServerBuilder<WebServerBuilder> {
         super(root, "web");
         this.acquire(this);
 
+        this.addKnownArgument("maxBodySize", ArgumentTransformer.longNumber(1, Long.MAX_VALUE));
+
+        this.maxBodySize(10 * 1024 * 1024);
+
         this.backlog(0);
         this.maxUriLength(4096);
         this.port(5000);
@@ -40,6 +48,33 @@ public class WebServerBuilder extends ServerBuilder<WebServerBuilder> {
         this.skipDefaultRoute(false);
         this.ssl(false);
         this.state(ServerState.DYNAMIC);
+    }
+
+    /**
+     * Sets the maximum permitted size of an HTTP request body.
+     * <p>
+     * The specified value must be greater than or equal to {@code 1}.
+     *
+     * @param maxBodySize the maximum request body size in bytes
+     * @return this builder for method chaining
+     * @throws IllegalArgumentException if the value is less than {@code 1}
+     */
+    public WebServerBuilder maxBodySize(@Range(from = 1, to = Long.MAX_VALUE) long maxBodySize) {
+        ArgumentTransformer.validatedNumber(maxBodySize, 1, Long.MAX_VALUE);
+        return this.set("maxBodySize", maxBodySize);
+    }
+
+    /**
+     * Returns the configured maximum permitted HTTP request body size.
+     *
+     * @return the maximum request body size in bytes
+     * @throws NullPointerException if no maximum body size is configured
+     */
+    public long maxBodySize() {
+        return Objects.requireNonNull(
+                this.getLong("maxBodySize"),
+                "No max body size found for the web server"
+        );
     }
 
 }

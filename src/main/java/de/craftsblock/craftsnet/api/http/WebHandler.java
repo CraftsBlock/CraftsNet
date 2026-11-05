@@ -65,8 +65,9 @@ public class WebHandler implements HttpHandler {
 
     private final Scheme scheme;
 
-    private final int MAX_URI_LENGTH;
-    private final ServerTrust SERVER_TRUST;
+    private final long maxBodySize;
+    private final ServerTrust serverTrust;
+    private final int maxUriLength;
 
     /**
      * Constructs a new instance of the WebHandler
@@ -84,8 +85,9 @@ public class WebHandler implements HttpHandler {
         this.scheme = Scheme.HTTP.getSsl(Scheme.HTTP.getServer(craftsNet).isSSL());
 
         WebServerBuilder builder = webServer.getBuilder();
-        this.MAX_URI_LENGTH = builder.maxUriLength();
-        this.SERVER_TRUST = builder.trust().build();
+        this.maxBodySize = builder.maxBodySize();
+        this.maxUriLength = builder.maxUriLength();
+        this.serverTrust = builder.trust().build();
     }
 
     /**
@@ -97,15 +99,8 @@ public class WebHandler implements HttpHandler {
     @Override
     public void handle(HttpExchange httpExchange) throws IOException {
         try (httpExchange) {
-            if (httpExchange.getRequestURI().toString().length() >= MAX_URI_LENGTH) {
-                HttpStatus status = HttpStatus.ClientError.URI_TOO_LONG;
-                byte[] body = status.getReason().getBytes(StandardCharsets.UTF_8);
-
-                httpExchange.sendResponseHeaders(status.getCode(), body.length);
-
-                OutputStream responseBodyStream = httpExchange.getResponseBody();
-                responseBodyStream.write(body);
-                responseBodyStream.flush();
+            if (httpExchange.getRequestURI().toString().length() >= maxUriLength) {
+                rawReply(httpExchange, HttpStatus.ClientError.URI_TOO_LONG);
                 return;
             }
 
@@ -115,6 +110,19 @@ public class WebHandler implements HttpHandler {
 
             String url = httpExchange.getRequestURI().toString().replaceAll("//+", "/");
             Headers headers = httpExchange.getRequestHeaders();
+
+            String contentLength = headers.getFirst("Content-Length");
+            if (contentLength != null) {
+                try {
+                    if (Long.parseLong(contentLength) > maxBodySize) {
+                        rawReply(httpExchange, HttpStatus.ClientError.PAYLOAD_TOO_LARGE);
+                        return;
+                    }
+                } catch (NumberFormatException e) {
+                    rawReply(httpExchange, HttpStatus.ClientError.BAD_REQUEST, "Wrong formatted header Content-Length");
+                    return;
+                }
+            }
 
             StreamEncoderRegistry streamEncoderRegistry = craftsNet.getStreamEncoderRegistry();
             AtomicReference<StreamEncoder> streamEncoder = new AtomicReference<>(streamEncoderRegistry.retrieveEncoder(IdentityStreamEncoder.class));
@@ -134,11 +142,11 @@ public class WebHandler implements HttpHandler {
             try {
                 String connectingIp = httpExchange.getRemoteAddress().getAddress().getHostAddress();
 
-                String ip = SERVER_TRUST.extractIp(headers, connectingIp);
-                String domain = SERVER_TRUST.extractHost(headers);
+                String ip = serverTrust.extractIp(headers, connectingIp);
+                String domain = serverTrust.extractHost(headers);
 
                 // Create a Request object to encapsulate the incoming request information.
-                try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, connectingIp, domain, httpMethod);
+                try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, connectingIp, domain, httpMethod, maxBodySize);
                      Session session = craftsNet.getSessionCache().getOrNew(SessionInfo.extractSession(request));
                      Exchange exchange = new Exchange(new Context(), protocolVersion, request, response, session)) {
                     if (domain == null) {
@@ -167,6 +175,39 @@ public class WebHandler implements HttpHandler {
         } catch (Throwable t) {
             logger.error(t);
         }
+    }
+
+    /**
+     * Sends a raw HTTP response using the reason phrase of the specified status
+     * as the response body.
+     *
+     * @param httpExchange the HTTP exchange to respond to
+     * @param status       the HTTP status to send
+     * @throws IOException if an I/O error occurs while sending the response
+     */
+    private void rawReply(HttpExchange httpExchange, HttpStatus status) throws IOException {
+        this.rawReply(httpExchange, status, status.getReason());
+    }
+
+    /**
+     * Sends a raw HTTP response with the specified status and message.
+     * <p>
+     * The response body is encoded using UTF-8. The response headers are sent
+     * with the status code and the length of the response body.
+     *
+     * @param httpExchange the HTTP exchange to respond to
+     * @param status       the HTTP status to send
+     * @param message      the response message
+     * @throws IOException if an I/O error occurs while sending the response
+     */
+    private void rawReply(HttpExchange httpExchange, HttpStatus status, String message) throws IOException {
+        byte[] body = message.getBytes(StandardCharsets.UTF_8);
+
+        httpExchange.sendResponseHeaders(status.getCode(), body.length);
+
+        OutputStream responseBodyStream = httpExchange.getResponseBody();
+        responseBodyStream.write(body);
+        responseBodyStream.flush();
     }
 
     /**
