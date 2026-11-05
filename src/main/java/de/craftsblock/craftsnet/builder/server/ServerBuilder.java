@@ -139,7 +139,7 @@ public class ServerBuilder<T extends ServerBuilder<T>> extends NamespacedBuilder
      */
     public @NotNull T maxHeaderSize(@Range(from = 1, to = Integer.MAX_VALUE) int maxHeaderSize) {
         ArgumentTransformer.validatedNumber(maxHeaderSize, 1, Integer.MAX_VALUE);
-        return this.set("maxHeaders", maxHeaderSize);
+        return this.set("maxHeaderSize", maxHeaderSize);
     }
 
     /**
