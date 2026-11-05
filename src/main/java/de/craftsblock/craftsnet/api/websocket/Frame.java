@@ -403,6 +403,7 @@ public class Frame implements RequireAble {
                 buffer.with(raw -> raw.put(chunk, 0, toRead));
             }
 
+            // Unset the mask bit as the frame was unmasked
             frame[1] &= 0x7F;
 
             return new Frame(frame, buffer.toByteArray());
