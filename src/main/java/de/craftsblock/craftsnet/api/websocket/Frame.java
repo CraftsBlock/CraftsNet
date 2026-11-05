@@ -482,7 +482,23 @@ public class Frame implements RequireAble {
         while (read < length) {
             int result = stream.read(buffer, offset + read, length - read);
             if (result < 0) {
-                throw new IOException("EOF: Failed to read the expected amount of bytes (Expected: " + length + ", Actual: " + read + ")");
+                throw new IOException(
+                        "EOF: Can not read the expected amount " + length + " of bytes"
+                );
+            }
+
+            if (result == 0) {
+                int singleByte = stream.read();
+
+                if (singleByte < 0) {
+                    throw new IOException(
+                            "EOF: Can not read the expected amount " + length + " of bytes"
+                    );
+                }
+
+                buffer[offset + read] = (byte) singleByte;
+                read++;
+                continue;
             }
 
             read += result;
