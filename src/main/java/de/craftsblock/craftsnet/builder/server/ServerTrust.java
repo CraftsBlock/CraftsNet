@@ -4,6 +4,10 @@ import com.sun.net.httpserver.Headers;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.UnmodifiableView;
 
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -98,11 +102,12 @@ public record ServerTrust(
      * the {@code Host} header is used when available. If neither source provides
      * a host, this method returns {@code null}.
      *
-     * @param headers the HTTP request headers
+     * @param connectingIp the ip that was used to connect to the server
+     * @param headers      the HTTP request headers
      * @return the extracted host, or {@code null} if no host can be determined
      */
-    public String extractHost(Headers headers) {
-        return this.extractHost(headers, null);
+    public String extractHost(String connectingIp, Headers headers) {
+        return this.extractHost(connectingIp, headers, null);
     }
 
     /**
@@ -113,15 +118,16 @@ public record ServerTrust(
      * used when available. The fallback is returned if the selected source does not
      * yield a host.
      *
-     * @param headers  the HTTP request headers
-     * @param fallback the value to return if no host can be extracted
+     * @param connectingIp the ip that was used to connect to the server
+     * @param headers      the HTTP request headers
+     * @param fallback     the value to return if no host can be extracted
      * @return the extracted host, or the fallback value
      */
-    public String extractHost(Headers headers, String fallback) {
+    public String extractHost(String connectingIp, Headers headers, String fallback) {
         String headerName = this.pickFirstForwardedHostHeader(headers.keySet());
 
         String host;
-        if (headerName != null) {
+        if (headerName != null && this.isTrustedProxy(connectingIp)) {
             host = this.extractHost(headers.getFirst(headerName));
         } else if (headers.containsKey("Host")) {
             host = headers.getFirst("Host").split(":")[0];
@@ -174,11 +180,12 @@ public record ServerTrust(
      * If no configured forwarded-IP header is present, or its value does not yield
      * an IP address, this method returns {@code null}.
      *
-     * @param headers the HTTP request headers
+     * @param connectingIp the ip that was used to connect to the server
+     * @param headers      the HTTP request headers
      * @return the extracted IP address, or {@code null} if none can be determined
      */
-    public String extractIp(Headers headers) {
-        return this.extractIp(headers, null);
+    public String extractIp(String connectingIp, Headers headers) {
+        return this.extractIp(connectingIp, headers, null);
     }
 
     /**
@@ -187,11 +194,16 @@ public record ServerTrust(
      * <p>
      * Only the first configured forwarded-IP header present in the request is used.
      *
-     * @param headers  the HTTP request headers
-     * @param fallback the value to return if no IP address can be extracted
+     * @param connectingIp the ip that was used to connect to the server
+     * @param headers      the HTTP request headers
+     * @param fallback     the value to return if no IP address can be extracted
      * @return the extracted IP address, or the fallback value
      */
-    public String extractIp(Headers headers, String fallback) {
+    public String extractIp(String connectingIp, Headers headers, String fallback) {
+        if (!this.isTrustedProxy(connectingIp)) {
+            return fallback;
+        }
+
         String headerName = this.pickFirstForwardedIpHeader(headers.keySet());
         if (headerName == null) {
             return fallback;
@@ -246,6 +258,78 @@ public record ServerTrust(
      */
     public boolean isTrustedProxy(String ip) {
         return ip != null && trustedProxies.contains(ip);
+    }
+
+    /**
+     * Validates whether the given host conforms to a valid domain name,
+     * IPv4 address, or IPv6 address.
+     *
+     * <p>Domain names must not exceed 253 characters in total, and each label
+     * must contain between 1 and 63 characters. Labels may consist of
+     * alphanumeric characters and hyphens, but must not start or end with a
+     * hyphen.
+     *
+     * <p>IPv4 and IPv6 addresses are also supported. IPv6 addresses may be
+     * enclosed in square brackets.
+     *
+     * <p>Ports must be removed before validation.
+     *
+     * @param domain the domain name or IP address to validate
+     * @return {@code true} if the host is valid, {@code false} otherwise
+     */
+    public static boolean isValidDomain(String domain) {
+        if (domain == null || domain.isBlank()) {
+            return false;
+        }
+
+        if (isValidIp(domain)) {
+            return true;
+        }
+
+        return domain.matches("^(?=.{1,253}$)[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$");
+    }
+
+    /**
+     * Validates whether the given string represents a valid IPv4 or IPv6 address.
+     *
+     * <p>IPv4 addresses are validated by checking that they consist of exactly
+     * four decimal octets, each ranging from 0 to 255.
+     *
+     * <p>IPv6 addresses are validated using {@link InetAddress}. IPv6 addresses
+     * enclosed in square brackets are also supported.
+     *
+     * <p>Hostnames and domain names are not accepted.
+     *
+     * @param ip the IP address to validate
+     * @return {@code true} if the given string is a valid IPv4 or IPv6 address,
+     *         {@code false} otherwise
+     */
+    public static boolean isValidIp(String ip) {
+        // IPv4
+        if (ip.matches("^(?:\\d{1,3}\\.){3}\\d{1,3}$")) {
+            try {
+                return Arrays.stream(ip.split("\\."))
+                        .allMatch(part -> Integer.parseInt(part) <= 255);
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+
+        // IPv6
+        String ipv6 = ip;
+        if (ipv6.startsWith("[") && ipv6.endsWith("]")) {
+            ipv6 = ipv6.substring(1, ipv6.length() - 1);
+        }
+
+        if (ipv6.contains(":")) {
+            try {
+                return InetAddress.getByName(ipv6) instanceof Inet6Address;
+            } catch (UnknownHostException e) {
+                // Invalid ip address
+            }
+        }
+
+        return false;
     }
 
 }

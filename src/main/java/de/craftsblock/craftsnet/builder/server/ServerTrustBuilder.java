@@ -3,8 +3,13 @@ package de.craftsblock.craftsnet.builder.server;
 import de.craftsblock.craftsnet.builder.ArgumentTransformer;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import de.craftsblock.craftsnet.builder.NamespacedBuilder;
+import de.craftsblock.craftsnet.utils.Utils;
 import org.jetbrains.annotations.NotNull;
 
+import java.net.Inet6Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -44,7 +49,15 @@ public class ServerTrustBuilder extends NamespacedBuilder<ServerTrustBuilder> {
 
         this.addKnownArgument("forwardedHostHeaders", ArgumentTransformer.list());
         this.addKnownArgument("forwardedIpHeaders", ArgumentTransformer.list());
-        this.addKnownArgument("trustedProxies", ArgumentTransformer.list());
+        this.addKnownArgument("trustedProxies", ArgumentTransformer.list(entry -> {
+            if (ServerTrust.isValidIp(entry) && !entry.startsWith("[")) {
+                return true;
+            }
+
+            throw new IllegalArgumentException(
+                    "The argument trustedProxies only accepts IP addresses, given " + entry
+            );
+        }));
 
         this.forwardedHostHeaders(Collections.emptyList());
         this.forwardedIpHeaders(Collections.emptyList());

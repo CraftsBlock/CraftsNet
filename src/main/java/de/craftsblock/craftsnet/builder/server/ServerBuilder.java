@@ -52,7 +52,6 @@ public class ServerBuilder<T extends ServerBuilder<T>> extends NamespacedBuilder
         this.addKnownArgument("skipDefaultRoute", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("ssl", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("state", ArgumentTransformer.enumType(ServerState.class));
-        this.addKnownArgument("trustedProxyHeader", ArgumentTransformer.list());
     }
 
     /**

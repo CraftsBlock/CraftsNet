@@ -180,7 +180,11 @@ public class WebSocketClient implements Runnable, RequireAble {
             writer = socket.getOutputStream();
             headers = readHeaders();
 
-            this.ip = serverTrust.extractIp(this.headers, this.connectingIp);
+            this.ip = serverTrust.extractIp(this.connectingIp, this.headers, this.connectingIp);
+            if (!this.connectingIp.equals(this.ip) && !ServerTrust.isValidIp(this.ip)) {
+                disconnectHttp(HttpStatus.ClientError.BAD_REQUEST, "Invalid proxied ip header");
+                return;
+            }
 
             int secWebsocketVersion = headers.containsKey("Sec-WebSocket-Version") ? Integer.parseInt(headers.getFirst("Sec-WebSocket-Version")) : 0;
             this.protocolVersion = new ProtocolVersion(this.scheme, secWebsocketVersion, 0);
@@ -203,9 +207,9 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
-            this.domain = serverTrust.extractHost(this.headers);
-            if (this.domain == null) {
-                disconnectHttp(HttpStatus.ClientError.BAD_REQUEST, "Missing header Host");
+            this.domain = serverTrust.extractHost(this.connectingIp, this.headers);
+            if (!ServerTrust.isValidDomain(domain)) {
+                disconnectHttp(HttpStatus.ClientError.BAD_REQUEST, "Invalid Host header");
                 return;
             }
 

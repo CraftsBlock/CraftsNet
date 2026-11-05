@@ -142,20 +142,22 @@ public class WebHandler implements HttpHandler {
             try {
                 String connectingIp = httpExchange.getRemoteAddress().getAddress().getHostAddress();
 
-                String ip = serverTrust.extractIp(headers, connectingIp);
-                String domain = serverTrust.extractHost(headers);
+                String ip = serverTrust.extractIp(connectingIp, headers, connectingIp);
+                if (!connectingIp.equals(ip) && !ServerTrust.isValidIp(ip)) {
+                    rawReply(httpExchange, HttpStatus.ClientError.BAD_REQUEST, "Invalid proxied ip header");
+                    return;
+                }
+
+                String domain = serverTrust.extractHost(connectingIp, headers);
+                if (!ServerTrust.isValidDomain(domain)) {
+                    rawReply(httpExchange, HttpStatus.ClientError.BAD_REQUEST, "Invalid Host header");
+                    return;
+                }
 
                 // Create a Request object to encapsulate the incoming request information.
                 try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, connectingIp, domain, httpMethod, maxBodySize);
                      Session session = craftsNet.getSessionCache().getOrNew(SessionInfo.extractSession(request));
                      Exchange exchange = new Exchange(new Context(), protocolVersion, request, response, session)) {
-                    if (domain == null) {
-                        response.setStatus(HttpStatus.ClientError.BAD_REQUEST);
-                        response.setHeader("Content-Type", "text/plain");
-                        response.print("Missing header Host");
-                        return;
-                    }
-
                     exchange.session().setExchange(exchange);
 
                     PreRequestEvent event = new PreRequestEvent(exchange);
