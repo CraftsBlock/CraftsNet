@@ -609,8 +609,13 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return headers;
             }
 
-            int colonIndex = currentLine.indexOf(':');
+            if (path == null && currentLine.startsWith(HttpMethod.GET.name())) {
+                String[] requestParts = currentLine.split(" ");
+                path = requestParts[1].replaceAll("//+", "/");
+                continue;
+            }
 
+            int colonIndex = currentLine.indexOf(':');
             if (colonIndex <= 0) {
                 throw new IOException("Invalid HTTP header");
             }
