@@ -41,11 +41,13 @@ public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder
         this.addKnownArgument("fragment", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("fragmentSize", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
         this.addKnownArgument("maxFrameSize", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
+        this.addKnownArgument("maxMessageSize", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
         this.addKnownArgument("readTimeout", ArgumentTransformer.integerNumber(0, Integer.MAX_VALUE));
 
         this.fragment(false);
         this.fragmentSize(1024);
         this.maxFrameSize(1024 * 1024);
+        this.maxMessageSize(4 * 1024 * 1024);
         this.readTimeout(60_000);
 
         this.backlog(0);
@@ -131,6 +133,33 @@ public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder
         return Objects.requireNonNull(
                 this.getInt("maxFrameSize"),
                 "No max frame size found for the web socket server"
+        );
+    }
+
+    /**
+     * Sets the maximum permitted size of a WebSocket message.
+     * <p>
+     * The specified value must be greater than or equal to {@code 1}.
+     *
+     * @param maxMessageSize the maximum message size in bytes
+     * @return this builder for method chaining
+     * @throws IllegalArgumentException if the value is less than {@code 1}
+     */
+    public WebSocketServerBuilder maxMessageSize(@Range(from = 1, to = Integer.MAX_VALUE) int maxMessageSize) {
+        ArgumentTransformer.validatedNumber(maxMessageSize, 1, Integer.MAX_VALUE);
+        return this.set("maxMessageSize", maxMessageSize);
+    }
+
+    /**
+     * Returns the configured maximum permitted WebSocket message size.
+     *
+     * @return the maximum message size in bytes
+     * @throws NullPointerException if no maximum message size is configured
+     */
+    public int maxMessageSize() {
+        return Objects.requireNonNull(
+                this.getInt("maxMessageSize"),
+                "No max message size found for the web socket server"
         );
     }
 

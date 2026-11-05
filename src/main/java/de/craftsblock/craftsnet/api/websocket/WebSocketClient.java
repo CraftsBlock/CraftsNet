@@ -94,9 +94,10 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final TransformerPerformer transformerPerformer;
     private final Map<String, Matcher> matchers;
 
-    private final int MAX_FRAME_SIZE;
-    private final int MAX_URI_LENGTH;
-    private final ServerTrust SERVER_TRUST;
+    private final int maxFrameSize;
+    private final int maxMessageSize;
+    private final int maxUriLength;
+    private final ServerTrust serverTrust;
 
     private SocketExchange exchange;
     private ProtocolVersion protocolVersion;
@@ -139,9 +140,10 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.extensions = new ArrayList<>();
 
         WebSocketServerBuilder builder = server.getBuilder();
-        this.MAX_FRAME_SIZE = builder.maxFrameSize();
-        this.MAX_URI_LENGTH = builder.maxUriLength();
-        this.SERVER_TRUST = builder.trust().build();
+        this.maxFrameSize = builder.maxFrameSize();
+        this.maxMessageSize = builder.maxMessageSize();
+        this.maxUriLength = builder.maxUriLength();
+        this.serverTrust = builder.trust().build();
         this.fragment = builder.fragment();
         this.fragmentSize = builder.fragmentSize();
 
@@ -178,7 +180,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             writer = socket.getOutputStream();
             headers = readHeaders();
 
-            this.ip = SERVER_TRUST.extractIp(this.headers, this.connectingIp);
+            this.ip = serverTrust.extractIp(this.headers, this.connectingIp);
 
             int secWebsocketVersion = headers.containsKey("Sec-WebSocket-Version") ? Integer.parseInt(headers.getFirst("Sec-WebSocket-Version")) : 0;
             this.protocolVersion = new ProtocolVersion(this.scheme, secWebsocketVersion, 0);
@@ -196,12 +198,12 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
-            if (path.length() >= MAX_URI_LENGTH) {
+            if (path.length() >= maxUriLength) {
                 disconnectHttp(HttpStatus.ClientError.URI_TOO_LONG);
                 return;
             }
 
-            this.domain = SERVER_TRUST.extractHost(this.headers);
+            this.domain = serverTrust.extractHost(this.headers);
             if (this.domain == null) {
                 disconnectHttp(HttpStatus.ClientError.BAD_REQUEST, "Missing header Host");
                 return;
@@ -633,7 +635,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         AtomicReference<Frame> frame = new AtomicReference<>();
 
         while (isConnected() && frame.get() == null || !frame.get().isFinalFrame()) {
-            Frame read = Frame.read(inputStream, MAX_FRAME_SIZE);
+            Frame read = Frame.read(inputStream, maxFrameSize);
 
             if (read.getOpcode().isUnknown()) {
                 closeInternally(ClosureCode.PROTOCOL_ERROR, "Received unknown opcode", true);
@@ -649,7 +651,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 continue;
             }
 
-            frame.get().appendFrame(read);
+            frame.get().appendFrame(read, maxMessageSize);
         }
 
         if (frame.get() == null) {

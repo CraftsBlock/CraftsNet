@@ -242,12 +242,13 @@ public class Frame implements RequireAble {
      * current frame's data by merging it with the data from the specified frame and appropriately sets the
      * final (FIN) flag if either the current frame or the appended frame has the FIN flag set.
      *
-     * @param frame the frame whose data is to be appended to the current frame. The frame must have the
-     *              continuation opcode and the current frame must not be marked as final.
+     * @param frame          the frame whose data is to be appended to the current frame. The frame must have the
+     *                       continuation opcode and the current frame must not be marked as final.
+     * @param maxMessageSize the maximum length of the total message in bytes.
      * @throws IllegalStateException if the frame's opcode is not continuation or if the current frame
      *                               is already marked as final.
      */
-    protected synchronized void appendFrame(Frame frame) throws FrameReadException {
+    protected synchronized void appendFrame(Frame frame, int maxMessageSize) throws FrameReadException {
         if (frame == null) {
             throw new IllegalArgumentException("Frame must not be null!");
         }
@@ -275,11 +276,12 @@ public class Frame implements RequireAble {
 
         byte[] currentData = this.getData();
         byte[] frameData = frame.getData();
+        int mergedLength = currentData.length + frameData.length;
+        if (mergedLength > maxMessageSize) {
+            throw new MaxFrameSizeExceededException();
+        }
 
-        byte[] mergedData = Arrays.copyOf(
-                currentData,
-                currentData.length + frameData.length
-        );
+        byte[] mergedData = Arrays.copyOf(currentData, mergedLength);
 
         System.arraycopy(
                 frameData,
