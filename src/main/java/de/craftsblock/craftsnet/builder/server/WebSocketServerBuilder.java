@@ -3,6 +3,7 @@ package de.craftsblock.craftsnet.builder.server;
 import de.craftsblock.craftsnet.builder.ArgumentTransformer;
 import de.craftsblock.craftsnet.builder.CraftsNetBuilder;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Range;
 
 import java.util.Objects;
 
@@ -87,7 +88,7 @@ public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder
      * @return this builder instance for method chaining
      * @throws IllegalArgumentException if the fragment size is less than {@code 1}
      */
-    public WebSocketServerBuilder fragmentSize(int fragmentSize) {
+    public WebSocketServerBuilder fragmentSize(@Range(from = 1, to = Integer.MAX_VALUE) int fragmentSize) {
         ArgumentTransformer.validatedNumber(fragmentSize, 1, Integer.MAX_VALUE);
         this.set("fragmentSize", fragmentSize);
         return this;
@@ -115,7 +116,7 @@ public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder
      * @return this builder for method chaining
      * @throws IllegalArgumentException if the value is less than {@code 1}
      */
-    public WebSocketServerBuilder maxFrameSize(int maxFrameSize) {
+    public WebSocketServerBuilder maxFrameSize(@Range(from = 1, to = Integer.MAX_VALUE) int maxFrameSize) {
         ArgumentTransformer.validatedNumber(maxFrameSize, 1, Integer.MAX_VALUE);
         return this.set("maxFrameSize", maxFrameSize);
     }
@@ -142,7 +143,7 @@ public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder
      * @return this builder for method chaining
      * @throws IllegalArgumentException if the value is negative
      */
-    public WebSocketServerBuilder readTimeout(int readTimeout) {
+    public WebSocketServerBuilder readTimeout(@Range(from = 0, to = Integer.MAX_VALUE) int readTimeout) {
         ArgumentTransformer.validatedNumber(readTimeout, 0, Integer.MAX_VALUE);
         return this.set("readTimeout", readTimeout);
     }
