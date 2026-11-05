@@ -151,7 +151,7 @@ public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder
      */
     public WebSocketServerBuilder maxHeaderLineLength(@Range(from = 1, to = Integer.MAX_VALUE) int maxHeaderLineLength) {
         ArgumentTransformer.validatedNumber(maxHeaderLineLength, 1, Integer.MAX_VALUE);
-        return this.set("maxFrameSize", maxHeaderLineLength);
+        return this.set("maxHeaderLineLength", maxHeaderLineLength);
     }
 
     /**
