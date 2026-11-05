@@ -78,6 +78,10 @@ public class WebServer extends Server<WebServerBuilder> {
             return;
         }
 
+        WebServerBuilder builder = this.getBuilder();
+        System.setProperty("sun.net.httpserver.maxReqHeaders", String.valueOf(builder.maxHeaders()));
+        System.setProperty("sun.net.httpserver.maxReqHeaderSize", String.valueOf(builder.maxHeaderSize()));
+
         getLogger().info("Starting web server on port %s", port);
         try {
             // Create the HttpServer or HttpsServer based on the SSL flag.

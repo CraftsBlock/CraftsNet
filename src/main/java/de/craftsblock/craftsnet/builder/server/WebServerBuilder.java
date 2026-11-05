@@ -42,6 +42,8 @@ public class WebServerBuilder extends ServerBuilder<WebServerBuilder> {
         this.maxBodySize(10 * 1024 * 1024);
 
         this.backlog(0);
+        this.maxHeaders(100);
+        this.maxHeaderSize(32768);
         this.maxUriLength(4096);
         this.port(5000);
         this.responseEncoding(false);

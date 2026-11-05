@@ -41,16 +41,20 @@ public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder
         this.addKnownArgument("fragment", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("fragmentSize", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
         this.addKnownArgument("maxFrameSize", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
+        this.addKnownArgument("maxHeaderLineLength", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
         this.addKnownArgument("maxMessageSize", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
         this.addKnownArgument("readTimeout", ArgumentTransformer.integerNumber(0, Integer.MAX_VALUE));
 
         this.fragment(false);
         this.fragmentSize(1024);
         this.maxFrameSize(1024 * 1024);
+        this.maxHeaderLineLength(8192);
         this.maxMessageSize(4 * 1024 * 1024);
         this.readTimeout(60_000);
 
         this.backlog(0);
+        this.maxHeaders(100);
+        this.maxHeaderSize(32768);
         this.maxUriLength(4096);
         this.port(5001);
         this.responseEncoding(false);
@@ -133,6 +137,33 @@ public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder
         return Objects.requireNonNull(
                 this.getInt("maxFrameSize"),
                 "No max frame size found for the web socket server"
+        );
+    }
+
+    /**
+     * Sets the maximum permitted length of a WebSocket header line.
+     * <p>
+     * The specified value must be greater than or equal to {@code 1}.
+     *
+     * @param maxHeaderLineLength the maximum header line length in bytes
+     * @return this builder for method chaining
+     * @throws IllegalArgumentException if the value is less than {@code 1}
+     */
+    public WebSocketServerBuilder maxHeaderLineLength(@Range(from = 1, to = Integer.MAX_VALUE) int maxHeaderLineLength) {
+        ArgumentTransformer.validatedNumber(maxHeaderLineLength, 1, Integer.MAX_VALUE);
+        return this.set("maxFrameSize", maxHeaderLineLength);
+    }
+
+    /**
+     * Returns the configured maximum permitted WebSocket header line length.
+     *
+     * @return the maximum header line length in bytes
+     * @throws NullPointerException if no maximum header line length is configured
+     */
+    public int maxHeaderLineLength() {
+        return Objects.requireNonNull(
+                this.getInt("maxHeaderLineLength"),
+                "No max header line length found for the web socket server"
         );
     }
 

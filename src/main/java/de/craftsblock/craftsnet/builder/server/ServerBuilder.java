@@ -46,6 +46,8 @@ public class ServerBuilder<T extends ServerBuilder<T>> extends NamespacedBuilder
         this.trustBuilder = new ServerTrustBuilder(root);
 
         this.addKnownArgument("backlog", ArgumentTransformer.integerNumber(0, Integer.MAX_VALUE));
+        this.addKnownArgument("maxHeaders", ArgumentTransformer.integerNumber(0, Integer.MAX_VALUE));
+        this.addKnownArgument("maxHeaderSize", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
         this.addKnownArgument("maxUriLength", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
         this.addKnownArgument("port", ArgumentTransformer.integerNumber(0, 65365));
         this.addKnownArgument("responseEncoding", ArgumentTransformer.booleanFlag());
@@ -100,6 +102,56 @@ public class ServerBuilder<T extends ServerBuilder<T>> extends NamespacedBuilder
         return Objects.requireNonNull(
                 this.getInt("backlog"),
                 "No backlog found for the " + getNamespace()
+        );
+    }
+
+    /**
+     * Sets the maximum permitted header amount.
+     *
+     * @param maxHeaders the maximum header amount, greater than or equal to {@code 1}
+     * @return this builder instance for method chaining
+     * @throws IllegalArgumentException if the value is outside the supported range
+     */
+    public @NotNull T maxHeaders(@Range(from = 1, to = Integer.MAX_VALUE) int maxHeaders) {
+        ArgumentTransformer.validatedNumber(maxHeaders, 1, Integer.MAX_VALUE);
+        return this.set("maxHeaders", maxHeaders);
+    }
+
+    /**
+     * Retrieves the configured maximum header amount.
+     *
+     * @return the configured maximum header amount
+     * @throws NullPointerException if no maximum header amount is configured
+     */
+    public int maxHeaders() {
+        return Objects.requireNonNull(
+                this.getInt("maxHeaders"),
+                "No max headers found for the " + getNamespace()
+        );
+    }
+
+    /**
+     * Sets the maximum permitted header size.
+     *
+     * @param maxHeaderSize the maximum header size, greater than or equal to {@code 1}
+     * @return this builder instance for method chaining
+     * @throws IllegalArgumentException if the value is outside the supported range
+     */
+    public @NotNull T maxHeaderSize(@Range(from = 1, to = Integer.MAX_VALUE) int maxHeaderSize) {
+        ArgumentTransformer.validatedNumber(maxHeaderSize, 1, Integer.MAX_VALUE);
+        return this.set("maxHeaders", maxHeaderSize);
+    }
+
+    /**
+     * Retrieves the configured maximum header size.
+     *
+     * @return the configured maximum header size
+     * @throws NullPointerException if no maximum header size is configured
+     */
+    public int maxHeaderSize() {
+        return Objects.requireNonNull(
+                this.getInt("maxHeaderSize"),
+                "No max header size found for the " + getNamespace()
         );
     }
 

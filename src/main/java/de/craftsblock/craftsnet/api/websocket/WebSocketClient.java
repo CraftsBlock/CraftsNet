@@ -95,6 +95,9 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final Map<String, Matcher> matchers;
 
     private final int maxFrameSize;
+    private final int maxHeaders;
+    private final int maxHeaderBytes;
+    private final int maxLineLength;
     private final int maxMessageSize;
     private final int maxUriLength;
     private final ServerTrust serverTrust;
@@ -108,7 +111,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private String domain;
     private EnumMap<ProcessPriority.Priority, List<EndpointMapping>> mappings;
 
-    private BufferedReader reader;
+    private InputStream reader;
     private OutputStream writer;
     private final Object writerLock = new Object();
 
@@ -141,6 +144,9 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         WebSocketServerBuilder builder = server.getBuilder();
         this.maxFrameSize = builder.maxFrameSize();
+        this.maxHeaders = builder.maxHeaders();
+        this.maxHeaderBytes = builder.maxHeaderSize();
+        this.maxLineLength = builder.maxHeaderLineLength();
         this.maxMessageSize = builder.maxMessageSize();
         this.maxUriLength = builder.maxUriLength();
         this.serverTrust = builder.trust().build();
@@ -172,11 +178,11 @@ public class WebSocketClient implements Runnable, RequireAble {
             throw new IllegalStateException("This websocket client is already running!");
         }
 
-        connectingIp = socket.getInetAddress().getHostAddress();
+        this.connectingIp = socket.getInetAddress().getHostAddress();
 
         this.active = true;
         try {
-            reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            reader = socket.getInputStream();
             writer = socket.getOutputStream();
             headers = readHeaders();
 
@@ -567,27 +573,59 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     private Headers readHeaders() throws IOException {
         Headers headers = new Headers();
-        String line;
+        StringBuilder line = new StringBuilder();
 
-        while ((line = reader.readLine()) != null && !line.isEmpty()) {
-            if (path == null && line.startsWith(HttpMethod.GET.name())) {
-                String[] requestParts = line.split(" ");
-                path = requestParts[1].replaceAll("//+", "/");
+        int b;
+        int headerCount = 0;
+        int totalBytes = 0;
+
+        while ((b = this.reader.read()) != -1) {
+            totalBytes++;
+
+            if (totalBytes > this.maxHeaderBytes) {
+                throw new IOException("Headers too large");
+            }
+
+            if (b != '\n') {
+                line.append((char) b);
+
+                if (line.length() > this.maxLineLength) {
+                    throw new IOException("Header line too long");
+                }
+
                 continue;
             }
 
-            int colonIndex = line.indexOf(':');
+            if (!line.isEmpty() && line.charAt(line.length() - 1) == '\r') {
+                line.setLength(line.length() - 1);
+            }
+
+            String currentLine = line.toString();
+            line.setLength(0);
+
+            // End of headers
+            if (currentLine.isEmpty()) {
+                return headers;
+            }
+
+            int colonIndex = currentLine.indexOf(':');
+
             if (colonIndex <= 0) {
-                continue;
+                throw new IOException("Invalid HTTP header");
             }
 
-            String key = line.substring(0, colonIndex);
-            String value = line.substring(colonIndex + 1).trim();
+            String key = currentLine.substring(0, colonIndex);
+            String value = currentLine.substring(colonIndex + 1)
+                    .replaceAll("^[ \\t]+|[ \\t]+$", "");
 
             headers.add(key, value);
+
+            if (++headerCount > this.maxHeaders) {
+                throw new IOException("Too many headers");
+            }
         }
 
-        return headers;
+        throw new IOException("Unexpected end of stream while reading headers");
     }
 
     /**
@@ -635,11 +673,10 @@ public class WebSocketClient implements Runnable, RequireAble {
             return null;
         }
 
-        InputStream inputStream = socket.getInputStream();
         AtomicReference<Frame> frame = new AtomicReference<>();
 
         while (isConnected() && frame.get() == null || !frame.get().isFinalFrame()) {
-            Frame read = Frame.read(inputStream, maxFrameSize);
+            Frame read = Frame.read(reader, maxFrameSize);
 
             if (read.getOpcode().isUnknown()) {
                 closeInternally(ClosureCode.PROTOCOL_ERROR, "Received unknown opcode", true);
