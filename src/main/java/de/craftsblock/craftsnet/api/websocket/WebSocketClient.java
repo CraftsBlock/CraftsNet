@@ -44,6 +44,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -265,6 +266,12 @@ public class WebSocketClient implements Runnable, RequireAble {
                     Arrays.fill(frame.getData(), (byte) 0);
                 }
             }
+        } catch (SocketTimeoutException e) {
+            closeInternally(
+                    4000,
+                    "Read timeout".getBytes(StandardCharsets.UTF_8),
+                    false
+            );
         } catch (SocketException ignored) {
         } catch (FrameReadException e) {
             closeInternally(e.getClosureCode(), e.getMessage(), true);
@@ -290,15 +297,6 @@ public class WebSocketClient implements Runnable, RequireAble {
         if (frame == null) {
             logger.warning("Received null websocket frame!");
             continueReading.set(false);
-            return;
-        }
-
-        if (!frame.isMasked()) {
-            closeInternally(
-                    ClosureCode.PROTOCOL_ERROR,
-                    "A client MUST mask all frames that it sends to the server",
-                    true
-            );
             return;
         }
 

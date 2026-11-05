@@ -115,7 +115,7 @@ public class WebSocketServer extends Server<WebSocketServerBuilder> {
                 "Executor factory returned null"
         );
 
-        connector = Thread.ofVirtual()
+        connector = Thread.ofPlatform()
                 .name("CraftsNet WS Acceptor")
                 .start(this::acceptConnections);
 

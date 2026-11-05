@@ -247,21 +247,50 @@ public class Frame implements RequireAble {
      * @throws IllegalStateException if the frame's opcode is not continuation or if the current frame
      *                               is already marked as final.
      */
-    protected synchronized void appendFrame(Frame frame) {
-        if (!frame.getOpcode().equals(Opcode.CONTINUATION)) {
-            throw new IllegalStateException("Tried to append a frame whose opcode is not continuation!");
+    protected synchronized void appendFrame(Frame frame) throws FrameReadException {
+        if (frame == null) {
+            throw new IllegalArgumentException("Frame must not be null!");
+        }
+
+        if (frame.getOpcode() != Opcode.CONTINUATION) {
+            throw new FrameReadException(
+                    ClosureCode.PROTOCOL_ERROR,
+                    "Can not append a non continuation frame"
+            );
         }
 
         if (this.isFinalFrame()) {
-            throw new IllegalStateException("Tried to append a frame to a final frame!");
+            throw new FrameReadException(
+                    ClosureCode.PROTOCOL_ERROR,
+                    "Tried to append a frame to a final frame"
+            );
         }
 
-        byte[] mergedData = new byte[this.getData().length + frame.getData().length];
-        System.arraycopy(this.getData(), 0, mergedData, 0, this.getData().length);
-        System.arraycopy(frame.getData(), 0, mergedData, this.getData().length, frame.getData().length);
-        this.setData(mergedData);
+        if (frame.rsv1 || frame.rsv2 || frame.rsv3) {
+            throw new FrameReadException(
+                    ClosureCode.PROTOCOL_ERROR,
+                    "Continuation frames must not set RSV bits"
+            );
+        }
 
-        fin = this.fin || frame.fin;
+        byte[] currentData = this.getData();
+        byte[] frameData = frame.getData();
+
+        byte[] mergedData = Arrays.copyOf(
+                currentData,
+                currentData.length + frameData.length
+        );
+
+        System.arraycopy(
+                frameData,
+                0,
+                mergedData,
+                currentData.length,
+                frameData.length
+        );
+
+        this.setData(mergedData);
+        this.fin = frame.fin;
     }
 
     /**
@@ -279,20 +308,36 @@ public class Frame implements RequireAble {
      * is guaranteed to be thread-safe.
      */
     protected synchronized Collection<Frame> fragmentFrame(int fragmentLength) {
-        List<Frame> result = new ArrayList<>();
-        byte[] data = getData();
-        int length = data.length;
-
-        for (int start = 0; start < length; start += fragmentLength) {
-            int end = Math.min(length, start + fragmentLength);
-            byte[] chunk = new byte[end - start];
-            System.arraycopy(data, start, chunk, 0, end - start);
-            result.add(new Frame(false, rsv1, rsv2, rsv3, masked, Opcode.CONTINUATION, chunk));
+        if (fragmentLength <= 0) {
+            throw new IllegalArgumentException(
+                    "fragmentLength must be greater than 0"
+            );
         }
 
-        if (!result.isEmpty()) {
-            result.get(result.size() - 1).fin = true;
-            result.get(0).opcode = this.opcode;
+        byte[] data = getData();
+        if (data.length <= fragmentLength) {
+            return List.of(this);
+        }
+
+        List<Frame> result = new ArrayList<>();
+
+        for (int start = 0; start < data.length; start += fragmentLength) {
+            int end = Math.min(data.length, start + fragmentLength);
+
+            byte[] chunk = Arrays.copyOfRange(data, start, end);
+
+            boolean first = start == 0;
+            boolean last = end == data.length;
+
+            result.add(new Frame(
+                    last,
+                    first && rsv1,
+                    first && rsv2,
+                    first && rsv3,
+                    masked,
+                    first ? opcode : Opcode.CONTINUATION,
+                    chunk
+            ));
         }
 
         return result;
@@ -365,7 +410,7 @@ public class Frame implements RequireAble {
         byte[] frame = new byte[10];
         ensureRead(stream, frame, 0, 2);
 
-        byte rawPayloadLength = (byte) (frame[1] & 0x7F);
+        int rawPayloadLength = frame[1] & 0x7F;
         if (rawPayloadLength >= 126) {
             ensureRead(stream, frame, 2, rawPayloadLength == 126 ? 2 : 8);
         }
@@ -384,23 +429,30 @@ public class Frame implements RequireAble {
         ensureRead(stream, masks, 0, masks.length);
 
         byte[] chunk = new byte[4096];
-
         try {
             BufferUtil buffer = BufferUtil.allocate((int) payloadLength);
-            while (buffer.map(ByteBuffer::position) < payloadLength) {
-                int bytesRead = buffer.map(ByteBuffer::position);
+
+            long bytesRead = 0;
+            while (bytesRead < payloadLength) {
                 int toRead = (int) Math.min(chunk.length, payloadLength - bytesRead);
-                int chunkSize = stream.read(chunk, 0, toRead);
-
+                int chunkSize = ensureRead(stream, chunk, 0, toRead);
                 if (chunkSize < 0) {
-                    throw new IOException("EOF: Failed to read the payload of the frame!");
+                    throw new IOException(
+                            "EOF: Failed to read the payload of the frame!"
+                    );
                 }
 
+                if (chunkSize == 0) {
+                    continue;
+                }
+
+                int maskOffset = (int) (bytesRead % 4);
                 for (int i = 0; i < chunkSize; i++) {
-                    chunk[i] ^= masks[(bytesRead + i) % 4];
+                    chunk[i] ^= masks[(maskOffset + i) % 4];
                 }
 
-                buffer.with(raw -> raw.put(chunk, 0, toRead));
+                buffer.with(raw -> raw.put(chunk, 0, chunkSize));
+                bytesRead += chunkSize;
             }
 
             // Unset the mask bit as the frame was unmasked
@@ -424,8 +476,9 @@ public class Frame implements RequireAble {
      * @throws IOException if the end of the stream is reached before the expected number of bytes is read,
      *                     or if an I/O error occurs.
      */
-    private static void ensureRead(InputStream stream, byte[] buffer, int offset, int length) throws IOException {
+    private static int ensureRead(InputStream stream, byte[] buffer, int offset, int length) throws IOException {
         int read = 0;
+
         while (read < length) {
             int result = stream.read(buffer, offset + read, length - read);
             if (result < 0) {
@@ -434,33 +487,108 @@ public class Frame implements RequireAble {
 
             read += result;
         }
+
+        return read;
     }
 
     /**
-     * Extracts the payload length value from the WebSocket frame header.
+     * Decodes the payload length from a WebSocket frame header.
      *
-     * @param frame         The WebSocket frame header.
-     * @param payloadLength The payload length value from the frame.
-     * @return The actual payload length value.
+     * <p>The payload length is encoded using one of three formats:
+     * <ul>
+     *     <li>Values from 0 to 125 are encoded directly.</li>
+     *     <li>Value 126 indicates a 16-bit extended payload length.</li>
+     *     <li>Value 127 indicates a 64-bit extended payload length.</li>
+     * </ul>
+     *
+     * <p>This method also validates the payload length encoding according
+     * to RFC 6455, ensuring that extended payload lengths use the minimum
+     * required encoding.
+     *
+     * @param frame         the frame header containing the encoded payload length;
+     *                      must contain at least 2, 4 or 10 bytes depending on the encoding
+     * @param payloadLength the raw 7-bit payload length indicator from the
+     *                      second frame header byte
+     * @return the decoded payload length as a non-negative long value
+     * @throws FrameReadException if the payload length encoding is invalid,
+     *                            non-minimal or violates RFC 6455
      */
-    private static long getPayloadLengthValue(byte[] frame, byte payloadLength) {
-        if (payloadLength == 126) {
-            // If the payload length is 126, combine the 3rd and 4th bytes to get the actual length.
-            return ((frame[2] & 0xFF) << 8) | (frame[3] & 0xFF);
-        } else if (payloadLength == 127) {
-            // If the payload length is 127, combine the 3rd to 10th bytes to get the actual length.
-            return ((frame[2] & 0xFFL) << 56)
-                    | ((frame[3] & 0xFFL) << 48)
-                    | ((frame[4] & 0xFFL) << 40)
-                    | ((frame[5] & 0xFFL) << 32)
-                    | ((frame[6] & 0xFFL) << 24)
-                    | ((frame[7] & 0xFFL) << 16)
-                    | ((frame[8] & 0xFFL) << 8)
-                    | (frame[9] & 0xFFL);
-        } else {
-            // For payload lengths less than 126, the payloadLength itself represents the actual length.
-            return payloadLength;
+    private static long getPayloadLengthValue(byte[] frame, int payloadLength) throws FrameReadException {
+        return switch (payloadLength) {
+            case 126 -> {
+                long length = ((frame[2] & 0xFFL) << 8)
+                        | (frame[3] & 0xFFL);
+
+                if (length < 126) {
+                    throw new FrameReadException(
+                            ClosureCode.PROTOCOL_ERROR,
+                            "Non-minimal payload length encoding!"
+                    );
+                }
+
+                yield length;
+            }
+
+            case 127 -> {
+                if ((frame[2] & 0x80) != 0) {
+                    throw new FrameReadException(
+                            ClosureCode.PROTOCOL_ERROR,
+                            "Most significant bit must be 0!"
+                    );
+                }
+
+                yield getLengthLong(frame);
+            }
+
+            default -> {
+                if (payloadLength < 0 || payloadLength > 125) {
+                    throw new FrameReadException(
+                            ClosureCode.PROTOCOL_ERROR,
+                            "Invalid payload length encoding!"
+                    );
+                }
+
+                yield payloadLength;
+            }
+        };
+    }
+
+    /**
+     * Decodes a 64-bit extended payload length from a WebSocket frame header.
+     *
+     * <p>The length is encoded as an unsigned 64-bit integer in network byte
+     * order (big-endian). Since Java does not provide an unsigned long type,
+     * the most significant bit must be zero to ensure that the decoded value
+     * can be represented by a positive signed long.
+     *
+     * <p>This method also ensures that the encoded length is at least 65536,
+     * as required by the WebSocket protocol's minimal encoding rules.
+     *
+     * @param frame the frame header containing the 64-bit extended payload
+     *              length; must contain at least 10 bytes
+     * @return the decoded payload length as a non-negative long value
+     * @throws FrameReadException if the encoded length is smaller than
+     *                            65536 or cannot be represented by a
+     *                            positive signed long
+     */
+    private static long getLengthLong(byte[] frame) throws FrameReadException {
+        long length = ((frame[2] & 0xFFL) << 56)
+                | ((frame[3] & 0xFFL) << 48)
+                | ((frame[4] & 0xFFL) << 40)
+                | ((frame[5] & 0xFFL) << 32)
+                | ((frame[6] & 0xFFL) << 24)
+                | ((frame[7] & 0xFFL) << 16)
+                | ((frame[8] & 0xFFL) << 8)
+                | (frame[9] & 0xFFL);
+
+        if (length < 65536) {
+            throw new FrameReadException(
+                    ClosureCode.PROTOCOL_ERROR,
+                    "Non-minimal payload length encoding!"
+            );
         }
+
+        return length;
     }
 
     /**
