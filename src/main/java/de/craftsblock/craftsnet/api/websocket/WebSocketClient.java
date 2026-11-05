@@ -94,6 +94,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final TransformerPerformer transformerPerformer;
     private final Map<String, Matcher> matchers;
 
+    private final int connectedReadTimeout;
     private final int maxFrameSize;
     private final int maxHeaders;
     private final int maxHeaderBytes;
@@ -143,6 +144,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.extensions = new ArrayList<>();
 
         WebSocketServerBuilder builder = server.getBuilder();
+        this.connectedReadTimeout = builder.readTimeout();
         this.maxFrameSize = builder.maxFrameSize();
         this.maxHeaders = builder.maxHeaders();
         this.maxHeaderBytes = builder.maxHeaderSize();
@@ -228,6 +230,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
 
             sendHandshake();
+            socket.setSoTimeout(this.connectedReadTimeout);
             this.connected = true;
 
             Collections.reverse(extensions);

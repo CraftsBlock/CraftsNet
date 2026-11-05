@@ -50,8 +50,6 @@ public class WebSocketServer extends Server<WebSocketServerBuilder> {
     );
     private Executor executor;
 
-    private int readTimeout;
-
     private Thread connector;
     private ServerSocket serverSocket;
 
@@ -85,8 +83,6 @@ public class WebSocketServer extends Server<WebSocketServerBuilder> {
         if (running) {
             return;
         }
-
-        this.readTimeout = this.getBuilder().readTimeout();
 
         try {
             this.getLogger().info("Starting websocket server on port %s", port);
@@ -163,7 +159,7 @@ public class WebSocketServer extends Server<WebSocketServerBuilder> {
                         sslSocket.startHandshake();
                     }
 
-                    socket.setSoTimeout(readTimeout);
+                    socket.setSoTimeout(5000);
 
                     new WebSocketClient(this.getCraftsNet(), socket, this)
                             .run();
