@@ -21,6 +21,7 @@ import de.craftsblock.craftsnet.api.utils.ProtocolVersion;
 import de.craftsblock.craftsnet.api.utils.Scheme;
 import de.craftsblock.craftsnet.api.websocket.annotations.ApplyDecoder;
 import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeDecoder;
+import de.craftsblock.craftsnet.api.websocket.exception.FrameReadException;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
 import de.craftsblock.craftsnet.builder.server.WebSocketServerBuilder;
 import de.craftsblock.craftsnet.builder.server.ServerTrust;
@@ -92,6 +93,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final TransformerPerformer transformerPerformer;
     private final Map<String, Matcher> matchers;
 
+    private final int MAX_FRAME_SIZE;
     private final int MAX_URI_LENGTH;
     private final ServerTrust SERVER_TRUST;
 
@@ -136,6 +138,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         this.extensions = new ArrayList<>();
 
         WebSocketServerBuilder builder = server.getBuilder();
+        this.MAX_FRAME_SIZE = builder.maxFrameSize();
         this.MAX_URI_LENGTH = builder.maxUriLength();
         this.SERVER_TRUST = builder.trust().build();
         this.fragment = builder.fragment();
@@ -263,6 +266,8 @@ public class WebSocketClient implements Runnable, RequireAble {
                 }
             }
         } catch (SocketException ignored) {
+        } catch (FrameReadException e) {
+            closeInternally(e.getClosureCode(), e.getMessage(), true);
         } catch (Throwable t) {
             if (t instanceof IOException ioException && ioException.getMessage().contains("EOF")) {
                 logger.error("EOF: No more data can be read from the input streams!", t);
@@ -618,9 +623,10 @@ public class WebSocketClient implements Runnable, RequireAble {
      * Reads a WebSocket message from the client.
      *
      * @return The message as a message, or null if the client has disconnected.
-     * @throws IOException If an I/O error occurs while reading the message.
+     * @throws FrameReadException If the read fails in a way the client should know.
+     * @throws IOException        If an I/O error occurs while reading the message.
      */
-    private Frame readMessage() throws IOException {
+    private Frame readMessage() throws FrameReadException, IOException {
         if (!isConnected()) {
             return null;
         }
@@ -629,7 +635,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         AtomicReference<Frame> frame = new AtomicReference<>();
 
         while (isConnected() && frame.get() == null || !frame.get().isFinalFrame()) {
-            Frame read = Frame.read(inputStream);
+            Frame read = Frame.read(inputStream, MAX_FRAME_SIZE);
 
             if (read.getOpcode().isUnknown()) {
                 closeInternally(ClosureCode.PROTOCOL_ERROR, "Received unknown opcode", true);
@@ -641,7 +647,7 @@ public class WebSocketClient implements Runnable, RequireAble {
                 if (read.isFinalFrame()) {
                     break;
                 }
-                
+
                 continue;
             }
 
@@ -778,7 +784,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     @ApiStatus.Experimental
     public boolean fragment() {
-        return fragment || craftsNet.getBuilder().webSocketServer().fragment();
+        return fragment;
     }
 
     /**
@@ -798,10 +804,6 @@ public class WebSocketClient implements Runnable, RequireAble {
      */
     @ApiStatus.Experimental
     public int getFragmentSize() {
-        if (fragmentSize <= 0) {
-            return craftsNet.getBuilder().webSocketServer().fragmentSize();
-        }
-
         return fragmentSize;
     }
 
@@ -812,9 +814,9 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param fragmentSize The max size of the fragments.
      */
     @ApiStatus.Experimental
-    public void setFragmentSize(@Range(from = -1, to = Integer.MAX_VALUE) int fragmentSize) {
-        if (fragmentSize < -1) {
-            throw new IllegalArgumentException("The fragment size can not be lower than -1");
+    public void setFragmentSize(@Range(from = 1, to = Integer.MAX_VALUE) int fragmentSize) {
+        if (fragmentSize < 1) {
+            throw new IllegalArgumentException("The fragment size can not be lower than 1");
         }
 
         this.fragmentSize = fragmentSize;

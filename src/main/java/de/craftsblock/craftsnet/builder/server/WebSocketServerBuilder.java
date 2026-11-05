@@ -39,9 +39,13 @@ public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder
 
         this.addKnownArgument("fragment", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("fragmentSize", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
+        this.addKnownArgument("maxFrameSize", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
+        this.addKnownArgument("readTimeout", ArgumentTransformer.integerNumber(0, Integer.MAX_VALUE));
 
         this.fragment(false);
         this.fragmentSize(1024);
+        this.maxFrameSize(1024 * 1024);
+        this.readTimeout(60_000);
 
         this.backlog(0);
         this.maxUriLength(4096);
@@ -99,6 +103,60 @@ public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder
         return Objects.requireNonNull(
                 this.getInt("fragmentSize"),
                 "No fragment size found for the web socket server"
+        );
+    }
+
+    /**
+     * Sets the maximum permitted size of a WebSocket frame.
+     * <p>
+     * The specified value must be greater than or equal to {@code 1}.
+     *
+     * @param maxFrameSize the maximum frame size in bytes
+     * @return this builder for method chaining
+     * @throws IllegalArgumentException if the value is less than {@code 1}
+     */
+    public WebSocketServerBuilder maxFrameSize(int maxFrameSize) {
+        ArgumentTransformer.validatedNumber(maxFrameSize, 1, Integer.MAX_VALUE);
+        return this.set("maxFrameSize", maxFrameSize);
+    }
+
+    /**
+     * Returns the configured maximum permitted WebSocket frame size.
+     *
+     * @return the maximum frame size in bytes
+     * @throws NullPointerException if no maximum frame size is configured
+     */
+    public int maxFrameSize() {
+        return Objects.requireNonNull(
+                this.getInt("maxFrameSize"),
+                "No max frame size found for the web socket server"
+        );
+    }
+
+    /**
+     * Sets the timeout for reading data from a WebSocket connection.
+     * <p>
+     * The specified value must be greater than or equal to {@code 0}.
+     *
+     * @param readTimeout the read timeout in milliseconds
+     * @return this builder for method chaining
+     * @throws IllegalArgumentException if the value is negative
+     */
+    public WebSocketServerBuilder readTimeout(int readTimeout) {
+        ArgumentTransformer.validatedNumber(readTimeout, 0, Integer.MAX_VALUE);
+        return this.set("readTimeout", readTimeout);
+    }
+
+    /**
+     * Returns the configured WebSocket read timeout.
+     *
+     * @return the read timeout in milliseconds
+     * @throws NullPointerException if no read timeout is configured
+     */
+    public int readTimeout() {
+        return Objects.requireNonNull(
+                this.getInt("readTimeout"),
+                "No read timeout found for the web socket server"
         );
     }
 

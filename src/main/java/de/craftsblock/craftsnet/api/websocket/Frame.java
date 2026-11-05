@@ -2,10 +2,12 @@ package de.craftsblock.craftsnet.api.websocket;
 
 import de.craftsblock.craftscore.buffer.BufferUtil;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
+import de.craftsblock.craftsnet.api.websocket.exception.FrameReadException;
+import de.craftsblock.craftsnet.api.websocket.exception.MaxFrameSizeExceededException;
+import de.craftsblock.craftsnet.api.websocket.exception.UnmaskedFrameException;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -356,9 +358,10 @@ public class Frame implements RequireAble {
      *
      * @param stream The input stream to read the frame from.
      * @return The constructed Frame object containing the frame header and payload data.
-     * @throws IOException If an I/O error occurs while reading from the stream.
+     * @throws FrameReadException If the read fails in a way the client should know.
+     * @throws IOException        If an I/O error occurs while reading from the stream.
      */
-    protected static Frame read(InputStream stream) throws IOException {
+    protected static Frame read(InputStream stream, int maxFrameSize) throws FrameReadException, IOException {
         byte[] frame = new byte[10];
         ensureRead(stream, frame, 0, 2);
 
@@ -368,15 +371,17 @@ public class Frame implements RequireAble {
         }
 
         long payloadLength = getPayloadLengthValue(frame, rawPayloadLength);
-        if (payloadLength > Integer.MAX_VALUE) {
-            throw new IOException("Payload size too large to be processed (" + payloadLength + " > " + Integer.MAX_VALUE + ")");
+        if (payloadLength > maxFrameSize) {
+            throw new MaxFrameSizeExceededException();
         }
 
         boolean masked = (frame[1] & 0x80) != 0;
-        byte[] masks = new byte[4];
-        if (masked) {
-            ensureRead(stream, masks, 0, masks.length);
+        if (!masked) {
+            throw new UnmaskedFrameException();
         }
+
+        byte[] masks = new byte[4];
+        ensureRead(stream, masks, 0, masks.length);
 
         byte[] chunk = new byte[4096];
 
@@ -391,18 +396,14 @@ public class Frame implements RequireAble {
                     throw new IOException("EOF: Failed to read the payload of the frame!");
                 }
 
-                if (masked) {
-                    for (int i = 0; i < chunkSize; i++) {
-                        chunk[i] ^= masks[(bytesRead + i) % 4];
-                    }
+                for (int i = 0; i < chunkSize; i++) {
+                    chunk[i] ^= masks[(bytesRead + i) % 4];
                 }
 
                 buffer.with(raw -> raw.put(chunk, 0, toRead));
             }
 
-            if (masked) {
-                frame[1] &= 0x7F;
-            }
+            frame[1] &= 0x7F;
 
             return new Frame(frame, buffer.toByteArray());
         } finally {
