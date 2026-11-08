@@ -1,6 +1,7 @@
 package de.craftsblock.craftsnet.api.websocket.extensions;
 
 import de.craftsblock.craftsnet.api.websocket.Frame;
+import de.craftsblock.craftsnet.api.websocket.WebSocketClient;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -9,8 +10,8 @@ import org.jetbrains.annotations.NotNull;
  * compression, encryption, or other protocol enhancements.
  *
  * <p>Each extension has a protocol name that identifies it. Subclasses must implement
- * the {@link #encode(Frame)} and {@link #decode(Frame)} methods to define how frames
- * are transformed by the extension.
+ * the {@link #encode(WebSocketClient, Frame)} and {@link #decode(WebSocketClient, Frame)}
+ * methods to define how frames are transformed by the extension.
  *
  * @author Philipp Maywald
  * @author CraftsBlock
@@ -35,19 +36,21 @@ public abstract class WebSocketExtension {
      * Encodes a WebSocket frame according to the rules of this extension. This method
      * is called before the frame is sent over the network.
      *
+     * @param client the client to encode the frame for.
      * @param frame the frame to be encoded. The frame should not be null.
      * @return the encoded frame. The result should not be null.
      */
-    public abstract @NotNull Frame encode(@NotNull Frame frame);
+    public abstract @NotNull Frame encode(@NotNull WebSocketClient client, @NotNull Frame frame);
 
     /**
      * Decodes a WebSocket frame according to the rules of this extension. This method
      * is called after the frame is received from the network.
      *
+     * @param client the client to decode the frame for.
      * @param frame the frame to be decoded. The frame should not be null.
      * @return the decoded frame. The result should not be null.
      */
-    public abstract @NotNull Frame decode(@NotNull Frame frame);
+    public abstract @NotNull Frame decode(@NotNull WebSocketClient client,@NotNull Frame frame);
 
     /**
      * Returns the protocol name of this extension.

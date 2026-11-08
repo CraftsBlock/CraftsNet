@@ -5,10 +5,12 @@ import de.craftsblock.craftscore.buffer.BufferUtil;
 import de.craftsblock.craftscore.json.Json;
 import de.craftsblock.craftscore.utils.Utils;
 import de.craftsblock.craftsnet.CraftsNet;
+import de.craftsblock.craftsnet.api.RouteRegistry;
 import de.craftsblock.craftsnet.api.RouteRegistry.EndpointMapping;
 import de.craftsblock.craftsnet.api.annotations.ProcessPriority;
 import de.craftsblock.craftsnet.api.http.HttpMethod;
 import de.craftsblock.craftsnet.api.http.status.HttpStatus;
+import de.craftsblock.craftsnet.api.http.status.HttpStatusException;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareCallbackInfo;
 import de.craftsblock.craftsnet.api.middlewares.MiddlewareRegistry;
 import de.craftsblock.craftsnet.api.middlewares.WebsocketMiddleware;
@@ -23,8 +25,8 @@ import de.craftsblock.craftsnet.api.websocket.annotations.ApplyDecoder;
 import de.craftsblock.craftsnet.api.websocket.codec.WebSocketSafeTypeDecoder;
 import de.craftsblock.craftsnet.api.websocket.exception.FrameReadException;
 import de.craftsblock.craftsnet.api.websocket.extensions.WebSocketExtension;
-import de.craftsblock.craftsnet.builder.server.WebSocketServerBuilder;
 import de.craftsblock.craftsnet.builder.server.ServerTrust;
+import de.craftsblock.craftsnet.builder.server.WebSocketServerBuilder;
 import de.craftsblock.craftsnet.events.sockets.ClientConnectEvent;
 import de.craftsblock.craftsnet.events.sockets.ClientDisconnectEvent;
 import de.craftsblock.craftsnet.events.sockets.message.IncomingSocketMessageEvent;
@@ -39,7 +41,10 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
-import java.io.*;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.Socket;
@@ -51,8 +56,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -76,15 +81,6 @@ public class WebSocketClient implements Runnable, RequireAble {
     private static final String MESSAGE_TRIED_CONNECTING_ERROR = "%s tried to connect to %s \u001b[38;5;9m[%s]";
 
     private static final String WEBSOCKET_HANDSHAKE_MAGIC_TEXT = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-    private static final MessageDigest handshakeDigest;
-
-    static {
-        try {
-            handshakeDigest = MessageDigest.getInstance("SHA-1");
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException(e);
-        }
-    }
 
     private final WebSocketServer server;
     private final Socket socket;
@@ -92,7 +88,6 @@ public class WebSocketClient implements Runnable, RequireAble {
     private final Scheme scheme;
     private final List<WebSocketExtension> extensions;
     private final TransformerPerformer transformerPerformer;
-    private final Map<String, Matcher> matchers;
 
     private final int connectedReadTimeout;
     private final int maxFrameSize;
@@ -110,6 +105,8 @@ public class WebSocketClient implements Runnable, RequireAble {
     private String ip;
     private String path;
     private String domain;
+
+    private final List<PreparedMapping> preparedMappings = new ArrayList<>();
     private EnumMap<ProcessPriority.Priority, List<EndpointMapping>> mappings;
 
     private InputStream reader;
@@ -128,6 +125,12 @@ public class WebSocketClient implements Runnable, RequireAble {
     private int closeCode = -1;
     private String closeReason = null;
     private boolean closeByServer = false;
+
+    private record PreparedMapping(
+            RouteRegistry.EndpointMapping mapping,
+            String[] pathParameters,
+            Function<Frame, Object> parameterConverter) {
+    }
 
     /**
      * Creates a new WebSocketClient with the provided socket and server.
@@ -166,7 +169,6 @@ public class WebSocketClient implements Runnable, RequireAble {
             sendMessage("Could not process transformer: " + e.getMessage());
             disconnect();
         });
-        this.matchers = new HashMap<>();
     }
 
     /**
@@ -184,7 +186,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
         this.active = true;
         try {
-            reader = socket.getInputStream();
+            reader = new BufferedInputStream(socket.getInputStream(), 8192);
             writer = socket.getOutputStream();
             headers = readHeaders();
 
@@ -194,7 +196,9 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
-            int secWebsocketVersion = headers.containsKey("Sec-WebSocket-Version") ? Integer.parseInt(headers.getFirst("Sec-WebSocket-Version")) : 0;
+            int secWebsocketVersion = headers.containsKey("Sec-WebSocket-Version")
+                    ? Integer.parseInt(headers.getFirst("Sec-WebSocket-Version"))
+                    : 0;
             this.protocolVersion = new ProtocolVersion(this.scheme, secWebsocketVersion, 0);
 
             this.exchange = new SocketExchange(new Context(), this.protocolVersion, this.server, this);
@@ -232,10 +236,19 @@ public class WebSocketClient implements Runnable, RequireAble {
             sendHandshake();
             socket.setSoTimeout(this.connectedReadTimeout);
             this.connected = true;
+        } catch (HttpStatusException e) {
+            disconnectHttp(e.getStatus(), e.getMessage());
+            return;
+        } catch (Throwable e) {
+            logger.warning(this.connectingIp + " failed connection", e);
+            return;
+        }
 
+        try {
             Collections.reverse(extensions);
 
             this.mappings = getEndpoint();
+            this.prepareMappings();
 
             ClientConnectEvent event = new ClientConnectEvent(exchange);
             craftsNet.getListenerRegistry().call(event);
@@ -299,6 +312,88 @@ public class WebSocketClient implements Runnable, RequireAble {
         } finally {
             disconnect();
         }
+    }
+
+    /**
+     * Uses the {@link #mappings} to generate {@link PreparedMapping}
+     * which then can be handled by {@link #handleMapping(PreparedMapping, Frame)}
+     * for each message.
+     */
+    private void prepareMappings() {
+        preparedMappings.clear();
+
+        if (mappings == null || mappings.isEmpty()) {
+            return;
+        }
+
+        for (List<EndpointMapping> mappingList : mappings.values()) {
+            for (EndpointMapping mapping : mappingList) {
+                Pattern validator = mapping.validator();
+                Matcher matcher = validator.matcher(path);
+
+                if (!matcher.matches()) {
+                    sendMessage(Json.empty()
+                            .set("error", "There was an unexpected error while matching!")
+                            .toString());
+                    continue;
+                }
+
+                int pathParametersCount = matcher.groupCount() - 1;
+                String[] pathParameters = new String[pathParametersCount];
+                for (int i = 1; i <= pathParametersCount; i++) {
+                    pathParameters[i - 1] = matcher.group(i + 1);
+                }
+
+                preparedMappings.add(new PreparedMapping(
+                        mapping,
+                        pathParameters,
+                        this.createParameterConverter(mapping.method())
+                ));
+            }
+        }
+    }
+
+    /**
+     * Creates a parameter converter for the incoming websocket data.
+     * <p>
+     * It uses the {@link Method} that should be executed and extracts the
+     * wanted type. Then it creates a {@link Function} which is capable of
+     * converting the incoming {@link Frame} to the desired parameter type.
+     *
+     * @param method The {@link Method} for which the converter should be created.
+     * @return The {@link Function} which converts the {@link Frame}.
+     */
+    private Function<Frame, Object> createParameterConverter(Method method) {
+        if (method.getParameterCount() < 2) {
+            return Frame::getData;
+        }
+
+        ApplyDecoder applyDecoder = method.getAnnotation(ApplyDecoder.class);
+        if (applyDecoder != null) {
+            Class<? extends WebSocketSafeTypeDecoder<?>> decoderType = applyDecoder.value();
+            WebSocketSafeTypeDecoder<?> decoder = ReflectionUtils.getNewInstance(decoderType);
+
+            return decoder::decode;
+        }
+
+        Class<?> type = method.getParameterTypes()[1];
+        if (TypeUtils.isAssignable(String.class, type)) {
+            return frame -> new String(frame.getData(), StandardCharsets.UTF_8);
+        }
+
+        if (TypeUtils.isAssignable(Frame.class, type)) {
+            return Frame::clone;
+        }
+
+        if (TypeUtils.isAssignable(BufferUtil.class, type)) {
+            return Frame::getBufferUtil;
+        }
+
+        if (TypeUtils.isAssignable(ByteBuffer.class, type)) {
+            return frame -> frame.getBufferUtil().getRaw();
+        }
+
+        return Frame::getData;
     }
 
     /**
@@ -378,13 +473,9 @@ public class WebSocketClient implements Runnable, RequireAble {
             return;
         }
 
-        mappings.keySet().stream()
-                .map(mappings::get)
-                .flatMap(Collection::stream)
-                .forEach(mapping -> this.handleMapping(mapping, frame));
-
-        transformerPerformer.clearCache();
-        matchers.clear();
+        for (PreparedMapping preparedMapping : this.preparedMappings) {
+            this.handleMapping(preparedMapping, frame);
+        }
     }
 
     /**
@@ -413,38 +504,27 @@ public class WebSocketClient implements Runnable, RequireAble {
     /**
      * Passes a socket message frame down to one specific endpoint.
      *
-     * @param mapping The {@link EndpointMapping mapping} which should be handled.
-     * @param frame   The {@link Frame} received.
+     * @param prepared The {@link PreparedMapping} that should be handled.
+     * @param frame    The {@link Frame} received.
      * @since 3.4.0-SNAPSHOT
      */
-    private void handleMapping(EndpointMapping mapping, Frame frame) {
+    private void handleMapping(PreparedMapping prepared, Frame frame) {
         try {
+            EndpointMapping mapping = prepared.mapping;
+
             if (!(mapping.handler() instanceof SocketHandler handler)) {
                 return;
             }
 
             Method method = mapping.method();
+            transformerPerformer.setValidator(mapping.validator());
 
-            Pattern validator = mapping.validator();
-            Matcher matcher = matchers.computeIfAbsent(mapping.validator().pattern(), pattern -> {
-                Matcher fresh = validator.matcher(path);
+            Object[] args = new Object[prepared.pathParameters.length + 2];
 
-                if (!fresh.matches()) {
-                    sendMessage(Json.empty()
-                            .set("error", "There was an unexpected error while matching!")
-                            .toString());
-                }
-
-                return fresh;
-            });
-            transformerPerformer.setValidator(validator);
-
-            Object[] args = new Object[matcher.groupCount() + 1];
             args[0] = exchange;
             args[1] = frame.getData();
-            for (int i = 2; i <= matcher.groupCount(); i++) {
-                args[i] = matcher.group(i);
-            }
+
+            System.arraycopy(prepared.pathParameters, 0, args, 2, prepared.pathParameters.length);
 
             if (processRequirements(mapping, frame)) {
                 return;
@@ -454,16 +534,21 @@ public class WebSocketClient implements Runnable, RequireAble {
                 return;
             }
 
-            preprocessMethodParameters(method, frame, args);
+            if (method.getParameterCount() >= 2) {
+                args[1] = prepared.parameterConverter.apply(frame);
+            }
 
             Object result = ReflectionUtils.invokeMethod(handler, method, args);
             if (result == null || !isConnected() || !isActive()) {
                 return;
             }
 
-            this.sendMessage(result);
+            sendMessage(result);
         } catch (Throwable t) {
-            throw new RuntimeException("Unexpected exception whilst handling websocket mappings", t);
+            throw new RuntimeException(
+                    "Unexpected exception whilst handling websocket mappings",
+                    t
+            );
         }
     }
 
@@ -498,49 +583,6 @@ public class WebSocketClient implements Runnable, RequireAble {
         }
 
         return false;
-    }
-
-    /**
-     * Preprocesses the parameters for a given WebSocket handler method by resolving and decoding
-     * the second argument based on the method signature or annotations.
-     * <p>
-     * If the method is annotated with {@link ApplyDecoder}, the specified {@link WebSocketSafeTypeDecoder}
-     * is instantiated and used to decode the {@link Frame} into the expected parameter type.
-     * Otherwise, the second parameter is automatically filled with a default interpretation based on its type:
-     * <ul>
-     *     <li>{@link String} -> UTF-8 decoded string from frame data</li>
-     *     <li>{@link Frame} -> Cloned {@link Frame} instance</li>
-     *     <li>{@link ByteBuffer} -> Raw buffer from the frame</li>
-     *     <li>{@link BufferUtil} -> The raw buffer wrapped inside a {@link BufferUtil}</li>
-     * </ul>
-     *
-     * @param method The handler method whose parameters are being prepared.
-     * @param frame  The incoming {@link Frame} containing WebSocket data.
-     * @param args   The argument array to be passed to the method (modified in-place).
-     * @since 3.5.0
-     */
-    @SuppressWarnings("removal")
-    private void preprocessMethodParameters(Method method, Frame frame, Object[] args) {
-        if (method.getParameterCount() < 2) {
-            return;
-        }
-
-        ApplyDecoder applyDecoder = method.getAnnotation(ApplyDecoder.class);
-        if (applyDecoder != null) {
-            Class<? extends WebSocketSafeTypeDecoder<?>> decoderType = applyDecoder.value();
-            WebSocketSafeTypeDecoder<?> decoder = ReflectionUtils.getNewInstance(decoderType);
-
-            args[1] = decoder.decode(frame);
-            return;
-        }
-
-        args[1] = switch (method.getParameterTypes()[1]) {
-            case Class<?> type when TypeUtils.isAssignable(String.class, type) -> new String(frame.getData(), StandardCharsets.UTF_8);
-            case Class<?> type when TypeUtils.isAssignable(Frame.class, type) -> frame.clone();
-            case Class<?> type when TypeUtils.isAssignable(BufferUtil.class, type) -> frame.getBufferUtil();
-            case Class<?> type when TypeUtils.isAssignable(ByteBuffer.class, type) -> frame.getBufferUtil().getRaw();
-            default -> args[1];
-        };
     }
 
     /**
@@ -584,14 +626,14 @@ public class WebSocketClient implements Runnable, RequireAble {
             totalBytes++;
 
             if (totalBytes > this.maxHeaderBytes) {
-                throw new IOException("Headers too large");
+                throw new HttpStatusException(HttpStatus.ClientError.BAD_REQUEST, "Headers too large");
             }
 
             if (b != '\n') {
                 line.append((char) b);
 
                 if (line.length() > this.maxLineLength) {
-                    throw new IOException("Header line too long");
+                    throw new HttpStatusException(HttpStatus.ClientError.BAD_REQUEST, "Header line too long");
                 }
 
                 continue;
@@ -617,7 +659,7 @@ public class WebSocketClient implements Runnable, RequireAble {
 
             int colonIndex = currentLine.indexOf(':');
             if (colonIndex <= 0) {
-                throw new IOException("Invalid HTTP header");
+                throw new HttpStatusException(HttpStatus.ClientError.BAD_REQUEST, "Invalid HTTP header");
             }
 
             String key = currentLine.substring(0, colonIndex);
@@ -627,7 +669,7 @@ public class WebSocketClient implements Runnable, RequireAble {
             headers.add(key, value);
 
             if (++headerCount > this.maxHeaders) {
-                throw new IOException("Too many headers");
+                throw new HttpStatusException(HttpStatus.ClientError.BAD_REQUEST, "Too many headers");
             }
         }
 
@@ -651,7 +693,7 @@ public class WebSocketClient implements Runnable, RequireAble {
     private void sendHandshake() {
         try {
             String concatenated = getHeader("Sec-WebSocket-Key") + WEBSOCKET_HANDSHAKE_MAGIC_TEXT;
-            byte[] hash = handshakeDigest.digest(concatenated.getBytes(StandardCharsets.UTF_8));
+            byte[] hash = MessageDigest.getInstance("SHA-1").digest(concatenated.getBytes(StandardCharsets.UTF_8));
 
             String extensions = String.join(",", this.extensions.parallelStream().map(WebSocketExtension::getProtocolName).toList());
             String response = HttpStatus.Info.SWITCHING_PROTOCOLS.getStatusLine("HTTP/1.1")
@@ -662,8 +704,8 @@ public class WebSocketClient implements Runnable, RequireAble {
                     + "\r\n";
 
             this.sendMessageRaw(response.getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (IOException | NoSuchAlgorithmException e) {
+            throw new HttpStatusException(HttpStatus.ServerError.INTERNAL_SERVER_ERROR, "Handshake failed");
         }
     }
 
@@ -679,9 +721,8 @@ public class WebSocketClient implements Runnable, RequireAble {
             return null;
         }
 
-        AtomicReference<Frame> frame = new AtomicReference<>();
-
-        while (isConnected() && frame.get() == null || !frame.get().isFinalFrame()) {
+        Frame frame = null;
+        while (isConnected() && (frame == null || !frame.isFinalFrame())) {
             Frame read = Frame.read(reader, maxFrameSize);
 
             if (read.getOpcode().isUnknown()) {
@@ -689,32 +730,22 @@ public class WebSocketClient implements Runnable, RequireAble {
                 throw new IOException("Unknown opcode received!");
             }
 
-            if (frame.get() == null) {
-                frame.set(read);
-                if (read.isFinalFrame()) {
-                    break;
-                }
-
-                continue;
+            if (frame == null) {
+                frame = read;
+            } else {
+                frame.appendFrame(read, maxMessageSize);
             }
-
-            frame.get().appendFrame(read, maxMessageSize);
         }
 
-        if (frame.get() == null) {
-            return null;
+        if (frame == null || extensions.isEmpty()) {
+            return frame;
         }
 
-        if (this.extensions.isEmpty()) {
-            return frame.get();
+        for (WebSocketExtension extension : extensions) {
+            frame = extension.decode(this, frame);
         }
 
-        Frame read = frame.get();
-        for (WebSocketExtension extension : this.extensions) {
-            read = extension.decode(read);
-        }
-
-        return read;
+        return frame;
     }
 
     /**
@@ -1193,7 +1224,7 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @param data   The message to be sent, as a byte array.
      * @param opcode The byte used to control the message flow.
      */
-    private void sendMessage(byte[] data, Opcode opcode) {
+    public void sendMessage(byte[] data, Opcode opcode) {
         if (!isConnected()) {
             throw new IllegalStateException("The websocket connection has already been closed!");
         }
@@ -1229,6 +1260,10 @@ public class WebSocketClient implements Runnable, RequireAble {
             }
 
             Frame subject = event.getFrame();
+            for (WebSocketExtension extension : this.extensions) {
+                subject = extension.encode(this, subject);
+            }
+
             if (fragment()) {
                 Collection<Frame> frames = subject.fragmentFrame(getFragmentSize());
                 this.sendMessageFrames(frames.toArray(Frame[]::new));
@@ -1251,12 +1286,8 @@ public class WebSocketClient implements Runnable, RequireAble {
      * @since 3.4.0-SNAPSHOT
      */
     private void sendMessageFrames(Frame... frames) throws IOException {
-        for (Frame frame : frames) {
-            for (WebSocketExtension extension : this.extensions) {
-                frame = extension.encode(frame);
-            }
-
-            synchronized (this.writerLock) {
+        synchronized (this.writerLock) {
+            for (Frame frame : frames) {
                 frame.write(this.writer);
             }
         }
@@ -1380,7 +1411,6 @@ public class WebSocketClient implements Runnable, RequireAble {
             headers = null;
             mappings = null;
             transformerPerformer.clearCache();
-            matchers.clear();
             session.clear();
             extensions.clear();
 

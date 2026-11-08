@@ -17,16 +17,18 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.*;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.function.Supplier;
 
 /**
@@ -43,7 +45,7 @@ import java.util.function.Supplier;
 public class WebSocketServer extends Server<WebSocketServerBuilder> {
 
     private final TypeEncoderRegistry<WebSocketSafeTypeEncoder<?, ?>> typeEncoderRegistry = new TypeEncoderRegistry<>();
-    private final ConcurrentHashMap<String, ConcurrentLinkedQueue<WebSocketClient>> connected = new ConcurrentHashMap<>();
+    private final Map<String, Set<WebSocketClient>> connected = new ConcurrentHashMap<>();
 
     private Supplier<Executor> executorFactory = () -> Executors.newThreadPerTaskExecutor(
             Thread.ofVirtual().name("WebSocket-", 1).factory()
@@ -155,11 +157,11 @@ public class WebSocketServer extends Server<WebSocketServerBuilder> {
         try {
             executor.execute(() -> {
                 try {
+                    socket.setSoTimeout(5000);
+
                     if (socket instanceof SSLSocket sslSocket) {
                         sslSocket.startHandshake();
                     }
-
-                    socket.setSoTimeout(5000);
 
                     new WebSocketClient(this.getCraftsNet(), socket, this)
                             .run();
@@ -192,7 +194,7 @@ public class WebSocketServer extends Server<WebSocketServerBuilder> {
         }
 
         try {
-            connected.values().stream().flatMap(ConcurrentLinkedQueue::stream)
+            connected.values().stream().flatMap(Set::stream)
                     .forEach(client -> {
                         try {
                             if (client.isConnected()) {
@@ -271,21 +273,35 @@ public class WebSocketServer extends Server<WebSocketServerBuilder> {
     /**
      * Sends a message to all connected WebSocket clients.
      *
-     * @param data The message to be sent.
+     * @param message The message to be sent.
      */
-    public synchronized void broadcast(String data) {
-        connected.values().forEach(clients -> clients.forEach(client -> client.sendMessage(data)));
+    public void broadcast(String message) {
+        connected.values().forEach(clients -> this.broadcast(clients, message));
     }
 
     /**
      * Sends a message to all connected WebSocket clients with a specified path.
      *
-     * @param path The path to which the clients are assigned.
-     * @param data The message to be sent.
+     * @param path    The path to which the clients are assigned.
+     * @param message The message to be sent.
      */
-    public synchronized void broadcast(String path, String data) {
+    public void broadcast(String path, String message) {
         if (connected.containsKey(path)) {
-            connected.get(path).forEach(client -> client.sendMessage(data));
+            this.broadcast(this.connected.get(path), message);
+        }
+    }
+
+    /**
+     * Sends a message to all specified WebSocket clients.
+     *
+     * @param clients The clients to which the broadcast should be sent.
+     * @param message The message to be sent.
+     */
+    public void broadcast(Collection<WebSocketClient> clients, String message) {
+        byte[] data = message.getBytes(StandardCharsets.UTF_8);
+
+        for (WebSocketClient client : clients) {
+            client.sendMessage(data, Opcode.TEXT);
         }
     }
 
@@ -296,7 +312,7 @@ public class WebSocketServer extends Server<WebSocketServerBuilder> {
      * @param client The WebSocket client that will be added.
      */
     protected void add(String path, WebSocketClient client) {
-        connected.computeIfAbsent(path, s -> new ConcurrentLinkedQueue<>()).add(client);
+        connected.computeIfAbsent(path, key -> ConcurrentHashMap.newKeySet()).add(client);
     }
 
     /**
@@ -305,20 +321,19 @@ public class WebSocketServer extends Server<WebSocketServerBuilder> {
      * @param client The WebSocket client that will be removed.
      */
     protected void remove(WebSocketClient client) {
-        connected.entrySet().stream()
-                .filter(entry -> entry.getValue().contains(client))
-                .forEach(entry -> {
-                    entry.getValue().removeIf(client::equals);
-                    if (entry.getValue().isEmpty()) {
-                        connected.remove(entry.getKey());
-                    }
+        Set<WebSocketClient> clients = connected.get(client.getPath());
+        if (clients == null || !clients.contains(client)) {
+            return;
+        }
 
-                    if (!client.isConnected()) {
-                        return;
-                    }
+        clients.remove(client);
+        if (clients.isEmpty()) {
+            connected.remove(client.getPath(), clients);
+        }
 
-                    client.disconnect();
-                });
+        if (client.isConnected()) {
+            client.disconnect();
+        }
     }
 
     /**

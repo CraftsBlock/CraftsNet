@@ -45,6 +45,8 @@ import java.util.List;
  */
 public class Frame implements RequireAble {
 
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
+
     private Opcode opcode;
     private byte[] data;
     private BufferUtil bufferUtil;
@@ -52,6 +54,9 @@ public class Frame implements RequireAble {
     private boolean fin;
     private final boolean rsv1, rsv2, rsv3;
     private boolean masked;
+
+    private List<byte[]> fragments;
+    private int fragmentedMessageSize;
 
     /**
      * Constructs a new {@code Frame} with the specified parameters. This constructor initializes the frame
@@ -187,7 +192,11 @@ public class Frame implements RequireAble {
      * @since 3.7.0
      */
     public BufferUtil getBufferUtil() {
-        return bufferUtil;
+        if (this.bufferUtil == null) {
+            this.bufferUtil = BufferUtil.wrap(data);
+        }
+
+        return this.bufferUtil;
     }
 
     /**
@@ -197,7 +206,7 @@ public class Frame implements RequireAble {
      * @since 3.7.0
      */
     public ByteBuffer getByteBuffer() {
-        return bufferUtil.getRaw();
+        return this.getBufferUtil().getRaw();
     }
 
     /**
@@ -216,7 +225,7 @@ public class Frame implements RequireAble {
      */
     public void setData(byte[] data) {
         this.data = data;
-        this.bufferUtil = BufferUtil.wrap(data);
+        this.bufferUtil = null;
     }
 
     /**
@@ -261,25 +270,36 @@ public class Frame implements RequireAble {
             );
         }
 
-        byte[] currentData = this.getData();
-        byte[] frameData = frame.getData();
-        int mergedLength = currentData.length + frameData.length;
+        if (this.fragments == null) {
+            this.fragments = new ArrayList<>();
+            this.fragments.add(this.data);
+            this.fragmentedMessageSize = this.data.length;
+        }
+
+        byte[] frameData = frame.data;
+        long mergedLength = this.fragmentedMessageSize + frameData.length;
+
         if (mergedLength > maxMessageSize) {
             throw new MaxFrameSizeExceededException();
         }
 
-        byte[] mergedData = Arrays.copyOf(currentData, mergedLength);
-
-        System.arraycopy(
-                frameData,
-                0,
-                mergedData,
-                currentData.length,
-                frameData.length
-        );
-
-        this.setData(mergedData);
+        this.fragments.add(frameData);
+        this.fragmentedMessageSize = (int) mergedLength;
         this.fin = frame.fin;
+
+        if (this.fin) {
+            byte[] mergedData = new byte[this.fragmentedMessageSize];
+            int offset = 0;
+
+            for (byte[] fragment : this.fragments) {
+                System.arraycopy(fragment, 0, mergedData, offset, fragment.length);
+                offset += fragment.length;
+            }
+
+            this.setData(mergedData);
+            this.fragments = null;
+            this.fragmentedMessageSize = 0;
+        }
     }
 
     /**
@@ -333,55 +353,63 @@ public class Frame implements RequireAble {
     }
 
     /**
-     * Writes the current frame to the specified output stream. This method encodes the frame header and
-     * payload data according to the WebSocket protocol. The method ensures that the frame is correctly
-     * formatted with the final frame indicator and the appropriate opcode, followed by the payload length
-     * and the actual payload data.
+     * Writes the current frame to the specified output stream. This method encodes
+     * the frame header and payload data according to the WebSocket protocol.
+     *
+     * <p>The complete frame, including its header, optional masking key and
+     * payload, is assembled into a single byte array and written to the stream
+     * using one write operation.
      *
      * @param stream the output stream to which the frame will be written.
      * @throws IOException if an I/O error occurs while writing to the stream.
      */
     protected synchronized void write(OutputStream stream) throws IOException {
-        stream.write((byte) ((isFinalFrame() ? 0x80 : 0x00)
-                | (isRsv1() ? 0x40 : 0x00)
-                | (isRsv2() ? 0x20 : 0x00)
-                | (isRsv3() ? 0x10 : 0x00)
-                | opcode.byteValue()));
-
-        byte @NotNull [] data = getData();
+        byte[] data = getData();
         int length = data.length;
+
+        int headerLength = length <= 125 ? 2 : length <= 65535 ? 4 : 10;
+        int maskLength = isMasked() ? 4 : 0;
+
+        byte[] output = new byte[headerLength + maskLength + length];
+        output[0] = (byte) (
+                (isFinalFrame() ? 0x80 : 0x00)
+                        | (isRsv1() ? 0x40 : 0x00)
+                        | (isRsv2() ? 0x20 : 0x00)
+                        | (isRsv3() ? 0x10 : 0x00)
+                        | opcode.byteValue()
+        );
 
         byte maskBit = (byte) (isMasked() ? 0x80 : 0x00);
         if (length <= 125) {
-            stream.write((byte) (maskBit | length));
+            output[1] = (byte) (maskBit | length);
         } else if (length <= 65535) {
-            stream.write((byte) (maskBit | 126));
-            stream.write((byte) (length >> 8));
-            stream.write((byte) length);
+            output[1] = (byte) (maskBit | 126);
+            output[2] = (byte) (length >>> 8);
+            output[3] = (byte) length;
         } else {
-            stream.write((byte) (maskBit | 127));
-            for (int j = 7; j >= 0; j--)
-                stream.write((byte) (length >> (8 * j)));
-        }
+            output[1] = (byte) (maskBit | 127);
 
-        if (isMasked()) {
-            try {
-                byte[] mask = new byte[4];
-                SecureRandom.getInstanceStrong().nextBytes(mask);
-
-                byte[] masked = new byte[data.length];
-                for (int i = 0; i < data.length; i++) {
-                    masked[i] = (byte) (data[i] ^ mask[i % 4]);
-                }
-
-                stream.write(masked);
-                return;
-            } catch (NoSuchAlgorithmException e) {
-                throw new RuntimeException(e);
+            for (int i = 0; i < 8; i++) {
+                output[2 + i] = (byte) ((long) length >>> (56 - i * 8));
             }
         }
 
-        stream.write(data);
+        int payloadOffset = headerLength;
+        if (isMasked()) {
+            byte[] mask = new byte[4];
+            SECURE_RANDOM.nextBytes(mask);
+
+            System.arraycopy(mask, 0, output, headerLength, maskLength);
+            payloadOffset += maskLength;
+
+            for (int i = 0; i < length; i++) {
+                output[payloadOffset + i] = (byte) (data[i] ^ mask[i % 4]);
+            }
+        } else {
+            System.arraycopy(data, 0, output, payloadOffset, length);
+        }
+
+        stream.write(output);
     }
 
     /**
@@ -414,43 +442,19 @@ public class Frame implements RequireAble {
             throw new UnmaskedFrameException();
         }
 
-        byte[] masks = new byte[4];
-        ensureRead(stream, masks, 0, masks.length);
+        byte[] mask = new byte[4];
+        ensureRead(stream, mask, 0, mask.length);
 
-        byte[] chunk = new byte[4096];
-        try {
-            BufferUtil buffer = BufferUtil.allocate((int) payloadLength);
+        byte[] payload = new byte[(int) payloadLength];
+        ensureRead(stream, payload, 0, payload.length);
 
-            long bytesRead = 0;
-            while (bytesRead < payloadLength) {
-                int toRead = (int) Math.min(chunk.length, payloadLength - bytesRead);
-                int chunkSize = ensureRead(stream, chunk, 0, toRead);
-                if (chunkSize < 0) {
-                    throw new IOException(
-                            "EOF: Failed to read the payload of the frame!"
-                    );
-                }
-
-                if (chunkSize == 0) {
-                    continue;
-                }
-
-                int maskOffset = (int) (bytesRead % 4);
-                for (int i = 0; i < chunkSize; i++) {
-                    chunk[i] ^= masks[(maskOffset + i) % 4];
-                }
-
-                buffer.with(raw -> raw.put(chunk, 0, chunkSize));
-                bytesRead += chunkSize;
-            }
-
-            // Unset the mask bit as the frame was unmasked
-            frame[1] &= 0x7F;
-
-            return new Frame(frame, buffer.toByteArray());
-        } finally {
-            Arrays.fill(chunk, (byte) 0);
+        for (int i = 0; i < payload.length; i++) {
+            payload[i] ^= mask[i & 3];
         }
+
+        frame[1] &= 0x7F;
+
+        return new Frame(frame, payload);
     }
 
     /**
