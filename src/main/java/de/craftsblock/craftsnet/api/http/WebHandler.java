@@ -138,37 +138,34 @@ public class WebHandler implements HttpHandler {
             }
 
             ProtocolVersion protocolVersion = ProtocolVersion.parse(this.scheme, httpExchange.getProtocol().split("/")[1]);
+            String connectingIp = httpExchange.getRemoteAddress().getAddress().getHostAddress();
+
+            String ip = serverTrust.extractIp(connectingIp, headers, connectingIp);
+            if (!connectingIp.equals(ip) && !ServerTrust.isValidIp(ip)) {
+                rawReply(httpExchange, HttpStatus.ClientError.BAD_REQUEST, "Invalid proxied ip header");
+                return;
+            }
+
+            String domain = serverTrust.extractHost(connectingIp, headers);
+            if (!ServerTrust.isValidDomain(domain)) {
+                rawReply(httpExchange, HttpStatus.ClientError.BAD_REQUEST, "Invalid Host header");
+                return;
+            }
+
             Response response = new Response(this.craftsNet, streamEncoder.get(), httpExchange, httpMethod);
-            try {
-                String connectingIp = httpExchange.getRemoteAddress().getAddress().getHostAddress();
+            try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, connectingIp, domain, httpMethod, maxBodySize);
+                 Session session = craftsNet.getSessionCache().getOrNew(SessionInfo.extractSession(request));
+                 Exchange exchange = new Exchange(new Context(), protocolVersion, request, response, session)) {
+                exchange.session().setExchange(exchange);
 
-                String ip = serverTrust.extractIp(connectingIp, headers, connectingIp);
-                if (!connectingIp.equals(ip) && !ServerTrust.isValidIp(ip)) {
-                    rawReply(httpExchange, HttpStatus.ClientError.BAD_REQUEST, "Invalid proxied ip header");
+                PreRequestEvent event = new PreRequestEvent(exchange);
+                craftsNet.getListenerRegistry().call(event);
+                if (event.isCancelled()) {
                     return;
                 }
 
-                String domain = serverTrust.extractHost(connectingIp, headers);
-                if (!ServerTrust.isValidDomain(domain)) {
-                    rawReply(httpExchange, HttpStatus.ClientError.BAD_REQUEST, "Invalid Host header");
-                    return;
-                }
-
-                // Create a Request object to encapsulate the incoming request information.
-                try (Request request = new Request(this.craftsNet, httpExchange, headers, url, ip, connectingIp, domain, httpMethod, maxBodySize);
-                     Session session = craftsNet.getSessionCache().getOrNew(SessionInfo.extractSession(request));
-                     Exchange exchange = new Exchange(new Context(), protocolVersion, request, response, session)) {
-                    exchange.session().setExchange(exchange);
-
-                    PreRequestEvent event = new PreRequestEvent(exchange);
-                    craftsNet.getListenerRegistry().call(event);
-                    if (event.isCancelled()) {
-                        return;
-                    }
-
-                    Map.Entry<Boolean, Boolean> result = handle(exchange);
-                    craftsNet.getListenerRegistry().call(new PostRequestEvent(exchange, result.getKey(), result.getValue()));
-                }
+                Map.Entry<Boolean, Boolean> result = handle(exchange);
+                craftsNet.getListenerRegistry().call(new PostRequestEvent(exchange, result.getKey(), result.getValue()));
             } catch (Throwable t) {
                 handleThrowable(response, url, httpMethod, t);
             } finally {
@@ -227,7 +224,7 @@ public class WebHandler implements HttpHandler {
                 response.setStatus(code);
             }
 
-            if (!response.sendingFile() && !httpMethod.isResponseBodyAble()) {
+            if (!response.sendingFile() && httpMethod.isResponseBodyAble()) {
                 response.print(message);
             }
         };

@@ -1,4 +1,7 @@
-package de.craftsblock.craftsnet.api.http;
+package de.craftsblock.craftsnet.api.http.exception;
+
+import de.craftsblock.craftsnet.api.http.status.HttpStatus;
+import de.craftsblock.craftsnet.api.http.status.HttpStatusException;
 
 /**
  * Exception thrown when an HTTP request body exceeds the maximum permitted size.
@@ -6,7 +9,7 @@ package de.craftsblock.craftsnet.api.http;
  * This is an unchecked exception that can be used to indicate that the request
  * body cannot be processed because it is too large.
  */
-public class RequestBodyTooLargeException extends RuntimeException {
+public class RequestBodyTooLargeException extends HttpStatusException {
 
     /**
      * Creates a new exception with the specified detail message.
@@ -14,7 +17,7 @@ public class RequestBodyTooLargeException extends RuntimeException {
      * @param message the detail message describing why the request body is too large
      */
     public RequestBodyTooLargeException(String message) {
-        super(message);
+        super(HttpStatus.ClientError.PAYLOAD_TOO_LARGE, message);
     }
 
 }

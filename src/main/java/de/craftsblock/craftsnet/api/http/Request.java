@@ -9,6 +9,7 @@ import de.craftsblock.craftsnet.api.http.cookies.Cookie;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoder;
 import de.craftsblock.craftsnet.api.http.encoding.StreamEncoderRegistry;
 import de.craftsblock.craftsnet.api.http.encoding.builtin.IdentityStreamEncoder;
+import de.craftsblock.craftsnet.api.http.exception.RequestBodyTooLargeException;
 import de.craftsblock.craftsnet.api.requirements.RequireAble;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
