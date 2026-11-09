@@ -132,7 +132,17 @@ public class SessionInfo {
             return;
         }
 
-        this.sessionID = PassphraseUtils.stringify(PassphraseUtils.generateSecure(20, false));
+        String generatedID = PassphraseUtils.stringify(
+                PassphraseUtils.generateSecure(20, false)
+        );
+
+        if (!isValidSessionID(generatedID)) {
+            throw new IllegalStateException(
+                    "Generated session ID contains invalid characters!"
+            );
+        }
+
+        this.sessionID = generatedID;
         this.persistent = true;
 
         if (craftsNet != null) {

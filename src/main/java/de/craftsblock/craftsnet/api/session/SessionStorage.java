@@ -69,6 +69,11 @@ public class SessionStorage {
             return false;
         }
 
+        String sessionID = this.session.getSessionInfo().getSessionID();
+        if (!SessionInfo.isValidSessionID(sessionID)) {
+            return false;
+        }
+
         SessionDriver currentDriver;
         synchronized (lock) {
             currentDriver = this.driver;
@@ -77,7 +82,7 @@ public class SessionStorage {
         try {
             return currentDriver.exists(
                     this.session,
-                    this.session.getSessionInfo().getSessionID()
+                    sessionID
             );
         } catch (IOException e) {
             throw new RuntimeException(e);
