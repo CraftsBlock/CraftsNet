@@ -5,7 +5,11 @@ import de.craftsblock.craftsnet.utils.reflection.TypeUtils;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 
 /**
  * Manages session data, allowing the storage and retrieval of serialized objects.
@@ -21,6 +25,8 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
 
     private final SessionInfo sessionInfo;
     private final SessionStorage sessionStorage;
+
+    private final AtomicBoolean dirty = new AtomicBoolean(false);
 
     protected BaseExchange exchange;
 
@@ -42,39 +48,233 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
         boolean loaded = this.exchange != null;
         this.exchange = exchange;
 
-        if (loaded) return;
+        if (loaded) {
+            return;
+        }
+
         this.sessionInfo.load();
+        this.markClean();
     }
 
     /**
-     * Retrieves the value associated with the specified key and attempts to cast it to the specified type.
+     * {@inheritDoc}
      *
-     * @param key  The key for the value to retrieve.
-     * @param type The expected type of the value.
-     * @param <T>  The type parameter of the value.
-     * @return The value associated with the key, or {@code null} if not found or cannot be cast.
-     * @deprecated Use {@link #getTyped(String, Class)} instead.
+     * @param key   {@inheritDoc}
+     * @param value {@inheritDoc}
+     * @return {@inheritDoc}
      */
-    @Deprecated(since = "3.7.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
-    public <T> T getAsType(@NotNull String key, @NotNull Class<T> type) {
-        return this.getTyped(key, type);
+    @Override
+    public Object put(@NotNull String key, @NotNull Object value) {
+        Object previous = super.put(key, value);
+        markDirty();
+        return previous;
     }
 
     /**
-     * Retrieves the value associated with the specified key and attempts to cast it to the specified type.
+     * {@inheritDoc}
      *
-     * @param key      The key for the value to retrieve.
-     * @param fallback The fallback value returned when the key does not exist.
-     * @param type     The expected type of the value.
-     * @param <T>      The type parameter of the value.
-     * @return The value associated with the key, or {@code null} if not found or cannot be cast.
-     * @deprecated Use {@link #getTyped(String, Class, Object)} instead.
+     * @param map {@inheritDoc}
      */
-    @Deprecated(since = "3.7.0", forRemoval = true)
-    @ApiStatus.ScheduledForRemoval(inVersion = "3.8.0")
-    public <T> T getAsType(@NotNull String key, T fallback, @NotNull Class<T> type) {
-        return this.getTyped(key, type, fallback);
+    @Override
+    public void putAll(Map<? extends String, ?> map) {
+        if (map.isEmpty()) {
+            return;
+        }
+
+        super.putAll(map);
+        markDirty();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param key {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    public Object remove(@NotNull Object key) {
+        Object previous = super.remove(key);
+        if (previous != null) {
+            markDirty();
+        }
+
+        return previous;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param key   {@inheritDoc}
+     * @param value {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    public boolean remove(Object key, Object value) {
+        boolean removed = super.remove(key, value);
+        if (removed) {
+            markDirty();
+        }
+
+        return removed;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void clear() {
+        if (isEmpty()) {
+            return;
+        }
+
+        super.clear();
+        markDirty();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param key   {@inheritDoc}
+     * @param value {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    public Object putIfAbsent(@NotNull String key, Object value) {
+        Object previous = super.putIfAbsent(key, value);
+        if (previous == null) {
+            markDirty();
+        }
+
+        return previous;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param key   {@inheritDoc}
+     * @param value {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    public Object replace(@NotNull String key, @NotNull Object value) {
+        Object previous = super.replace(key, value);
+        if (previous != null) {
+            markDirty();
+        }
+
+        return previous;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param key      {@inheritDoc}
+     * @param oldValue {@inheritDoc}
+     * @param newValue {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    public boolean replace(@NotNull String key, @NotNull Object oldValue, @NotNull Object newValue) {
+        boolean replaced = super.replace(key, oldValue, newValue);
+        if (replaced) {
+            markDirty();
+        }
+
+        return replaced;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param function {@inheritDoc}
+     */
+    @Override
+    public void replaceAll(BiFunction<? super String, ? super Object, ?> function) {
+        if (isEmpty()) {
+            return;
+        }
+
+        super.replaceAll(function);
+        markDirty();
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param key      {@inheritDoc}
+     * @param function {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    public Object computeIfAbsent(String key, @NotNull Function<? super String, ?> function) {
+        Object previous = super.get(key);
+        Object result = super.computeIfAbsent(key, function);
+        if (previous == null && result != null) {
+            markDirty();
+        }
+
+        return result;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param key      {@inheritDoc}
+     * @param function {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    public Object computeIfPresent(
+            String key,
+            @NotNull BiFunction<? super String, ? super Object, ?> function
+    ) {
+        Object previous = super.get(key);
+        Object result = super.computeIfPresent(key, function);
+        if (previous != null) {
+            markDirty();
+        }
+
+        return result;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param key      {@inheritDoc}
+     * @param function {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    public Object compute(
+            String key,
+            @NotNull BiFunction<? super String, ? super Object, ?> function
+    ) {
+        Object previous = super.get(key);
+        Object result = super.compute(key, function);
+        if (previous != result) {
+            markDirty();
+        }
+
+        return result;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * @param key      {@inheritDoc}
+     * @param value    {@inheritDoc}
+     * @param function {@inheritDoc}
+     * @return {@inheritDoc}
+     */
+    @Override
+    public Object merge(
+            String key,
+            @NotNull Object value,
+            @NotNull BiFunction<? super Object, ? super Object, ?> function
+    ) {
+        Object result = super.merge(key, value, function);
+        markDirty();
+        return result;
     }
 
     /**
@@ -104,7 +304,10 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
      */
     @SuppressWarnings("unchecked")
     public <T> T getTyped(@NotNull String key, @NotNull Class<T> type, T orElse) {
-        if (!containsKey(key)) return orElse;
+        if (!containsKey(key)) {
+            return orElse;
+        }
+
         return (T) get(key);
     }
 
@@ -117,7 +320,10 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
      * @return {@code true} if the value exists and matches the type, otherwise {@code false}.
      */
     public <T> boolean isType(@NotNull String key, @NotNull Class<T> type) {
-        if (!containsKey(key)) return false;
+        if (!containsKey(key)) {
+            return false;
+        }
+
         return TypeUtils.isAssignable(type, get(key).getClass());
     }
 
@@ -156,11 +362,40 @@ public class Session extends ConcurrentHashMap<String, Object> implements AutoCl
     }
 
     /**
+     * Checks whether the session data has been modified.
+     *
+     * @return {@code true} if the session data has been modified, otherwise {@code false}.
+     */
+    public boolean isDirty() {
+        return dirty.get();
+    }
+
+    /**
+     * Marks the session data as modified.
+     */
+    public void markDirty() {
+        dirty.set(true);
+    }
+
+    /**
+     * Marks the session data as clean.
+     * Should be called after successfully saving or loading the session.
+     */
+    public void markClean() {
+        dirty.set(false);
+    }
+
+    /**
      * Saves the session data to a persistent file. Automatically called when the session is closed.
      */
     @Override
     public void close() {
+        if (!this.isDirty()) {
+            return;
+        }
+
         this.sessionStorage.save();
+        this.markClean();
     }
 
     /**
