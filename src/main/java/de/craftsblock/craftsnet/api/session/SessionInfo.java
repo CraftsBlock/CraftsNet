@@ -11,9 +11,6 @@ import de.craftsblock.craftsnet.logging.Logger;
 import de.craftsblock.craftsnet.utils.PassphraseUtils;
 import org.jetbrains.annotations.Nullable;
 
-import java.sql.SQLOutput;
-import java.util.Objects;
-
 /**
  * Manages session metadata and handles the persistence and lifecycle of sessions.
  * The {@link SessionInfo} class works in conjunction with {@link Session} to manage
@@ -87,7 +84,9 @@ public class SessionInfo {
 
         this.logger = craftsNet.getLogger();
 
-        if (this.sessionID == null) return;
+        if (this.sessionID == null) {
+            return;
+        }
 
         // Must be true because SessionStorage#exists relies on #persistent
         this.persistent = true;
@@ -97,8 +96,9 @@ public class SessionInfo {
             return;
         }
 
-        if (this.craftsNet != null)
+        if (this.craftsNet != null) {
             this.craftsNet.getSessionCache().put(this.sessionID, this.session);
+        }
 
         this.session.getSessionStorage().load();
     }
@@ -128,17 +128,21 @@ public class SessionInfo {
      */
     protected void makePersistent() {
         compatibleOrThrow();
-        if (isPersistent()) return;
+        if (isPersistent()) {
+            return;
+        }
 
         this.sessionID = PassphraseUtils.stringify(PassphraseUtils.generateSecure(20, false));
         this.persistent = true;
 
-        if (craftsNet != null)
+        if (craftsNet != null) {
             craftsNet.getSessionCache().put(this.sessionID, this.session);
+        }
 
-        if (this.session.getExchange() instanceof Exchange http)
+        if (this.session.getExchange() instanceof Exchange http) {
             http.response().setCookie(SID_COOKIE_NAME)
                     .override(REFERENCE_COOKIE).setValue(this.sessionID);
+        }
     }
 
     /**
@@ -149,12 +153,16 @@ public class SessionInfo {
         compatibleOrThrow();
         if (!isPersistent()) return;
 
-        if (craftsNet != null) craftsNet.getSessionCache().remove(this.sessionID);
+        if (craftsNet != null) {
+            craftsNet.getSessionCache().remove(this.sessionID);
+        }
+
         this.session.getSessionStorage().destroy();
 
-        if (this.session.getExchange() instanceof Exchange http)
+        if (this.session.getExchange() instanceof Exchange http) {
             http.response().deleteCookie(SID_COOKIE_NAME)
                     .override(REFERENCE_COOKIE).markDeleted();
+        }
 
         this.sessionID = null;
         this.persistent = false;
@@ -167,10 +175,15 @@ public class SessionInfo {
      * @throws IllegalStateException if the current exchange is not compatible.
      */
     private void compatibleOrThrow() {
-        if (this.session.getExchange() == null) return;
+        if (this.session.getExchange() == null) {
+            return;
+        }
+
         if (this.session.getExchange() instanceof Exchange http) {
-            if (http.response().headersSent())
+            if (http.response().headersSent()) {
                 throw new IllegalStateException("The response headers have already been sent!");
+            }
+
             return;
         }
 
@@ -229,8 +242,33 @@ public class SessionInfo {
      * @return the session ID or {@code null} if no session ID is present.
      */
     public static @Nullable String extractSession(Request request) {
-        if (!request.hasCookie(SID_COOKIE_NAME)) return null;
-        return Objects.requireNonNull(request.retrieveCookie(SID_COOKIE_NAME)).getValue();
+        Cookie cookie = request.retrieveCookie(SID_COOKIE_NAME);
+        if (cookie == null) {
+            return null;
+        }
+
+        String sessionID = cookie.getValue();
+        if (!isValidSessionID(sessionID)) {
+            return null;
+        }
+
+        return sessionID;
+    }
+
+    /**
+     * Validates a session identifier.
+     *
+     * @param sessionID The identifier to validate.
+     * @return {@code true} if the identifier is valid.
+     */
+    public static boolean isValidSessionID(String sessionID) {
+        if (sessionID == null
+                || sessionID.isBlank()
+                || sessionID.length() > 128) {
+            return false;
+        }
+
+        return sessionID.matches("[a-zA-Z0-9]+");
     }
 
 }
