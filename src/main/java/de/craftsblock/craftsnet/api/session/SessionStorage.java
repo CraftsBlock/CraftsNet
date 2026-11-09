@@ -1,3 +1,4 @@
+
 package de.craftsblock.craftsnet.api.session;
 
 import de.craftsblock.craftsnet.api.session.drivers.SessionDriver;
@@ -5,19 +6,20 @@ import de.craftsblock.craftsnet.api.session.drivers.builtin.FileSessionDriver;
 import org.jetbrains.annotations.ApiStatus;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
+import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Handles the persistence of session data by providing functionality for loading, saving,
- * and destroying session files. The session data is serialized to a file and deserialized
- * back into memory, allowing for session state preservation between application runs.
+ * and destroying session files.
  *
- * <p>The {@link  SessionStorage} class ensures data integrity through file locking mechanisms
- * and supports thread-safe operations by preventing concurrent modifications.</p>
+ * <p>Session operations are executed sequentially. Concurrent operations are queued and
+ * processed in their submission order.</p>
  *
- * <p>Session files are stored in a predefined directory, and their filenames are constructed
- * using the session identifier.</p>
+ * <p>All internal state, including the active driver and job queue, is protected by
+ * a dedicated lock. Driver operations are executed outside this lock to avoid blocking
+ * queue management during potentially expensive I/O operations.</p>
  *
  * @author Philipp Maywald
  * @author CraftsBlock
@@ -26,138 +28,266 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 public class SessionStorage {
 
-    private static SessionDriver defaultDriver = new FileSessionDriver();
+    private static volatile SessionDriver defaultDriver = new FileSessionDriver();
 
     /**
-     * Changes the default {@link SessionDriver} that will be used when
-     * creating sessions.
-     * <p>
-     * <b>NOTE:</b> This method will change in future releases so use with caution.
+     * Changes the default {@link SessionDriver} used when creating sessions.
      *
-     * @param defaultDriver The new default {@link SessionDriver}.
+     * @param defaultDriver The new default driver.
      * @since 3.3.5-SNAPSHOT
      */
     @ApiStatus.Experimental
     public static void setDefaultDriver(SessionDriver defaultDriver) {
-        SessionStorage.defaultDriver = defaultDriver;
+        SessionStorage.defaultDriver = Objects.requireNonNull(defaultDriver, "defaultDriver");
     }
 
+    private final Object lock = new Object();
+
     private final Session session;
-    private final Queue<QueuedJob> actionQueue = new LinkedBlockingQueue<>();
+    private final Queue<QueuedJob> actionQueue = new ArrayDeque<>();
 
     private SessionDriver driver;
-
     private boolean busy = false;
 
     /**
-     * Constructs a new {@link SessionStorage} instance for managing the specified session.
+     * Constructs a new session storage instance.
      *
-     * @param session the session associated with this file handler.
+     * @param session The associated session.
      */
     public SessionStorage(Session session) {
-        this.session = session;
+        this.session = Objects.requireNonNull(session, "session");
         this.driver = defaultDriver;
     }
 
     /**
-     * Checks if the session exists in the underlying {@link SessionDriver driver}.
+     * Checks whether the session exists in the underlying driver.
      *
-     * @return {@code true} if the session exists in the {@link SessionDriver driver}, {@code false} otherwise.
-     * @since 3.4.0-SNAPSHOT
+     * @return {@code true} if the session exists.
      */
     public boolean exists() {
+        if (!this.session.isSessionStarted()) {
+            return false;
+        }
+
+        SessionDriver currentDriver;
+        synchronized (lock) {
+            currentDriver = this.driver;
+        }
+
         try {
-            if (!this.session.isSessionStarted()) return false;
-            return this.driver.exists(this.session, this.session.getSessionInfo().getSessionID());
+            return currentDriver.exists(
+                    this.session,
+                    this.session.getSessionInfo().getSessionID()
+            );
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     /**
-     * Loads the sessions data using the currently set {@link SessionDriver driver}.
-     * If the {@link SessionStorage storage} is currently busy, the load
-     * action will be queued and performed later on.
+     * Loads the session data.
+     * <p>
+     * If the storage is busy, the operation is queued.
      */
     public void load() {
-        if (!this.exists()) return;
+        if (!this.exists()) {
+            return;
+        }
+
         this.performJob(JobType.LOAD);
     }
 
     /**
-     * Saves the sessions data using the currently set {@link SessionDriver driver}.
-     * If the {@link SessionStorage storage} is currently busy, the save
-     * action will be queued and performed later on.
+     * Saves the session data.
+     * <p>
+     * If the storage is busy, the operation is queued.
      */
     public void save() {
-        if (!this.session.isSessionStarted()) return;
         this.performJob(JobType.SAVE);
     }
 
     /**
-     * Deletes the persistent session data holder using the currently set
-     * {@link SessionDriver driver}.
-     * If the {@link SessionStorage storage} is currently busy, the destroy
-     * action will be queued and performed later on.
+     * Deletes the persistent session data.
+     * <p>
+     * If the storage is busy, the operation is queued.
      */
     protected void destroy() {
         this.performJob(JobType.DESTROY);
     }
 
     /**
-     * Migrates this session from the currently set {@link SessionDriver driver}
-     * to another {@link SessionDriver driver}.
-     * If the {@link SessionStorage storage} is currently busy, the migrate
-     * action will be queued and performed later on.
+     * Migrates the session to another driver.
+     * <p>
+     * The migration is queued if another operation is currently running.
      *
-     * @param driver The new {@link SessionDriver}.
+     * @param driver The new session driver.
      * @since 3.3.5-SNAPSHOT
      */
     public void migrate(SessionDriver driver) {
-        if (this.driver.equals(driver)) return;
-        SessionDriver priorDriver = this.driver;
-        this.driver = driver;
-        this.performJob(JobType.MIGRATE, priorDriver);
+        Objects.requireNonNull(driver, "driver");
+
+        QueuedJob job;
+        synchronized (lock) {
+            if (this.driver.equals(driver)) {
+                return;
+            }
+
+            SessionDriver previousDriver = this.driver;
+            this.driver = driver;
+
+            job = new QueuedJob(
+                    JobType.MIGRATE,
+                    driver,
+                    previousDriver
+            );
+
+            if (!this.session.isSessionStarted()) {
+                return;
+            }
+
+            if (busy) {
+                actionQueue.offer(job);
+                return;
+            }
+
+            busy = true;
+        }
+
+        processJobs(job);
     }
 
     /**
-     * Performs a job if the storage is currently not busy. Otherwise,
-     * it queues the call of the job. If the session is currently not
-     * persistent nothing will happen.
+     * Submits a session operation.
+     * <p>
+     * If another operation is running, the job is queued.
+     * Otherwise, processing starts immediately.
      *
-     * @param type The {@link JobType} which will be performed.
-     * @param args An array of objects which can be passed down to the driver.
-     * @since 3.3.5-SNAPSHOT
+     * @param type The operation type.
+     * @param args Additional arguments.
      */
     private void performJob(JobType type, Object... args) {
-        if (!this.session.isSessionStarted()) return;
-        if (availableOrQueue(type)) return;
+        if (!this.session.isSessionStarted()) {
+            return;
+        }
 
-        busy = true;
+        QueuedJob job;
+        synchronized (lock) {
+            if (!this.session.isSessionStarted()) {
+                return;
+            }
+
+            job = createJob(type, args, this.driver);
+
+            if (busy) {
+                actionQueue.offer(job);
+                return;
+            }
+
+            busy = true;
+        }
+
+        processJobs(job);
+    }
+
+    /**
+     * Creates a queued job.
+     *
+     * @param type   The operation type.
+     * @param args   Additional arguments.
+     * @param driver The driver associated with this job.
+     * @return The created job.
+     */
+    private QueuedJob createJob(
+            JobType type,
+            Object[] args,
+            SessionDriver driver
+    ) {
+        Objects.requireNonNull(type, "type");
+
+        if (type == JobType.MIGRATE) {
+            if (args.length == 0 || !(args[0] instanceof SessionDriver previousDriver)) {
+                throw new IllegalArgumentException(
+                        "MIGRATE requires a previous SessionDriver."
+                );
+            }
+
+            return new QueuedJob(type, driver, previousDriver);
+        }
+
+        return new QueuedJob(type, driver, null);
+    }
+
+    /**
+     * Processes jobs sequentially.
+     * <p>
+     * The queue lock is only acquired when accessing the queue.
+     * Actual driver operations are executed outside the queue lock.
+     * <p>
+     * Failed jobs do not prevent subsequent jobs from being processed.
+     *
+     * @param initialJob The first job to execute.
+     */
+    private void processJobs(QueuedJob initialJob) {
+        QueuedJob currentJob = initialJob;
+        Throwable failure = null;
+
         try {
-            this.forcePerformJob(type, args);
+            while (currentJob != null) {
+                try {
+                    forcePerformJob(currentJob);
+                } catch (RuntimeException | Error e) {
+                    if (failure == null) {
+                        failure = e;
+                    } else if (failure != e) {
+                        failure.addSuppressed(e);
+                    }
+                }
+
+                synchronized (lock) {
+                    currentJob = actionQueue.poll();
+
+                    if (currentJob == null) {
+                        busy = false;
+                    }
+                }
+            }
         } finally {
-            completeJob();
+            synchronized (lock) {
+                busy = false;
+            }
+        }
+
+        if (failure instanceof RuntimeException e) {
+            throw e;
+        }
+
+        if (failure instanceof Error e) {
+            throw e;
         }
     }
 
     /**
-     * Force performs a job. If the session is currently not persistent nothing
-     * will happen.
+     * Executes a single job using its associated driver.
      *
-     * @param type The {@link JobType} which will be performed.
-     * @param args An array of objects which can be passed down to the driver.
-     * @since 3.4.0-SNAPSHOT
+     * @param job The job to execute.
      */
-    private void forcePerformJob(JobType type, Object... args) {
+    private void forcePerformJob(QueuedJob job) {
         try {
             String sessionID = this.session.getSessionInfo().getSessionID();
+
             synchronized (session) {
-                switch (type) {
-                    case LOAD -> this.driver.load(this.session, sessionID);
-                    case SAVE -> this.driver.save(this.session, sessionID);
-                    case DESTROY -> this.driver.destroy(this.session, sessionID);
-                    case MIGRATE -> this.driver.migrate(this.session, sessionID, (SessionDriver) args[0]);
+                switch (job.type()) {
+                    case LOAD -> job.driver().load(this.session, sessionID);
+
+                    case SAVE -> job.driver().save(this.session, sessionID);
+
+                    case DESTROY -> job.driver().destroy(this.session, sessionID);
+
+                    case MIGRATE -> job.driver().migrate(
+                            this.session,
+                            sessionID,
+                            job.previousDriver()
+                    );
                 }
             }
         } catch (IOException e) {
@@ -166,109 +296,73 @@ public class SessionStorage {
     }
 
     /**
-     * Completes all jobs in the queue and marks the session file as not busy.
-     * Ensures thread safety and prevents concurrent modification issues.
+     * Checks whether the storage is busy.
+     *
+     * @return {@code true} if an operation is currently running.
      */
-    private synchronized void completeJob() {
-        try {
-            if (actionQueue.isEmpty()) return;
-
-            QueuedJob job;
-            while ((job = actionQueue.poll()) != null)
-                this.forcePerformJob(job.type(), job.args());
-
-            if (!actionQueue.isEmpty()) this.completeJob();
-        } finally {
-            busy = false;
+    public boolean isBusy() {
+        synchronized (lock) {
+            return busy;
         }
     }
 
     /**
-     * Checks if the session file is busy. If busy, queues the action for execution once the current job is completed.
+     * Retrieves the currently associated session driver.
      *
-     * @param type The action to queue for later execution.
-     * @param args The args which should be passed to the driver.
-     * @return {@code true} if the runnable was queued, {@code false} if the manager was not busy and no action was queued.
-     */
-    public boolean availableOrQueue(JobType type, Object... args) {
-        if (!isBusy()) return false;
-
-        actionQueue.offer(new QueuedJob(type, args));
-        return true;
-    }
-
-    /**
-     * Checks whether the session file is currently busy with an operation.
-     *
-     * @return {@code true} if the session file is busy, otherwise {@code false}.
-     */
-    public boolean isBusy() {
-        return busy;
-    }
-
-    /**
-     * Retrieves the {@link SessionDriver} instance associated with this session file.
-     *
-     * @return The associated {@link SessionDriver}.
-     * @since 3.3.5-SNAPSHOT
+     * @return The current driver.
      */
     public SessionDriver getDriver() {
-        return driver;
+        synchronized (lock) {
+            return driver;
+        }
     }
 
     /**
-     * Retrieves the {@link Session} instance associated with this session file.
+     * Retrieves the associated session.
      *
-     * @return The associated {@link Session}.
+     * @return The session.
      */
     public Session getSession() {
         return session;
     }
 
     /**
-     * Represents a queued job.
+     * Represents a queued session operation.
      *
-     * @param type The {@link JobType}.
-     * @param args Additional arguments.
-     * @author Philipp Maywald
-     * @author CraftsBlock
-     * @since 3.4.0-SNAPSHOT
+     * @param type           The operation type.
+     * @param driver         The driver associated with this operation.
+     * @param previousDriver The previous driver, used for migration.
      */
-    private record QueuedJob(JobType type, Object... args) {
-
+    private record QueuedJob(
+            JobType type,
+            SessionDriver driver,
+            SessionDriver previousDriver
+    ) {
     }
 
     /**
-     * Indicating the type of job the {@link SessionStorage} is performing.
-     *
-     * @author Philipp Maywald
-     * @author CraftsBlock
-     * @since 3.3.5-SNAPSHOT
+     * Represents the available session operations.
      */
     public enum JobType {
 
         /**
-         * Indicating a load process.
+         * Loads session data.
          */
         LOAD,
 
         /**
-         * Indicating a save process.
+         * Saves session data.
          */
         SAVE,
 
         /**
-         * Indicating a destroy process.
+         * Destroys persistent session data.
          */
         DESTROY,
 
         /**
-         * Indicating a migrate process.
-         *
-         * @since 3.3.5-SNAPSHOT
+         * Migrates session data between drivers.
          */
         MIGRATE,
-
     }
-
 }
