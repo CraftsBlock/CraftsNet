@@ -85,7 +85,7 @@ dependencies {
     implementation "org.apache.maven.resolver:maven-resolver-util:2.0.22"
 
     // https://mvnrepository.com/artifact/org.apache.maven/maven-resolver-provider
-    implementation 'org.apache.maven:maven-resolver-provider:4.0.0-rc-6'
+    implementation 'org.apache.maven:maven-resolver-provider:4.0.0-rc-7'
 
     // Testing ----------------------------------------------------------------------------------------------------------------
 
