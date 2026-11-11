@@ -39,7 +39,8 @@ public class SessionCache extends LruCache<String, Session> {
      * if the key is not present in the cache.
      */
     public Session getOrNew(String key) {
-        return key != null && containsKey(key) ? get(key).getSessionInfo().secureSession() : new Session();
+        Session cached = key == null ? null : this.get(key);
+        return cached != null ? cached : new Session();
     }
 
 }

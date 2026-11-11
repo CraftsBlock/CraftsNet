@@ -107,17 +107,16 @@ public class SessionInfo {
      * Performs a quick session check against the session storage
      * to validate that the current session is a real session.
      *
-     * @return {@link Session} for method chaining in {@link SessionCache}.
      * @since 3.4.3-SNAPSHOT
      */
-    protected Session secureSession() {
-        if (!this.session.getSessionStorage().exists()) {
-            this.session.exchange = null;
-            this.session.stopSession();
-            this.session.clear();
+    protected void secureSession() {
+        if (this.session.getSessionStorage().exists()) {
+            return;
         }
 
-        return session;
+        this.session.exchange = null;
+        this.session.stopSession();
+        this.session.clear();
     }
 
     /**
@@ -144,6 +143,7 @@ public class SessionInfo {
 
         this.sessionID = generatedID;
         this.persistent = true;
+        this.session.markDirty();
 
         if (craftsNet != null) {
             craftsNet.getSessionCache().put(this.sessionID, this.session);

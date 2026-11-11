@@ -1,4 +1,3 @@
-
 package de.craftsblock.craftsnet.api.session.drivers.builtin;
 
 import de.craftsblock.craftscore.buffer.BufferUtil;
@@ -44,6 +43,14 @@ public class FileSessionDriver implements SessionDriver {
      * The file extension used for session files.
      */
     public static final String STORAGE_EXTENSION = ".cnetsess";
+
+    static {
+        try {
+            Files.createDirectories(Path.of(STORAGE_LOCATION));
+        } catch (IOException exception) {
+            throw new ExceptionInInitializerError(exception);
+        }
+    }
 
     /**
      * Resolves and validates a session file path.
@@ -198,11 +205,7 @@ public class FileSessionDriver implements SessionDriver {
         });
 
         Path parent = path.getParent();
-        Path tempFile = Files.createTempFile(
-                parent,
-                "session-",
-                ".tmp"
-        );
+        Path tempFile = Files.createTempFile(parent, "session-", ".tmp");
 
         try {
             try (FileChannel channel = FileChannel.open(
@@ -213,7 +216,6 @@ public class FileSessionDriver implements SessionDriver {
                  OutputStream stream = Channels.newOutputStream(channel)) {
 
                 int bufferSize = 1024;
-
                 saveBuffer.trim().with(ByteBuffer::flip);
 
                 while (saveBuffer.hasRemainingBytes(bufferSize)) {
@@ -226,12 +228,7 @@ public class FileSessionDriver implements SessionDriver {
                 channel.force(true);
             }
 
-            Files.move(
-                    tempFile,
-                    path,
-                    StandardCopyOption.ATOMIC_MOVE,
-                    StandardCopyOption.REPLACE_EXISTING
-            );
+            Files.move(tempFile, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING);
         } finally {
             Files.deleteIfExists(tempFile);
         }

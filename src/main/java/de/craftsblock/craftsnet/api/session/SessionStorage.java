@@ -41,12 +41,12 @@ public class SessionStorage {
         SessionStorage.defaultDriver = Objects.requireNonNull(defaultDriver, "defaultDriver");
     }
 
-    private final Object lock = new Object();
-
     private final Session session;
     private final Queue<QueuedJob> actionQueue = new ArrayDeque<>();
+    private final Object lock = new Object();
 
-    private SessionDriver driver;
+    private volatile SessionDriver driver;
+
     private boolean busy = false;
 
     /**
@@ -108,6 +108,10 @@ public class SessionStorage {
      * If the storage is busy, the operation is queued.
      */
     public void save() {
+        if (!this.session.isSessionStarted()) {
+            return;
+        }
+
         this.performJob(JobType.SAVE);
     }
 
