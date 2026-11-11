@@ -41,7 +41,7 @@ public class WebServerBuilder extends ServerBuilder<WebServerBuilder> {
 
         this.maxBodySize(10 * 1024 * 1024);
 
-        this.backlog(0);
+        this.backlog(128);
         this.maxHeaders(100);
         this.maxHeaderSize(32768);
         this.maxUriLength(4096);
@@ -50,6 +50,11 @@ public class WebServerBuilder extends ServerBuilder<WebServerBuilder> {
         this.skipDefaultRoute(false);
         this.ssl(false);
         this.state(ServerState.DYNAMIC);
+
+        this.corePoolSize(16);
+        this.maximumPoolSize(64);
+        this.keepAliveTime(60);
+        this.queueCapacity(128);
     }
 
     /**

@@ -6,9 +6,16 @@ import de.craftsblock.craftsnet.api.websocket.WebSocketServer;
 import de.craftsblock.craftsnet.builder.server.ServerBuilder;
 import de.craftsblock.craftsnet.builder.server.ServerState;
 import de.craftsblock.craftsnet.logging.Logger;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * Abstract class representing a server in the CraftsNet framework.
@@ -29,6 +36,8 @@ public abstract class Server<B extends ServerBuilder<B>> {
             WebServer.class, WebSocketServer.class
     );
 
+    private Function<B, Executor> executorFactory;
+
     private final B builder;
     private final CraftsNet craftsNet;
 
@@ -47,6 +56,16 @@ public abstract class Server<B extends ServerBuilder<B>> {
     public Server(CraftsNet craftsNet, B builder) {
         this.craftsNet = craftsNet;
         this.builder = builder;
+
+        this.executorFactory = (b) -> new ThreadPoolExecutor(
+                builder.corePoolSize(),
+                builder.maximumPoolSize(),
+                builder.keepAliveTime(),
+                TimeUnit.SECONDS,
+                new ArrayBlockingQueue<>(builder.queueCapacity()),
+                Thread.ofVirtual().name(b.getNamespace() + "Handler-", 1).factory(),
+                new ThreadPoolExecutor.AbortPolicy()
+        );
 
         this.bind(builder.port(), builder.backlog());
         this.ssl = builder.ssl();
@@ -159,6 +178,25 @@ public abstract class Server<B extends ServerBuilder<B>> {
      */
     public boolean isStatus(ServerState type) {
         return this.builder.isState(type);
+    }
+
+    /**
+     * Sets the factory used to create the executor responsible for handling HTTP requests.
+     *
+     * @param executorFactory The factory used to create the executor.
+     */
+    public void setExecutorFactory(@NotNull Function<B, Executor> executorFactory) {
+        Objects.requireNonNull(executorFactory, "executorFactory");
+        this.executorFactory = executorFactory;
+    }
+
+    /**
+     * Retrieves the factory used to create the executor responsible for handling HTTP requests.
+     *
+     * @return The factory used to create the executor.
+     */
+    public @NotNull Function<B, Executor> getExecutorFactory() {
+        return executorFactory;
     }
 
     /**

@@ -52,7 +52,7 @@ public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder
         this.maxMessageSize(4 * 1024 * 1024);
         this.readTimeout(60_000);
 
-        this.backlog(0);
+        this.backlog(512);
         this.maxHeaders(100);
         this.maxHeaderSize(32768);
         this.maxUriLength(4096);
@@ -61,6 +61,11 @@ public class WebSocketServerBuilder extends ServerBuilder<WebSocketServerBuilder
         this.skipDefaultRoute(false);
         this.ssl(false);
         this.state(ServerState.DYNAMIC);
+
+        this.corePoolSize(16);
+        this.maximumPoolSize(128);
+        this.keepAliveTime(60);
+        this.queueCapacity(512);
     }
 
     /**

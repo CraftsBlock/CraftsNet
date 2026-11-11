@@ -14,7 +14,7 @@ import java.util.function.Consumer;
  * <p>
  * This builder extends {@link NamespacedBuilder} and provides type-safe methods for configuring
  * server-specific settings, such as the connection backlog, maximum URI length, listening port,
- * response encoding, SSL, server state, and trusted proxy headers.
+ * response encoding, SSL, server state, trusted proxy headers, and executor settings.
  * <p>
  * Each configuration value is stored under its corresponding argument name in the inherited
  * namespaced configuration.
@@ -24,6 +24,7 @@ import java.util.function.Consumer;
  * @author CraftsBlock
  * @see NamespacedBuilder
  * @see ServerState
+ * @see ServerTrustBuilder
  * @see ArgumentTransformer
  * @since 4.0.0
  */
@@ -54,6 +55,11 @@ public class ServerBuilder<T extends ServerBuilder<T>> extends NamespacedBuilder
         this.addKnownArgument("skipDefaultRoute", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("ssl", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("state", ArgumentTransformer.enumType(ServerState.class));
+
+        this.addKnownArgument("corePoolSize", ArgumentTransformer.integerNumber(0, Integer.MAX_VALUE));
+        this.addKnownArgument("maximumPoolSize", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
+        this.addKnownArgument("keepAliveTime", ArgumentTransformer.integerNumber(0, Integer.MAX_VALUE));
+        this.addKnownArgument("queueCapacity", ArgumentTransformer.integerNumber(1, Integer.MAX_VALUE));
     }
 
     /**
@@ -309,6 +315,108 @@ public class ServerBuilder<T extends ServerBuilder<T>> extends NamespacedBuilder
      */
     public boolean isState(@NotNull ServerState state) {
         return this.state() == state;
+    }
+
+    /**
+     * Sets the number of threads that the server executor should keep in its core pool.
+     *
+     * @param corePoolSize the core pool size, greater than or equal to {@code 0}
+     * @return this builder instance for method chaining
+     * @throws IllegalArgumentException if the value is outside the supported range
+     */
+    public @NotNull T corePoolSize(@Range(from = 0, to = Integer.MAX_VALUE) int corePoolSize) {
+        ArgumentTransformer.validatedNumber(corePoolSize, 0, Integer.MAX_VALUE);
+        return this.set("corePoolSize", corePoolSize);
+    }
+
+    /**
+     * Retrieves the configured executor core pool size.
+     *
+     * @return the configured core pool size
+     * @throws NullPointerException if no core pool size is configured
+     */
+    public int corePoolSize() {
+        return Objects.requireNonNull(
+                this.getInt("corePoolSize"),
+                "No core pool size found for " + getNamespace()
+        );
+    }
+
+    /**
+     * Sets the maximum number of threads that the server executor may use.
+     *
+     * @param maximumPoolSize the maximum pool size, greater than or equal to {@code 1}
+     * @return this builder instance for method chaining
+     * @throws IllegalArgumentException if the value is outside the supported range
+     */
+    public @NotNull T maximumPoolSize(@Range(from = 1, to = Integer.MAX_VALUE) int maximumPoolSize) {
+        ArgumentTransformer.validatedNumber(maximumPoolSize, 1, Integer.MAX_VALUE);
+        return this.set("maximumPoolSize", maximumPoolSize);
+    }
+
+    /**
+     * Retrieves the configured executor maximum pool size.
+     *
+     * @return the configured maximum pool size
+     * @throws NullPointerException if no maximum pool size is configured
+     */
+    public int maximumPoolSize() {
+        return Objects.requireNonNull(
+                this.getInt("maximumPoolSize"),
+                "No maximum pool size found for " + getNamespace()
+        );
+    }
+
+    /**
+     * Sets the amount of time that excess idle threads may remain alive before being terminated.
+     * <p>
+     * The configured duration is expressed in seconds.
+     *
+     * @param keepAliveTime the keep-alive duration in seconds, greater than or equal to {@code 0}
+     * @return this builder instance for method chaining
+     * @throws IllegalArgumentException if the value is outside the supported range
+     */
+    public @NotNull T keepAliveTime(@Range(from = 0, to = Integer.MAX_VALUE) int keepAliveTime) {
+        ArgumentTransformer.validatedNumber(keepAliveTime, 0, Integer.MAX_VALUE);
+        return this.set("keepAliveTime", keepAliveTime);
+    }
+
+    /**
+     * Retrieves the configured executor keep-alive duration.
+     *
+     * @return the keep-alive duration in seconds
+     * @throws NullPointerException if no keep-alive duration is configured
+     */
+    public int keepAliveTime() {
+        return Objects.requireNonNull(
+                this.getInt("keepAliveTime"),
+                "No keep alive time found for " + getNamespace()
+        );
+    }
+
+    /**
+     * Sets the maximum number of tasks that may wait in the server executor's work queue.
+     *
+     * @param queueCapacity the work queue capacity, greater than or equal to {@code 1}
+     * @return this builder instance for method chaining
+     * @throws IllegalArgumentException if the value is outside the supported range
+     */
+    public @NotNull T queueCapacity(@Range(from = 1, to = Integer.MAX_VALUE) int queueCapacity) {
+        ArgumentTransformer.validatedNumber(queueCapacity, 1, Integer.MAX_VALUE);
+        return this.set("queueCapacity", queueCapacity);
+    }
+
+    /**
+     * Retrieves the configured executor work queue capacity.
+     *
+     * @return the configured work queue capacity
+     * @throws NullPointerException if no work queue capacity is configured
+     */
+    public int queueCapacity() {
+        return Objects.requireNonNull(
+                this.getInt("queueCapacity"),
+                "No queue capacity found for " + getNamespace()
+        );
     }
 
     /**

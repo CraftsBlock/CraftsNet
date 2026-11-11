@@ -47,9 +47,6 @@ public class WebSocketServer extends Server<WebSocketServerBuilder> {
     private final TypeEncoderRegistry<WebSocketSafeTypeEncoder<?, ?>> typeEncoderRegistry = new TypeEncoderRegistry<>();
     private final Map<String, Set<WebSocketClient>> connected = new ConcurrentHashMap<>();
 
-    private Supplier<Executor> executorFactory = () -> Executors.newThreadPerTaskExecutor(
-            Thread.ofVirtual().name("WebSocket-", 1).factory()
-    );
     private Executor executor;
 
     private Thread connector;
@@ -109,7 +106,7 @@ public class WebSocketServer extends Server<WebSocketServerBuilder> {
         }
 
         executor = Objects.requireNonNull(
-                executorFactory.get(),
+                this.getExecutorFactory().apply(this.getBuilder()),
                 "Executor factory returned null"
         );
 
@@ -343,25 +340,6 @@ public class WebSocketServer extends Server<WebSocketServerBuilder> {
      */
     public List<WebSocketClient> getClients() {
         return connected.values().stream().flatMap(Collection::stream).distinct().toList();
-    }
-
-    /**
-     * Sets the factory used to create the executor responsible for handling WebSocket connections.
-     *
-     * @param executorFactory The supplier providing the executor instance.
-     */
-    public void setExecutorFactory(@NotNull Supplier<Executor> executorFactory) {
-        Objects.requireNonNull(executorFactory, "executorFactory");
-        this.executorFactory = executorFactory;
-    }
-
-    /**
-     * Retrieves the factory used to create the executor responsible for handling WebSocket connections.
-     *
-     * @return The supplier providing the executor instance.
-     */
-    public @NotNull Supplier<Executor> getExecutorFactory() {
-        return executorFactory;
     }
 
 }

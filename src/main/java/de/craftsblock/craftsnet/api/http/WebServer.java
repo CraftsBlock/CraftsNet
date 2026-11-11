@@ -10,7 +10,6 @@ import de.craftsblock.craftsnet.api.http.annotations.Route;
 import de.craftsblock.craftsnet.api.ssl.SSL;
 import de.craftsblock.craftsnet.builder.server.ServerState;
 import de.craftsblock.craftsnet.builder.server.WebServerBuilder;
-import org.jetbrains.annotations.NotNull;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -23,8 +22,6 @@ import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Objects;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.function.Supplier;
 
 /**
  * The WebServer class represents a simple HTTP or HTTPS server that listens for incoming requests and handles
@@ -40,9 +37,6 @@ import java.util.function.Supplier;
  */
 public class WebServer extends Server<WebServerBuilder> {
 
-    private Supplier<Executor> executorFactory = () -> Executors.newThreadPerTaskExecutor(
-            Thread.ofVirtual().name("RequestHandler-", 1).factory()
-    );
     private Executor executor;
 
     private HttpServer server;
@@ -113,7 +107,7 @@ public class WebServer extends Server<WebServerBuilder> {
 
         this.getLogger().debug("Setting up the executor and starting the web server");
         executor = Objects.requireNonNull(
-                executorFactory.get(),
+                this.getExecutorFactory().apply(builder),
                 "Executor factory returned null"
         );
         server.setExecutor(executor);
@@ -182,25 +176,6 @@ public class WebServer extends Server<WebServerBuilder> {
     @Override
     public boolean isSSL() {
         return this.server instanceof HttpsServer;
-    }
-
-    /**
-     * Sets the factory used to create the executor responsible for handling HTTP requests.
-     *
-     * @param executorFactory The factory used to create the executor.
-     */
-    public void setExecutorFactory(@NotNull Supplier<Executor> executorFactory) {
-        Objects.requireNonNull(executorFactory, "executorFactory");
-        this.executorFactory = executorFactory;
-    }
-
-    /**
-     * Retrieves the factory used to create the executor responsible for handling HTTP requests.
-     *
-     * @return The factory used to create the executor.
-     */
-    public @NotNull Supplier<Executor> getExecutorFactory() {
-        return executorFactory;
     }
 
 }
