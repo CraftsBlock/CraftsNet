@@ -47,7 +47,7 @@ public class DefaultRoute implements RequestHandler {
         if (!response.isBodyAble() || response.headersSent()) return;
 
         response.setContentType("text/text");
-        response.println("Your running on CraftsNet v" + CraftsNet.version);
+        response.println("Your running on CraftsNet v" + CraftsNet.inlineAbleVersion);
         response.println("If you can see this message CraftsNet is up and running!");
         response.println("This route has been registered to provide you with an convenient way of check if CraftsNet's core is working. This route will disappear if you register own routes!");
     }

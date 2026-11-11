@@ -95,7 +95,7 @@ public class Versions {
                 }
 
                 String latest = json.getString("version");
-                if (Versions.suitable(CraftsNet.version, ">=" + latest)) {
+                if (Versions.suitable(CraftsNet.inlineAbleVersion, ">=" + latest)) {
                     logger.info("You are using the newest version");
                     return;
                 }

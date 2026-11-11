@@ -27,7 +27,7 @@ class DefaultPages {
                 "<h1>Share Not Found</h1>\n" +
                 "<p>The requested share was not found on this instance of CraftsNet.</p>\n" +
                 "<hr>\n" +
-                "<address>CraftsNet/" + CraftsNet.version + " (" + System.getProperty("os.name") + ") Server at " + domain + " Port " + port + "</address>\n" +
+                "<address>CraftsNet/" + CraftsNet.inlineAbleVersion + " (" + System.getProperty("os.name") + ") Server at " + domain + " Port " + port + "</address>\n" +
                 "</body></html>";
     }
 
@@ -46,7 +46,7 @@ class DefaultPages {
                 "<h1>Forbidden</h1>\n" +
                 "<p>You don't have permission to access this resource.</p>\n" +
                 "<hr>\n" +
-                "<address>CraftsNet/" + CraftsNet.version + " (" + System.getProperty("os.name") + ") Server at " + domain + " Port " + port + "</address>\n" +
+                "<address>CraftsNet/" + CraftsNet.inlineAbleVersion + " (" + System.getProperty("os.name") + ") Server at " + domain + " Port " + port + "</address>\n" +
                 "</body></html>";
     }
 

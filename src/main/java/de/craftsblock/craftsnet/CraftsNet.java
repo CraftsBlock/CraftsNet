@@ -33,11 +33,9 @@ import de.craftsblock.craftsnet.logging.mutate.LogStream;
 import de.craftsblock.craftsnet.utils.FileHelper;
 import de.craftsblock.craftsnet.utils.reflection.ReflectionUtils;
 import de.craftsblock.craftsnet.utils.versions.Versions;
-import org.jetbrains.annotations.ApiStatus;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.net.http.HttpClient;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.security.CodeSource;
@@ -59,7 +57,7 @@ public class CraftsNet {
     /**
      * The current version of CraftsNet.
      */
-    public static final String version = "4.0.0-beta3";
+    public static final String inlineAbleVersion = "4.0.0-beta4";
 
     private static CraftsNet instance;
 
@@ -129,12 +127,12 @@ public class CraftsNet {
         }
         instance = this;
 
-        logger.info("CraftsNet v%s boots up", version);
+        logger.info("CraftsNet v%s boots up", inlineAbleVersion);
         Runtime.Version jvmVersion = Runtime.version();
         logger.debug("JVM Version: %s; Max recognizable class file version: %s.%s",
                 jvmVersion.toString(), jvmVersion.feature() + 44, jvmVersion.interim());
 
-        if (!builder.skipVersionCheck() && version.matches("^\\d+(?:[.-]\\d+)*$")) {
+        if (!builder.skipVersionCheck() && inlineAbleVersion.matches("^\\d+(?:[.-]\\d+)*$")) {
             Versions.verbalCheckCraftsNet(this);
         }
 
@@ -536,6 +534,17 @@ public class CraftsNet {
      */
     public static CraftsNet getInstance() {
         return instance;
+    }
+
+    /**
+     * Get the current version of {@link CraftsNet}.
+     * <p>
+     * Returns the value of {@link #inlineAbleVersion}.
+     *
+     * @return The current version of {@link CraftsNet}.
+     */
+    public static String getVersion() {
+        return inlineAbleVersion;
     }
 
     /**
