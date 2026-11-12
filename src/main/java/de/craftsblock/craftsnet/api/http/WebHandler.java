@@ -237,7 +237,7 @@ public class WebHandler implements HttpHandler {
 
         Long errorID;
         if (craftsNet.getLogStream() != null) {
-            errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), url);
+            errorID = craftsNet.getLogStream().createErrorLog(t, this.scheme.getName(), url);
             logger.error("Error: %s", t, errorID);
         } else {
             errorID = null;

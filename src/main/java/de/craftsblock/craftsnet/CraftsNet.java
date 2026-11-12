@@ -143,7 +143,7 @@ public class CraftsNet {
         this.oldDefaultUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
         Thread.setDefaultUncaughtExceptionHandler((t, e) -> {
             if (logStream != null) {
-                long identifier = logStream.createErrorLog(this, e);
+                long identifier = logStream.createErrorLog(e);
                 logger.error("Throwable: %s", e, identifier);
                 return;
             }
@@ -216,7 +216,7 @@ public class CraftsNet {
                 this.logger = new LoggerImpl(builder.getRoot().debug());
             }
 
-            this.logStream = new LogStream(this, builder.file(), builder.rotate());
+            this.logStream = new LogStream(this, builder.file(), builder.rotate(), builder.rotateError());
             this.logStream.start();
         };
     }

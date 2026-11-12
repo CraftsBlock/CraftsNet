@@ -41,11 +41,13 @@ public class LoggingBuilder extends NamespacedBuilder<LoggingBuilder> {
         this.acquire(this);
 
         this.addKnownArgument("logger", ArgumentTransformer.classInstance(Logger.class));
-        this.addKnownArgument("rotate", ArgumentTransformer.integerNumber(-1, Integer.MAX_VALUE));
+        this.addKnownArgument("rotate", ArgumentTransformer.longNumber(0, Long.MAX_VALUE));
+        this.addKnownArgument("rotateError", ArgumentTransformer.longNumber(0, Long.MAX_VALUE));
         this.addKnownArgument("file", ArgumentTransformer.booleanFlag());
         this.addKnownArgument("hideIps", ArgumentTransformer.booleanFlag());
 
-        this.rotate(-1);
+        this.rotate(64);
+        this.rotateError(128);
         this.file(true);
         this.hideIps(false);
     }
@@ -74,13 +76,13 @@ public class LoggingBuilder extends NamespacedBuilder<LoggingBuilder> {
     /**
      * Sets the log rotation threshold.
      * <p>
-     * A value of {@code -1} can be used to represent the special default or disabled
-     * rotation setting, depending on how the logging implementation interprets it.
+     * A value of {@code 0} can be used to disable the rotation setting.
      *
-     * @param rotate the configured rotation value, between {@code -1} and {@link Integer#MAX_VALUE}
+     * @param rotate the configured rotation value, between {@code 0} and {@link Long#MAX_VALUE}
      * @return this builder instance for method chaining
      */
-    public LoggingBuilder rotate(@Range(from = -1, to = Integer.MAX_VALUE) int rotate) {
+    public LoggingBuilder rotate(@Range(from = 0, to = Long.MAX_VALUE) long rotate) {
+        ArgumentTransformer.validatedNumber(rotate, 0, Long.MAX_VALUE);
         return this.set("rotate", rotate);
     }
 
@@ -90,10 +92,36 @@ public class LoggingBuilder extends NamespacedBuilder<LoggingBuilder> {
      * @return the configured rotation value
      * @throws NullPointerException if no rotation value is configured
      */
-    public int rotate() {
+    public Long rotate() {
         return Objects.requireNonNull(
-                this.getInt("rotate"),
+                this.getLong("rotate"),
                 "No rotate amount found for logging"
+        );
+    }
+
+    /**
+     * Sets the error log rotation threshold.
+     * <p>
+     * A value of {@code 0} can be used to disable the rotation setting.
+     *
+     * @param rotate the configured rotation value, between {@code 0} and {@link Long#MAX_VALUE}
+     * @return this builder instance for method chaining
+     */
+    public LoggingBuilder rotateError(@Range(from = 0, to = Long.MAX_VALUE) long rotate) {
+        ArgumentTransformer.validatedNumber(rotate, 0, Long.MAX_VALUE);
+        return this.set("rotateError", rotate);
+    }
+
+    /**
+     * Retrieves the configured error log rotation value.
+     *
+     * @return the configured rotation value
+     * @throws NullPointerException if no rotation value is configured
+     */
+    public Long rotateError() {
+        return Objects.requireNonNull(
+                this.getLong("rotateError"),
+                "No rotate error amount found for logging"
         );
     }
 

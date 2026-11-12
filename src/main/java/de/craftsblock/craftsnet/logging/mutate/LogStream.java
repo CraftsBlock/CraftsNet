@@ -9,27 +9,28 @@ import de.craftsblock.craftsnet.logging.mutate.stream.MutatedPrintStream;
 import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.Range;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Stream;
 
 /**
  * A utility class for logging to files.
- * This class provides methods to log messages to files, handle error logs, and redirect standard output and error streams to log files.
  *
  * @author Philipp Maywald
  * @author CraftsBlock
@@ -38,305 +39,413 @@ import java.util.stream.Stream;
  */
 public class LogStream {
 
-    private final Path folder = Path.of("logs");
+    private static final Path LOG_FOLDER = Path.of("logs");
+
+    private static final DateTimeFormatter DATE_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    private static final DateTimeFormatter DATE_TIME_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    private static final String LINE_SEPARATOR = System.lineSeparator();
+
+    private static final String ERROR_SEPARATOR =
+            "-".repeat(60) + "[ Stacktrace ]" + "-".repeat(60);
+
     private final CraftsNet craftsNet;
     private final boolean logToFiles;
-    private final long max;
+    private final long maxLogFiles;
+    private final long maxErrorFiles;
 
-    private final List<LogStreamMutator> logStreamMutators = new ArrayList<>();
-    private final List<LogStreamMutator> unmodifiableLogStreamMutatorsView = Collections.unmodifiableList(logStreamMutators);
+    private final CopyOnWriteArrayList<LogStreamMutator> logStreamMutators =
+            new CopyOnWriteArrayList<>();
 
-    private OutputStream stream;
-    private PrintStream oldOut;
-    private PrintStream oldErr;
+    private final List<LogStreamMutator> unmodifiableLogStreamMutators =
+            Collections.unmodifiableList(logStreamMutators);
+
+    private @Nullable OutputStream stream;
+
+    private @Nullable PrintStream oldOut;
+    private @Nullable PrintStream oldErr;
+
+    private @Nullable MutatedPrintStream installedOut;
+    private @Nullable MutatedPrintStream installedErr;
 
     /**
-     * Constructs a new {@link LogStream} instance with a specified maximum number of log files.
+     * Constructs a new LogStream.
      *
-     * @param craftsNet  The instance of {@link CraftsNet}, which is using this logging utils.
-     * @param logToFiles {@code true} if logging to files is enabled, {@code false} otherwise.
-     * @param max        the maximum number of log files to retain. Once this limit is reached, older log files
-     *                   may be deleted or rotated out to maintain the limit.
+     * @param craftsNet     The owning CraftsNet instance.
+     * @param logToFiles    Whether file logging is enabled.
+     * @param maxLogFiles   Maximum number of regular log files.
+     *                      Zero disables rotation.
+     * @param maxErrorFiles Maximum number of error log files.
+     *                      Zero disables rotation.
      */
-    public LogStream(CraftsNet craftsNet, boolean logToFiles, long max) {
-        this.craftsNet = craftsNet;
+    public LogStream(
+            CraftsNet craftsNet,
+            boolean logToFiles,
+            long maxLogFiles,
+            long maxErrorFiles
+    ) {
+        this.craftsNet = Objects.requireNonNull(craftsNet, "craftsNet");
         this.logToFiles = logToFiles;
-        this.max = max;
 
-        this.registerLogStreamMutator(new BlurIPsMutator());
+        if (maxLogFiles < 0 || maxErrorFiles < 0) {
+            throw new IllegalArgumentException(
+                    "Log file limits must not be negative."
+            );
+        }
+
+        this.maxLogFiles = maxLogFiles;
+        this.maxErrorFiles = maxErrorFiles;
+
+        registerLogStreamMutator(new BlurIPsMutator());
     }
 
     /**
-     * Registers a new {@link LogStreamMutator} that will be applied to each line
-     * written to the log stream.
+     * Registers a log stream mutator.
      *
-     * @param mutator The {@link LogStreamMutator} to register.
-     * @since 3.5.0
+     * @param mutator The mutator to register.
      */
     public void registerLogStreamMutator(LogStreamMutator mutator) {
-        synchronized (logStreamMutators) {
-            logStreamMutators.add(mutator);
-        }
+        logStreamMutators.add(Objects.requireNonNull(mutator, "mutator"));
     }
 
     /**
-     * Unregisters a previously registered {@link LogStreamMutator}.
+     * Unregisters a log stream mutator.
      *
-     * @param mutator The {@link LogStreamMutator} to remove.
-     * @since 3.5.0
+     * @param mutator The mutator to unregister.
      */
     public void unregisterLogStreamMutator(LogStreamMutator mutator) {
-        synchronized (logStreamMutators) {
-            logStreamMutators.remove(mutator);
-        }
+        logStreamMutators.remove(mutator);
     }
 
     /**
-     * Checks whether the given {@link LogStreamMutator} is already registered
-     * or not.
+     * Checks whether a mutator of the given class is registered.
      *
-     * @param mutator The {@link LogStreamMutator} to check.
-     * @return {@code true} if the {@link LogStreamMutator} is registered, {@code false} otherwise.
+     * @param mutator The mutator to check.
+     * @return Whether a mutator of the same class is registered.
      */
     public boolean isLogStreamMutatorRegistered(LogStreamMutator mutator) {
-        synchronized (logStreamMutators) {
-            return logStreamMutators.stream().
-                    anyMatch(m -> m.getClass().equals(mutator.getClass()));
-        }
+        Objects.requireNonNull(mutator, "mutator");
+
+        Class<?> type = mutator.getClass();
+        return logStreamMutators.stream()
+                .anyMatch(registered -> registered.getClass().equals(type));
     }
 
     /**
-     * Returns an unmodifiable list of all currently registered {@link LogStreamMutator}s.
+     * Returns an unmodifiable, live view of registered mutators.
      *
-     * @return A list of registered log stream mutators.
-     * @since 3.5.0
+     * @return The registered mutators.
      */
     public List<LogStreamMutator> getLogStreamMutators() {
-        synchronized (logStreamMutators) {
-            return unmodifiableLogStreamMutatorsView;
-        }
+        return unmodifiableLogStreamMutators;
     }
 
     /**
-     * Starts logging to files.
-     * This method sets up file logging by redirecting standard output and error streams to log files.
+     * Starts file logging and redirects System.out and System.err.
      */
-    public void start() {
-        if (System.out instanceof MutatedPrintStream || System.err instanceof MutatedPrintStream) return;
+    public synchronized void start() {
+        if (!logToFiles || stream != null) {
+            return;
+        }
 
         try {
-            oldOut = System.out;
-            oldErr = System.err;
+            OutputStream fileStream = createFileLogStream();
 
-            this.stream = this.createFileLogStream();
-            System.setOut(new MutatedPrintStream(this, new LogOutputStream(oldOut, stream)));
-            System.setErr(new MutatedPrintStream(this, new LogOutputStream(oldErr, stream)));
+            PrintStream originalOut = System.out;
+            PrintStream originalErr = System.err;
+
+            MutatedPrintStream redirectedOut = new MutatedPrintStream(
+                    this,
+                    new LogOutputStream(originalOut, fileStream)
+            );
+
+            MutatedPrintStream redirectedErr = new MutatedPrintStream(
+                    this,
+                    new LogOutputStream(originalErr, fileStream)
+            );
+
+            this.oldOut = originalOut;
+            this.oldErr = originalErr;
+            this.stream = fileStream;
+            this.installedOut = redirectedOut;
+            this.installedErr = redirectedErr;
+
+            System.setOut(redirectedOut);
+            System.setErr(redirectedErr);
+
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to start file logging.", e);
         }
     }
 
     /**
-     * Stops the logging to files
+     * Stops file logging and restores the original system streams.
      */
-    public void stop() {
-        OutputStream out = System.out;
-        OutputStream err = System.err;
-
-        if (oldOut != null) System.setOut(oldOut);
-        if (oldErr != null) System.setErr(oldErr);
+    public synchronized void stop() {
+        MutatedPrintStream redirectedOut = installedOut;
+        MutatedPrintStream redirectedErr = installedErr;
 
         try {
-            out.close();
-            err.close();
+            if (redirectedOut != null) {
+                redirectedOut.flush();
+            }
 
-            if (stream == null) return;
-            stream.flush();
-            stream.close();
+            if (redirectedErr != null) {
+                redirectedErr.flush();
+            }
+
+            if (redirectedOut != null && System.out == redirectedOut) {
+                System.setOut(oldOut);
+            }
+
+            if (redirectedErr != null && System.err == redirectedErr) {
+                System.setErr(oldErr);
+            }
+
+            if (stream != null) {
+                stream.flush();
+                stream.close();
+            }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to stop file logging.", e);
+        } finally {
+            stream = null;
+            oldOut = null;
+            oldErr = null;
+            installedOut = null;
+            installedErr = null;
         }
     }
 
     /**
-     * Adds a line to the log file.
-     * This method adds a line to the current log file.
+     * Adds a line directly to the current log file.
      *
-     * @param line The line to add to the log file.
+     * @param line The line to write.
      */
     public synchronized void addLine(String line) {
-        if (stream == null || line == null) return;
+        if (stream == null || line == null) {
+            return;
+        }
 
         try {
-            stream.write((LogOutputStream.removeAsciiColors(line) + System.lineSeparator()).getBytes(StandardCharsets.UTF_8));
+            String sanitized = LogOutputStream.removeAsciiColors(line);
+            stream.write(
+                    (sanitized + LINE_SEPARATOR).getBytes(StandardCharsets.UTF_8)
+            );
+
             stream.flush();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to write log line.", e);
         }
     }
 
     /**
-     * Creates an error log file for the given exception.
-     * This method creates an error log file containing the stack trace of the given exception.
+     * Creates an error log containing the given exception.
      *
-     * @param craftsNet The CraftsNet instance which instantiates this
-     * @param throwable The throwable for which to create the error log file.
-     * @param protocol  The protocol associated with the error.
-     * @param path      The path associated with the error.
-     * @return The identifier of the error log file.
+     * @param throwable The throwable to log.
+     * @param protocol  The associated protocol.
+     * @param path      The associated path.
+     * @return The error log identifier.
      */
-    public long createErrorLog(CraftsNet craftsNet, Throwable throwable, String protocol, String path) {
-        return createErrorLog(craftsNet, throwable, Map.of("Protocol", protocol, "Path", path));
+    public long createErrorLog(
+            Throwable throwable,
+            String protocol,
+            String path
+    ) {
+        Map<String, String> additional = new LinkedHashMap<>();
+
+        additional.put("Protocol", protocol);
+        additional.put("Path", path);
+
+        return createErrorLog(throwable, additional);
     }
 
     /**
-     * Creates an error log file for the given throwable.
-     * This method creates an error log file containing the stack trace of the given throwable.
+     * Creates an error log containing the given exception.
      *
-     * @param craftsNet The CraftsNet instance which instantiates this
-     * @param throwable The throwable for which to create the error log file.
-     * @return The identifier of the error log file.
+     * @param throwable The throwable to log.
+     * @return The error log identifier.
      */
-    public long createErrorLog(CraftsNet craftsNet, Throwable throwable) {
-        return createErrorLog(craftsNet, throwable, Collections.emptyMap());
+    public long createErrorLog(Throwable throwable) {
+        return createErrorLog(throwable, Collections.emptyMap());
     }
 
     /**
-     * Creates an error log file for the given throwable.
-     * This method creates an error log file containing the stack trace of the given throwable, along with additional information.
+     * Creates an error log containing the given exception and additional information.
      *
-     * @param craftsNet  The CraftsNet instance which instantiates this file logger.
-     * @param throwable  The throwable for which to create the error log file.
-     * @param additional Additional information to include in the error log file.
-     * @return The identifier of the error log file.
+     * @param throwable  The throwable to log.
+     * @param additional Additional information.
+     * @return The error log identifier.
      */
-    public synchronized long createErrorLog(CraftsNet craftsNet, Throwable throwable, Map<String, String> additional) {
+    public synchronized long createErrorLog(
+            Throwable throwable,
+            Map<String, String> additional
+    ) {
+        Objects.requireNonNull(throwable, "throwable");
+        Objects.requireNonNull(additional, "additional");
+
         try {
-            Path errors = folder.resolve("errors");
-            ensureParentFolder(errors);
-            if (Files.notExists(errors))
-                Files.createDirectory(errors);
+            Path errorsFolder = LOG_FOLDER.resolve("errors");
+
+            Files.createDirectories(errorsFolder);
+            rotateLogFiles(maxErrorFiles, errorsFolder);
 
             long identifier = Snowflake.generate();
-            Path errorFile = errors.resolve("error_" + identifier + ".log");
-            try (PrintStream stream = new PrintStream(Files.newOutputStream(errorFile))) {
-                String date = OffsetDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd kk:mm:ss"));
-                stream.writeBytes((
-                        "Identifier: " + identifier + "\n" +
-                                "Time: " + date + "\n"
-                ).getBytes(StandardCharsets.UTF_8));
 
-                for (Map.Entry<String, String> entry : additional.entrySet())
-                    stream.writeBytes((entry.getKey() + ": " + entry.getValue() + "\n").getBytes(StandardCharsets.UTF_8));
+            Path errorFile = errorsFolder.resolve(
+                    "error_" + identifier + ".log"
+            );
 
-                stream.writeBytes((
-                        "\n" +
-                                "-".repeat(60) + "[ Stacktrace ]" + "-".repeat(60) + "\n" +
-                                "\n"
-                ).getBytes(StandardCharsets.UTF_8));
+            try (PrintStream output = new PrintStream(
+                    Files.newOutputStream(errorFile),
+                    true,
+                    StandardCharsets.UTF_8
+            )) {
+                output.println("Identifier: " + identifier);
+                output.println(
+                        "Time: " + OffsetDateTime.now().format(DATE_TIME_FORMAT)
+                );
 
-                stream.flush();
+                for (Map.Entry<String, String> entry : additional.entrySet()) {
+                    output.println(entry.getKey() + ": " + entry.getValue());
+                }
 
-                throwable.printStackTrace(stream);
-            } catch (FileNotFoundException e) {
-                craftsNet.getLogger().error("Failed to create error log file", e);
+                output.println();
+                output.println(ERROR_SEPARATOR);
+                output.println();
+
+                throwable.printStackTrace(output);
+
+                if (output.checkError()) {
+                    throw new IOException(
+                            "Failed to write error log: " + errorFile
+                    );
+                }
             }
 
             return identifier;
+
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to create error log.", e);
         }
     }
 
     /**
-     * Ensures that the parent directory of the specified file path exists.
-     *
-     * @param file the {@link Path} of the file for which the parent directory should be verified.
-     */
-    private void ensureParentFolder(Path file) {
-        try {
-            var parent = file.getParent();
-            if (parent != null && Files.notExists(parent))
-                Files.createDirectories(parent);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * Skips the next input on the {@link System#out} stream, if it is a file log stream.
+     * Skips the next line on System.out.
      */
     public synchronized void skipNext() {
-        this.skipNext(1);
-    }
-
-
-    /**
-     * Skips the next n inputs on the {@link System#out} stream, if it is a file log stream.
-     *
-     * @param line the amount of inputs to be skipped
-     */
-    public synchronized void skipNext(@Range(from = 1, to = Integer.MAX_VALUE) int line) {
-        if (System.out instanceof MutatedPrintStream logStream)
-            logStream.skipNext(line);
+        skipNext(1);
     }
 
     /**
-     * Creates a log file output stream if file logging is activated respectively to {@link #logToFiles}.
+     * Skips the next specified number of lines on System.out.
      *
-     * @return The {@link OutputStream} which log to a file, or null otherwise.
-     * @throws IOException If the log file stream creation fails.
-     * @since 3.4.0-SNAPSHOT
+     * @param line Number of lines to skip.
      */
-    private @Nullable OutputStream createFileLogStream() throws IOException {
-        if (!this.logToFiles) return null;
-
-        if (max != 0 && Files.exists(folder))
-            try (Stream<Path> stream = Files.walk(folder, 1).parallel().filter(Files::isRegularFile)) {
-                long count = stream.count();
-                if (count >= max) {
-                    long diff = count - (max - 1);
-                    for (Path path : FileUtils.getOldestNFiles(folder, diff))
-                        Files.deleteIfExists(path);
-                }
-            }
-
-        Path file = folder.resolve("latest.log");
-        while (!Thread.currentThread().isInterrupted()) {
-            if (Files.notExists(file)) break;
-
-            BasicFileAttributes attributes = Files.readAttributes(file, BasicFileAttributes.class);
-            OffsetDateTime creationTime = OffsetDateTime.ofInstant(attributes.creationTime().toInstant(), ZoneId.systemDefault());
-            String prefix = creationTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
-
-            int i = 1;
-            AtomicReference<Path> name = new AtomicReference<>();
-            while (!Thread.currentThread().isInterrupted()) {
-                Path newName = folder.resolve(prefix + "_" + i + ".log");
-
-                if (!Files.exists(newName)) {
-                    name.set(newName);
-                    break;
-                }
-
-                i++;
-            }
-
-            if (name.get() == null) return null;
-            Files.move(file, name.get());
+    public synchronized void skipNext(
+            @Range(from = 1, to = Integer.MAX_VALUE) int line
+    ) {
+        if (line < 1) {
+            throw new IllegalArgumentException("line must be greater than zero.");
         }
 
-        ensureParentFolder(file);
-        if (Files.notExists(file)) Files.createFile(file);
-        else craftsNet.getLogger().warning("Failed to create a new latest.log appending to existing!");
-
-        return Files.newOutputStream(file);
+        if (System.out instanceof MutatedPrintStream logStream) {
+            logStream.skipNext(line);
+        }
     }
 
     /**
-     * The instance of {@link CraftsNet} which is owning the {@link LogStream}.
+     * Creates a new log file output stream.
      *
-     * @return The instance of {@link CraftsNet}.
+     * @return The file output stream.
+     * @throws IOException If stream creation fails.
+     */
+    private OutputStream createFileLogStream() throws IOException {
+        Files.createDirectories(LOG_FOLDER);
+
+        rotateLogFiles(maxLogFiles, LOG_FOLDER);
+
+        Path latestFile = LOG_FOLDER.resolve("latest.log");
+        if (Files.exists(latestFile)) {
+            rotateLatestLog(latestFile);
+        }
+
+        return Files.newOutputStream(latestFile);
+    }
+
+    /**
+     * Rotates the existing latest.log file.
+     *
+     * @param latestFile The current latest log file.
+     * @throws IOException If rotation fails.
+     */
+    private void rotateLatestLog(Path latestFile) throws IOException {
+        BasicFileAttributes attributes = Files.readAttributes(
+                latestFile,
+                BasicFileAttributes.class
+        );
+
+        OffsetDateTime creationTime = OffsetDateTime.ofInstant(
+                attributes.creationTime().toInstant(),
+                ZoneId.systemDefault()
+        );
+
+        String prefix = creationTime.format(DATE_FORMAT);
+
+        Path target;
+        int index = 1;
+
+        do {
+            target = LOG_FOLDER.resolve(prefix + "_" + index++ + ".log");
+        } while (Files.exists(target));
+
+        try {
+            Files.move(
+                    latestFile,
+                    target,
+                    StandardCopyOption.ATOMIC_MOVE
+            );
+        } catch (AtomicMoveNotSupportedException ignored) {
+            Files.move(latestFile, target);
+        }
+    }
+
+    /**
+     * Removes the oldest log files if the configured limit is exceeded.
+     *
+     * @param max    Maximum number of files. Zero disables rotation.
+     * @param folder Folder containing the log files.
+     */
+    private void rotateLogFiles(long max, Path folder) {
+        if (max == 0 || Files.notExists(folder)) {
+            return;
+        }
+
+        try (Stream<Path> files = Files.walk(folder, 1)) {
+            long count = files.filter(Files::isRegularFile).count();
+            if (count < max) {
+                return;
+            }
+
+            long amountToDelete = count - max + 1;
+            for (Path file : FileUtils.getOldestNFiles(folder, amountToDelete)) {
+                Files.deleteIfExists(file);
+            }
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    "Failed to rotate log folder: " + folder,
+                    e
+            );
+        }
+    }
+
+    /**
+     * Returns the owning CraftsNet instance.
+     *
+     * @return The CraftsNet instance.
      */
     public CraftsNet getCraftsNet() {
         return craftsNet;

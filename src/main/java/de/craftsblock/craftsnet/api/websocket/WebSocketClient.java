@@ -596,7 +596,7 @@ public class WebSocketClient implements Runnable, RequireAble {
         );
 
         if (craftsNet.getLogStream() != null) {
-            long errorID = craftsNet.getLogStream().createErrorLog(this.craftsNet, t, this.scheme.getName(), path == null ? "" : path);
+            long errorID = craftsNet.getLogStream().createErrorLog(t, this.scheme.getName(), path == null ? "" : path);
             logger.error("Error: %s", t, errorID);
             message.set("error.identifier", errorID);
         } else {
