@@ -83,6 +83,12 @@ public class Versions {
      */
     public static void verbalCheckCraftsNet(CraftsNet craftsNet) {
         Logger logger = craftsNet.getLogger();
+        if (!CraftsNet.inlineAbleVersion.matches("^\\d+(?:[.-]\\d+)*$")) {
+            logger.warning("No version check supported for experimental versions");
+            logger.info("You are using the version " + CraftsNet.inlineAbleVersion);
+            return;
+        }
+
         logger.info("Checking for new version...");
         try {
             URL url = new URL("https://repo.craftsblock.de/api/maven/latest/version/releases/de/craftsblock/craftsnet?type=json");

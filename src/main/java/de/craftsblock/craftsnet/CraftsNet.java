@@ -132,7 +132,7 @@ public class CraftsNet {
         logger.debug("JVM Version: %s; Max recognizable class file version: %s.%s",
                 jvmVersion.toString(), jvmVersion.feature() + 44, jvmVersion.interim());
 
-        if (!builder.skipVersionCheck() && inlineAbleVersion.matches("^\\d+(?:[.-]\\d+)*$")) {
+        if (!builder.skipVersionCheck()) {
             Versions.verbalCheckCraftsNet(this);
         }
 
