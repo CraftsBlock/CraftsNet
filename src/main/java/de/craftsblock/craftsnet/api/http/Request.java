@@ -393,6 +393,7 @@ public class Request implements AutoCloseable, RequireAble {
      * @return {@code true} if a request body exists, otherwise {@code false}.
      */
     public boolean hasBody() {
+        retrieveBody();
         if (isClosed()) {
             throw new IllegalStateException("Could not retrieve the body as this request is already closed!");
         }
