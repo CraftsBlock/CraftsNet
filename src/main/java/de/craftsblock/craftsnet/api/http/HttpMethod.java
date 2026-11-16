@@ -81,9 +81,11 @@ public enum HttpMethod {
 
     ;
 
-    final HttpMethod[] methods;
-    final boolean requestBody;
-    final boolean responseBody;
+    private final HttpMethod[] methods;
+    private final boolean requestBody;
+    private final boolean responseBody;
+
+    private volatile String cachedString;
 
     /**
      * Constructor to assign the request methods to each enum value
@@ -142,7 +144,13 @@ public enum HttpMethod {
      */
     @Override
     public String toString() {
-        return HttpMethod.join(this);
+        String result = cachedString;
+        if (result == null) {
+            result = HttpMethod.join(this);
+            cachedString = result;
+        }
+
+        return result;
     }
 
     /**
